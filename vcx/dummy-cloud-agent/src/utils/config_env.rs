@@ -13,6 +13,8 @@ pub fn get_app_env_config() -> &'static AppEnvConfig {
 pub struct AppEnvConfig {
     #[envconfig(from = "NEW_AGENT_KDF", default = "RAW")]
     pub new_agent_kdf: KeyDerivationFunction,
+    #[envconfig(from = "RESTORE_ON_DEMAND", default = "false")]
+    pub restore_on_demand: bool,
 }
 
 #[cfg(test)]
