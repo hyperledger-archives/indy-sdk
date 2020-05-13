@@ -224,6 +224,8 @@ See section "Release channels" for more details.
         * `library.a`
         * `library.dylib`
     
+5. Install dependent libraries: libsodium, zeromq, openssl. The dependent libraries should match the version with what you can find from ``otool -L libindy.dylib``.
+
 You need add the path to lib folder to LIBRARY_PATH environment variable. 
     
 {library} must be replaced with libindy, libnullpay, libvcx or indy-cli to define corresponded library.
