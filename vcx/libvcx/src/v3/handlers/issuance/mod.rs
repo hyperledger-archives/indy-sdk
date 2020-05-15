@@ -122,6 +122,10 @@ impl Holder {
         self.holder_sm.get_credential()
     }
 
+    pub fn delete_credential(&self) -> VcxResult<()> {
+        self.holder_sm.delete_credential()
+    }
+
     pub fn get_credential_status(&self) -> VcxResult<u32> {
         Ok(self.holder_sm.credential_status())
     }
