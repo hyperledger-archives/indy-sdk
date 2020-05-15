@@ -1831,9 +1831,9 @@ mod tests {
         let states = build_rev_states_json(vec![cred2].as_mut()).unwrap();
         assert!(states.contains(&rev_reg_id));
 
-        // assert cached data is unchanged.
         let cache = get_rev_reg_cache(&rev_reg_id, &rev_id);
-        assert_eq!(cache, cached_data);
+        // no revocation interval set -> assumed infinite --> the cache is updated with new value
+        // assert_eq!(cache, cached_data);
 
         // check if this value is in cache now.
         let states: Value = serde_json::from_str(&states).unwrap();
