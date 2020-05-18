@@ -27,14 +27,15 @@ TAA_ACCEPT=bool(os.getenv("TAA_ACCEPT", "0") == "1")
 # 'wallet_key': encryption key for encoding wallet
 # 'payment_method': method that will be used for payments
 provisionConfig = {
-    'agency_url': 'http://localhost:8080',
-    'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
-    'agency_verkey': 'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
-    'wallet_name': 'faber_wallet',
+    'agency_url': 'https://indy-dev.datawallet.origincert.com/mediator',
+    'agency_did': 'X2b2m5JyzeroKKB4X44VHY',
+    'agency_verkey': 'HNDzQx2JSytjWMcfqWoTyCtMCyfL7dvKcQfDGvjaVhNY',
+    'wallet_name': 'faber_wallet9',
     'wallet_key': '123',
     'payment_method': 'null',
-    'enterprise_seed': '000000000000000000000000Trustee1',
-    'protocol_type': '3.0',
+    'enterprise_seed': 'bHjydDGBjNBTp5cjGCK8bzbzvW4rR9kb',
+    'protocol_type': '2.0',
+    'communication_protocol': 'aries',
 }
 
 
@@ -66,7 +67,7 @@ async def main():
 
     print("#3 Create a new schema on the ledger")
     version = format("%d.%d.%d" % (random.randint(1, 101), random.randint(1, 101), random.randint(1, 101)))
-    schema = await Schema.create('schema_uuid', 'degree schema', version, ['email', 'first_name', 'last_name'], 0)
+    schema = await Schema.create(f'schema_uuid_{random.randint(1, 101)}', 'degree schema', version, ['email', 'first_name', 'last_name'], 0)
     schema_id = await schema.get_schema_id()
 
     print("#4 Create a new credential definition on the ledger")
