@@ -6,9 +6,11 @@ use crate::actors::admin::Admin;
 use crate::actors::HandleAdminMessage;
 use crate::domain::admin_message::{AdminQuery, GetDetailAgentConnParams, GetDetailAgentParams};
 use crate::domain::config::ServerAdminConfig;
+use std::rc::Rc;
+use std::sync::{RwLock, Arc};
 
 pub struct AdminAppData {
-    pub admin_agent: Addr<Admin>,
+    pub admin_agent: Arc<RwLock<Admin>>,
 }
 
 #[derive(Deserialize)]
@@ -16,7 +18,7 @@ struct AgentParams {
     did: String,
 }
 
-pub fn start_app_admin_server(server_admin_config: &ServerAdminConfig, admin_agent: Addr<Admin>) {
+pub fn start_app_admin_server(server_admin_config: &ServerAdminConfig, admin_agent: Arc<RwLock<Admin>>) {
     info!("Creating Admin HttpServer using config {:?}", server_admin_config);
     let mut server = HttpServer::new(move || {
         App::new()
@@ -48,34 +50,35 @@ pub fn start_app_admin_server(server_admin_config: &ServerAdminConfig, admin_age
     info!("Admin Server started at addresses: {:?}.", server_admin_config.addresses);
 }
 
-fn _send_admin_message(state: Data<AdminAppData>, admin_msg: HandleAdminMessage) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
-    let f = state.admin_agent
-                    .send(admin_msg)
-                    .from_err()
-                    .map(|res| match res {
-                        Ok(agent_details) => HttpResponse::Ok().json(&agent_details),
-                        Err(err) => HttpResponse::InternalServerError().body(format!("{:?}", err)).into(),
-                    });
+fn _get_agent_connection_details(state: Data<AdminAppData>, info: web::Path<AgentParams>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
+    let f = state.admin_agent.read().unwrap()
+        .get_detail_agent_connection(info.did.clone())
+        .map(|res| HttpResponse::Ok().json(res))
+        .map_err(|err| HttpResponse::InternalServerError().body(format!("{:?}", err)).into());
     Box::new(f)
 }
 
-fn _get_agent_connection_details(state: Data<AdminAppData>, info: web::Path<AgentParams>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
-    let msg = HandleAdminMessage(AdminQuery::GetDetailAgentConnection(GetDetailAgentConnParams { agent_pairwise_did: info.did.clone() }));
-    _send_admin_message(state, msg)
-}
-
 fn _get_agent_details(state: Data<AdminAppData>, info: web::Path<AgentParams>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
-    let msg = HandleAdminMessage(AdminQuery::GetDetailAgent(GetDetailAgentParams { agent_did: info.did.clone() }));
-    _send_admin_message(state, msg)
+    let f = state.admin_agent.read().unwrap()
+        .get_detail_agent(info.did.clone())
+        .map(|res| HttpResponse::Ok().json(res))
+        .map_err(|err| HttpResponse::InternalServerError().body(format!("{:?}", err)).into());
+    Box::new(f)
 }
 
 fn _get_actor_overview(state: Data<AdminAppData>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
-    let msg = HandleAdminMessage(AdminQuery::GetActorOverview);
-    _send_admin_message(state, msg)
+    let f = state.admin_agent.read().unwrap()
+        .get_actor_overview()
+        .map(|res| HttpResponse::Ok().json(res))
+        .map_err(|err| HttpResponse::InternalServerError().body(format!("{:?}", err)).into());
+    Box::new(f)
 }
 
 fn _get_forward_agent_details(state: Data<AdminAppData>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
-    let msg = HandleAdminMessage(AdminQuery::GetDetailForwardAgents);
-    _send_admin_message(state, msg)
+    let f = state.admin_agent.read().unwrap()
+        .get_detail_forward_agents()
+        .map(|res| HttpResponse::Ok().json(res))
+        .map_err(|err| HttpResponse::InternalServerError().body(format!("{:?}", err)).into());
+    Box::new(f)
 }
 

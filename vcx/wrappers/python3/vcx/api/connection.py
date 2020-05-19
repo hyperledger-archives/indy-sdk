@@ -271,7 +271,7 @@ class Connection(VcxStateful):
                                Connection.get_redirect_details.cb)
 
         self.logger.debug("vcx_connection_get_redirect_details completed")
-        return result
+        return json.loads(result.decode())
 
     async def send_message(self, msg: str, msg_type: str, msg_title: str, ref_msg_id: str = None) -> str:
         """
