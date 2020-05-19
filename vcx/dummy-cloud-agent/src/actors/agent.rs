@@ -698,15 +698,15 @@ impl Agent {
         ok_act!(self,  messages)
     }
 
-    fn handle_update_com_method_v2(&mut self, _msg: UpdateComMethod) -> ResponseActFuture<Self, A2AMessageV2, Error> {
-        trace!("UpdateComMethodV2 (_msg={:?})", _msg);
-        match _msg.com_method.e_type {
+    fn handle_update_com_method_v2(&mut self, msg: UpdateComMethod) -> ResponseActFuture<Self, A2AMessageV2, Error> {
+        trace!("UpdateComMethodV2 (msg={:?})", msg);
+        match msg.com_method.e_type {
             ComMethodType::Webhook => {
-                self.configs.insert(String::from("notificationWebhookUrl"), String::from(_msg.com_method.value));
+                self.configs.insert(String::from("notificationWebhookUrl"), String::from(msg.com_method.value));
             }
-            _ => warn!("Agent was trying to handle unsupported communication type {:?}", _msg.com_method.e_type)
+            _ => warn!("Agent was trying to handle unsupported communication type {:?}", msg.com_method.e_type)
         };
-        let message = A2AMessageV2::ComMethodUpdated(ComMethodUpdated { id: _msg.com_method.id });
+        let message = A2AMessageV2::ComMethodUpdated(ComMethodUpdated { id: msg.com_method.id });
         ok_act!(self, message)
     }
 
