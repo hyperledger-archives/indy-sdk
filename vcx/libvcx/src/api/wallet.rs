@@ -754,7 +754,6 @@ pub extern fn vcx_wallet_close_search(command_handle: CommandHandle,
 ///
 /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
 /// in the future releases.
-///
 /// #Params:
 /// command_handle: Handle for User's Reference only.
 /// path: Path to export wallet to User's File System.
