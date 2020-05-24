@@ -60,9 +60,10 @@ async def main():
         print("#2.1 Accept transaction author agreement")
         txn_author_agreement = await vcx_get_ledger_author_agreement()
         txn_author_agreement_json = json.loads(txn_author_agreement)
+        first_acc_mech_type = list(txn_author_agreement_json['aml'].keys())[0]
         vcx_set_active_txn_author_agreement_meta(text=txn_author_agreement_json['text'], version=txn_author_agreement_json['version'],
                                                  hash=None,
-                                                 acc_mech_type="service_agreement", time_of_acceptance=int(time.time()))
+                                                 acc_mech_type=first_acc_mech_type, time_of_acceptance=int(time.time()))
 
     print("#3 Create a new schema on the ledger")
     version = format("%d.%d.%d" % (random.randint(1, 101), random.randint(1, 101), random.randint(1, 101)))
