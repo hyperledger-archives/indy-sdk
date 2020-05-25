@@ -465,14 +465,13 @@ mod tests {
         });
 
         //Creates wallet at custom location
-        println!("{:?}", connect_register_provision(&config.to_string()).unwrap());
-        println!("{}", std::path::Path::new("/tmp/custom1/test_wallet").exists());
+       connect_register_provision(&config.to_string()).unwrap();
+        std::path::Path::new("/tmp/custom1/test_wallet").exists();
         vcx_shutdown(false);
         let my_config: Config = serde_json::from_str(&config.to_string()).unwrap();
 
         //Opens already created wallet at custom location
-        println!("{:?}", configure_wallet(&my_config).unwrap());
-
+        configure_wallet(&my_config).unwrap();
     }
 
     #[test]
