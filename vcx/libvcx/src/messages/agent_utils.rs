@@ -1,3 +1,6 @@
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde_json::Value;
+
 use settings;
 use messages::{A2AMessage, A2AMessageV1, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency, parse_response_from_agency};
 use messages::message_type::MessageTypes;
@@ -97,6 +100,33 @@ pub struct UpdateComMethod {
     com_method: ComMethod,
 }
 
+#[derive(Debug)]
+pub enum ComMethodType {
+    A2A,
+    Webhook
+}
+
+impl Serialize for ComMethodType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        let value = match self {
+            ComMethodType::A2A => "1",
+            ComMethodType::Webhook => "2",
+        };
+        Value::String(value.to_string()).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for ComMethodType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
+        match value.as_str() {
+            Some("1") => Ok(ComMethodType::A2A),
+            Some("2") => Ok(ComMethodType::Webhook),
+            _ => Err(de::Error::custom("Unexpected communication method type."))
+        }
+    }
+}
+
 impl UpdateComMethod {
     fn build(com_method: ComMethod) -> UpdateComMethod {
         UpdateComMethod {
@@ -110,7 +140,7 @@ impl UpdateComMethod {
 pub struct ComMethod {
     id: String,
     #[serde(rename = "type")]
-    e_type: i32,
+    e_type: ComMethodType,
     value: String,
 }
 
@@ -399,7 +429,7 @@ pub fn update_agent_info(id: &str, value: &str) -> VcxResult<()> {
 
     let com_method = ComMethod {
         id: id.to_string(),
-        e_type: 1,
+        e_type: ComMethodType::A2A,
         value: value.to_string(),
     };
 
@@ -429,6 +459,46 @@ fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
         A2AMessageV2::UpdateComMethod(UpdateComMethod::build(com_method))
     );
     send_message_to_agency(&message, to_did)?;
+    Ok(())
+}
+
+pub fn update_agent_webhook(webhook_url: &str) -> VcxResult<()> {
+    trace!("update_agent_webhook >>> webhook_url: {:?}", webhook_url);
+
+    let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
+
+    let com_method: ComMethod = ComMethod {
+        id: String::from("123"),
+        e_type: ComMethodType::Webhook,
+        value: String::from(webhook_url)
+    };
+
+    match settings::get_protocol_type() {
+        settings::ProtocolTypes::V1 => {
+            update_agent_webhook_v1(&to_did, com_method)
+        }
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3 => {
+            update_agent_webhook_v2(&to_did, com_method)
+        }
+    }
+}
+
+fn update_agent_webhook_v1(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
+    AgencyMock::set_next_response(constants::REGISTER_RESPONSE.to_vec());
+
+    let message = A2AMessage::Version1(
+        A2AMessageV1::UpdateComMethod(UpdateComMethod::build(com_method))
+    );
+    send_message_to_agency(&message, &to_did)?;
+    Ok(())
+}
+
+fn update_agent_webhook_v2(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
+    let message = A2AMessage::Version2(
+        A2AMessageV2::UpdateComMethod(UpdateComMethod::build(com_method))
+    );
+    send_message_to_agency(&message, &to_did)?;
     Ok(())
 }
 
