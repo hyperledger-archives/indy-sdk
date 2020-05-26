@@ -308,14 +308,49 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
     error::SUCCESS.code_num
 }
 
+/// Update agency webhook url setting
+///
+/// #Params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// notification_webhook_url: URL to which the notifications should be sent
+///
+/// cb: Callback that provides error code of the result
+///
+/// #Returns
+/// Error code as u32
 #[no_mangle]
-pub extern fn vcx_update_webhook_url(notification_webhook_url: *const c_char) -> u32 {
-    info!("vcx_update_webhook >>>");
+pub extern fn vcx_update_webhook_url(command_handle: CommandHandle,
+                                     notification_webhook_url: *const c_char,
+                                     cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
+    info!("vcx_update_webhook {:?} >>>", notification_webhook_url);
 
-    check_useful_c_str!(notification_webhook_url, VcxErrorKind::InvalidConfiguration);
+    check_useful_c_str!(notification_webhook_url, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
     trace!("vcx_update_webhook(webhook_url: {})", notification_webhook_url);
 
     settings::set_config_value(::settings::CONFIG_WEBHOOK_URL, &notification_webhook_url);
+
+    spawn(move || {
+        match ::messages::agent_utils::update_agent_webhook(&notification_webhook_url[..]) {
+            Ok(()) => {
+                trace!("vcx_update_webhook_url_cb(command_handle: {}, rc: {})",
+                        command_handle, error::SUCCESS.message);
+
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(err) => {
+                warn!("vcx_update_webhook_url_cb(command_handle: {}, rc: {})",
+                        command_handle, err);
+
+                cb(command_handle, err.into());
+            }
+        };
+
+        Ok(())
+    });
 
     error::SUCCESS.code_num
 }
@@ -850,7 +885,10 @@ mod tests {
         let webhook_url = "http://www.evernym.com";
         assert_ne!(webhook_url, &settings::get_config_value(::settings::CONFIG_WEBHOOK_URL).unwrap());
 
-        assert_eq!(error::SUCCESS.code_num, vcx_update_webhook_url(CString::new(webhook_url.to_string()).unwrap().into_raw()));
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(error::SUCCESS.code_num, vcx_update_webhook_url(cb.command_handle,
+                                                                   CString::new(webhook_url.to_string()).unwrap().into_raw(),
+                                                                   Some(cb.get_callback())));
 
         assert_eq!(webhook_url, &settings::get_config_value(::settings::CONFIG_WEBHOOK_URL).unwrap());
     }
