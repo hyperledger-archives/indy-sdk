@@ -201,12 +201,14 @@ impl HolderSM {
     }
 
     pub fn delete_credential(&self) -> VcxResult<()> {
+        trace!("Holder::delete_credential");
+        
         match self.state {
             HolderState::Finished(ref state) => {
-                let cred_id = state.cred_id.clone().ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get credential: Credential Id not found"))?;
+                let cred_id = state.cred_id.clone().ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get credential: credential id not found"))?;
                 _delete_credential(&cred_id)
             }
-            _ => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot delete credential: Credential Issuance is not finished yet"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot delete credential: credential issuance is not finished yet"))
         }
     }
 }
@@ -255,7 +257,7 @@ fn _store_credential(credential: &Credential,
 }
 
 fn _delete_credential(cred_id: &str) -> VcxResult<()> {
-    trace!("Holder::_delete_credential >>>");
+    trace!("Holder::_delete_credential >>> cred_id: {}", cred_id);
 
     libindy_prover_delete_credential(cred_id)
 }
