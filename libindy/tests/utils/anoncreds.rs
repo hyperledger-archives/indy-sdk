@@ -366,7 +366,7 @@ pub fn gvt_credential_values_json() -> String {
 
 pub fn gvt_credential_values_2() -> HashMap<String, AttributeValues> {
     map! {
-            "sex".to_string() => AttributeValues {raw: "male".to_string(), encoded: "5944657099558967239210949258394887428692050081607692519917050011144233115103".to_string()},
+            "sex".to_string() => AttributeValues {raw: "female".to_string(), encoded: "5944657099558967239210949258394887428692050081607692519917050011144233115103".to_string()},
             "name".to_string() => AttributeValues {raw: "Alec".to_string(), encoded: "1139481716457488690172217916278103335".to_string()},
             "height".to_string() => AttributeValues {raw: "175".to_string(), encoded: "175".to_string()},
             "age".to_string() => AttributeValues {raw: "35".to_string(), encoded: "28".to_string()}
