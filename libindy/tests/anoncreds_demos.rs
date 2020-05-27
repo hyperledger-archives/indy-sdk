@@ -496,6 +496,7 @@ mod demos {
 
     #[test]
     fn anoncreds_works_for_single_issuer_multiple_credentials_single_prover_complex_restriction_1() {
+        println!("Setting up test ...");
         Setup::empty();
 
         //1. Issuer creates wallet, gets wallet handles
@@ -532,18 +533,15 @@ mod demos {
                                                  &gvt_cred_def_json);
    
         //8. Proof Request
+        // use an attribute group to get attributes from the same credential
         let proof_req_json = json!({
             "nonce":"123432421212",
             "name":"proof_req_1",
             "version":"0.1",
             "requested_attributes": json!({
                 "attr1_referent": json!({
-                    "name":"name",
+                    "names": json!(["name", "sex"]),
                     "restrictions": json!({ "cred_def_id": gvt_cred_def_id, "attr::name::value": "Alex" })
-                }),
-                "attr2_referent": json!({
-                    "name":"sex",
-                    "restrictions": json!({ "cred_def_id": gvt_cred_def_id, "attr::name::value": "Alec" })
                 })
             }),
             "requested_predicates": json!({
@@ -558,15 +556,13 @@ mod demos {
         let credentials_json = anoncreds::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
 
         let credential_for_attr_1 = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
-        let credential_for_attr_2 = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr2_referent");
         let credential_for_predicate_1 = anoncreds::get_credential_for_predicate_referent(&credentials_json, "predicate1_referent");
 
         //10. Prover creates Proof
         let requested_credentials_json = json!({
              "self_attested_attributes": json!({}),
              "requested_attributes": json!({
-                "attr1_referent": json!({ "cred_id": credential_for_attr_1.referent, "revealed":true }),
-                "attr2_referent": json!({ "cred_id": credential_for_attr_2.referent, "revealed":true })
+                "attr1_referent": json!({ "cred_id": credential_for_attr_1.referent, "revealed":true })
              }),
              "requested_predicates": json!({
                 "predicate1_referent": json!({ "cred_id": credential_for_predicate_1.referent })
@@ -592,12 +588,13 @@ mod demos {
         let proof: Proof = serde_json::from_str(&proof_json).unwrap();
 
         //11. Verifier verifies proof
-        assert_eq!("Alex", proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().raw);
-        assert_eq!("female", proof.requested_proof.revealed_attrs.get("attr2_referent").unwrap().raw);
+        assert_eq!("Alex", proof.requested_proof.revealed_attr_groups.get("attr1_referent").unwrap().values.get("name").unwrap().raw);
+        assert_eq!("male", proof.requested_proof.revealed_attr_groups.get("attr1_referent").unwrap().values.get("sex").unwrap().raw);
 
         let rev_reg_defs_json = json!({}).to_string();
         let rev_regs_json = json!({}).to_string();
 
+        println!("Verify ...");
         let valid = anoncreds::verifier_verify_proof(&proof_req_json,
                                                      &proof_json,
                                                      &schemas_json,
@@ -612,6 +609,7 @@ mod demos {
 
     #[test]
     fn anoncreds_works_for_single_issuer_multiple_credentials_single_prover_complex_restriction_2() {
+        println!("Setting up test ...");
         Setup::empty();
 
         //1. Issuer creates wallet, gets wallet handles
@@ -648,18 +646,15 @@ mod demos {
                                                  &gvt_cred_def_json);
    
         //8. Proof Request
+        // use an attribute group to get attributes from the same credential
         let proof_req_json = json!({
             "nonce":"123432421212",
             "name":"proof_req_1",
             "version":"0.1",
             "requested_attributes": json!({
                 "attr1_referent": json!({
-                    "name":"name",
+                    "names": json!(["name", "sex"]),
                     "restrictions": json!({ "cred_def_id": gvt_cred_def_id, "attr::name::value": "Alex" })
-                }),
-                "attr2_referent": json!({
-                    "name":"sex",
-                    "restrictions": json!({ "cred_def_id": gvt_cred_def_id, "attr::name::value": "Alec" })
                 })
             }),
             "requested_predicates": json!({
@@ -674,15 +669,13 @@ mod demos {
         let credentials_json = anoncreds::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
 
         let credential_for_attr_1 = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
-        let credential_for_attr_2 = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr2_referent");
         let credential_for_predicate_1 = anoncreds::get_credential_for_predicate_referent(&credentials_json, "predicate1_referent");
 
         //10. Prover creates Proof
         let requested_credentials_json = json!({
              "self_attested_attributes": json!({}),
              "requested_attributes": json!({
-                "attr1_referent": json!({ "cred_id": credential_for_attr_1.referent, "revealed":true }),
-                "attr2_referent": json!({ "cred_id": credential_for_attr_2.referent, "revealed":true })
+                "attr1_referent": json!({ "cred_id": credential_for_attr_1.referent, "revealed":true })
              }),
              "requested_predicates": json!({
                 "predicate1_referent": json!({ "cred_id": credential_for_predicate_1.referent })
@@ -708,12 +701,13 @@ mod demos {
         let proof: Proof = serde_json::from_str(&proof_json).unwrap();
 
         //11. Verifier verifies proof
-        assert_eq!("Alex", proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().raw);
-        assert_eq!("female", proof.requested_proof.revealed_attrs.get("attr2_referent").unwrap().raw);
+        assert_eq!("Alex", proof.requested_proof.revealed_attr_groups.get("attr1_referent").unwrap().values.get("name").unwrap().raw);
+        assert_eq!("male", proof.requested_proof.revealed_attr_groups.get("attr1_referent").unwrap().values.get("sex").unwrap().raw);
 
         let rev_reg_defs_json = json!({}).to_string();
         let rev_regs_json = json!({}).to_string();
 
+        println!("Verify ...");
         let valid = anoncreds::verifier_verify_proof(&proof_req_json,
                                                      &proof_json,
                                                      &schemas_json,
