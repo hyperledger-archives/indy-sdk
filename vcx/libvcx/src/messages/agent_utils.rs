@@ -443,6 +443,7 @@ pub fn send_message_to_agency(message: &A2AMessage, did: &str) -> VcxResult<Vec<
 
 #[cfg(test)]
 mod tests {
+    use std::env;
     use super::*;
     use utils::devsetup::*;
     use api::vcx::vcx_shutdown;
@@ -453,11 +454,18 @@ mod tests {
         let agency_vk = "BcCSmgdfChLqmtBkkA26YotWVFBNnyY45WCnQziF4cqN";
         let host = "https://eas.pdev.evernym.com";
         let wallet_key = "test_key";
+
+        let path = if cfg!(target_os = "android") {
+            env::var("EXTERNAL_STORAGE").unwrap() + "/tmp/custom1/"
+        } else {
+            "/tmp/custom1/".to_owned()
+        };
+
         let config = json!({
             "wallet_name": "test_wallet",
-            "storage_config": "{
-                \"path\": \"/tmp/custom1\"
-            }",
+            "storage_config": json!({
+                "path": path
+            }).to_string(),
             "agency_url": host.to_string(),
             "agency_did": agency_did.to_string(),
             "agency_verkey": agency_vk.to_string(),
@@ -465,8 +473,8 @@ mod tests {
         });
 
         //Creates wallet at custom location
-       connect_register_provision(&config.to_string()).unwrap();
-        std::path::Path::new("/tmp/custom1/test_wallet").exists();
+        connect_register_provision(&config.to_string()).unwrap();
+        assert!(std::path::Path::new(&(path + "test_wallet")).exists());
         vcx_shutdown(false);
         let my_config: Config = serde_json::from_str(&config.to_string()).unwrap();
 
