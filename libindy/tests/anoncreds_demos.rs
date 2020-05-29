@@ -496,7 +496,6 @@ mod demos {
 
     #[test]
     fn anoncreds_works_for_single_issuer_multiple_credentials_single_prover_complex_restriction_1() {
-        println!("Setting up test ...");
         Setup::empty();
 
         //1. Issuer creates wallet, gets wallet handles
@@ -602,7 +601,6 @@ mod demos {
         let rev_reg_defs_json = json!({}).to_string();
         let rev_regs_json = json!({}).to_string();
 
-        println!("Verify ...");
         let valid = anoncreds::verifier_verify_proof(&proof_req_json,
                                                      &proof_json,
                                                      &schemas_json,
@@ -617,7 +615,6 @@ mod demos {
 
     #[test]
     fn anoncreds_works_for_single_issuer_multiple_credentials_single_prover_complex_restriction_2() {
-        println!("Setting up test ...");
         Setup::empty();
 
         //1. Issuer creates wallet, gets wallet handles
@@ -728,7 +725,6 @@ mod demos {
         let rev_reg_defs_json = json!({}).to_string();
         let rev_regs_json = json!({}).to_string();
 
-        println!("Verify ...");
         let valid = anoncreds::verifier_verify_proof(&proof_req_json,
                                                      &proof_json,
                                                      &schemas_json,
