@@ -542,6 +542,10 @@ mod demos {
                 "attr1_referent": json!({
                     "names": json!(["name", "sex"]),
                     "restrictions": json!({ "cred_def_id": gvt_cred_def_id, "attr::name::value": "Alex" })
+                }),
+                "attr2_referent": json!({
+                    "names": json!(["name", "sex"]),
+                    "restrictions": json!({ "cred_def_id": gvt_cred_def_id, "attr::name::value": "Alec" })
                 })
             }),
             "requested_predicates": json!({
@@ -556,13 +560,15 @@ mod demos {
         let credentials_json = anoncreds::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
 
         let credential_for_attr_1 = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
+        let credential_for_attr_2 = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr2_referent");
         let credential_for_predicate_1 = anoncreds::get_credential_for_predicate_referent(&credentials_json, "predicate1_referent");
 
         //10. Prover creates Proof
         let requested_credentials_json = json!({
              "self_attested_attributes": json!({}),
              "requested_attributes": json!({
-                "attr1_referent": json!({ "cred_id": credential_for_attr_1.referent, "revealed":true })
+                "attr1_referent": json!({ "cred_id": credential_for_attr_1.referent, "revealed":true }),
+                "attr2_referent": json!({ "cred_id": credential_for_attr_2.referent, "revealed":true })
              }),
              "requested_predicates": json!({
                 "predicate1_referent": json!({ "cred_id": credential_for_predicate_1.referent })
@@ -590,6 +596,8 @@ mod demos {
         //11. Verifier verifies proof
         assert_eq!("Alex", proof.requested_proof.revealed_attr_groups.get("attr1_referent").unwrap().values.get("name").unwrap().raw);
         assert_eq!("male", proof.requested_proof.revealed_attr_groups.get("attr1_referent").unwrap().values.get("sex").unwrap().raw);
+        assert_eq!("Alec", proof.requested_proof.revealed_attr_groups.get("attr2_referent").unwrap().values.get("name").unwrap().raw);
+        assert_eq!("female", proof.requested_proof.revealed_attr_groups.get("attr2_referent").unwrap().values.get("sex").unwrap().raw);
 
         let rev_reg_defs_json = json!({}).to_string();
         let rev_regs_json = json!({}).to_string();
@@ -655,12 +663,20 @@ mod demos {
                 "attr1_referent": json!({
                     "names": json!(["name", "sex"]),
                     "restrictions": json!({ "cred_def_id": gvt_cred_def_id, "attr::name::value": "Alex" })
+                }),
+                "attr2_referent": json!({
+                    "name": "name",
+                    "restrictions": json!({ "cred_def_id": gvt_cred_def_id, "attr::name::value": "Alec" })
+                }),
+                "attr3_referent": json!({
+                    "name": "height",
+                    "restrictions": json!({ "cred_def_id": gvt_cred_def_id, "attr::height::value": "175" })
                 })
             }),
             "requested_predicates": json!({
                 "predicate1_referent": json!({
                     "name":"age", "p_type":">=", "p_value":18,
-                    "restrictions": json!({ "cred_def_id": gvt_cred_def_id, "attr::name::value": "Alex" })
+                    "restrictions": json!({ "cred_def_id": gvt_cred_def_id, "attr::name::value": "Alex", "attr::height::value": "175" })
                  }),
             }),
         }).to_string();
@@ -669,13 +685,17 @@ mod demos {
         let credentials_json = anoncreds::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
 
         let credential_for_attr_1 = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
+        let credential_for_attr_2 = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr2_referent");
+        let credential_for_attr_3 = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr3_referent");
         let credential_for_predicate_1 = anoncreds::get_credential_for_predicate_referent(&credentials_json, "predicate1_referent");
 
         //10. Prover creates Proof
         let requested_credentials_json = json!({
              "self_attested_attributes": json!({}),
              "requested_attributes": json!({
-                "attr1_referent": json!({ "cred_id": credential_for_attr_1.referent, "revealed":true })
+                "attr1_referent": json!({ "cred_id": credential_for_attr_1.referent, "revealed":true }),
+                "attr2_referent": json!({ "cred_id": credential_for_attr_2.referent, "revealed":true }),
+                "attr3_referent": json!({ "cred_id": credential_for_attr_3.referent, "revealed":true })
              }),
              "requested_predicates": json!({
                 "predicate1_referent": json!({ "cred_id": credential_for_predicate_1.referent })
@@ -703,6 +723,7 @@ mod demos {
         //11. Verifier verifies proof
         assert_eq!("Alex", proof.requested_proof.revealed_attr_groups.get("attr1_referent").unwrap().values.get("name").unwrap().raw);
         assert_eq!("male", proof.requested_proof.revealed_attr_groups.get("attr1_referent").unwrap().values.get("sex").unwrap().raw);
+        assert_eq!("Alec", proof.requested_proof.revealed_attrs.get("attr2_referent").unwrap().raw);
 
         let rev_reg_defs_json = json!({}).to_string();
         let rev_regs_json = json!({}).to_string();
