@@ -4,7 +4,7 @@ import os
 PKG_VERSION = os.environ.get('PACKAGE_VERSION') or '1.15.0'
 
 TEST_DEPS = [
-    'pytest<3.7', 'pytest-asyncio', 'base58'
+    'pytest<3.7', 'pytest-asyncio==0.10.0', 'base58'
 ]
 
 setup(

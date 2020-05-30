@@ -357,7 +357,7 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
    * await disclosedProof.sendProof(connection)
    * ```
    */
-  public async sendProof (connection? : Connection): Promise<void> {
+  public async sendProof (connection?: Connection): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
           (resolve, reject, cb) => {
