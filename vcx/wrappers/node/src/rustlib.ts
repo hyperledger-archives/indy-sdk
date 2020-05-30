@@ -77,7 +77,7 @@ export interface IFFIEntryPoint {
   vcx_wallet_sign_with_address: (commandID: number, address: string, message: number, messageLen: number, cb: any) =>
     number,
   vcx_wallet_verify_with_address: (commandID: number, address: string, message: number, messageLen: number,
-  								   signature: number, signatureLen: number, cb: any) => number,
+  								                         signature: number, signatureLen: number, cb: any) => number,
   vcx_wallet_send_tokens: (commandId: number, payment: number, tokens: string, recipient: string, cb: any) => number,
   vcx_wallet_add_record: (commandId: number, type: string, id: string, value: string, tags: string, cb: any) => number,
   vcx_wallet_update_record_value: (commandId: number, type: string, id: string, value: string, cb: any) => number,
@@ -100,7 +100,6 @@ export interface IFFIEntryPoint {
   vcx_update_webhook_url: (webhookUrl: string) => number,
   vcx_pool_set_handle: (handle: number) => void,
   vcx_endorse_transaction: (commandId: number, transaction: string, cb: any) => number,
-
 
   // connection
   vcx_connection_delete_connection: (commandId: number, handle: number, cb: any) => number,
@@ -262,7 +261,6 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_STRING_DATA, FFI_STRING_DATA, FFI_UNSIGNED_LONG]],
   vcx_endorse_transaction: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
 
-
   // wallet
   vcx_wallet_get_token_info: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PAYMENT_HANDLE, FFI_CALLBACK_PTR]],
   vcx_wallet_create_payment_address: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING, FFI_CALLBACK_PTR]],
@@ -319,7 +317,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_UNSIGNED_INT, FFI_UNSIGNED_INT_PTR, FFI_UNSIGNED_INT, FFI_CALLBACK_PTR]],
   vcx_connection_send_ping: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_connection_send_discovery_features: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_STRING_DATA,
-                                           FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+    FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_connection_get_pw_did: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   vcx_connection_get_their_pw_did: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   vcx_connection_redirect: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CONNECTION_HANDLE,
@@ -433,14 +431,14 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_schema_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_PAYMENT_HANDLE, FFI_CALLBACK_PTR]],
   vcx_schema_prepare_for_endorser: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA,
-     FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+    FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_schema_get_schema_id: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SCHEMA_HANDLE, FFI_CALLBACK_PTR]],
   vcx_schema_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_schema_release: [FFI_ERROR_CODE, [FFI_SCHEMA_HANDLE]],
   vcx_schema_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SCHEMA_HANDLE, FFI_CALLBACK_PTR]],
   vcx_schema_get_payment_txn: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
   vcx_schema_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
-  vcx_schema_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
+  vcx_schema_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]]
 
 }
 
