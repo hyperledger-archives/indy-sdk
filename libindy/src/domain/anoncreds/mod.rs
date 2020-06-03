@@ -6,6 +6,7 @@ pub mod credential_offer;
 pub mod credential_request;
 pub mod proof;
 pub mod proof_request;
+pub mod proof_serde;
 pub mod requested_credential;
 pub mod revocation_registry_definition;
 pub mod revocation_registry_delta;

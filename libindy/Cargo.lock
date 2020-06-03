@@ -864,6 +864,8 @@ dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "log-derive 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log-panics 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "named_type 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "named_type_derive 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "openssl 0.10.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -989,6 +991,21 @@ dependencies = [
 name = "miracl_amcl"
 version = "3.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "named_type"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "named_type_derive"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.14 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "num"
@@ -2038,6 +2055,8 @@ dependencies = [
 "checksum memoffset 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "75189eb85871ea5c2e2c15abbdd541185f63b408415e5051f5cac122d8c774b9"
 "checksum metadeps 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "73b122901b3a675fac8cecf68dcb2f0d3036193bc861d1ac0e1c337f7d5254c2"
 "checksum miracl_amcl 3.2.5 (registry+https://github.com/rust-lang/crates.io-index)" = "89d10a1ea3ffe41d318ccd9f21a1f2366c8103b95e1deaa9449793f4b10cefe8"
+"checksum named_type 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "15a5dfeba8d99223c168c86dfecb0740a819843df03ae316147224d3fd0396b9"
+"checksum named_type_derive 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6538e20c3892dcb2dad27130a96a77962d53009a4b33b257985a921b910fc0c2"
 "checksum num 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b8536030f9fea7127f841b45bb6243b27255787fb4eb83958aa1ef9d2fdc0c36"
 "checksum num-bigint 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "090c7f9998ee0ff65aa5b723e4009f7b217707f1fb5ea551329cc4d6231fb304"
 "checksum num-complex 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)" = "b6b19411a9719e753aff12e5187b74d60d3dc449ec3f4dc21e3989c3f554bc95"

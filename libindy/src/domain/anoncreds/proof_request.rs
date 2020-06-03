@@ -24,7 +24,9 @@ pub struct ProofRequestPayload {
     pub requested_attributes: HashMap<String, AttributeInfo>,
     #[serde(default)]
     pub requested_predicates: HashMap<String, PredicateInfo>,
-    pub non_revoked: Option<NonRevocedInterval>
+    pub non_revoked: Option<NonRevocedInterval>,
+    #[serde(default)]
+    pub w3c: bool
 }
 
 #[derive(Debug)]
@@ -415,6 +417,7 @@ mod tests {
                 requested_attributes,
                 requested_predicates,
                 non_revoked: None,
+                w3c: false
             });
 
             let mut expected_requested_attributes: HashMap<String, AttributeInfo> = HashMap::new();

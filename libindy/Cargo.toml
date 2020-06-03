@@ -77,6 +77,8 @@ futures = "0.1.28"
 sodiumoxide = {version = "0.0.16"}
 openssl = "0.10"
 dirs = "2.0.2"
+named_type = "0.2.2"
+named_type_derive = "0.2.2"
 
 [[bench]]
 name = "wallet"
