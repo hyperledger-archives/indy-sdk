@@ -386,6 +386,36 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    }
 }
 
+- (void)connectionGetState:(NSInteger)connectionHandle
+                completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_connection_get_state(handle, connectionHandle, VcxWrapperCommonNumberCallback);
+    
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
+}
+
+- (void)connectionUpdateState:(NSInteger) connectionHandle
+                   completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_connection_update_state(handle, connectionHandle, VcxWrapperCommonNumberCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
+}
+
 - (void)connectionSerialize:(NSInteger)connectionHandle
                   completion:(void (^)(NSError *error, NSString *serializedConnection))completion{
     vcx_error_t ret;
@@ -418,6 +448,10 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
            completion([NSError errorFromVcxError: ret],0);
        });
    }
+}
+
+- (int)connectionRelease:(NSInteger) connectionHandle {
+    return vcx_connection_release(connectionHandle);
 }
 
 - (void)deleteConnection:(VcxHandle)connectionHandle
@@ -704,6 +738,10 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     }
 }
 
+- (int)credentialRelease:(NSInteger) credentialHandle {
+    return vcx_credential_release(credentialHandle);
+}
+
 - (void)exportWallet:(NSString *)exportPath
             encryptWith:(NSString *)encryptionKey
            completion:(void (^)(NSError *error, NSInteger exportHandle))completion {
@@ -905,6 +943,36 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     }
 }
 
+- (void)proofGetState:(NSInteger)proofHandle
+                completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_disclosed_proof_get_state(handle, proofHandle, VcxWrapperCommonNumberCallback);
+    
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
+}
+
+- (void)proofUpdateState:(NSInteger) proofHandle
+                   completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_disclosed_proof_update_state(handle, proofHandle, VcxWrapperCommonNumberCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
+}
+
 - (void) proofReject: (vcx_proof_handle_t)proof_handle withConnectionHandle:(vcx_connection_handle_t)connection_handle
       withCompletion: (void (^)(NSError *error))completion {
     vcx_error_t ret;
@@ -1045,6 +1113,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     }
 }
 
+- (int)proofRelease:(NSInteger) proofHandle {
+    return vcx_disclosed_proof_release(proofHandle);
+}
 
 - (void)createPaymentAddress:(NSString *)seed
               withCompletion:(void (^)(NSError *error, NSString *address))completion {
