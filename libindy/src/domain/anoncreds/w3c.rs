@@ -1,12 +1,6 @@
 use indy_api_types::errors::{IndyResult, IndyErrorKind, IndyResultExt};
 use super::proof::Proof;
 
-#[allow(dead_code)]
-pub fn serialize_simple(proof: &Proof) -> IndyResult<String> {
-    serde_json::to_string(&proof)
-        .to_indy(IndyErrorKind::InvalidState, "Cannot serialize FullProof")
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 struct W3cProof {
     #[serde(rename = "type")]
@@ -14,7 +8,7 @@ struct W3cProof {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct W3cCred {
+struct DerivedCredential {
     #[serde(rename = "@context")]
     context: Vec<String>,
     #[serde(rename = "type")]
@@ -22,27 +16,25 @@ struct W3cCred {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct W3cPresentation {
+struct VerifiablePresentation {
     #[serde(rename = "@context")]
     context: Vec<String>,
     #[serde(rename = "type")]
     typ: String,
     #[serde(rename = "verifiableCredential")]
-    creds: Vec<W3cCred>,
+    creds: Vec<DerivedCredential>,
     proof: W3cProof,
 }
 
-
-
 #[allow(dead_code)]
-pub fn serialize_w3c(proof: &Proof) -> IndyResult<String> {
-    let preso = W3cPresentation {
+pub fn to_vp(proof: &Proof) -> IndyResult<String> {
+    let preso = VerifiablePresentation {
         context: vec![
             "https://www.w3.org/2018/credentials/v1".to_string(),
             proof.identifiers[0].cred_def_id.0.to_string()
         ],
         typ: "VerifiablePresentation".to_string(),
-        creds: vec![W3cCred {
+        creds: vec![DerivedCredential {
             context: vec![
                 "https://www.w3.org/2018/credentials/v1".to_string(),
             ],

@@ -14,7 +14,7 @@ use crate::domain::anoncreds::credential_offer::CredentialOffer;
 use crate::domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
 use crate::domain::anoncreds::master_secret::MasterSecret;
 use crate::domain::anoncreds::proof_request::{NonRevocedInterval, PredicateInfo, ProofRequest, ProofRequestExtraQuery};
-use crate::domain::anoncreds::proof_serde;
+use crate::domain::anoncreds::w3c;
 use crate::domain::anoncreds::requested_credential::RequestedCredentials;
 use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
 use crate::domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
@@ -715,8 +715,9 @@ impl ProverCommandExecutor {
 
         let pr_payload = proof_req.value();
         let proof_json = match pr_payload.w3c {
-            false => proof_serde::serialize_simple(&proof),
-            true => proof_serde::serialize_w3c(&proof)
+            false => serde_json::to_string(&proof)
+                .to_indy(IndyErrorKind::InvalidState, "Cannot serialize FullProof"),
+            true => w3c::to_vp(&proof)
         }?;
 
         debug!("create_proof <<< proof_json: {:?}", proof_json);

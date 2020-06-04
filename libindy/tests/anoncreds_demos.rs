@@ -125,6 +125,7 @@ mod demos {
             schemas_json, cred_defs_json, proof_json, proof_req_json) =
                 from_issuance_to_proof(false);
         let proof: Proof = serde_json::from_str(&proof_json).unwrap();
+        println!("proof_json = {}", &proof_json);
 
         //9. Verifier verifies proof
         assert_eq!("Alex", proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().raw);
