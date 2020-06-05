@@ -1,9 +1,9 @@
 # VCX Agency Admin API
-When troubleshooting, it's handy to be able quickly find out more information about the state of agency and the 
+When troubleshooting, it's handy to be able quickly find out more information about the state of agency and the
 entities in it. For that, you enable "Admin API" in agency configuration and query the Agency via HTTP.
 
 ## Enabling Admin API
-Add following section to your agency configuration 
+Add following section to your agency configuration
 ```
 "server_admin": {
     "enabled": true,
@@ -12,24 +12,24 @@ Add following section to your agency configuration
     ]
   }
 ```
-This will expose Admin API on address `127.0.0.1:8090`.  
+This will expose Admin API on address `127.0.0.1:8090`.
 
 ## Endpoints
 
 Following endpoints are implemented:
 
-- `/admin` - returns information about entities in the agency, such as Forward Agent Connections, Agents and 
+- `/admin` - returns information about entities in the agency, such as Forward Agent Connections, Agents and
 Agent Connections.
 - `/admin/forward-agent` - Returns detailed information about Forward Agent
 - `/admin/agent/{agent_did}` - Returns detailed information about particular Agent, identified by its DID.
-- `/admin/agent-connection/{agent_pairwise_did}` - Returns detailed information about particular Agent Connection, 
+- `/admin/agent-connection/{agent_pairwise_did}` - Returns detailed information about particular Agent Connection,
 identified by its DID.
 
 ## Admin API Response examples
 
 ##### Information about entities in agency
 ```shell script
-curl -s localhost:8080/agency/admin | jq
+curl -s localhost:8090/admin | jq
 ```
 ```json
 {
@@ -69,7 +69,7 @@ curl -s localhost:8080/agency/admin | jq
 
 #### Forward agent details
 ```shell script
-curl -s localhost:8080/agency/admin/forward-agent | jq
+curl -s localhost:8090/admin/forward-agent | jq
 ```
 
 ```
@@ -91,7 +91,7 @@ curl -s localhost:8080/agency/admin/forward-agent | jq
 
 ### Agent detail
 ```shell script
-curl -s localhost:8080/agency/admin/agent/HbBRwBuEWajqwsQCCW7FfW | jq
+curl -s localhost:8090/admin/agent/HbBRwBuEWajqwsQCCW7FfW | jq
 ```
 ```json
 {
@@ -112,7 +112,7 @@ curl -s localhost:8080/agency/admin/agent/HbBRwBuEWajqwsQCCW7FfW | jq
 
 ### Agent connection detail
 ```shell script
-curl -s localhost:8080/agency/admin/agent-connection/UZKr3UjDWE2WccJ7EUiDur | jq
+curl -s localhost:8090/admin/agent-connection/UZKr3UjDWE2WccJ7EUiDur | jq
 ```
 ```json
 {
