@@ -11,6 +11,7 @@ import static com.sun.jna.Native.detach;
 public abstract class LibIndy {
 
 	public static final String LIBRARY_NAME = "indy";
+	private static final String LIB_INDY_LOGGER_PREFIX = String.format("%s.native", LibIndy.class.getName());
 	static final DefaultTypeMapper MAPPER = new DefaultTypeMapper();
 
 	/*
@@ -201,6 +202,8 @@ public abstract class LibIndy {
 		int indy_verify_with_address(int command_handle, String address, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
 
 		int indy_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
+		int indy_set_logger_with_max_lvl(Pointer context, Callback enabled, Callback log, Callback flush, int max_lvl);
+		int indy_set_log_max_lvl(int max_lvl);
 
 		int indy_set_runtime_config(String config);
 		int indy_get_current_error(PointerByReference error);
@@ -284,7 +287,7 @@ public abstract class LibIndy {
 			public void callback(Pointer context, int level, String target, String message, String module_path, String file, int line) {
 				detach(false);
 
-				org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(String.format("%s.native.%s", LibIndy.class.getName(), target.replace("::", ".")));
+				org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(LIB_INDY_LOGGER_PREFIX + target.replace("::", "."));
 
 				String logMessage = String.format("%s:%d | %s", file, line, message);
 
@@ -314,7 +317,22 @@ public abstract class LibIndy {
 	}
 
 	private static void initLogger() {
-		api.indy_set_logger(null, Logger.enabled, Logger.log, Logger.flush);
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(LIB_INDY_LOGGER_PREFIX);
+		int logLevel;
+		if (logger.isTraceEnabled()) {
+			logLevel = 5;
+		} else if (logger.isDebugEnabled()) {
+			logLevel = 4;
+		} else if (logger.isInfoEnabled()) {
+			logLevel = 3;
+		} else if (logger.isWarnEnabled()) {
+			logLevel = 2;
+		} else if (logger.isErrorEnabled()) {
+			logLevel = 1;
+		} else { // Off
+			logLevel = 0;
+		}
+		api.indy_set_logger_with_max_lvl(null, Logger.enabled, Logger.log, Logger.flush, logLevel);
 	}
 
 	/**
