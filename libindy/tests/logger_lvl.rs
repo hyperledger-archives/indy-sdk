@@ -39,6 +39,7 @@ impl Log for LogCounter {
 #[test]
 fn indy_set_log_max_lvl_works() {
     indy::logger::set_logger(&LOG_COUNTER).unwrap();
+    unsafe { indy_sys::logger::indy_set_log_max_lvl(LevelFilter::Trace as usize as u32); }
     LOG_IGNORE_IN_STAT.lock().unwrap().push("indy::api::logger");
 
     indy::pool::close_pool_ledger(1 as PoolHandle).wait().unwrap_err();
