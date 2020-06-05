@@ -10,8 +10,8 @@ use super::proof::Proof;
 struct W3cPresentationProof {
     #[serde(rename = "type")]
     typ: String,
-    #[serde(rename = "proofValue")]
-    proof_value: Option<String>,
+    #[serde(rename = "aggregateProof")]
+    aggregate_proof: Option<String>,
 }
 
 impl W3cPresentationProof {
@@ -37,7 +37,7 @@ impl W3cPresentationProof {
         }
         W3cPresentationProof {
             typ: "AnonCredPresentationProofv1".to_string(),
-            proof_value: ag
+            aggregate_proof: ag
         }
     }
 }
@@ -53,6 +53,7 @@ struct DerivedCredential {
     context: Vec<String>,
     #[serde(rename = "type")]
     typ: Vec<String>,
+    issuer: String,
 }
 
 /// Embodies a verifiable presentation containing one or more derived
@@ -84,7 +85,8 @@ pub fn to_vp(proof: &Proof) -> IndyResult<String> {
             context: vec![
                 "https://www.w3.org/2018/credentials/v1".to_string(),
             ],
-            typ: vec!["VerifiableCredential".to_string()]
+            typ: vec!["VerifiableCredential".to_string()],
+            issuer: "insert DID here".to_string(),
         }],
         proof: Some(W3cPresentationProof::from_proof(proof)),
     };
@@ -116,15 +118,14 @@ mod tests {
         }
         if check_structure(&v, "proof", "is object", &mut errors) {
             check_structure(&v["proof"], "proof/type", "LIKE AnonCredPresentationProofv1", &mut errors);
-            check_structure(&v["proof"], "proof/proofValue", "LIKE ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{50,}$", &mut errors);
+            check_structure(&v["proof"], "proof/aggregateProof", "LIKE ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{50,}$", &mut errors);
         }
 
         if !errors.is_empty() {
-            panic!("Presentation structure has errors: {}.\n\nPresentation was: {}",
+            panic!("W3C presentation structure has errors: {}.\n\nPresentation was: {}",
                    &errors.join(". "), &vp);
         }
     }
-
 
     fn array_has_value(candidate: &Value, value: &str) -> bool {
         if candidate.is_array() {
@@ -184,8 +185,18 @@ mod tests {
 
     fn check_vc(vc: &Value, i: usize, errors: &mut Vec<String>) {
         let prefix = format!("verifiableCredential[{}]", i);
-        check_structure(&vc, format!("{}/type", &prefix).as_str(), "HAS VerifiableCredential", errors);
-        check_structure(&vc, format!("{}/@context", &prefix).as_str(), "HAS https://www.w3.org/2018/credentials/v1", errors);
+        // Make this function a bit less verbose/repetitive.
+        macro_rules! check {( $item:expr, $path:expr, $ex:expr ) => {
+            check_structure($item, format!($path, &prefix).as_str(), $ex, errors) }}
+        check!(&vc, "{}/type", "HAS VerifiableCredential");
+        check!(&vc, "{}/@context", "HAS https://www.w3.org/2018/credentials/v1");
+        if check!(&vc, "{}/credentialSchema", "is object") {
+            let sch = &vc["credentialSchema"];
+            check!(&sch, "{}/credentialSchema/id", "LIKE ^did:");
+            check!(&sch, "{}/credentialSchema/type", "LIKE ^did:");
+        }
+        check!(&vc, "{}/issuer", "LIKE ^did:");
+        check!(&vc, "{}/credentialSubject", "is object");
     }
 
     // This JSON exhibits the actual structure of a proof, but numeric values
