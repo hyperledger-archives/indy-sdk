@@ -41,4 +41,3 @@ fn indy_set_default_logger_works() {
     wallet::close_wallet(wallet_handle).unwrap();
     test::cleanup_storage("indy_set_default_logger_works");
 }
-
