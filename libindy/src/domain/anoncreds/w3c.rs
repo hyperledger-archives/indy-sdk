@@ -1,12 +1,52 @@
 use indy_api_types::errors::{IndyResult, IndyErrorKind, IndyResultExt};
+use rust_base58::ToBase58;
 use super::proof::Proof;
 
+/// Embodies the "proof" property at the root of a verifiable presentation.
+/// This comes from the "aggregated_proof" field in the CL-based Ursa
+/// struct. It essentially proves that all the credentials are associated
+/// with the same link secret.
 #[derive(Debug, Serialize, Deserialize)]
-struct W3cProof {
+struct W3cPresentationProof {
     #[serde(rename = "type")]
     typ: String,
+    #[serde(rename = "proofValue")]
+    proof_value: Option<String>,
 }
 
+impl W3cPresentationProof {
+    fn from_proof(proof: &Proof) -> W3cPresentationProof {
+        //let crypto_proof: &CryptoProof = &proof.proof;
+        //let ag_result = serde_json::to_string(&crypto_proof.aggregated_proof);
+        let mut ag: Option<String> = None;
+        // Kludge. We need the JSON text for aggregated_proof. We'd like to just serialize
+        // it here. However, it comes from a data member of our struct that is private. The
+        // correct fix is probably to make that member public, but that requires a change to Ursa.
+        // For now, just serialize the containing data structure, then pick out from it the part
+        // we need. This is highly inefficient at runtime, but it's efficient in terms of
+        // developer effort right now. TODO: go back and fix this tech debt by modifying Ursa.
+        let crypto_proof_json = serde_json::to_string(&proof.proof).unwrap();
+        use serde_json::Value;
+        let v: Value = serde_json::from_str(&crypto_proof_json).unwrap(); // <-- yuck! expensive
+        let ap = &v["aggregated_proof"];
+        if ap.is_object() {
+            ag = serde_json::to_string(ap).ok();
+        }
+        if ag.is_some() {
+            ag = Some(ag.unwrap().as_bytes().to_base58());
+        }
+        W3cPresentationProof {
+            typ: "AnonCredPresentationProofv1".to_string(),
+            proof_value: ag
+        }
+    }
+}
+
+/// Embodies a VC inside a verifiable presentation, as opposed to a VC
+/// as issued. Disclosed fields in the CL proof become fields under
+/// "credentialSubject" in this credential. The "proof" field for each
+/// of these credentials contains a primaryProof as well as a
+/// nonRevocationProof.
 #[derive(Debug, Serialize, Deserialize)]
 struct DerivedCredential {
     #[serde(rename = "@context")]
@@ -15,6 +55,10 @@ struct DerivedCredential {
     typ: Vec<String>,
 }
 
+/// Embodies a verifiable presentation containing one or more derived
+/// credentials, plus an aggregate proof for the presentation as a whole.
+/// This is the data structure that should be sent and received for
+/// standards-based interoperability.
 #[derive(Debug, Serialize, Deserialize)]
 struct VerifiablePresentation {
     #[serde(rename = "@context")]
@@ -23,9 +67,11 @@ struct VerifiablePresentation {
     typ: String,
     #[serde(rename = "verifiableCredential")]
     creds: Vec<DerivedCredential>,
-    proof: W3cProof,
+    proof: Option<W3cPresentationProof>,
 }
 
+/// Convert the JSON for a ZKP into the JSON for a W3C Verifiable
+/// Presentation.
 #[allow(dead_code)]
 pub fn to_vp(proof: &Proof) -> IndyResult<String> {
     let preso = VerifiablePresentation {
@@ -40,7 +86,7 @@ pub fn to_vp(proof: &Proof) -> IndyResult<String> {
             ],
             typ: vec!["VerifiableCredential".to_string()]
         }],
-        proof: W3cProof { typ: "AnonCredPresentationProofv1".to_string() },
+        proof: Some(W3cPresentationProof::from_proof(proof)),
     };
     serde_json::to_string(&preso)
         .to_indy(IndyErrorKind::InvalidState, "Cannot serialize FullProof")
@@ -52,7 +98,7 @@ mod tests {
     use serde_json::Value;
 
     #[test]
-    fn mapping_works() {
+    fn to_vp_works() {
         let proof: Proof = serde_json::from_str(FAKE_PROOF_JSON).unwrap();
         let vp = to_vp(&proof).unwrap();
         let mut errors: Vec<String> = Vec::new();
@@ -69,7 +115,8 @@ mod tests {
             }
         }
         if check_structure(&v, "proof", "is object", &mut errors) {
-
+            check_structure(&v["proof"], "proof/type", "LIKE AnonCredPresentationProofv1", &mut errors);
+            check_structure(&v["proof"], "proof/proofValue", "LIKE ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{50,}$", &mut errors);
         }
 
         if !errors.is_empty() {
