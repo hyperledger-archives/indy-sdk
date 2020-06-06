@@ -210,9 +210,9 @@ def vcx_set_active_txn_author_agreement_meta(text: Optional[str],
 
     name = 'vcx_set_active_txn_author_agreement_meta'
 
-    c_text = c_char_p(json.dumps(text).encode('utf-8')) if text else None
-    c_version = c_char_p(json.dumps(version).encode('utf-8')) if version else None
-    c_hash = c_char_p(json.dumps(hash).encode('utf-8')) if hash else None
+    c_text = c_char_p(text.encode('utf-8')) if text else None
+    c_version = c_char_p(version.encode('utf-8')) if version else None
+    c_hash = c_char_p(hash.encode('utf-8')) if hash else None
     c_acc_mech_type = c_char_p(acc_mech_type.encode('utf-8'))
     c_time_of_acceptance = c_uint64(time_of_acceptance)
 
