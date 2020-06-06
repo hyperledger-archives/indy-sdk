@@ -9,6 +9,16 @@ extern {
                            flush: Option<FlushCB>) -> Error;
 
     #[no_mangle]
+    pub fn indy_set_logger_with_max_lvl(context: *const CVoid,
+                                        enabled: Option<EnabledCB>,
+                                        log: Option<LogCB>,
+                                        flush: Option<FlushCB>,
+                                        max_lvl: u32)-> Error;
+
+    #[no_mangle]
+    pub fn indy_set_log_max_lvl(max_lvl: u32) -> Error;
+
+    #[no_mangle]
     pub fn indy_set_default_logger(pattern: CString) -> Error;
 
     #[no_mangle]
