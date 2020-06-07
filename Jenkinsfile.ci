@@ -716,7 +716,7 @@ def linuxVcxPythonTesting(env_name, network_name, testEnv) {
             echo "${env_name} Vcx Test: Test python wrapper"
 
             sh '''
-                    python3 -m pip install --user pytest==3.6.4 pytest-asyncio
+                    python3 -m pip install --user pytest==3.6.4 pytest-asyncio==0.10.0
                     LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3 -m pytest -s
             '''
         }
