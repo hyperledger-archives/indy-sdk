@@ -4,6 +4,7 @@ const { Proof } = require('../dist/src/api/proof')
 const { Connection } = require('../dist/src/api/connection')
 const { Schema } = require('./../dist/src/api/schema')
 const { StateType, ProofState } = require('../dist/src')
+const { setActiveTxnAuthorAgreementMeta, getLedgerAuthorAgreement } = require('./../dist/src/api/utils')
 const sleepPromise = require('sleep-promise')
 const demoCommon = require('./common')
 const { getRandomInt } = require('./common')
@@ -14,6 +15,8 @@ const { runScript } = require('./script-comon')
 
 const utime = Math.floor(new Date() / 1000)
 const optionalWebhook = 'http://localhost:7209/notifications/faber'
+
+const TAA_ACCEPT = process.env.TAA_ACCEPT === 'true' || false
 
 const provisionConfig = {
   agency_url: 'http://localhost:8080',
@@ -61,6 +64,13 @@ async function runFaber (options) {
 
   logger.info(`#2 Using following agent provision to initialize VCX ${JSON.stringify(agentProvision, null, 2)}`)
   await demoCommon.initVcxWithProvisionedAgentConfig(agentProvision)
+
+  if (TAA_ACCEPT) {
+    logger.info('#2.1 Accept transaction author agreement')
+    const taa = await getLedgerAuthorAgreement()
+    const taa_json = JSON.parse(taa)
+    await setActiveTxnAuthorAgreementMeta(taa_json.text, taa_json.version, null, Object.keys(taa_json.aml)[0], utime)
+  }
 
   const version = `${getRandomInt(1, 101)}.${getRandomInt(1, 101)}.${getRandomInt(1, 101)}`
   const schemaData = {
