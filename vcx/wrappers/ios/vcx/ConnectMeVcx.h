@@ -182,6 +182,9 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
             recordId:(NSString *)recordId
            completion:(void (^)(NSError *error))completion;
 
+- (void) proofGetRequests:(NSInteger)connectionHandle
+              completion:(void (^)(NSError *error, NSString *requests))completion;
+
 - (void) proofRetrieveCredentials:(vcx_proof_handle_t)proofHandle
                    withCompletion:(void (^)(NSError *error, NSString *matchingCredentials))completion;
 

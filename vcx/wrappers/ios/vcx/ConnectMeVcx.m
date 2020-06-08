@@ -866,6 +866,23 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     }
 }
 
+- (void)proofGetRequests:(NSInteger)connectionHandle
+                   completion:(void (^)(NSError *error, NSString *requests))completion{
+   vcx_error_t ret;
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_disclosed_proof_get_requests(handle,connectionHandle, VcxWrapperCommonStringCallback);
+
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret],nil);
+       });
+   }
+}
+
 - (void) proofCreateWithMsgId:(NSString *)sourceId
          withConnectionHandle:(vcx_connection_handle_t)connectionHandle
                     withMsgId:(NSString *)msgId
