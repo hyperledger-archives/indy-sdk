@@ -189,7 +189,7 @@ that may be need for your applications.
 
 {library} must be replaced with libindy, libnullpay or libvcx.
 
- [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/docs/android-build.md#usage)  
+ [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/docs/build-guides/android-build.md#usage)  
 
 {release channel} must be replaced with rc or stable to define corresponded release channel.
 See section "Release channels" for more details.
@@ -224,6 +224,8 @@ See section "Release channels" for more details.
         * `library.a`
         * `library.dylib`
     
+5. Install dependent libraries: libsodium, zeromq, openssl. The dependent libraries should match the version with what you can find from ``otool -L libindy.dylib``.
+
 You need add the path to lib folder to LIBRARY_PATH environment variable. 
     
 {library} must be replaced with libindy, libnullpay, libvcx or indy-cli to define corresponded library.
