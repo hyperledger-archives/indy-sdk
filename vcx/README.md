@@ -157,19 +157,25 @@ To build libvcx on your own you can follow these steps --
        If this seems too messy to you, it is recommended that ${HOME}/.cargo be removed entirely (as if you never followed install instructions found at https://www.rust-lang.org/install.html) and build/install rust and cargo from source. To build and install cargo from source, follow instructions found at: https://github.com/rust-lang/cargo
 
 ### Android
-1) Install rust and rustup (https://www.rust-lang.org/install.html).
-2) Clone this repo to your local machine.
-3) Install libindy (https://repo.evernym.com/libindy/).
-    - As of now there is no distribution channel for Android for LibIndy. You have to build it manually.
-    - Copy generated `libindy.a` file to whatever location you want
-    - Set env variable `LIBINDY_DIR=<Directory_containing_libindy.a>`. e.g `export LIBINDY_DIR=/usr/local/aarch64-linux-android/libindy` libindy directory holds libindy.a
-4) Run `install_toolchains.sh`. You need to run this once to setup toolchains for android
-5) Run `android.build.sh aarm64` to build libvcx for aarm64 architecture.(Other architerctures will follow soon)
-6) Tests are not working on Android as of now.
+1. Go to `https://repo.sovrin.org/android/libvcx/{release-channel}`.
+2. Download the latest version of libvcx.
+3. Unzip archives to the directory where you want to save working library.
+4. After unzip you will get next structure of files:
+
+* `Your working directory`
+    * `include` - contains c-header files which contains all necessary declarations that may be need for your applications.
+        * `...`
+    * `lib` - contains library binaries (static and dynamic).
+        * `libvcx.a`
+        * `libvcx.so`
+    
+Copy `libvcx.so` file to the jniLibs/{abi} folder of your android project
+    
+{release channel} must be replaced with master, rc or stable to define corresponded release channel.
 
 ## How to build VCX from source
 
-## Linux 
+### Linux 
 1) Install rust and rustup (https://www.rust-lang.org/install.html). 
 2) [Install Libindy](../README.md#installing-the-sdk) 
 3) Optionally [install Libnullpay](../libnullpay/README.md) to include payment functionality.
@@ -180,6 +186,14 @@ To build libvcx on your own you can follow these steps --
     $ cargo test 
     ``` 
 5) Currently developers are using intellij for IDE development (https://www.jetbrains.com/idea/download/) with the rust plugin (https://plugins.jetbrains.com/plugin/8182-rust). 
+
+### Android
+1) Install rust and rustup (https://www.rust-lang.org/install.html).
+2) Clone this repo to your local machine.
+3) [Install Libindy](../README.md#installing-the-sdk) 
+4) Run `install_toolchains.sh`. You need to run this once to setup toolchains for android
+5) Run `android.build.sh aarm64` to build libvcx for aarm64 architecture.(Other architerctures will follow soon)
+6) Tests are not working on Android as of now.
  
 ## Wrappers documentation
 
