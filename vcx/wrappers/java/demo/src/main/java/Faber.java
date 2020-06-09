@@ -181,10 +181,19 @@ public class Faber {
                 "  }" +
                 "]").jsonString();
 
+        String proofPredicates = JsonPath.parse("[" +
+                "  {" +
+                "    name: 'age'," +
+                "    p_type: '>='," +
+                "    p_value: 20," +
+                "    restrictions: [{ issuer_did: " + JsonPath.read(vcxConfig, "$.institution_did") + " }]" +
+                "  }" +
+                "]").jsonString();
+
         logger.info("#19 Create a Proof object\n" + prettyJson(proofAttributes));
         int proofHandle = ProofApi.proofCreate("proof_uuid",
                 proofAttributes,
-                "",
+                proofPredicates,
                 "{}",
                 "proof_from_alice").get();
 
