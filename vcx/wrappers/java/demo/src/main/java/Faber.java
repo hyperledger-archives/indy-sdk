@@ -7,7 +7,6 @@ import com.evernym.sdk.vcx.schema.SchemaApi;
 import com.evernym.sdk.vcx.utils.UtilsApi;
 import com.evernym.sdk.vcx.vcx.VcxApi;
 
-import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 
 import org.apache.commons.cli.CommandLine;
@@ -37,7 +36,7 @@ public class Faber {
         Common.loadNullPayPlugin();
 
         long utime = System.currentTimeMillis() / 1000;
-        DocumentContext provisionConfig  = JsonPath.parse("{" +
+        String provisionConfig  = JsonPath.parse("{" +
                 "  agency_url: 'http://localhost:8080'," +
                 "  agency_did: 'VsKV7grR1BUE29mG2Fm2kX'," +
                 "  agency_verkey: 'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR'," +
@@ -45,51 +44,51 @@ public class Faber {
                 "  wallet_key: '123'," +
                 "  payment_method: 'null'," +
                 "  enterprise_seed: '000000000000000000000000Trustee1'" +
-                "}");
+                "}").jsonString();
 
         // Communication method. aries.
-        provisionConfig.put("$", "protocol_type", "3.0");
+        provisionConfig = JsonPath.parse(provisionConfig).put("$", "protocol_type", "3.0").jsonString();
         logger.info("Running with Aries VCX Enabled! Make sure VCX agency is configured to use protocol_type 3.0");
 
         if (options.hasOption("postgres")) {
             Common.loadPostgresPlugin();
-            provisionConfig.put("$", "wallet_type", "postgres_storage")
+            provisionConfig = JsonPath.parse(provisionConfig).put("$", "wallet_type", "postgres_storage")
                     .put("$", "storage_config", "{\"url\":\"localhost:5432\"}")
                     .put("$", "storage_credentials", "{\"account\":\"postgres\",\"password\":\"mysecretpassword\"," +
-                            "\"admin_account\":\"postgres\",\"admin_password\":\"mysecretpassword\"}");
-            logger.info("Running with PostreSQL wallet enabled! Config = " + provisionConfig.read("$.storage_config"));
+                            "\"admin_account\":\"postgres\",\"admin_password\":\"mysecretpassword\"}").jsonString();
+            logger.info("Running with PostreSQL wallet enabled! Config = " + JsonPath.read(provisionConfig, "$.storage_config"));
         } else {
             logger.info("Running with builtin wallet.");
         }
 
-        logger.info("#1 Config used to provision agent in agency: \n" + prettyJson(provisionConfig.jsonString()));
-        DocumentContext vcxConfig = JsonPath.parse(UtilsApi.vcxProvisionAgent(provisionConfig.jsonString()));
+        logger.info("#1 Config used to provision agent in agency: \n" + prettyJson(provisionConfig));
+        String vcxConfig = UtilsApi.vcxProvisionAgent(provisionConfig);
 
-        vcxConfig.put("$", "institution_name", "faber")
+        vcxConfig = JsonPath.parse(vcxConfig).put("$", "institution_name", "faber")
                 .put("$", "institution_logo_url", "http://robohash.org/234")
                 .put("$", "protocol_version", "2")
-                .put("$", "genesis_path", System.getProperty("user.dir") + "/genesis.txn");
-        logger.info("#2 Using following agent provision to initialize VCX\n" + prettyJson(vcxConfig.jsonString()));
-        VcxApi.vcxInitWithConfig(vcxConfig.jsonString()).get();
+                .put("$", "genesis_path", System.getProperty("user.dir") + "/genesis.txn").jsonString();
+        logger.info("#2 Using following agent provision to initialize VCX\n" + prettyJson(vcxConfig));
+        VcxApi.vcxInitWithConfig(vcxConfig).get();
 
         // define schema with actually needed
         String version = getRandomInt(1, 99) + "." + getRandomInt(1, 99) + "." + getRandomInt(1, 99);
-        DocumentContext schemaData = JsonPath.parse("{" +
+        String schemaData = JsonPath.parse("{" +
                 "  schema_name: 'degree_schema'," +
                 "  schema_version: '" + version + "'," +
                 "  attributes: ['name', 'last_name', 'date', 'degree', 'age']" +
-                "}");
-        logger.info("#3 Create a new schema on the ledger: \n" + prettyJson(schemaData.jsonString()));
+                "}").jsonString();
+        logger.info("#3 Create a new schema on the ledger: \n" + prettyJson(schemaData));
         int schemaHandle = SchemaApi.schemaCreate("schema_uuid",
-                schemaData.read("$.schema_name"),
-                schemaData.read("$.schema_version"),
-                JsonPath.parse((List)schemaData.read("$.attributes")).jsonString(),
+                JsonPath.read(schemaData, "$.schema_name"),
+                JsonPath.read(schemaData, "$.schema_version"),
+                JsonPath.parse((List)JsonPath.read(schemaData, "$.attributes")).jsonString(),
                 0).get();
         String schemaId = SchemaApi.schemaGetSchemaId(schemaHandle).get();
         logger.info("Created schema with id " + schemaId + " and handle " + schemaHandle);
 
         // define credential definition with actually needed
-        DocumentContext credDefData = JsonPath.parse("{" +
+        String credDefData = JsonPath.parse("{" +
                 "  schemaId: '" + schemaId + "'," +
                 "  tag: 'tag1'," +
                 "  config: {" +
@@ -97,14 +96,14 @@ public class Faber {
                 "    tails_file: '/tmp/tails'," +
                 "    max_creds: 5" +
                 "  }" +
-                "}");
-        logger.info("#4 Create a new credential definition on the ledger: \n" + prettyJson(credDefData.jsonString()));
+                "}").jsonString();
+        logger.info("#4 Create a new credential definition on the ledger: \n" + prettyJson(credDefData));
         int credDefHandle = CredentialDefApi.credentialDefCreate("'cred_def_uuid'",
                 "cred_def_name",
-                credDefData.read("$.schemaId"),
+                JsonPath.read(credDefData, "$.schemaId"),
                 null,
-                credDefData.read("$.tag"),
-                JsonPath.parse((LinkedHashMap)credDefData.read("$.config")).jsonString(),
+                JsonPath.read(credDefData, "$.tag"),
+                JsonPath.parse((LinkedHashMap)JsonPath.read(credDefData,"$.config")).jsonString(),
                 0).get();
         String credDefId = CredentialDefApi.credentialDefGetCredentialDefId(credDefHandle).get();
         logger.info("Created credential with id " + credDefId + " and handle " + credDefHandle);
@@ -113,13 +112,13 @@ public class Faber {
         int connectionHandle = ConnectionApi.vcxConnectionCreate("alice").get();
         ConnectionApi.vcxConnectionConnect(connectionHandle, "{}").get();
         ConnectionApi.vcxConnectionUpdateState(connectionHandle).get();
-        DocumentContext details = JsonPath.parse(ConnectionApi.connectionInviteDetails(connectionHandle, 0).get());
+        String details = ConnectionApi.connectionInviteDetails(connectionHandle, 0).get();
         logger.info("\n**invite details**");
         logger.info("**You'll be queried to paste this data to alice side of the demo. This is invitation to connect.**");
         logger.info("**It's assumed this is obtained by Alice from Faber by some existing secure channel.**");
         logger.info("**Could be on website via HTTPS, QR code scanned at Faber institution, ...**");
         logger.info("\n******************\n");
-        logger.info(details.jsonString());
+        logger.info(details);
         logger.info("\n******************\n");
 
         logger.info("#6 Polling agency and waiting for alice to accept the invitation. (start alice now)");
@@ -132,20 +131,20 @@ public class Faber {
         }
         logger.info("Connection to alice was Accepted!");
 
-        DocumentContext schemaAttrs = JsonPath.parse("{" +
+        String schemaAttrs = JsonPath.parse("{" +
                 "  name: 'alice'," +
                 "  last_name: 'clark'," +
                 "  date: '05-2018'," +
                 "  degree: 'maths'," +
                 "  age: '25'" +
-                "}");
+                "}").jsonString();
 
         logger.info("#12 Create an IssuerCredential object using the schema and credential definition\n"
-                + prettyJson(schemaAttrs.jsonString()));
+                + prettyJson(schemaAttrs));
         int credentialHandle = IssuerApi.issuerCreateCredential("alice_degree",
                 credDefHandle,
                 null,
-                schemaAttrs.jsonString(),
+                schemaAttrs,
                 "cred",
                 0).get();
 
@@ -173,24 +172,24 @@ public class Faber {
             credentialState = IssuerApi.issuerCredentialGetState(credentialHandle).get();
         }
 
-        DocumentContext proofAttributes = JsonPath.parse("[" +
+        String proofAttributes = JsonPath.parse("[" +
                 "  {" +
                 "    names: ['name', 'last_name']," +
-                "    restrictions: [{ issuer_did: " + vcxConfig.read("$.institution_did") + " }]" +
+                "    restrictions: [{ issuer_did: " + JsonPath.read(vcxConfig, "$.institution_did") + " }]" +
                 "  }," +
                 "  {" +
                 "    name: 'date'," +
-                "    restrictions: { issuer_did: " + vcxConfig.read("$.institution_did") + " }" +
+                "    restrictions: { issuer_did: " + JsonPath.read(vcxConfig, "$.institution_did") + " }" +
                 "  }," +
                 "  {" +
                 "    name: 'degree'," +
                 "    restrictions: { 'attr::degree::value': 'maths' }" +
                 "  }" +
-                "]");
+                "]").jsonString();
 
-        logger.info("#19 Create a Proof object\n" + prettyJson(proofAttributes.jsonString()));
+        logger.info("#19 Create a Proof object\n" + prettyJson(proofAttributes));
         int proofHandle = ProofApi.proofCreate("proof_uuid",
-                proofAttributes.jsonString(),
+                proofAttributes,
                 "",
                 "{}",
                 "proof_from_alice").get();
