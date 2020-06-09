@@ -122,12 +122,10 @@ public class Faber {
         logger.info("\n******************\n");
 
         logger.info("#6 Polling agency and waiting for alice to accept the invitation. (start alice now)");
-        ConnectionApi.vcxConnectionUpdateState(connectionHandle).get();
-        int connectionState = ConnectionApi.connectionGetState(connectionHandle).get();
+        int connectionState = ConnectionApi.vcxConnectionUpdateState(connectionHandle).get();
         while (connectionState != StateType.Accepted) {
             Thread.sleep(2000);
-            ConnectionApi.vcxConnectionUpdateState(connectionHandle).get();
-            connectionState = ConnectionApi.connectionGetState(connectionHandle).get();
+            connectionState = ConnectionApi.vcxConnectionUpdateState(connectionHandle).get();
         }
         logger.info("Connection to alice was Accepted!");
 
@@ -152,24 +150,20 @@ public class Faber {
         IssuerApi.issuerSendCredentialOffer(credentialHandle, connectionHandle).get();
 
         logger.info("#14 Poll agency and wait for alice to send a credential request");
-        IssuerApi.issuerCredentialUpdateState(credentialHandle).get();
-        int credentialState = IssuerApi.issuerCredentialGetState(credentialHandle).get();
+        int credentialState = IssuerApi.issuerCredentialUpdateState(credentialHandle).get();
         while (credentialState != StateType.RequestReceived) {
             Thread.sleep(2000);
-            IssuerApi.issuerCredentialUpdateState(credentialHandle).get();
-            credentialState = IssuerApi.issuerCredentialGetState(credentialHandle).get();
+            credentialState = IssuerApi.issuerCredentialUpdateState(credentialHandle).get();
         }
 
         logger.info("#17 Issue credential to alice");
         IssuerApi.issuerSendCredential(credentialHandle, connectionHandle).get();
 
         logger.info("#18 Wait for alice to accept credential");
-        IssuerApi.issuerCredentialUpdateState(credentialHandle).get();
-        credentialState = IssuerApi.issuerCredentialGetState(credentialHandle).get();
+        credentialState = IssuerApi.issuerCredentialUpdateState(credentialHandle).get();
         while (credentialState != StateType.Accepted) {
             Thread.sleep(2000);
-            IssuerApi.issuerCredentialUpdateState(credentialHandle).get();
-            credentialState = IssuerApi.issuerCredentialGetState(credentialHandle).get();
+            credentialState = IssuerApi.issuerCredentialUpdateState(credentialHandle).get();
         }
 
         String proofAttributes = JsonPath.parse("[" +
@@ -198,12 +192,10 @@ public class Faber {
         ProofApi.proofSendRequest(proofHandle, connectionHandle).get();
 
         logger.info("#21 Poll agency and wait for alice to provide proof");
-        ProofApi.proofUpdateState(proofHandle).get();
-        int proofState = ProofApi.proofGetState(proofHandle).get();
+        int proofState = ProofApi.proofUpdateState(proofHandle).get();
         while (proofState != StateType.Accepted) {
             Thread.sleep(2000);
-            ProofApi.proofUpdateState(proofHandle).get();
-            proofState = ProofApi.proofGetState(proofHandle).get();
+            proofState = ProofApi.proofUpdateState(proofHandle).get();
         }
 
         logger.info("#27 Process the proof provided by alice");

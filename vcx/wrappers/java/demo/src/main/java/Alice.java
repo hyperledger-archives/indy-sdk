@@ -75,12 +75,10 @@ public class Alice {
         logger.info("#10 Convert to valid json and string and create a connection to faber");
         int connectionHandle = ConnectionApi.vcxCreateConnectionWithInvite("faber", details).get();
         ConnectionApi.vcxConnectionConnect(connectionHandle, "{\"use_public_did\": true}").get();
-        ConnectionApi.vcxConnectionUpdateState(connectionHandle).get();
-        int connectionState = ConnectionApi.connectionGetState(connectionHandle).get();
+        int connectionState = ConnectionApi.vcxConnectionUpdateState(connectionHandle).get();
         while (connectionState != StateType.Accepted) {
             Thread.sleep(2000);
-            ConnectionApi.vcxConnectionUpdateState(connectionHandle).get();
-            connectionState = ConnectionApi.connectionGetState(connectionHandle).get();
+            connectionState = ConnectionApi.vcxConnectionUpdateState(connectionHandle).get();
         }
 
         logger.info("#11 Wait for faber to issue a credential offer");
@@ -97,12 +95,10 @@ public class Alice {
         CredentialApi.credentialSendRequest(credentialHandle, connectionHandle, 0).get();
 
         logger.info("#16 Poll agency and accept credential from faber");
-        CredentialApi.credentialUpdateState(credentialHandle).get();
-        int credentialState = CredentialApi.credentialGetState(credentialHandle).get();
+        int credentialState = CredentialApi.credentialUpdateState(credentialHandle).get();
         while (credentialState != StateType.Accepted) {
             Thread.sleep(2000);
-            CredentialApi.credentialUpdateState(credentialHandle).get();
-            credentialState = CredentialApi.credentialGetState(credentialHandle).get();
+            credentialState = CredentialApi.credentialUpdateState(credentialHandle).get();
         }
 
         logger.info("#22 Poll agency for a proof request");
@@ -134,12 +130,10 @@ public class Alice {
         DisclosedProofApi.proofSend(proofHandle, connectionHandle).get();
 
         logger.info("#27 Wait for Faber to receive the proof");
-        DisclosedProofApi.proofUpdateState(proofHandle).get();
-        int proofState = DisclosedProofApi.proofGetState(proofHandle).get();
+        int proofState = DisclosedProofApi.proofUpdateState(proofHandle).get();
         while (proofState != StateType.Accepted) {
             Thread.sleep(2000);
-            DisclosedProofApi.proofUpdateState(proofHandle).get();
-            proofState = DisclosedProofApi.proofGetState(proofHandle).get();
+            proofState = DisclosedProofApi.proofUpdateState(proofHandle).get();
         }
         logger.info("Faber received the proof");
 
