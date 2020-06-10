@@ -9,7 +9,7 @@ use utils::threadpool::spawn;
 use error::prelude::*;
 use indy_sys::CommandHandle;
 
-/// Create a new Schema object and publish correspondent record on the ledger
+/// Create a new Schema object and publish corresponding record on the ledger
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -18,13 +18,16 @@ use indy_sys::CommandHandle;
 ///
 /// schema_name: Name of schema
 ///
-/// version: version of schema
+/// version: Version of schema. A semver-compatible value like "1.0" is encouraged.
 ///
-/// schema_data: list of attributes that will make up the schema (the number of attributes should be less or equal than 125)
+/// schema_data: A list of attributes that will make up the schema, represented
+///    as a string containing a JSON array. The number of attributes should be
+///    less or equal to 125, because larger arrays cause various downstream problems.
+///    This limitation is an annoyance that we'd like to remove.
 ///
 /// # Example schema_data -> "["attr1", "attr2", "attr3"]"
 ///
-/// payment_handle: future use (currently uses any address in the wallet)
+/// payment_handle: Reserved for future use (currently uses any address in the wallet)
 ///
 /// cb: Callback that provides Schema handle and error status of request.
 ///
