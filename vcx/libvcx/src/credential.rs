@@ -676,12 +676,9 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
 
     if connection::is_v3_connection(connection_handle)? {
         let credential_offers = Holder::get_credential_offer_messages(connection_handle)?;
-        let msgs: Vec<Vec<::serde_json::Value>> = credential_offers
+        let msgs: Vec<::serde_json::Value> = credential_offers
             .into_iter()
-            .map(|credential_offer| credential_offer.try_into())
-            .collect::<VcxResult<Vec<CredentialOffer>>>()?
-            .into_iter()
-            .map(|msg| vec![json!(msg)])
+            .map(|msg| json!(msg))
             .collect();
 
         return serde_json::to_string(&msgs).
