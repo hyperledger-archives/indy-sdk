@@ -18,6 +18,7 @@ use std::ptr;
 
 use indy_api_types::errors::prelude::*;
 use indy_utils::ctypes;
+use indy_api_types::errors::IndyErrorKind::InvalidStructure;
 
 pub static mut LOGGER_STATE: LoggerState = LoggerState::Default;
 
@@ -54,6 +55,11 @@ static mut CONTEXT: *const c_void = ptr::null();
 static mut ENABLED_CB: Option<EnabledCB> = None;
 static mut LOG_CB: Option<LogCB> = None;
 static mut FLUSH_CB: Option<FlushCB> = None;
+
+#[cfg(debug_assertions)]
+const DEFAULT_MAX_LEVEL: LevelFilter = LevelFilter::Trace;
+#[cfg(not(debug_assertions))]
+const DEFAULT_MAX_LEVEL: LevelFilter = LevelFilter::Info;
 
 pub struct LibindyLogger {
     context: *const c_void,
@@ -114,11 +120,15 @@ unsafe impl Sync for LibindyLogger {}
 unsafe impl Send for LibindyLogger {}
 
 impl LibindyLogger {
-    pub fn init(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Result<(), IndyError> {
+    pub fn init(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>, max_lvl: Option<u32>) -> Result<(), IndyError> {
         let logger = LibindyLogger::new(context, enabled, log, flush);
 
         log::set_boxed_logger(Box::new(logger))?;
-        log::set_max_level(LevelFilter::Trace);
+        let max_lvl = match max_lvl {
+            Some(max_lvl) => LibindyLogger::map_u32_lvl_to_filter(max_lvl)?,
+            None => DEFAULT_MAX_LEVEL,
+        };
+        log::set_max_level(max_lvl);
 
         unsafe {
             LOGGER_STATE = LoggerState::Custom;
@@ -129,6 +139,27 @@ impl LibindyLogger {
         };
 
         Ok(())
+    }
+
+    fn map_u32_lvl_to_filter(max_level: u32) -> IndyResult<LevelFilter> {
+        let max_level = match max_level {
+            0 => LevelFilter::Off,
+            1 => LevelFilter::Error,
+            2 => LevelFilter::Warn,
+            3 => LevelFilter::Info,
+            4 => LevelFilter::Debug,
+            5 => LevelFilter::Trace,
+            _ => return Err(IndyError::from(InvalidStructure)),
+        };
+        Ok(max_level)
+    }
+
+    pub fn set_max_level(max_level: u32) -> IndyResult<LevelFilter> {
+        let max_level_filter = LibindyLogger::map_u32_lvl_to_filter(max_level)?;
+
+        log::set_max_level(max_level_filter);
+
+        Ok(max_level_filter)
     }
 }
 

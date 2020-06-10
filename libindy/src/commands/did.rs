@@ -191,7 +191,7 @@ impl DidCommandExecutor {
                 self.get_attrib_ack(wallet_handle, result, deferred_cmd_id);
             }
             DidCommand::QualifyDid(wallet_handle, did, method, cb) => {
-                info!("QualifyDid command received");
+                debug!("QualifyDid command received");
                 cb(self.qualify_did(wallet_handle, &did, &method));
             }
         };
@@ -378,7 +378,7 @@ impl DidCommandExecutor {
     fn key_for_local_did(&self,
                          wallet_handle: WalletHandle,
                          did: &DidValue) -> IndyResult<String> {
-        info!("key_for_local_did >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
+        debug!("key_for_local_did >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
         self.crypto_service.validate_did(&did)?;
 
@@ -396,7 +396,7 @@ impl DidCommandExecutor {
 
         let res = their_did.verkey;
 
-        info!("key_for_local_did <<< res: {:?}", res);
+        debug!("key_for_local_did <<< res: {:?}", res);
 
         Ok(res)
     }
@@ -482,7 +482,7 @@ impl DidCommandExecutor {
     fn abbreviate_verkey(&self,
                          did: &DidValue,
                          verkey: String) -> IndyResult<String> {
-        info!("abbreviate_verkey >>> did: {:?}, verkey: {:?}", did, verkey);
+        debug!("abbreviate_verkey >>> did: {:?}, verkey: {:?}", did, verkey);
 
         self.crypto_service.validate_did(&did)?;
         self.crypto_service.validate_key(&verkey)?;
@@ -511,7 +511,7 @@ impl DidCommandExecutor {
                    wallet_handle: WalletHandle,
                    did: &DidValue,
                    method: &DidMethod) -> IndyResult<String> {
-        info!("qualify_did >>> wallet_handle: {:?}, curr_did: {:?}, method: {:?}", wallet_handle, did, method);
+        debug!("qualify_did >>> wallet_handle: {:?}, curr_did: {:?}, method: {:?}", wallet_handle, did, method);
 
         self.crypto_service.validate_did(did)?;
 
