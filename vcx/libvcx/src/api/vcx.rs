@@ -153,6 +153,19 @@ fn _finish_init(command_handle: CommandHandle, cb: extern fn(xcommand_handle: Co
                 cb(command_handle, e.into());
             }
         }
+
+        match settings::get_config_value(settings::CONFIG_WEBHOOK_URL) {
+            Ok(webhook_url) => match ::messages::agent_utils::update_agent_webhook(&webhook_url) {
+                Ok(()) => debug!("Agent webhook url updated on init"),
+                Err(e) => {
+                    error!("Error updating agent webhook on init: {}", e);
+                    cb(command_handle, e.into());
+                    return Ok(());
+                }
+            }
+            Err(e) => debug!("Error reading agent webhook from settings: {}", e)
+        }
+
         Ok(())
     });
 
