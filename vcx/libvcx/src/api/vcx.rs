@@ -144,28 +144,30 @@ fn _finish_init(command_handle: CommandHandle, cb: extern fn(xcommand_handle: Co
 
         match wallet::open_wallet(&wallet_name, wallet_type.as_ref().map(String::as_str),
                                   storage_config.as_ref().map(String::as_str), storage_creds.as_ref().map(String::as_str)) {
-            Ok(_) => {
-                debug!("Init Wallet Successful");
-                cb(command_handle, error::SUCCESS.code_num);
-            }
+            Ok(_) => debug!("Init Wallet Successful"),
             Err(e) => {
                 error!("Init Wallet Error {}.", e);
                 cb(command_handle, e.into());
+                return Ok(());
             }
         }
 
         match settings::get_config_value(settings::CONFIG_WEBHOOK_URL) {
             Ok(webhook_url) => match ::messages::agent_utils::update_agent_webhook(&webhook_url) {
-                Ok(()) => debug!("Agent webhook url updated on init"),
+                Ok(()) => {
+                    info!("Agent webhook url updated on init, webhook_url={}", webhook_url);
+                    cb(command_handle, error::SUCCESS.code_num);
+                }
                 Err(e) => {
                     error!("Error updating agent webhook on init: {}", e);
                     cb(command_handle, e.into());
-                    return Ok(());
                 }
             }
-            Err(e) => debug!("Error reading agent webhook from settings: {}", e)
+            Err(e) => {
+                debug!("webhook_url was not updated in agency: {}", e);
+                cb(command_handle, e.into());
+            }
         }
-
         Ok(())
     });
 
