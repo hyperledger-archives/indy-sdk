@@ -24,6 +24,7 @@ use crate::domain::status::*;
 use crate::indy::{crypto, did, wallet, WalletHandle};
 use crate::utils::futures::*;
 use crate::domain::key_derivation::KeyDerivationFunction;
+use std::sync::{RwLock, Arc};
 
 pub const EDGE_AGENT_WALLET_ID: &'static str = "edge_agent_wallet_id";
 pub const EDGE_AGENT_WALLET_CONFIG: &'static str = "{\"id\": \"edge_agent_wallet_id\"}";
@@ -106,7 +107,7 @@ pub fn cleanup_storage() {
 
 pub fn run_test<F, B>(f: F)
     where
-        F: FnOnce(Addr<ForwardAgent>, Addr<Admin>) -> B + 'static,
+        F: FnOnce(Addr<ForwardAgent>, Arc<RwLock<Admin>>) -> B + 'static,
         B: IntoFuture<Item=(), Error=Error> + 'static {
     crate::indy::logger::set_default_logger(None).ok();
     env_logger::try_init().ok();
@@ -154,7 +155,7 @@ pub fn run_agent_test<F, B>(f: F)
 
 pub fn run_admin_test<F, B>(f: F)
     where
-        F: FnOnce((WalletHandle, String, String, String, String, Addr<ForwardAgent>, Addr<Admin>)) -> B + 'static,
+        F: FnOnce((WalletHandle, String, String, String, String, Addr<ForwardAgent>, Arc<RwLock<Admin>>)) -> B + 'static,
         B: IntoFuture<Item=WalletHandle, Error=Error> + 'static {
     run_test(|forward_agent, admin| {
         future::ok(())

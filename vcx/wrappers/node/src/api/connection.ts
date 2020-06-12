@@ -414,7 +414,8 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    * msg_id = await connection.send_message(
    *     {msg:"are you there?",type:"question","title":"Sending you a question"})
    * ```
-   * @returns {Promise<string}
+   * @returns {Promise<string>} Promise of String representing UID of created message in 1.0 VCX protocol. When using
+   * 2.0 / 3.0 / Aries protocol, return empty string.
    */
   public async sendMessage (msgData: IMessageData): Promise<string> {
     const sendMsgOptions = {
@@ -437,10 +438,6 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
             (xHandle: number, err: number, details: string) => {
               if (err) {
                 reject(err)
-                return
-              }
-              if (!details) {
-                reject(`Connection ${this.sourceId} connect returned empty string`)
                 return
               }
               resolve(details)
@@ -765,30 +762,30 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
             0,
             this.handle,
             cb
-          );
+          )
           if (rc) {
-            reject(rc);
+            reject(rc)
           }
         },
         (resolve, reject) =>
           ffi.Callback(
-            "void",
-            ["uint32", "uint32", "string"],
+            'void',
+            ['uint32', 'uint32', 'string'],
             (xHandle: number, err: number, details: string) => {
               if (err) {
-                reject(err);
-                return;
+                reject(err)
+                return
               }
               if (!details) {
-                reject(`proof ${this.sourceId} returned empty string`);
-                return;
+                reject(`proof ${this.sourceId} returned empty string`)
+                return
               }
-              resolve(details);
+              resolve(details)
             }
           )
-      );
+      )
     } catch (err) {
-      throw new VCXInternalError(err);
+      throw new VCXInternalError(err)
     }
   }
 

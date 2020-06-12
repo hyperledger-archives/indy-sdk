@@ -12,8 +12,8 @@ export interface IVCXRuntimeConfig {
 // VCXRuntimeConfg is a class that currently only contains a chosen basepath for the .so file
 // I made it a class just in case we think of more needed configs
 
-const extension = { darwin: '.dylib', linux: '.so', win32: '.dll'}
-const libPath = {darwin: '/usr/local/lib/', linux: '/usr/lib/', win32: 'c:\\windows\\system32\\'}
+const extension = { darwin: '.dylib', linux: '.so', win32: '.dll' }
+const libPath = { darwin: '/usr/local/lib/', linux: '/usr/lib/', win32: 'c:\\windows\\system32\\' }
 
 export class VCXRuntime {
   public readonly ffi: IFFIEntryPoint
