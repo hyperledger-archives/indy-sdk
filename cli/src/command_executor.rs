@@ -7,7 +7,6 @@ use unescape::unescape;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
-use std::error::Error;
 
 use linefeed::{Reader, ReadResult};
 
@@ -868,7 +867,7 @@ impl CommandExecutor {
                         }
                     }
                     Err(err) => {
-                        println_err!("{}", err.description().to_string());
+                        println_err!("{}", err.to_string());
                         println!("Please enter value for {}:", param);
                     }
                 }
