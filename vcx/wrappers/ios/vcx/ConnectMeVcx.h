@@ -89,11 +89,19 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
            connectionType:(NSString *)connectionType
                completion:(void (^)(NSError *error, NSString *inviteDetails))completion;
 
+- (void)connectionGetState:(NSInteger)connectionHandle
+                completion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void)connectionUpdateState:(NSInteger) connectionHandle
+                   completion:(void (^)(NSError *error, NSInteger state))completion;
+
 - (void)connectionSerialize:(NSInteger)connectionHandle
                  completion:(void (^)(NSError *error, NSString *serializedConnection))completion;
 
 - (void)connectionDeserialize:(NSString *)serializedConnection
                    completion:(void (^)(NSError *error, NSInteger connectionHandle))completion;
+
+- (int)connectionRelease:(NSInteger) connectionHandle;
 
 - (void)deleteConnection:(VcxHandle)connectionHandle
           withCompletion:(void (^)(NSError *error))completion;
@@ -147,6 +155,8 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)credentialDeserialize:(NSString *)serializedCredential
                    completion:(void (^)(NSError *error, NSInteger credentialHandle))completion;
 
+- (int)credentialRelease:(NSInteger) credentialHandle;
+
 - (void)exportWallet:(NSString *)exportPath
          encryptWith:(NSString *)encryptionKey
           completion:(void (^)(NSError *error, NSInteger exportHandle))completion;
@@ -172,6 +182,9 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
             recordId:(NSString *)recordId
            completion:(void (^)(NSError *error))completion;
 
+- (void) proofGetRequests:(NSInteger)connectionHandle
+              completion:(void (^)(NSError *error, NSString *requests))completion;
+
 - (void) proofRetrieveCredentials:(vcx_proof_handle_t)proofHandle
                    withCompletion:(void (^)(NSError *error, NSString *matchingCredentials))completion;
 
@@ -188,6 +201,12 @@ withSelectedCredentials:(NSString *)selectedCredentials
 - (void) proofSend:(vcx_proof_handle_t)proof_handle
 withConnectionHandle:(vcx_connection_handle_t)connection_handle
     withCompletion:(void (^)(NSError *error))completion;
+
+- (void)proofGetState:(NSInteger)proofHandle
+           completion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void)proofUpdateState:(NSInteger) proofHandle
+              completion:(void (^)(NSError *error, NSInteger state))completion;
 
 - (void) proofReject: (vcx_proof_handle_t)proof_handle
       withConnectionHandle:(vcx_connection_handle_t)connection_handle
@@ -215,6 +234,8 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 
 - (void) proofDeserialize:(NSString *) serializedProof
            withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle)) completion;
+
+- (int)proofRelease:(NSInteger) proofHandle;
 
 - (int)vcxShutdown:(BOOL *)deleteWallet;
 
