@@ -489,7 +489,8 @@ impl Forward {
                     }
                 )))
             }
-            settings::ProtocolTypes::V2 => {
+            settings::ProtocolTypes::V2 |
+            settings::ProtocolTypes::V3 => {
                 let msg = serde_json::from_slice(msg.as_slice())
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
 
@@ -803,7 +804,8 @@ impl A2AMessageKinds {
 pub fn prepare_message_for_agency(message: &A2AMessage, agency_did: &str, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
     match version {
         settings::ProtocolTypes::V1 => bundle_for_agency_v1(message, &agency_did),
-        settings::ProtocolTypes::V2 => pack_for_agency_v2(message, agency_did)
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3 => pack_for_agency_v2(message, agency_did)
     }
 }
 
@@ -839,7 +841,8 @@ fn pack_for_agency_v2(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u
 fn parse_response_from_agency(response: &Vec<u8>, version: &ProtocolTypes) -> VcxResult<Vec<A2AMessage>> {
     match version {
         settings::ProtocolTypes::V1 => parse_response_from_agency_v1(response),
-        settings::ProtocolTypes::V2 => parse_response_from_agency_v2(response)
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3 => parse_response_from_agency_v2(response)
     }
 }
 
@@ -900,7 +903,7 @@ pub fn try_i8_bundle(data: Vec<u8>) -> VcxResult<Bundled<Vec<u8>>> {
     let bundle: Bundled<Vec<i8>> =
         rmp_serde::from_slice(&data[..])
             .map_err(|_| {
-                warn!("could not deserialize bundle with i8, will try u8");
+                trace!("could not deserialize bundle with i8, will try u8");
                 VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Could not deserialize bundle with i8")
             })?;
 
@@ -962,7 +965,8 @@ fn prepare_forward_message_for_agency_v2(message: &ForwardV2, agency_vk: &str) -
 pub fn prepare_message_for_agent(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
     match version {
         settings::ProtocolTypes::V1 => prepare_message_for_agent_v1(messages, pw_vk, agent_did, agent_vk),
-        settings::ProtocolTypes::V2 => prepare_message_for_agent_v2(messages, pw_vk, agent_did, agent_vk)
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3 => prepare_message_for_agent_v2(messages, pw_vk, agent_did, agent_vk)
     }
 }
 
@@ -1094,9 +1098,12 @@ pub fn proof_request() -> ProofRequestMessage { ProofRequestMessage::create() }
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use utils::devsetup::*;
 
     #[test]
     fn test_to_u8() {
+        let _setup = SetupDefaults::init();
+
         let vec: Vec<i8> = vec![-127, -89, 98, 117, 110, 100, 108, 101, 100, -111, -36, 5, -74];
 
         let buf = to_u8(&vec);
@@ -1105,6 +1112,8 @@ pub mod tests {
 
     #[test]
     fn test_to_i8() {
+        let _setup = SetupDefaults::init();
+
         let vec: Vec<u8> = vec![129, 167, 98, 117, 110, 100, 108, 101, 100, 145, 220, 19, 13];
         let buf = to_i8(&vec);
         println!("new bundle: {:?}", buf);
@@ -1112,6 +1121,8 @@ pub mod tests {
 
     #[test]
     fn test_general_message_null_parameters() {
+        let _setup = SetupDefaults::init();
+
         let details = GeneralMessageDetail {
             msg_type: MessageTypeV1 {
                 name: "Name".to_string(),
@@ -1129,6 +1140,8 @@ pub mod tests {
 
     #[test]
     fn test_create_message_null_parameters() {
+        let _setup = SetupDefaults::init();
+
         let details = CreateMessage {
             msg_type: MessageTypeV1 {
                 name: "Name".to_string(),

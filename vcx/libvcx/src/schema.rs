@@ -32,7 +32,7 @@ pub struct CreateSchema {
     source_id: String,
     payment_txn: Option<PaymentTxn>,
     #[serde(default)]
-    state: PublicEntityStateType
+    state: PublicEntityStateType,
 }
 
 impl CreateSchema {
@@ -211,15 +211,26 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
 #[cfg(test)]
 pub mod tests {
     extern crate rand;
+
     use settings;
 
     use super::*;
-    #[allow(unused_imports)]
     use rand::Rng;
-    use utils::constants::{SCHEMA_ID, SCHEMA_JSON};
+    use utils::constants::SCHEMA_ID;
+    use utils::devsetup::*;
+    #[cfg(feature = "pool_tests")]
+    use utils::libindy::payments::add_new_did;
+    #[cfg(feature = "pool_tests")]
+    use utils::libindy::anoncreds::tests::create_and_write_test_schema;
+    #[cfg(feature = "pool_tests")]
+    use utils::constants;
 
-    fn prepare_schema_data() -> (String, String, String, String) {
-        let data = r#"["address1","address2","zip","city","state"]"#.to_string();
+    fn data() -> Vec<String> {
+        vec!["address1".to_string(), "address2".to_string(), "zip".to_string(), "city".to_string(), "state".to_string()]
+    }
+
+    pub fn prepare_schema_data() -> (String, String, String, String) {
+        let data = json!(data()).to_string();
         let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
         let schema_version: String = format!("{}.{}", rand::thread_rng().gen::<u32>().to_string(),
                                              rand::thread_rng().gen::<u32>().to_string());
@@ -233,138 +244,152 @@ pub mod tests {
         create_and_publish_schema("id", did, schema_name, schema_version, data).unwrap()
     }
 
+    fn check_schema(schema_handle: u32, schema_json: &str, schema_id: &str, data: &str) {
+        let schema: CreateSchema = CreateSchema::from_str(schema_json).unwrap();
+        assert_eq!(schema.schema_id, schema_id.to_string());
+        assert_eq!(schema.data.clone().sort(), vec!(data).sort());
+        assert!(schema_handle > 0);
+    }
+
     #[test]
     fn test_create_schema_to_string() {
-        let source_id = "testId";
-        let create_schema = CreateSchema {
-            data: vec!["name".to_string(), "age".to_string(), "sex".to_string(), "height".to_string()],
-            version: "1.0".to_string(),
-            schema_id: SCHEMA_ID.to_string(),
-            source_id: "testId".to_string(),
-            name: "schema_name".to_string(),
-            payment_txn: None,
-            state: PublicEntityStateType::Published,
-        };
-        let value: serde_json::Value = serde_json::from_str(&create_schema.to_string().unwrap()).unwrap();
+        let _setup = SetupMocks::init();
+
+        let (did, schema_name, schema_version, data) = prepare_schema_data();
+        let handle = create_and_publish_schema("test_create_schema_success",
+                                               did,
+                                               schema_name,
+                                               schema_version,
+                                               data.clone()).unwrap();
+
+        let schema_id = get_schema_id(handle).unwrap();
+        let create_schema_json = to_string(handle).unwrap();
+
+        let value: serde_json::Value = serde_json::from_str(&create_schema_json).unwrap();
         assert_eq!(value["version"], "1.0");
-        let create_schema: CreateSchema = serde_json::from_str(&value["data"].to_string()).unwrap();
-        assert_eq!(create_schema.source_id, source_id);
-        use utils::constants::SCHEMA_WITH_VERSION;
-        let handle = from_string(SCHEMA_WITH_VERSION).unwrap();
-        let schema_str = to_string(handle).unwrap();
-        let value: serde_json::Value = serde_json::from_str(&schema_str).unwrap();
-        assert_eq!(value["version"], "1.0");
-        let data = value["data"].clone();
-        let _schema: CreateSchema = serde_json::from_str(&data.to_string()).unwrap();
+        assert!(value["data"].is_object());
+
+        let handle = from_string(&create_schema_json).unwrap();
+
+        assert_eq!(get_source_id(handle).unwrap(), String::from("test_create_schema_success"));
+        check_schema(handle, &create_schema_json, &schema_id, &data);
     }
 
     #[test]
     fn test_create_schema_success() {
-        init!("true");
-        let data = r#"["name","male"]"#;
-        assert!(create_and_publish_schema("1",
-                                          "VsKV7grR1BUE29mG2Fm2kX".to_string(),
-                                          "name".to_string(),
-                                          "1.0".to_string(),
-                                          data.to_string()).is_ok());
+        let _setup = SetupMocks::init();
+
+        let (did, schema_name, schema_version, data) = prepare_schema_data();
+        create_and_publish_schema("test_create_schema_success",
+                                  did,
+                                  schema_name,
+                                  schema_version,
+                                  data).unwrap();
     }
 
     #[test]
     fn test_prepare_schema_success() {
-        init!("true");
-        let data = r#"["name","male"]"#;
-        assert!(prepare_schema_for_endorser("1",
-                                            "VsKV7grR1BUE29mG2Fm2kX".to_string(),
-                                            "name".to_string(),
-                                            "1.0".to_string(),
-                                            data.to_string(),
-                                            "V4SGRU86Z58d6TV7PBUe6f".to_string()).is_ok());
+        let _setup = SetupMocks::init();
+
+        let (did, schema_name, schema_version, data) = prepare_schema_data();
+        prepare_schema_for_endorser("test_create_schema_success",
+                                    did,
+                                    schema_name,
+                                    schema_version,
+                                    data,
+                                    "V4SGRU86Z58d6TV7PBUe6f".to_string()).unwrap();
     }
 
     #[test]
     fn test_get_schema_attrs_success() {
-        init!("true");
-        let (handle, schema_attrs) = get_schema_attrs("Check For Success".to_string(), SCHEMA_ID.to_string()).unwrap();
-        assert!(schema_attrs.contains(r#""schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4""#));
-        assert!(schema_attrs.contains(r#""data":["height","name","sex","age"]"#));
-        assert!(handle > 0);
+        let _setup = SetupMocks::init();
+
+        let (handle, schema_json) = get_schema_attrs("Check For Success".to_string(), SCHEMA_ID.to_string()).unwrap();
+
+        check_schema(handle, &schema_json, SCHEMA_ID, r#"["name","age","height","sex"]"#);
     }
 
     #[test]
     fn test_create_schema_fails() {
-        init!("false");
-        let schema = create_and_publish_schema("1", "VsKV7grR1BUE29mG2Fm2kX".to_string(),
-                                               "name".to_string(),
-                                               "1.0".to_string(),
-                                               "".to_string());
-        assert_eq!(schema.unwrap_err().kind(), VcxErrorKind::InvalidLibindyParam)
+        let _setup = SetupDefaults::init();
+
+        let err = create_and_publish_schema("1", "VsKV7grR1BUE29mG2Fm2kX".to_string(),
+                                            "name".to_string(),
+                                            "1.0".to_string(),
+                                            "".to_string()).unwrap_err();
+        assert_eq!(err.kind(), VcxErrorKind::InvalidLibindyParam)
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_get_schema_attrs_from_ledger() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
-        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
-        let (_, schema_attrs) = get_schema_attrs("id".to_string(), schema_id.clone()).unwrap();
-        assert!(schema_attrs.contains(&schema_id));
+        let (schema_id, _) = create_and_write_test_schema(constants::DEFAULT_SCHEMA_ATTRS);
+
+        let (schema_handle, schema_attrs) = get_schema_attrs("id".to_string(), schema_id.clone()).unwrap();
+
+        check_schema(schema_handle, &schema_attrs, &schema_id, constants::DEFAULT_SCHEMA_ATTRS);
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_schema_with_pool() {
-        init!("ledger");
-        let handle = create_schema_real();
-        let payment = serde_json::to_string(&get_payment_txn(handle).unwrap()).unwrap();
-        assert!(payment.len() > 50);
+        let _setup = SetupLibraryWalletPool::init();
 
-        assert!(handle > 0);
+        let handle = create_schema_real();
+
+        let _source_id = get_source_id(handle).unwrap();
         let _schema_id = get_schema_id(handle).unwrap();
+        let _schema_json = to_string(handle).unwrap();
+
+        let payment = &get_payment_txn(handle).unwrap();
+        assert!(payment.amount > 0);
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_schema_no_fees_with_pool() {
-        init!("ledger");
-        ::utils::libindy::payments::mint_tokens_and_set_fees(Some(0), Some(0), Some(r#"{"101":0, "102":0}"#.to_string()), None).unwrap();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let handle = create_schema_real();
-        assert!(handle > 0);
+
+        let _source_id = get_source_id(handle).unwrap();
         let _schema_id = get_schema_id(handle).unwrap();
+        let _schema_json = to_string(handle).unwrap();
+
+        // No Payment performed
+        let _payment = get_payment_txn(handle).unwrap_err();
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_duplicate_fails_no_fees() {
-        use settings;
-        init!("ledger");
-        ::utils::libindy::payments::mint_tokens_and_set_fees(Some(0), Some(0), Some(r#"{"101":0, "102":0}"#.to_string()), None).unwrap();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
-        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (did, schema_name, schema_version, data) = prepare_schema_data();
 
-        let data = r#"["address1","address2","zip","city","state"]"#.to_string();
-        let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
-        let schema_version: String = format!("{}.{}", rand::thread_rng().gen::<u32>().to_string(),
-                                             rand::thread_rng().gen::<u32>().to_string());
-        let rc = create_and_publish_schema("id", did.clone(), schema_name.clone(), schema_version.clone(), data.clone());
-        assert!(rc.is_ok());
-        let rc = create_and_publish_schema("id", did.clone(), schema_name.clone(), schema_version.clone(), data.clone());
+        create_and_publish_schema("id", did.clone(), schema_name.clone(), schema_version.clone(), data.clone()).unwrap();
 
-        assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::DuplicationSchema)
+        let err = create_and_publish_schema("id_2", did, schema_name, schema_version, data).unwrap_err();
+
+        assert_eq!(err.kind(), VcxErrorKind::DuplicationSchema)
     }
 
     #[test]
     fn test_release_all() {
-        init!("true");
-        let data = r#"["address1","address2","zip","city","state"]"#;
-        let version = r#"0.0.0"#;
-        let did = r#"2hoqvcwupRTUNkXn6ArYzs"#;
-        let h1 = create_and_publish_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
-        let h2 = create_and_publish_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
-        let h3 = create_and_publish_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
-        let h4 = create_and_publish_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
-        let h5 = create_and_publish_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
+        let _setup = SetupMocks::init();
+
+        let (did, schema_name, version, data) = prepare_schema_data();
+
+        let h1 = create_and_publish_schema("1", did.clone(), schema_name.clone(), version.clone(), data.clone()).unwrap();
+        let h2 = create_and_publish_schema("2", did.clone(), schema_name.clone(), version.clone(), data.clone()).unwrap();
+        let h3 = create_and_publish_schema("3", did.clone(), schema_name.clone(), version.clone(), data.clone()).unwrap();
+        let h4 = create_and_publish_schema("4", did.clone(), schema_name.clone(), version.clone(), data.clone()).unwrap();
+        let h5 = create_and_publish_schema("5", did.clone(), schema_name.clone(), version.clone(), data.clone()).unwrap();
+
         release_all();
+
         assert_eq!(release(h1).unwrap_err().kind(), VcxErrorKind::InvalidSchemaHandle);
         assert_eq!(release(h2).unwrap_err().kind(), VcxErrorKind::InvalidSchemaHandle);
         assert_eq!(release(h3).unwrap_err().kind(), VcxErrorKind::InvalidSchemaHandle);
@@ -373,23 +398,17 @@ pub mod tests {
     }
 
     #[test]
-    fn test_errors() {
-        init!("false");
-        assert_eq!(to_string(13435178).unwrap_err().kind(), VcxErrorKind::InvalidHandle);
-    }
+    fn test_handle_errors() {
+        let _setup = SetupEmpty::init();
 
-    #[test]
-    fn test_extract_data_from_schema_json() {
-        let data: SchemaData = serde_json::from_str(SCHEMA_JSON).unwrap();
-        assert_eq!(data.name, "test-licence".to_string());
+        assert_eq!(to_string(13435178).unwrap_err().kind(), VcxErrorKind::InvalidHandle);
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_endorse_schema() {
-        use utils::libindy::payments::add_new_did;
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
-        init!("ledger");
         let (did, schema_name, schema_version, data) = prepare_schema_data();
 
         let (endorser_did, _) = add_new_did(Some("ENDORSER"));
@@ -405,13 +424,16 @@ pub mod tests {
 
         assert_eq!(1, update_state(handle).unwrap());
         assert_eq!(1, get_state(handle).unwrap());
+        ::utils::libindy::wallet::close_wallet();
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_schema_get_state_with_ledger() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
         let handle = create_schema_real();
         assert_eq!(1, get_state(handle).unwrap());
+        ::utils::libindy::wallet::close_wallet();
     }
 }

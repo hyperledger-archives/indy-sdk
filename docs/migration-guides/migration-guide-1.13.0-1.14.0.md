@@ -22,8 +22,8 @@ version you can check migration guides history:
 * [Notes](#notes)
 * [Libindy 1.13 to 1.14 migration](#libindy-113-to-114-migration)
     * [Ledger API](#ledger-api)
-* [Libindy 1.13.0 to 1.13.1 migration](#libindy-1130-to-1131-migration-guide)
-* [Libindy 1.13.1 to 1.13.2 migration](#libindy-1131-to-1132-migration-guide)
+* [Libindy 1.14.0 to 1.14.1 migration](#libindy-1140-to-1141-migration-guide)
+* [Libindy 1.14.1 to 1.14.2 migration](#libindy-1141-to-1142-migration-guide)
 
 ## Libindy 1.13 to 1.14 migration
 

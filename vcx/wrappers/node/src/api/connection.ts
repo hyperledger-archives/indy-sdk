@@ -198,6 +198,27 @@ export interface ISignatureData {
   signature: Buffer
 }
 
+/**
+ * @description A string representing a connection info json object.
+ *      {
+ *         "current": {
+ *             "did": <str>
+ *             "recipientKeys": array<str>
+ *             "routingKeys": array<str>
+ *             "serviceEndpoint": <str>,
+ *             "protocols": array<str> -  The set of protocol supported by current side.
+ *         },
+ *         "remote: { <Option> - details about remote connection side
+ *             "did": <str> - DID of remote side
+ *             "recipientKeys": array<str> - Recipient keys
+ *             "routingKeys": array<str> - Routing keys
+ *             "serviceEndpoint": <str> - Endpoint
+ *             "protocols": array<str> - The set of protocol supported by side. Is filled after DiscoveryFeatures process was completed.
+ *          }
+ *    }
+ */
+export type IConnectionInfo = string
+
 export function voidPtrToUint8Array (origPtr: any, length: number): Buffer {
   /**
    * Read the contents of the pointer and copy it into a new Buffer
@@ -275,6 +296,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
   protected _serializeFn = rustAPI().vcx_connection_serialize
   protected _deserializeFn = rustAPI().vcx_connection_deserialize
   protected _inviteDetailFn = rustAPI().vcx_connection_invite_details
+  protected _infoFn = rustAPI().vcx_connection_info
 
   /**
    *
@@ -392,7 +414,8 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    * msg_id = await connection.send_message(
    *     {msg:"are you there?",type:"question","title":"Sending you a question"})
    * ```
-   * @returns {Promise<string}
+   * @returns {Promise<string>} Promise of String representing UID of created message in 1.0 VCX protocol. When using
+   * 2.0 / 3.0 / Aries protocol, return empty string.
    */
   public async sendMessage (msgData: IMessageData): Promise<string> {
     const sendMsgOptions = {
@@ -415,10 +438,6 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
             (xHandle: number, err: number, details: string) => {
               if (err) {
                 reject(err)
-                return
-              }
-              if (!details) {
-                reject(`Connection ${this.sourceId} connect returned empty string`)
                 return
               }
               resolve(details)
@@ -743,30 +762,67 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
             0,
             this.handle,
             cb
-          );
+          )
           if (rc) {
-            reject(rc);
+            reject(rc)
           }
         },
         (resolve, reject) =>
           ffi.Callback(
-            "void",
-            ["uint32", "uint32", "string"],
+            'void',
+            ['uint32', 'uint32', 'string'],
             (xHandle: number, err: number, details: string) => {
               if (err) {
-                reject(err);
-                return;
+                reject(err)
+                return
               }
               if (!details) {
-                reject(`proof ${this.sourceId} returned empty string`);
-                return;
+                reject(`proof ${this.sourceId} returned empty string`)
+                return
               }
-              resolve(details);
+              resolve(details)
             }
           )
-      );
+      )
     } catch (err) {
-      throw new VCXInternalError(err);
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Get the information about the connection state.
+   *
+   * Note: This method can be used for `aries` communication method only.
+   *     For other communication method it returns ActionNotSupported error.
+   *
+   */
+  public async info (): Promise<IConnectionInfo> {
+    try {
+      const data = await createFFICallbackPromise<string>(
+        (resolve, reject, cb) => {
+          const rc = this._infoFn(0, this.handle, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32', 'uint32', 'string'],
+          (handle: number, err: number, info: string) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            if (!info) {
+              reject('no info returned')
+              return
+            }
+            resolve(info)
+          })
+      )
+      return data
+    } catch (err) {
+      throw new VCXInternalError(err)
     }
   }
 }

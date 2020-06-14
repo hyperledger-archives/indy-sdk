@@ -2,8 +2,6 @@ use serde_json;
 use libc::c_char;
 use messages;
 use std::ptr;
-use utils::httpclient;
-use utils::constants::*;
 use utils::cstring::CStringUtils;
 use utils::error;
 use utils::threadpool::spawn;
@@ -11,6 +9,8 @@ use utils::libindy::payments;
 use std::thread;
 use error::prelude::*;
 use indy_sys::CommandHandle;
+use utils::httpclient::AgencyMock;
+use utils::constants::*;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateAgentInfo {
@@ -209,7 +209,7 @@ pub extern fn vcx_set_next_agency_response(message_index: u32) {
         _ => Vec::new(),
     };
 
-    httpclient::set_next_u8_response(message);
+    AgencyMock::set_next_response(message);
 }
 
 /// Retrieve messages from the Cloud Agent
@@ -462,8 +462,8 @@ pub extern fn vcx_messages_update_status(command_handle: CommandHandle,
 /// Error code as u32
 #[no_mangle]
 pub extern fn vcx_pool_set_handle(handle: i32) -> i32 {
-    if handle <= 0 { ::utils::libindy::pool::change_pool_handle(None); }
-    else { ::utils::libindy::pool::change_pool_handle(Some(handle)); }
+    if handle <= 0 { ::utils::libindy::pool::set_pool_handle(None); }
+    else { ::utils::libindy::pool::set_pool_handle(Some(handle)); }
 
     handle
 }
@@ -567,53 +567,58 @@ pub extern fn vcx_endorse_transaction(command_handle: CommandHandle,
 mod tests {
     use super::*;
     use std::ffi::CString;
-    use std::time::Duration;
     use api::return_types_u32;
+    use utils::devsetup::*;
+    use utils::httpclient::AgencyMock;
+    use utils::constants::REGISTER_RESPONSE;
     use utils::timeout::TimeoutUtils;
+
+    static CONFIG: &'static str = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":"key"}"#;
+
+    fn _vcx_agent_provision_async_c_closure(config: &str) -> Result<Option<String>, u32> {
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        let rc = vcx_agent_provision_async(cb.command_handle,
+                                               CString::new(config).unwrap().into_raw(),
+        Some(cb.get_callback()));
+        if rc != error::SUCCESS.code_num {
+            return Err(rc);
+        }
+        cb.receive(TimeoutUtils::some_short())
+    }
 
     #[test]
     fn test_provision_agent() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
-        let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":"key"}"#;
-        let c_json = CString::new(json_string).unwrap().into_raw();
+        let c_json = CString::new(CONFIG).unwrap().into_raw();
 
         let result = vcx_provision_agent(c_json);
-        let result = CStringUtils::c_str_to_string(result).unwrap().unwrap();
 
-        assert!(result.len() > 0);
+        let result = CStringUtils::c_str_to_string(result).unwrap().unwrap();
+        let _config: serde_json::Value = serde_json::from_str(&result).unwrap();
     }
 
     #[test]
     fn test_create_agent() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
-        let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":"key"}"#;
-        let c_json = CString::new(json_string).unwrap().into_raw();
-        let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let result = vcx_agent_provision_async(cb.command_handle, c_json, Some(cb.get_callback()));
-        assert_eq!(0, result);
-        let result = cb.receive(Some(Duration::from_secs(2))).unwrap();
-        assert!(result.is_some());
+        let result = _vcx_agent_provision_async_c_closure(CONFIG).unwrap();
+        let _config: serde_json::Value = serde_json::from_str(&result.unwrap()).unwrap();
     }
 
     #[test]
     fn test_create_agent_fails() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
-        let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":null}"#;
-        let c_json = CString::new(json_string).unwrap().into_raw();
+        let config = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":null}"#;
 
-        let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let result = vcx_agent_provision_async(cb.command_handle, c_json, Some(cb.get_callback()));
-        assert_eq!(0, result);
-        let result = cb.receive(Some(Duration::from_secs(2)));
-        assert_eq!(result, Err(error::INVALID_CONFIGURATION.code_num));
+        let err = _vcx_agent_provision_async_c_closure(config).unwrap_err();
+        assert_eq!(err, error::INVALID_CONFIGURATION.code_num);
     }
 
     #[test]
     fn test_create_agent_fails_for_unknown_wallet_type() {
-        init!("false");
+        let _setup = SetupDefaults::init();
 
         let config = json!({
             "agency_url":"https://enym-eagency.pdev.evernym.com",
@@ -624,32 +629,28 @@ mod tests {
             "wallet_type":"UNKNOWN_WALLET_TYPE"
         }).to_string();
 
-        let c_config = CString::new(config).unwrap().into_raw();
-
-        let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let result = vcx_agent_provision_async(cb.command_handle, c_config, Some(cb.get_callback()));
-        assert_eq!(0, result);
-        let result = cb.receive(Some(TimeoutUtils::medium_timeout()));
-        assert_eq!(result, Err(error::INVALID_WALLET_CREATION.code_num));
+        let err = _vcx_agent_provision_async_c_closure(&config).unwrap_err();
+        assert_eq!(err, error::INVALID_WALLET_CREATION.code_num);
     }
 
     #[test]
     fn test_update_agent_info() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let json_string = r#"{"id":"123","value":"value"}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         let _result = vcx_agent_update_info(cb.command_handle, c_json, Some(cb.get_callback()));
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_update_agent_fails() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
-        httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec()); //set response garbage
+        AgencyMock::set_next_response(REGISTER_RESPONSE.to_vec()); //set response garbage
+
         let json_string = r#"{"id":"123"}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
 
@@ -662,7 +663,7 @@ mod tests {
 
     #[test]
     fn test_get_ledger_fees() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_ledger_get_fees(cb.command_handle,
@@ -672,16 +673,16 @@ mod tests {
 
     #[test]
     fn test_messages_download() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_messages_download(cb.command_handle, ptr::null_mut(), ptr::null_mut(), ptr::null_mut(), Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_messages_update_status() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let status = CString::new("MS-103").unwrap().into_raw();
         let json = CString::new(r#"[{"pairwiseDID":"QSrw8hebcvQxiwBETmAaRs","uids":["mgrmngq"]}]"#).unwrap().into_raw();
@@ -692,7 +693,7 @@ mod tests {
                                               json,
                                               Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 }
 

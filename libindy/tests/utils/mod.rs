@@ -65,9 +65,6 @@ macro_rules! inject_indy_dependencies {
         extern crate lazy_static;
 
         #[macro_use]
-        extern crate named_type_derive;
-
-        #[macro_use]
         extern crate derivative;
 
         #[macro_use]
@@ -84,7 +81,6 @@ macro_rules! inject_indy_dependencies {
         extern crate hex;
         extern crate ursa;
         extern crate uuid;
-        extern crate named_type;
         extern crate openssl;
         extern crate rmp_serde;
         extern crate rust_base58;

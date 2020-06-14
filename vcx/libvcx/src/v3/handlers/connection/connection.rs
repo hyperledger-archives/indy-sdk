@@ -10,6 +10,7 @@ use v3::messages::connection::invite::Invitation;
 use std::collections::HashMap;
 use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::basic_message::message::BasicMessage;
+use v3::messages::discovery::disclose::ProtocolDescriptor;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,12 +75,7 @@ impl Connection {
         if let Some(invitation) = self.connection_sm.get_invitation() {
             return Ok(json!(invitation.to_a2a_message()).to_string());
         } else if let Some(did_doc) = self.connection_sm.did_doc() {
-            let mut info = json!(Invitation::from(did_doc));
-
-            if let Some(protocols) = self.connection_sm.get_protocols() {
-                info["protocols"] = json!(protocols)
-            }
-
+            let info = json!(Invitation::from(did_doc));
             return Ok(info.to_string());
         } else {
             Ok(json!({}).to_string())
@@ -191,7 +187,7 @@ impl Connection {
         trace!("Connection::send_generic_message >>> message: {:?}", message);
 
         let message = match ::serde_json::from_str::<A2AMessage>(message) {
-            Ok(A2AMessage::Generic(message))=> {
+            Ok(A2AMessage::Generic(message)) => {
                 BasicMessage::create()
                     .set_content(message.to_string())
                     .set_time()
@@ -224,12 +220,12 @@ impl Connection {
         Ok(())
     }
 
-    pub fn add_pending_messages(&mut self, messages: HashMap<MessageId, String>) -> VcxResult<()> {
+    pub fn add_pending_messages(&self, messages: HashMap<MessageId, String>) -> VcxResult<()> {
         trace!("Connection::add_pending_messages >>> messages: {:?}", messages);
-        Ok(self.connection_sm.add_pending_messages(messages))
+        self.connection_sm.add_pending_messages(messages)
     }
 
-    pub fn remove_pending_message(&mut self, id: MessageId) -> VcxResult<()> {
+    pub fn remove_pending_message(&self, id: MessageId) -> VcxResult<()> {
         trace!("Connection::remove_pending_message >>> id: {:?}", id);
         self.connection_sm.remove_pending_message(id)
     }
@@ -238,4 +234,54 @@ impl Connection {
         trace!("Connection::send_discovery_features_query >>> query: {:?}, comment: {:?}", query, comment);
         self.handle_message(DidExchangeMessages::DiscoverFeatures((query, comment)))
     }
+
+    pub fn get_connection_info(&self) -> VcxResult<String> {
+        trace!("Connection::get_connection_info >>>");
+
+        let agent_info = self.agent_info().clone();
+
+        let current = SideConnectionInfo {
+            did: agent_info.pw_did.clone(),
+            recipient_keys: agent_info.recipient_keys().clone(),
+            routing_keys: agent_info.routing_keys()?,
+            service_endpoint: agent_info.agency_endpoint()?,
+            protocols: Some(self.connection_sm.get_protocols()),
+        };
+
+        let remote = match self.connection_sm.did_doc() {
+            Some(did_doc) =>
+                Some(SideConnectionInfo {
+                    did: did_doc.id.clone(),
+                    recipient_keys: did_doc.recipient_keys(),
+                    routing_keys: did_doc.routing_keys(),
+                    service_endpoint: did_doc.get_endpoint(),
+                    protocols: self.connection_sm.get_remote_protocols(),
+                }),
+            None => None
+        };
+
+        let connection_info = ConnectionInfo { my: current, their: remote };
+
+        let connection_info_json = serde_json::to_string(&connection_info)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, format!("Cannot serialize ConnectionInfo: {:?}", err)))?;
+
+        return Ok(connection_info_json);
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct ConnectionInfo {
+    my: SideConnectionInfo,
+    their: Option<SideConnectionInfo>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SideConnectionInfo {
+    did: String,
+    recipient_keys: Vec<String>,
+    routing_keys: Vec<String>,
+    service_endpoint: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    protocols: Option<Vec<ProtocolDescriptor>>,
 }

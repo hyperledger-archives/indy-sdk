@@ -15,6 +15,8 @@ use disclosed_proof::DisclosedProof;
 
 use error::prelude::*;
 
+/// A state machine that tracks the evolution of states for a Prover during
+/// the Present Proof protocol.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProverSM {
     source_id: String,
@@ -226,6 +228,10 @@ impl ProverSM {
         let state = match state {
             ProverState::Initiated(state) => {
                 match message {
+                    ProverMessages::SetPresentation(presentation) => {
+                        let presentation = presentation.set_thread_id(&thread_id);
+                        ProverState::PresentationPrepared((state, presentation).into())
+                    }
                     ProverMessages::PreparePresentation((credentials, self_attested_attrs)) => {
                         match state.build_presentation(&credentials, &self_attested_attrs) {
                             Ok(presentation) => {
@@ -360,16 +366,16 @@ impl ProverSM {
 
     pub fn state(&self) -> u32 {
         match self.state {
-            ProverState::Initiated(_) => VcxStateType::VcxStateInitialized as u32,
-            ProverState::PresentationPrepared(_) => VcxStateType::VcxStateInitialized as u32,
-            ProverState::PresentationPreparationFailed(_) => VcxStateType::VcxStateInitialized as u32,
+            ProverState::Initiated(_) => VcxStateType::VcxStateRequestReceived as u32,
+            ProverState::PresentationPrepared(_) => VcxStateType::VcxStateRequestReceived as u32,
+            ProverState::PresentationPreparationFailed(_) => VcxStateType::VcxStateRequestReceived as u32,
             ProverState::PresentationSent(_) => VcxStateType::VcxStateOfferSent as u32, // TODO: maybe VcxStateType::VcxStateAccepted
             ProverState::Finished(ref status) => {
                 match status.status {
                     Status::Success => VcxStateType::VcxStateAccepted as u32,
                     _ => VcxStateType::VcxStateNone as u32,
                 }
-            },
+            }
         }
     }
 
@@ -425,9 +431,9 @@ impl ProverSM {
 pub mod test {
     use super::*;
 
+    use utils::devsetup::SetupAriesMocks;
     use v3::handlers::connection::tests::mock_connection;
     use v3::test::source_id;
-    use v3::test::setup::TestModeSetup;
     use v3::messages::proof_presentation::test::{_ack, _problem_report};
     use v3::messages::proof_presentation::presentation_request::tests::{_presentation_request, _presentation_request_with_service};
     use v3::messages::proof_presentation::presentation::tests::_presentation;
@@ -460,13 +466,13 @@ pub mod test {
     fn _credentials() -> String {
         json!({
             "attrs":{
-                "attribute_0":{
-                    "credential":{
-                        "cred_info":{
-                            "attrs":{"name":"alice"},
-                            "cred_def_id":"V4SGRU86Z58d6TV7PBUe6f:3:CL:419:tag",
-                            "referent":"a1991de8-8317-43fd-98b3-63bac40b9e8b",
-                            "schema_id":"V4SGRU86Z58d6TV7PBUe6f:2:QcimrRShWQniqlHUtIDddYP0n:1.0"
+            "attribute_0":{
+                "credential":{
+                    "cred_info":{
+                        "attrs":{"name": "alice"},
+                        "cred_def_id": "V4SGRU86Z58d6TV7PBUe6f:3:CL:419:tag",
+                        "referent": "a1991de8-8317-43fd-98b3-63bac40b9e8b",
+                        "schema_id": "V4SGRU86Z58d6TV7PBUe6f:2:QcimrRShWQniqlHUtIDddYP0n:1.0"
                         }
                     }
                 }
@@ -483,7 +489,7 @@ pub mod test {
 
         #[test]
         fn test_prover_new() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let prover_sm = _prover_sm();
 
@@ -497,7 +503,7 @@ pub mod test {
 
         #[test]
         fn test_prover_init() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let prover_sm = _prover_sm();
             assert_match!(ProverState::Initiated(_), prover_sm.state);
@@ -505,7 +511,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_prepare_presentation_message_from_initiated_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm();
             prover_sm = prover_sm.step(ProverMessages::PreparePresentation((_credentials(), _self_attested()))).unwrap();
@@ -515,7 +521,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_prepare_presentation_message_from_initiated_state_for_invalid_credentials() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm();
             prover_sm = prover_sm.step(ProverMessages::PreparePresentation(("invalid".to_string(), _self_attested()))).unwrap();
@@ -525,7 +531,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_reject_presentation_request_message_from_initiated_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm();
             prover_sm = prover_sm.step(ProverMessages::RejectPresentationRequest((mock_connection(), String::from("reject request")))).unwrap();
@@ -535,7 +541,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_propose_presentation_message_from_initiated_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm();
             prover_sm = prover_sm.step(ProverMessages::ProposePresentation((mock_connection(), _presentation_preview()))).unwrap();
@@ -545,7 +551,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_other_messages_from_initiated_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm();
 
@@ -558,7 +564,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_send_presentation_message_from_presentation_prepared_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm();
             prover_sm = prover_sm.step(ProverMessages::PreparePresentation((_credentials(), _self_attested()))).unwrap();
@@ -569,7 +575,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_send_presentation_message_from_presentation_prepared_state_for_presentation_request_contains_service_decorator() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = ProverSM::new(_presentation_request_with_service(), source_id());
             prover_sm = prover_sm.step(ProverMessages::PreparePresentation((_credentials(), _self_attested()))).unwrap();
@@ -580,7 +586,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_other_messages_from_presentation_prepared_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm().to_presentation_prepared_state();
 
@@ -593,7 +599,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_reject_presentation_request_message_from_presentation_prepared_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm().to_presentation_prepared_state();
             prover_sm = prover_sm.step(ProverMessages::RejectPresentationRequest((mock_connection(), String::from("reject request")))).unwrap();
@@ -603,7 +609,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_propose_presentation_message_from_presentation_prepared_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm().to_presentation_prepared_state();
             prover_sm = prover_sm.step(ProverMessages::ProposePresentation((mock_connection(), _presentation_preview()))).unwrap();
@@ -613,7 +619,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_send_presentation_message_from_presentation_preparation_failed_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm();
             prover_sm = prover_sm.step(ProverMessages::PreparePresentation(("invalid".to_string(), _self_attested()))).unwrap();
@@ -626,7 +632,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_other_messages_from_presentation_preparation_failed_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm();
             prover_sm = prover_sm.step(ProverMessages::PreparePresentation(("invalid".to_string(), _self_attested()))).unwrap();
@@ -640,7 +646,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_ack_message_from_presentation_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm();
             prover_sm = prover_sm.step(ProverMessages::PreparePresentation((_credentials(), _self_attested()))).unwrap();
@@ -653,7 +659,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_reject_presentation_request_message_from_presentation_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let prover_sm = _prover_sm().to_presentation_sent_state();
             let err = prover_sm.step(ProverMessages::RejectPresentationRequest((mock_connection(), String::from("reject")))).unwrap_err();
@@ -662,7 +668,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_presentation_reject_message_from_presentation_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm();
             prover_sm = prover_sm.step(ProverMessages::PreparePresentation((_credentials(), _self_attested()))).unwrap();
@@ -675,7 +681,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_other_messages_from_presentation_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm();
             prover_sm = prover_sm.step(ProverMessages::PreparePresentation((_credentials(), _self_attested()))).unwrap();
@@ -690,7 +696,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_messages_from_finished_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm();
             prover_sm = prover_sm.step(ProverMessages::PreparePresentation((_credentials(), _self_attested()))).unwrap();
@@ -710,7 +716,7 @@ pub mod test {
 
         #[test]
         fn test_prover_find_message_to_handle_from_initiated_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let prover = _prover_sm();
 
@@ -730,7 +736,7 @@ pub mod test {
 
         #[test]
         fn test_prover_find_message_to_handle_from_presentation_prepared_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let prover = _prover_sm().to_presentation_prepared_state();
 
@@ -750,7 +756,7 @@ pub mod test {
 
         #[test]
         fn test_prover_find_message_to_handle_from_presentation_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let prover = _prover_sm().to_presentation_sent_state();
 
@@ -805,7 +811,7 @@ pub mod test {
 
         #[test]
         fn test_prover_find_message_to_handle_from_finished_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let prover = _prover_sm().to_finished_state();
 
@@ -829,10 +835,10 @@ pub mod test {
 
         #[test]
         fn test_get_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
-            assert_eq!(VcxStateType::VcxStateInitialized as u32, _prover_sm().state());
-            assert_eq!(VcxStateType::VcxStateInitialized as u32, _prover_sm().to_presentation_prepared_state().state());
+            assert_eq!(VcxStateType::VcxStateRequestReceived as u32, _prover_sm().state());
+            assert_eq!(VcxStateType::VcxStateRequestReceived as u32, _prover_sm().to_presentation_prepared_state().state());
             assert_eq!(VcxStateType::VcxStateOfferSent as u32, _prover_sm().to_presentation_sent_state().state());
             assert_eq!(VcxStateType::VcxStateAccepted as u32, _prover_sm().to_finished_state().state());
         }

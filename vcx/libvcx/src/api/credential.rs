@@ -272,27 +272,18 @@ pub extern fn vcx_credential_create_with_msgid(command_handle: CommandHandle,
            command_handle, source_id, connection_handle, msg_id);
 
     spawn(move || {
-        match credential::get_credential_offer_msg(connection_handle, &msg_id) {
-            Ok(offer) => {
-                match credential::credential_create_with_offer(&source_id, &offer) {
-                    Ok(handle) => {
-                        let offer_string = match credential::get_credential_offer(handle) {
-                            Ok(x) => x,
-                            Err(_) => offer,
-                        };
-                        let c_offer = CStringUtils::string_to_cstring(offer_string);
-                        trace!("vcx_credential_create_with_offer_cb(command_handle: {}, source_id: {}, rc: {}, handle: {}) source_id: {}",
-                               command_handle, source_id, error::SUCCESS.message, handle, source_id);
-                        cb(command_handle, error::SUCCESS.code_num, handle, c_offer.as_ptr())
-                    }
-                    Err(e) => {
-                        warn!("vcx_credential_create_with_offer_cb(command_handle: {}, source_id: {}, rc: {}, handle: {}) source_id: {}",
-                              command_handle, source_id, e, 0, source_id);
-                        cb(command_handle, e.into(), 0, ptr::null_mut());
-                    }
-                };
+        match credential::credential_create_with_msgid(&source_id, connection_handle, &msg_id) {
+            Ok((handle, offer_string)) => {
+                let c_offer = CStringUtils::string_to_cstring(offer_string);
+                trace!("vcx_credential_create_with_offer_cb(command_handle: {}, source_id: {}, rc: {}, handle: {}) source_id: {}",
+                       command_handle, source_id, error::SUCCESS.message, handle, source_id);
+                cb(command_handle, error::SUCCESS.code_num, handle, c_offer.as_ptr())
             }
-            Err(e) => cb(command_handle, e.into(), 0, ptr::null_mut()),
+            Err(e) => {
+                warn!("vcx_credential_create_with_offer_cb(command_handle: {}, source_id: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, source_id, e, 0, source_id);
+                cb(command_handle, e.into(), 0, ptr::null_mut());
+            }
         };
 
         Ok(())
@@ -818,172 +809,211 @@ mod tests {
 
     use super::*;
     use std::ffi::CString;
-    use std::time::Duration;
     use connection;
     use api::VcxStateType;
     use api::return_types_u32;
     use serde_json::Value;
-    use utils::constants::{DEFAULT_SERIALIZED_CREDENTIAL, DEFAULT_SERIALIZE_VERSION};
+    use utils::constants::{DEFAULT_SERIALIZED_CREDENTIAL, FULL_CREDENTIAL_SERIALIZED, PENDING_OBJECT_SERIALIZE_VERSION};
+    use utils::devsetup::*;
+    use utils::httpclient::AgencyMock;
+    use utils::timeout::TimeoutUtils;
 
-    pub const BAD_CREDENTIAL_OFFER: &str = r#"{"version": "0.1","to_did": "LtMgSjtFcyPwenK9SHCyb8","from_did": "LtMgSjtFcyPwenK9SHCyb8","credential": {"account_num": ["8BEaoLf8TBmK4BUyX8WWnA"],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "Pd4fnFtRBcMKRVC2go5w3j","credential_name": "Account Certificate","credential_id": "3675417066","msg_ref_id": "ymy5nth"}"#;
+    use ::credential::tests::BAD_CREDENTIAL_OFFER;
+    use utils::constants;
+    use credential_request::CredentialRequest;
+
+    fn _vcx_credential_create_with_offer_c_closure(offer: &str) -> Result<u32, u32> {
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        let rc = vcx_credential_create_with_offer(cb.command_handle,
+                                                  CString::new("test_create").unwrap().into_raw(),
+                                                  CString::new(offer).unwrap().into_raw(),
+                                                  Some(cb.get_callback()));
+        if rc != error::SUCCESS.code_num {
+            return Err(rc);
+        }
+
+        let handle = cb.receive(TimeoutUtils::some_medium());
+        handle
+    }
 
     #[test]
     fn test_vcx_credential_create_with_offer_success() {
-        init!("true");
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_credential_create_with_offer(cb.command_handle,
-                                                    CString::new("test_create").unwrap().into_raw(),
-                                                    CString::new(::utils::constants::CREDENTIAL_OFFER_JSON).unwrap().into_raw(),
-                                                    Some(cb.get_callback())), error::SUCCESS.code_num);
-        assert!(cb.receive(Some(Duration::from_secs(10))).unwrap() > 0);
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_credential_create_with_offer_c_closure(constants::CREDENTIAL_OFFER_JSON).unwrap();
+        assert!(handle > 0);
     }
 
     #[test]
     fn test_vcx_credential_create_with_offer_fails() {
-        init!("true");
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_credential_create_with_offer(cb.command_handle,
-                                                    CString::new("test_create").unwrap().into_raw(),
-                                                    CString::new(BAD_CREDENTIAL_OFFER).unwrap().into_raw(),
-                                                    Some(cb.get_callback())), error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(), Some(error::INVALID_JSON.code_num));
+        let _setup = SetupMocks::init();
+
+        let err = _vcx_credential_create_with_offer_c_closure(BAD_CREDENTIAL_OFFER).unwrap_err();
+        assert_eq!(err, error::INVALID_JSON.code_num);
     }
 
     #[test]
     fn test_vcx_credential_serialize_and_deserialize() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_credential_create_with_offer_c_closure(constants::CREDENTIAL_OFFER_JSON).unwrap();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let handle = credential::credential_create_with_offer("test_vcx_credential_serialize", ::utils::constants::CREDENTIAL_OFFER_JSON).unwrap();
         assert_eq!(vcx_credential_serialize(cb.command_handle,
                                             handle,
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
-        let s = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
-        let j: Value = serde_json::from_str(&s).unwrap();
-        assert_eq!(j["version"], DEFAULT_SERIALIZE_VERSION);
+        let credential_json = cb.receive(TimeoutUtils::some_short()).unwrap().unwrap();
+
+        let object: Value = serde_json::from_str(&credential_json).unwrap();
+        assert_eq!(object["version"], PENDING_OBJECT_SERIALIZE_VERSION);
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credential_deserialize(cb.command_handle,
-                                              CString::new(s).unwrap().into_raw(),
+                                              CString::new(credential_json).unwrap().into_raw(),
                                               Some(cb.get_callback())), error::SUCCESS.code_num);
-        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let handle = cb.receive(TimeoutUtils::some_short()).unwrap();
         assert!(handle > 0);
     }
 
     #[test]
     fn test_vcx_credential_send_request() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = credential::credential_create_with_offer("test_send_request", ::utils::constants::CREDENTIAL_OFFER_JSON).unwrap();
         assert_eq!(credential::get_state(handle).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
 
         let connection_handle = connection::tests::build_test_connection();
+
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_credential_send_request(cb.command_handle, handle, connection_handle, 0, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_vcx_credential_get_new_offers() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cxn = ::connection::tests::build_test_connection();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_credential_get_offers(cb.command_handle,
                                              cxn,
                                              Some(cb.get_callback())),
                    error::SUCCESS.code_num as u32);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_vcx_credential_create() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cxn = ::connection::tests::build_test_connection();
+
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
         assert_eq!(vcx_credential_create_with_msgid(cb.command_handle,
                                                     CString::new("test_vcx_credential_create").unwrap().into_raw(),
                                                     cxn,
                                                     CString::new("123").unwrap().into_raw(),
                                                     Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_vcx_credential_get_state() {
-        init!("true");
-        let handle = credential::from_string(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
-        assert!(handle > 0);
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_credential_create_with_offer_c_closure(constants::CREDENTIAL_OFFER_JSON).unwrap();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        let rc = vcx_credential_get_state(cb.command_handle, handle, Some(cb.get_callback()));
-        assert_eq!(rc, error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
+        assert_eq!(vcx_credential_get_state(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
     }
 
     #[test]
     fn test_vcx_credential_update_state() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cxn = ::connection::tests::build_test_connection();
-        ::connection::connect(cxn, None).unwrap();
+
         let handle = credential::from_string(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
-        ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
+
+        AgencyMock::set_next_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credential_update_state(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
+
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_credential_send_request(cb.command_handle, handle, cxn, 0, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_vcx_credential_get_request_msg() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cxn = ::connection::tests::build_test_connection();
-        ::connection::connect(cxn, None).unwrap();
+
         let my_pw_did = CString::new(::connection::get_pw_did(cxn).unwrap()).unwrap().into_raw();
         let their_pw_did = CString::new(::connection::get_their_pw_did(cxn).unwrap()).unwrap().into_raw();
+
         let handle = credential::from_string(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
-        ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
+
+        AgencyMock::set_next_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credential_update_state(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_credential_get_request_msg(cb.command_handle, handle, my_pw_did, their_pw_did, 0, Some(cb.get_callback())), error::SUCCESS.code_num);
-        let msg = cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
-        assert!(msg.len() > 0);
+        let msg = cb.receive(TimeoutUtils::some_medium()).unwrap().unwrap();
+
+        ::serde_json::from_str::<CredentialRequest>(&msg).unwrap();
     }
 
     #[test]
     fn test_get_credential() {
-        use utils::constants::FULL_CREDENTIAL_SERIALIZED;
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = credential::from_string(FULL_CREDENTIAL_SERIALIZED).unwrap();
         let bad_handle = 1123;
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_get_credential(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap().unwrap();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_get_credential(cb.command_handle, bad_handle, Some(cb.get_callback())), error::INVALID_CREDENTIAL_HANDLE.code_num);
 
         let handle = credential::from_string(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_get_credential(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        use utils::error::INVALID_STATE;
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(), Some(INVALID_STATE.code_num));
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).err(), Some(error::INVALID_STATE.code_num));
     }
 
     #[test]
     fn test_get_payment_txn() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let handle = credential::from_string(::utils::constants::FULL_CREDENTIAL_SERIALIZED).unwrap();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         vcx_credential_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_vcx_credential_release() {
-        init!("true");
-        let handle = credential::from_string(::utils::constants::FULL_CREDENTIAL_SERIALIZED).unwrap();
-        let unknown_handle = handle + 1;
-        assert_eq!(vcx_credential_release(unknown_handle), error::INVALID_CREDENTIAL_HANDLE.code_num);
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_credential_create_with_offer_c_closure(constants::CREDENTIAL_OFFER_JSON).unwrap();
+
+        assert_eq!(vcx_credential_release(handle + 1), error::INVALID_CREDENTIAL_HANDLE.code_num);
+
+        assert_eq!(vcx_credential_release(handle), error::SUCCESS.code_num);
+
+        assert_eq!(vcx_credential_release(handle), error::INVALID_CREDENTIAL_HANDLE.code_num);
     }
 }

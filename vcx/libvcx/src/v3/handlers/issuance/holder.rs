@@ -114,21 +114,20 @@ impl HolderSM {
         let state = match state {
             HolderState::OfferReceived(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialRequestSend(connection_handle) => {
-                    let conn_handle = connection_handle;
-                    let request = _make_credential_request(conn_handle, &state_data.offer);
+                    let request = _make_credential_request(connection_handle, &state_data.offer);
                     match request {
                         Ok((cred_request, req_meta, cred_def_json)) => {
                             let cred_request = cred_request
                                 .set_thread_id(&thread_id);
-                            connection::remove_pending_message(conn_handle, &state_data.offer.id)?;
-                            connection::send_message(conn_handle, cred_request.to_a2a_message())?;
+                            connection::remove_pending_message(connection_handle, &state_data.offer.id)?;
+                            connection::send_message(connection_handle, cred_request.to_a2a_message())?;
                             HolderState::RequestSent((state_data, req_meta, cred_def_json, connection_handle).into())
                         }
                         Err(err) => {
                             let problem_report = ProblemReport::create()
                                 .set_comment(err.to_string())
                                 .set_thread_id(&thread_id);
-                            connection::send_message(conn_handle, problem_report.to_a2a_message())?;
+                            connection::send_message(connection_handle, problem_report.to_a2a_message())?;
                             HolderState::Finished((state_data, problem_report).into())
                         }
                     }
@@ -260,9 +259,9 @@ fn _make_credential_request(conn_handle: u32, offer: &CredentialOffer) -> VcxRes
 mod test {
     use super::*;
 
+    use utils::devsetup::SetupAriesMocks;
     use v3::handlers::connection::tests::mock_connection;
     use v3::test::source_id;
-    use v3::test::setup::TestModeSetup;
     use v3::messages::issuance::credential::tests::_credential;
     use v3::messages::issuance::credential_offer::tests::_credential_offer;
     use v3::messages::issuance::credential_request::tests::_credential_request;
@@ -291,7 +290,7 @@ mod test {
 
         #[test]
         fn test_holder_new() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let holder_sm = _holder_sm();
 
@@ -305,7 +304,7 @@ mod test {
 
         #[test]
         fn test_holder_init() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let holder_sm = _holder_sm();
             assert_match!(HolderState::OfferReceived(_), holder_sm.state);
@@ -313,7 +312,7 @@ mod test {
 
         #[test]
         fn test_issuer_handle_credential_request_sent_message_from_offer_received_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut holder_sm = _holder_sm();
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
@@ -323,7 +322,7 @@ mod test {
 
         #[test]
         fn test_issuer_handle_credential_request_sent_message_from_offer_received_state_for_invalid_offer() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let credential_offer = CredentialOffer::create().set_offers_attach(r#"{"credential offer": {}}"#).unwrap();
 
@@ -336,7 +335,7 @@ mod test {
 
         #[test]
         fn test_issuer_handle_other_messages_from_offer_received_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut holder_sm = _holder_sm();
 
@@ -349,7 +348,7 @@ mod test {
 
         #[test]
         fn test_issuer_handle_credential_message_from_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut holder_sm = _holder_sm();
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
@@ -361,7 +360,7 @@ mod test {
 
         #[test]
         fn test_issuer_handle_invalid_credential_message_from_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut holder_sm = _holder_sm();
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
@@ -373,7 +372,7 @@ mod test {
 
         #[test]
         fn test_issuer_handle_problem_report_from_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut holder_sm = _holder_sm();
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
@@ -385,7 +384,7 @@ mod test {
 
         #[test]
         fn test_issuer_handle_other_messages_from_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut holder_sm = _holder_sm();
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
@@ -399,7 +398,7 @@ mod test {
 
         #[test]
         fn test_issuer_handle_message_from_finished_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut holder_sm = _holder_sm();
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
@@ -421,7 +420,7 @@ mod test {
 
         #[test]
         fn test_holder_find_message_to_handle_from_offer_received_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let holder = _holder_sm();
 
@@ -443,7 +442,7 @@ mod test {
 
         #[test]
         fn test_holder_find_message_to_handle_from_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let holder = _holder_sm().to_request_sent_state();
 
@@ -504,7 +503,7 @@ mod test {
 
         #[test]
         fn test_holder_find_message_to_handle_from_finished_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let holder = _holder_sm().to_finished_state();
 
@@ -529,7 +528,7 @@ mod test {
 
         #[test]
         fn test_get_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             assert_eq!(VcxStateType::VcxStateRequestReceived as u32, _holder_sm().state());
             assert_eq!(VcxStateType::VcxStateOfferSent as u32, _holder_sm().to_request_sent_state().state());

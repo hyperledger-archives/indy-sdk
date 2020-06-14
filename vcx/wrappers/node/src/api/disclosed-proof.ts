@@ -357,7 +357,7 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
    * await disclosedProof.sendProof(connection)
    * ```
    */
-  public async sendProof (connection? : Connection): Promise<void> {
+  public async sendProof (connection?: Connection): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
           (resolve, reject, cb) => {
@@ -552,12 +552,11 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
   /**
    * Declines presentation request.
    * There are two ways of following interaction:
-   *     - Prover wants to propose using a different presentation - pass `proposal` parameter
+   *     - Prover wants to propose using a different presentation - pass `proposal` parameter.
    *     - Prover doesn't want to continue interaction - pass `reason` parameter.
    * Note that only one of these parameters can be passed.
    *
-   * Note that this function is useful in case `aries` communication method is used.
-   * In other cases it returns ActionNotSupported error.
+   * Note that proposing of different presentation is supported for `aries` protocol only.
    *
    * Example:
    * ```

@@ -337,15 +337,18 @@ pub fn check_is_published(handle: u32) -> VcxResult<bool> {
 #[cfg(test)]
 pub mod tests {
     use utils::{
-        constants::{SCHEMA_ID, CRED_DEF_ID},
-        get_temp_dir_path
+        constants::SCHEMA_ID,
+        get_temp_dir_path,
     };
     use super::*;
     use settings;
     use std::{
         thread::sleep,
-        time::Duration
+        time::Duration,
     };
+    use utils::devsetup::*;
+    #[cfg(feature = "pool_tests")]
+    use utils::libindy::payments::add_new_did;
 
     static CREDENTIAL_DEF_NAME: &str = "Test Credential Definition";
     static ISSUER_DID: &str = "4fUDR9R7fjwELRvH9JT6HH";
@@ -353,7 +356,7 @@ pub mod tests {
     pub fn revocation_details(revoc: bool) -> serde_json::Value {
         let mut revocation_details = json!({"support_revocation":revoc});
         if revoc {
-            revocation_details["tails_file"] = json!(get_temp_dir_path(Some("tails_file.txt")).to_str().unwrap());
+            revocation_details["tails_file"] = json!(get_temp_dir_path("tails_file.txt").to_str().unwrap());
             revocation_details["max_creds"] = json!(10);
         }
         revocation_details
@@ -361,6 +364,7 @@ pub mod tests {
 
     pub fn prepare_create_cred_def_data(revoc: bool) -> (u32, String, String, serde_json::Value) {
         let schema_handle = ::schema::tests::create_schema_real();
+        sleep(Duration::from_secs(2));
         let schema_id = ::schema::get_schema_id(schema_handle).unwrap();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let revocation_details = revocation_details(revoc);
@@ -392,7 +396,8 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_cred_def_without_rev_will_have_no_rev_id() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
         let (_, handle) = create_cred_def_real(false);
         let rev_reg_id = get_rev_reg_id(handle).unwrap();
         assert!(rev_reg_id.is_none());
@@ -403,26 +408,19 @@ pub mod tests {
     }
 
     #[test]
-    fn test_get_cred_def() {
-        init!("true");
+    fn test_create_cred_def() {
+        let _setup = SetupMocks::init();
+
         let (_, handle) = create_cred_def_real(false);
 
-        let payment = serde_json::to_string(&get_cred_def_payment_txn(handle).unwrap()).unwrap();
-        assert!(payment.len() > 0);
-    }
-
-    #[test]
-    fn test_get_credential_def_by_send_request_fails() {
-        settings::clear_config();
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        assert!(::utils::libindy::anoncreds::get_cred_def_json(CRED_DEF_ID).is_err());
+        let payment = &get_cred_def_payment_txn(handle).unwrap();
+        assert!(payment.amount > 0);
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_get_credential_def() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
         let (_, _, cred_def_id, cred_def_json, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
 
         let (id, r_cred_def_json) = ::utils::libindy::anoncreds::get_cred_def_json(&cred_def_id).unwrap();
@@ -436,14 +434,13 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_revocable_fails_with_no_tails_file() {
-        let wallet_name = "test_create_revocable_fails_with_no_tails_file";
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         let rc = create_and_publish_credentialdef("1".to_string(),
-                                                  wallet_name.to_string(),
+                                                  "test_create_revocable_fails_with_no_tails_file".to_string(),
                                                   did,
                                                   schema_id,
                                                   "tag_1".to_string(),
@@ -454,15 +451,14 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_revocable_cred_def_with_payments() {
-        let wallet_name = "test_create_revocable_cred_def";
-        init!("ledger");
+        let _setup = SetupLibraryWalletPool::init();
 
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
-        let revocation_details = json!({"support_revocation": true, "tails_file": get_temp_dir_path(Some("tails.txt")).to_str().unwrap(), "max_creds": 2}).to_string();
+        let revocation_details = json!({"support_revocation": true, "tails_file": get_temp_dir_path("tails.txt").to_str().unwrap(), "max_creds": 2}).to_string();
         let handle = create_and_publish_credentialdef("1".to_string(),
-                                                      wallet_name.to_string(),
+                                                      "test_create_revocable_cred_def".to_string(),
                                                       did,
                                                       schema_id,
                                                       "tag_1".to_string(),
@@ -473,70 +469,69 @@ pub mod tests {
         assert!(get_rev_reg_def_payment_txn(handle).unwrap().is_some());
         assert!(get_rev_reg_delta_payment_txn(handle).unwrap().is_some());
         let cred_id = get_cred_def_id(handle).unwrap();
-        let (_, json) = ::utils::libindy::anoncreds::get_cred_def_json(&cred_id).unwrap();
-        println!("cred_def_json: {:?}", json);
+        ::utils::libindy::anoncreds::get_cred_def_json(&cred_id).unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_credential_def_real() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPool::init();
 
-        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
-        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (_, handle) = create_cred_def_real(false);
 
-        let rc = create_and_publish_credentialdef("1".to_string(),
-                                                  "name".to_string(),
-                                                  did,
-                                                  schema_id,
-                                                  "tag_1".to_string(),
-                                                  r#"{"support_revocation":false}"#.to_string()).unwrap();
+        let _source_id = get_source_id(handle).unwrap();
+        let _cred_def_id = get_cred_def_id(handle).unwrap();
+        let _schema_json = to_string(handle).unwrap();
 
-        let payment = serde_json::to_string(&get_cred_def_payment_txn(rc).unwrap()).unwrap();
-        assert!(payment.len() > 0);
+        let payment = &get_cred_def_payment_txn(handle).unwrap();
+        assert!(payment.amount > 0);
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_credential_def_no_fees_real() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
-        let _rc = create_cred_def_real(false);
+        let (_, handle) = create_cred_def_real(false);
+
+        let _source_id = get_source_id(handle).unwrap();
+        let _cred_def_id = get_cred_def_id(handle).unwrap();
+        let _schema_json = to_string(handle).unwrap();
+
+        // No Payment performed
+        let _payment = get_cred_def_payment_txn(handle).unwrap_err();
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
-    fn test_create_credential_def_fails_when_already_created() {
-        init!("ledger");
-        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
-        let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+    fn test_create_duplicate_credential() {
+        let _setup = SetupLibraryWalletPool::init();
 
-        let _handle = create_and_publish_credentialdef("1".to_string(),
-                                                      "name".to_string(),
-                                                      my_did.clone(),
-                                                      schema_id.clone(),
-                                                      "tag_1".to_string(),
-                                                      r#"{"support_revocation":false}"#.to_string()).unwrap();
+        let (_, schema_id, did, revocation_details) = prepare_create_cred_def_data(false);
 
-        create_and_publish_credentialdef("1".to_string(),
-                                         "name".to_string(),
-                                         my_did,
-                                         schema_id,
-                                         "tag_1".to_string(),
-                                         r#"{"support_revocation":false}"#.to_string()).unwrap();
-    }
+        let handle_1 = create_and_publish_credentialdef("1".to_string(),
+                                                        "name".to_string(),
+                                                        did.clone(),
+                                                        schema_id.clone(),
+                                                        "tag_1".to_string(),
+                                                        revocation_details.to_string()).unwrap();
 
-    #[test]
-    fn test_create_credentialdef_success() {
-        init!("true");
-        let handle = create_cred_def_fake();
-        assert!(handle > 0);
+        let handle_2 = create_and_publish_credentialdef("1".to_string(),
+                                                        "name".to_string(),
+                                                        did.clone(),
+                                                        schema_id.clone(),
+                                                        "tag_1".to_string(),
+                                                        revocation_details.to_string()).unwrap();
+
+        assert_ne!(handle_1, handle_2);
     }
 
     #[test]
     fn test_to_string_succeeds() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = create_cred_def_fake();
+
         let credential_string = to_string(handle).unwrap();
         let credential_values: serde_json::Value = serde_json::from_str(&credential_string).unwrap();
         assert_eq!(credential_values["version"].clone(), "1.0");
@@ -544,22 +539,27 @@ pub mod tests {
 
     #[test]
     fn test_from_string_succeeds() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = create_cred_def_fake();
         let credentialdef_data = to_string(handle).unwrap();
         assert!(!credentialdef_data.is_empty());
         release(handle).unwrap();
+
         let new_handle = from_string(&credentialdef_data).unwrap();
         let new_credentialdef_data = to_string(new_handle).unwrap();
+
         let credentialdef1: CredentialDef = CredentialDef::from_str(&credentialdef_data).unwrap();
         let credentialdef2: CredentialDef = CredentialDef::from_str(&new_credentialdef_data).unwrap();
+
         assert_eq!(credentialdef1, credentialdef2);
         assert_eq!(CredentialDef::from_str("{}").unwrap_err().kind(), VcxErrorKind::CreateCredDef);
     }
 
     #[test]
     fn test_release_all() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let h1 = create_and_publish_credentialdef("SourceId".to_string(), CREDENTIAL_DEF_NAME.to_string(), ISSUER_DID.to_string(), SCHEMA_ID.to_string(), "tag".to_string(), "{}".to_string()).unwrap();
         let h2 = create_and_publish_credentialdef("SourceId".to_string(), CREDENTIAL_DEF_NAME.to_string(), ISSUER_DID.to_string(), SCHEMA_ID.to_string(), "tag".to_string(), "{}".to_string()).unwrap();
         let h3 = create_and_publish_credentialdef("SourceId".to_string(), CREDENTIAL_DEF_NAME.to_string(), ISSUER_DID.to_string(), SCHEMA_ID.to_string(), "tag".to_string(), "{}".to_string()).unwrap();
@@ -573,18 +573,11 @@ pub mod tests {
         assert_eq!(release(h5).unwrap_err().kind(), VcxErrorKind::InvalidCredDefHandle);
     }
 
-    #[test]
-    fn test_map_serde() {
-        let serde_v = json!({"max_creds": 22, "tails_file": "abc.txt"});
-        println!("none: {:?}", serde_v.get("n"));
-    }
-
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_endorse_cred_def() {
-        use utils::libindy::payments::add_new_did;
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
-        init!("ledger_zero_fees");
         let (_, schema_id, did, revocation_details) = prepare_create_cred_def_data(false);
 
         let (endorser_did, _) = add_new_did(Some("ENDORSER"));
@@ -607,9 +600,8 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_endorse_cred_def_with_revocation() {
-        use utils::libindy::payments::add_new_did;
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
-        init!("ledger");
         let (_, schema_id, did, revocation_details) = prepare_create_cred_def_data(true);
 
         let (endorser_did, _) = add_new_did(Some("ENDORSER"));

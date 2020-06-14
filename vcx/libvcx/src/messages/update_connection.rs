@@ -3,6 +3,8 @@ use messages::message_type::MessageTypes;
 use settings;
 use utils::httpclient;
 use error::prelude::*;
+use utils::httpclient::AgencyMock;
+use utils::constants::DELETE_CONNECTION_RESPONSE;
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -71,7 +73,7 @@ impl DeleteConnectionBuilder {
             status_code: ConnectionStatus::Deleted,
             agent_did: String::new(),
             agent_vk: String::new(),
-            version: settings::get_protocol_type()
+            version: settings::get_protocol_type(),
         }
     }
 
@@ -86,9 +88,7 @@ impl DeleteConnectionBuilder {
     pub fn send_secure(&mut self) -> VcxResult<()> {
         trace!("DeleteConnection::send >>>");
 
-        if settings::test_agency_mode_enabled() {
-            return Ok(());
-        }
+        AgencyMock::set_next_response(DELETE_CONNECTION_RESPONSE.to_vec());
 
         let data = self.prepare_request()?;
 
@@ -146,7 +146,8 @@ impl GeneralMessage for DeleteConnectionBuilder {
                         }
                     )
                 ),
-            settings::ProtocolTypes::V2 =>
+            settings::ProtocolTypes::V2 |
+            settings::ProtocolTypes::V3 =>
                 A2AMessage::Version2(
                     A2AMessageV2::UpdateConnection(
                         UpdateConnection {
@@ -164,9 +165,12 @@ impl GeneralMessage for DeleteConnectionBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use utils::devsetup::SetupDefaults;
 
     #[test]
     fn test_deserialize_delete_connection_payload() {
+        let _setup = SetupDefaults::init();
+
         let payload = vec![130, 165, 64, 116, 121, 112, 101, 130, 164, 110, 97, 109, 101, 179, 67, 79, 78, 78, 95, 83, 84, 65, 84, 85, 83, 95, 85, 80, 68, 65, 84, 69, 68, 163, 118, 101, 114, 163, 49, 46, 48, 170, 115, 116, 97, 116, 117, 115, 67, 111, 100, 101, 166, 67, 83, 45, 49, 48, 51];
         let msg_str = r#"{ "@type": { "name": "CONN_STATUS_UPDATED", "ver": "1.0" }, "statusCode": "CS-103" }"#;
         let delete_connection_payload: UpdateConnectionResponse = serde_json::from_str(&msg_str).unwrap();
