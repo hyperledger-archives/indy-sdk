@@ -43,7 +43,7 @@ mod tests {
         let result_key = o["key"].as_str().unwrap();
         let result_kdf = o["key_derivation_method"].as_str().unwrap();
         let storage_credentials = o["storage_credentials"].as_object().unwrap();
-        assert_eq!(result_key.len(), 44);
+        assert!(result_key.len() >= 43);
         assert_eq!(result_kdf, "RAW");
         assert_eq!(storage_credentials["account"].as_str().unwrap(), "postgres");
         assert_eq!(storage_credentials["password"].as_str().unwrap(), "mysecretpassword");

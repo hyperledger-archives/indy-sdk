@@ -15,6 +15,8 @@ use disclosed_proof::DisclosedProof;
 
 use error::prelude::*;
 
+/// A state machine that tracks the evolution of states for a Prover during
+/// the Present Proof protocol.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProverSM {
     source_id: String,
