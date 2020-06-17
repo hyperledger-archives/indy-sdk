@@ -9,7 +9,7 @@ use v3::handlers::proof_presentation::prover::messages::ProverMessages;
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::proof_presentation::presentation_proposal::PresentationPreview;
 use v3::messages::proof_presentation::presentation_request::PresentationRequest;
-use connection;
+use ::{connection, settings};
 
 use messages::proofs::proof_message::ProofMessage;
 
@@ -54,10 +54,17 @@ impl Prover {
     pub fn generate_presentation_msg(&self) -> VcxResult<String> {
         trace!("Prover::generate_presentation_msg >>>");
 
-        let proof: ProofMessage = self.prover_sm.presentation()?.clone().try_into()?;
+        let proof = self.prover_sm.presentation()?.to_owned();
 
-        ::serde_json::to_string(&proof)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
+        // strict aries protocol is set. return aries formatted Proof
+        if settings::is_strict_aries_protocol_set() {
+            return Ok(json!(proof).to_string())
+        }
+
+        // convert Proof into proprietary format
+        let proof: ProofMessage = proof.try_into()?;
+
+        return Ok(json!(proof).to_string())
     }
 
     pub fn set_presentation(&mut self, presentation: Presentation) -> VcxResult<()> {
