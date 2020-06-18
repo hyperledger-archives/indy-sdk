@@ -229,19 +229,6 @@ pub mod test {
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
 
-//        pub fn update_state_with_message(&self, expected_state: u32) -> A2AMessage {
-//            self.activate();
-//            let did = ::connection::get_pw_did(self.connection_handle).unwrap();
-//            let message = download_message(did);
-//
-//            let a2a_message = ::connection::decode_message(self.connection_handle, message.clone()).unwrap();
-//
-//            ::connection::update_state_with_message(self.connection_handle, message).unwrap();
-//            assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
-//
-//            a2a_message
-//        }
-
         pub fn ping(&self) {
             self.activate();
             ::connection::send_ping(self.connection_handle, None).unwrap();
@@ -533,16 +520,51 @@ pub mod test {
         alice.send_presentation();
         faber.verify_presentation();
         alice.ensure_presentation_verified();
+    }
 
-//        // Decline Presentation
-//        faber.request_presentation();
-//        alice.decline_presentation_request();
-//        faber.update_proof_state(0, 2);
-//
-//        // Propose Presentation
-//        faber.request_presentation();
-//        alice.propose_presentation();
-//        faber.update_proof_state(0, 2);
+    #[cfg(feature = "aries")]
+    #[test]
+    fn aries_demo_handle_connection_related_messages() {
+        PaymentPlugin::load();
+        let _pool = Pool::open();
+
+        let mut faber = Faber::setup();
+        let mut alice = Alice::setup();
+
+        // Publish Schema and Credential Definition
+        faber.create_schema();
+
+        ::std::thread::sleep(::std::time::Duration::from_secs(2));
+
+        faber.create_credential_definition();
+
+        // Connection
+        let invite = faber.create_invite();
+        alice.accept_invite(&invite);
+
+        faber.update_state(3);
+        alice.update_state(4);
+        faber.update_state(4);
+
+        // Ping
+        faber.ping();
+
+        alice.update_state(4);
+
+        faber.update_state(4);
+
+        let faber_connection_info = faber.connection_info();
+        assert!(faber_connection_info["their"]["protocols"].as_array().is_none());
+
+        // Discovery Features
+        faber.discovery_features();
+
+        alice.update_state(4);
+
+        faber.update_state(4);
+
+        let faber_connection_info = faber.connection_info();
+        assert!(faber_connection_info["their"]["protocols"].as_array().unwrap().len() > 0);
     }
 
     #[cfg(feature = "aries")]

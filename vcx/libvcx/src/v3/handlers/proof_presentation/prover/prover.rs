@@ -75,8 +75,9 @@ impl Prover {
         let connection_handle = self.prover_sm.connection_handle()?;
         let messages = connection::get_messages(connection_handle)?;
 
-        if let Some((_, message)) = self.prover_sm.find_message_to_handle(messages) {
+        if let Some((uid, message)) = self.prover_sm.find_message_to_handle(messages) {
             self.handle_message(message.into())?;
+            connection::update_message_status(connection_handle, uid)?;
         };
 
         Ok(())
