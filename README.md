@@ -82,7 +82,8 @@ Indy SDK provides libvcx wrappers for the following programming languages and pl
 These wrappers are currently in **experimental** state and it is not part of official releases.
 
 ##### Example use
-For the main workflow example check [VCX Python demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
+- For the main workflow example check [VCX Python demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
+- Another example workflow is available as [VCX NodeJS demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/node#run-demo).
 
 ### Dummy Cloud Agent
 [Dummy Cloud Agent](/vcx/dummy-cloud-agent/README.md) is simple implementation of VCX compatible Cloud Agent.
