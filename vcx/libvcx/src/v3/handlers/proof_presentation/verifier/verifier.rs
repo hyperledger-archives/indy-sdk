@@ -62,8 +62,9 @@ impl Verifier {
         let connection_handle = self.verifier_sm.connection_handle()?;
         let messages = connection::get_messages(connection_handle)?;
 
-        if let Some((_, message)) = self.verifier_sm.find_message_to_handle(messages) {
+        if let Some((uid, message)) = self.verifier_sm.find_message_to_handle(messages) {
             self.handle_message(message.into())?;
+            connection::update_message_status(connection_handle, uid)?;
         };
 
         Ok(())
@@ -75,13 +76,7 @@ impl Verifier {
         let message: A2AMessage = ::serde_json::from_str(&message)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot update state with message: Message deserialization failed: {:?}", err)))?;
 
-//        let connection_handle = self.verifier_sm.connection_handle()?;
-
-//        let uid = message.uid.clone();
-//        let a2a_message = connection::decode_message(connection_handle, message)?;
-
         self.handle_message(message.into())?;
-//        connection::update_message_status(connection_handle, uid)?;
 
         Ok(())
     }

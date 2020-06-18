@@ -99,16 +99,19 @@ impl Connection {
         }
 
         let messages = self.get_messages()?;
+        let agent_info = self.agent_info().clone();
 
-        if let Some((_, message)) = self.connection_sm.find_message_to_handle(messages) {
+        if let Some((uid, message)) = self.connection_sm.find_message_to_handle(messages) {
             self.handle_message(message.into())?;
+            agent_info.update_message_status(uid)?;
         };
 
         if let Some(prev_agent_info) = self.connection_sm.prev_agent_info().cloned() {
             let messages = prev_agent_info.get_messages()?;
 
-            if let Some((_, message)) = self.connection_sm.find_message_to_handle(messages) {
+            if let Some((uid, message)) = self.connection_sm.find_message_to_handle(messages) {
                 self.handle_message(message.into())?;
+                prev_agent_info.update_message_status(uid)?;
             }
         }
 

@@ -59,8 +59,11 @@ impl HolderSM {
         let messages = connection::get_messages(conn_handle)?;
 
         match self.find_message_to_handle(messages) {
-            Some((_, msg)) => {
-                self.handle_message(msg.into())
+            Some((uid, msg)) => {
+                let state = self.handle_message(msg.into())?;
+                connection::update_message_status(conn_handle, uid)?;
+                Ok(state)
+
             }
             None => Ok(self)
         }
