@@ -268,6 +268,23 @@ async def create_postgres_wallet(provisionConfig):
     print("Postgres wallet provisioned")
 
 
+async def download_message(pw_did: str, msg_type: str):
+    messages = await vcx_messages_download("MS-103", None, pw_did)
+    messages = json.loads(messages.decode())[0]['msgs']
+    print(messages)
+    message = [message for message in messages if json.loads(message["decryptedPayload"])["@type"]["name"] == msg_type][0]
+    decryptedPayload = message["decryptedPayload"]
+    return message["uid"], json.loads(decryptedPayload)["@msg"], json.dumps(message)
+
+
+async def update_message_as_read(pw_did: str, uid: str):
+    messages_to_update = [{
+        "pairwiseDID": pw_did,
+        "uids": [uid]
+    }]
+    await vcx_messages_update_status(json.dumps(messages_to_update))
+
+
 def load_payment_library():
     payment_plugin = cdll.LoadLibrary('libnullpay' + file_ext())
     payment_plugin.nullpay_init()

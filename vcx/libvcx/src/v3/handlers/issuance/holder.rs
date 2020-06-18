@@ -59,8 +59,7 @@ impl HolderSM {
         let messages = connection::get_messages(conn_handle)?;
 
         match self.find_message_to_handle(messages) {
-            Some((uid, msg)) => {
-                connection::update_message_status(conn_handle, uid)?;
+            Some((_, msg)) => {
                 self.handle_message(msg.into())
             }
             None => Ok(self)
@@ -119,7 +118,6 @@ impl HolderSM {
                         Ok((cred_request, req_meta, cred_def_json)) => {
                             let cred_request = cred_request
                                 .set_thread_id(&thread_id);
-                            connection::remove_pending_message(connection_handle, &state_data.offer.id)?;
                             connection::send_message(connection_handle, cred_request.to_a2a_message())?;
                             HolderState::RequestSent((state_data, req_meta, cred_def_json, connection_handle).into())
                         }
