@@ -100,7 +100,7 @@ pub struct UpdateComMethod {
     com_method: ComMethod,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ComMethodType {
     A2A,
     Webhook
@@ -588,6 +588,18 @@ mod tests {
         });
 
         assert_eq!(expected, ::serde_json::from_str::<serde_json::Value>(&result).unwrap());
+    }
+
+    #[test]
+    fn test_method_type_serialization() {
+        assert_eq!("\"1\"", serde_json::to_string::<ComMethodType>(&ComMethodType::A2A).unwrap());
+        assert_eq!("\"2\"", serde_json::to_string::<ComMethodType>(&ComMethodType::Webhook).unwrap());
+    }
+
+    #[test]
+    fn test_method_type_deserialization() {
+        assert_eq!(ComMethodType::A2A, serde_json::from_str::<ComMethodType>("\"1\"").unwrap());
+        assert_eq!(ComMethodType::Webhook, serde_json::from_str::<ComMethodType>("\"2\"").unwrap());
     }
 
     #[ignore]

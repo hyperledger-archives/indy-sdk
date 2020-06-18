@@ -165,12 +165,11 @@ fn _finish_init(command_handle: CommandHandle, cb: extern fn(xcommand_handle: Co
             }
             Err(e) => {
                 debug!("webhook_url was not updated in agency: {}", e);
-                cb(command_handle, e.into());
+                cb(command_handle, error::SUCCESS.code_num);
             }
         }
         Ok(())
     });
-
     error::SUCCESS.code_num
 }
 
