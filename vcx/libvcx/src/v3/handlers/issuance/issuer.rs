@@ -1,6 +1,6 @@
 use api::VcxStateType;
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
-use v3::handlers::issuance::states::{IssuerState, InitialState};
+use v3::handlers::issuance::states::{IssuerState, InitialState };
 use v3::messages::a2a::A2AMessage;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
@@ -41,13 +41,19 @@ impl IssuerSM {
     }
 
     pub fn revoke(&self) -> VcxResult<()> {
+
         match &self.state {
             IssuerState::Finished(state) => {
-                if let (Some(cred_rev_id), Some(rev_reg_id), Some(tails_file)) = (&state.cred_rev_id, &state.rev_reg_id, &state.tails_file) {
-                    revoke_credential(&tails_file, &rev_reg_id, &cred_rev_id)?;
-                    Ok(())
-                } else {
-                    Err(VcxError::from(VcxErrorKind::InvalidRevocationDetails))
+                match &state.revocation_info_v1 {
+                    Some(rev_info) => {
+                        if let (Some(cred_rev_id), Some(rev_reg_id), Some(tails_file)) = (&rev_info.cred_rev_id, &rev_info.rev_reg_id, &rev_info.tails_file) {
+                            revoke_credential(&tails_file, &rev_reg_id, &cred_rev_id)?;
+                            Ok(())
+                        } else {
+                            Err(VcxError::from(VcxErrorKind::InvalidRevocationDetails))
+                        }
+                    },
+                    None => Err(VcxError::from(VcxErrorKind::NotReady))
                 }
             },
             _ => Err(VcxError::from(VcxErrorKind::NotReady))
