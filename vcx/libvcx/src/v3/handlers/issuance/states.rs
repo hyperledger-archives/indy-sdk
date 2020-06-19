@@ -83,10 +83,16 @@ pub struct RequestReceivedState {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RevocationInfoV1 {
+	pub cred_rev_id: Option<String>,
+	pub rev_reg_id: Option<String>,
+	pub tails_file: Option<String>
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CredentialSentState {
     pub connection_handle: u32,
-    pub rev_reg_id: Option<String>,
-    pub tails_file: Option<String>,
+    pub revocation_info_v1: Option<RevocationInfoV1>,
     pub thread_id: String
 }
 
@@ -94,9 +100,7 @@ pub struct CredentialSentState {
 pub struct FinishedState {
     pub cred_id: Option<String>,
     pub thread_id: String,
-    pub cred_rev_id: Option<String>,
-    pub rev_reg_id: Option<String>,
-    pub tails_file: Option<String>,
+    pub revocation_info_v1: Option<RevocationInfoV1>,
     pub status: Status
 }
 
@@ -120,9 +124,7 @@ impl From<InitialState> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: String::new(),
-            cred_rev_id: None,
-            rev_reg_id: None,
-            tails_file: None,
+            revocation_info_v1: None,
             status: Status::Undefined,
         }
     }
@@ -148,8 +150,11 @@ impl From<(RequestReceivedState, MessageId)> for CredentialSentState {
         trace!("SM is now in CredentialSent state");
         CredentialSentState {
             connection_handle: state.connection_handle,
-            rev_reg_id: state.rev_reg_id,
-            tails_file: state.tails_file,
+            revocation_info_v1: Some(RevocationInfoV1 {
+                cred_rev_id: None,
+                rev_reg_id: state.rev_reg_id,
+                tails_file: state.tails_file,
+            }),
             thread_id: state.thread_id,
         }
     }
@@ -161,9 +166,11 @@ impl From<OfferSentState> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: state.thread_id,
-            cred_rev_id: None,
-            rev_reg_id: state.rev_reg_id,
-            tails_file: state.tails_file,
+            revocation_info_v1: Some(RevocationInfoV1 {
+                cred_rev_id: None,
+                rev_reg_id: state.rev_reg_id,
+                tails_file: state.tails_file,
+            }),
             status: Status::Undefined,
         }
     }
@@ -175,9 +182,11 @@ impl From<(OfferSentState, ProblemReport)> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: state.thread_id,
-            cred_rev_id: None,
-            rev_reg_id: state.rev_reg_id,
-            tails_file: state.tails_file,
+            revocation_info_v1: Some(RevocationInfoV1 {
+                cred_rev_id: None,
+                rev_reg_id: state.rev_reg_id,
+                tails_file: state.tails_file,
+            }),
             status: Status::Failed(err),
         }
     }
@@ -189,9 +198,11 @@ impl From<(RequestReceivedState, Option<String>)> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: state.thread_id,
-            cred_rev_id: cred_rev_id,
-            rev_reg_id: state.rev_reg_id,
-            tails_file: state.tails_file,
+            revocation_info_v1: Some(RevocationInfoV1 {
+                cred_rev_id: cred_rev_id,
+                rev_reg_id: state.rev_reg_id,
+                tails_file: state.tails_file,
+            }),
             status: Status::Success,
         }
     }
@@ -203,9 +214,11 @@ impl From<(RequestReceivedState, ProblemReport)> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: state.thread_id,
-            cred_rev_id: None,
-            rev_reg_id: state.rev_reg_id,
-            tails_file: state.tails_file,
+            revocation_info_v1: Some(RevocationInfoV1 {
+                cred_rev_id: None,
+                rev_reg_id: state.rev_reg_id,
+                tails_file: state.tails_file,
+            }),
             status: Status::Failed(err),
         }
     }
@@ -217,9 +230,7 @@ impl From<CredentialSentState> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: state.thread_id,
-            cred_rev_id: None,
-            rev_reg_id: state.rev_reg_id,
-            tails_file: state.tails_file,
+            revocation_info_v1: state.revocation_info_v1,
             status: Status::Success,
         }
     }
