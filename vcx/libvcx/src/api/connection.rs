@@ -803,13 +803,13 @@ pub extern fn vcx_connection_send_message(command_handle: CommandHandle,
                                           msg: *const c_char,
                                           send_msg_options: *const c_char,
                                           cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, msg_id: *const c_char)>) -> u32 {
-    info!("vcx_message_send >>>");
+    info!("vcx_connection_send_message >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(msg, VcxErrorKind::InvalidOption);
     check_useful_c_str!(send_msg_options, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_message_send(command_handle: {}, connection_handle: {}, msg: {}, send_msg_options: {})",
+    trace!("vcx_connection_send_message(command_handle: {}, connection_handle: {}, msg: {}, send_msg_options: {})",
            command_handle, connection_handle, msg, send_msg_options);
 
     spawn(move || {

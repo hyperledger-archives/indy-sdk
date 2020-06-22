@@ -269,11 +269,12 @@ async def create_postgres_wallet(provisionConfig):
     print("Postgres wallet provisioned")
 
 
-async def download_message(pw_did: str):
+async def download_message(pw_did: str, msg_type: str):
     messages = await vcx_messages_download("MS-103", None, pw_did)
-    message = json.loads(messages.decode())[0]['msgs'][0]
+    messages = json.loads(messages.decode())[0]['msgs']
+    print(messages)
+    message = [message for message in messages if json.loads(message["decryptedPayload"])["@type"]["name"] == msg_type][0]
     decryptedPayload = message["decryptedPayload"]
-    print(decryptedPayload)
     return message["uid"], json.loads(decryptedPayload)["@msg"], json.dumps(message)
 
 
