@@ -8,7 +8,7 @@ Automated build: clone the repo and run `mac.build.sh` in the `libindy` folder.
 2. Install required native libraries and utilities (libsodium is added with URL to homebrew since version<1.0.15 is required)
    ```
    brew install pkg-config
-   brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/65effd2b617bade68a8a2c5b39e1c3089cc0e945/Formula/libsodium.rb   
+   brew install libsodium   
    brew install automake 
    brew install autoconf
    brew install cmake
