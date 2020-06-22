@@ -138,27 +138,6 @@ pub mod tests {
                 ::connection::update_message_status(alice.connection_handle, uid).unwrap();
             }
 
-            // Pending Message
-            {
-                faber.activate();
-
-                let message = _ack();
-                ::connection::send_message(faber.connection_handle, message.to_a2a_message()).unwrap();
-
-                alice.activate();
-
-                let messages = ::connection::get_messages(alice.connection_handle).unwrap();
-                assert_eq!(1, messages.len());
-                let uid = messages.keys().next().unwrap().clone();
-
-                ::connection::add_pending_messages(alice.connection_handle, map!( message.id.clone() => uid )).unwrap();
-
-                ::connection::remove_pending_message(alice.connection_handle, &message.id).unwrap();
-
-                let messages = ::connection::get_messages(alice.connection_handle).unwrap();
-                assert_eq!(0, messages.len());
-            }
-
             // Download Messages
             {
                 use messages::get_message::{download_messages, MessageByConnection, Message};
