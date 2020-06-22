@@ -620,7 +620,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     const char * cMessage = [message cStringUsingEncoding:NSUTF8StringEncoding];
-    ret = vcx_connection_update_state_with_message(handle, cMessage, connectionHandle, VcxWrapperCommonNumberCallback);
+    ret = vcx_connection_update_state_with_message(handle, connectionHandle, cMessage, VcxWrapperCommonNumberCallback);
 
     if( ret != 0 )
     {
@@ -1266,7 +1266,7 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     const char * cMessage = [message cStringUsingEncoding:NSUTF8StringEncoding];
-    ret = vcx_disclosed_proof_update_state_with_message(handle, credentialHandle, cMessage, VcxWrapperCommonNumberCallback);
+    ret = vcx_disclosed_proof_update_state_with_message(handle, proofHandle, cMessage, VcxWrapperCommonNumberCallback);
 
     if( ret != 0 )
     {
