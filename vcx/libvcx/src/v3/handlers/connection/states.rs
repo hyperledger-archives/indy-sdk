@@ -48,6 +48,7 @@ pub enum ActorDidExchangeState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DidExchangeState {
     Null(NullState),
+    Initialized(InitializedState),
     Invited(InvitedState),
     Requested(RequestedState),
     Responded(RespondedState),
@@ -57,7 +58,8 @@ pub enum DidExchangeState {
 impl DidExchangeState {
     pub fn code(&self) -> u32 {
         match self {
-            DidExchangeState::Null(_) => VcxStateType::VcxStateInitialized as u32,
+            DidExchangeState::Null(_) => VcxStateType::VcxStateNone as u32,
+            DidExchangeState::Initialized(_) => VcxStateType::VcxStateInitialized as u32,
             DidExchangeState::Invited(_) => VcxStateType::VcxStateOfferSent as u32,
             DidExchangeState::Requested(_) => VcxStateType::VcxStateRequestReceived as u32,
             DidExchangeState::Responded(_) => VcxStateType::VcxStateRequestReceived as u32,
@@ -70,6 +72,9 @@ impl DidExchangeState {
 pub struct NullState {
     error: Option<ProblemReport>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InitializedState {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InvitedState {
@@ -95,9 +100,9 @@ pub struct CompleteState {
     protocols: Option<Vec<ProtocolDescriptor>>,
 }
 
-impl From<(NullState, Invitation)> for InvitedState {
-    fn from((_state, invitation): (NullState, Invitation)) -> InvitedState {
-        trace!("DidExchangeStateSM: transit state from NullState to InvitedState");
+impl From<(InitializedState, Invitation)> for InvitedState {
+    fn from((_state, invitation): (InitializedState, Invitation)) -> InvitedState {
+        trace!("DidExchangeStateSM: transit state from InitializedState to InvitedState");
         InvitedState { invitation }
     }
 }
@@ -315,14 +320,14 @@ impl DidExchangeSM {
             Actor::Inviter => {
                 DidExchangeSM {
                     source_id: source_id.to_string(),
-                    state: ActorDidExchangeState::Inviter(DidExchangeState::Null(NullState { error: None })),
+                    state: ActorDidExchangeState::Inviter(DidExchangeState::Initialized(InitializedState {})),
                     agent_info: AgentInfo::default(),
                 }
             }
             Actor::Invitee => {
                 DidExchangeSM {
                     source_id: source_id.to_string(),
-                    state: ActorDidExchangeState::Invitee(DidExchangeState::Null(NullState { error: None })),
+                    state: ActorDidExchangeState::Invitee(DidExchangeState::Initialized(InitializedState {})),
                     agent_info: AgentInfo::default(),
                 }
             }
@@ -454,7 +459,7 @@ impl DidExchangeSM {
         let state = match state {
             ActorDidExchangeState::Inviter(state) => {
                 match state {
-                    DidExchangeState::Null(state) => {
+                    DidExchangeState::Initialized(state) => {
                         match message {
                             DidExchangeMessages::Connect() => {
                                 agent_info = agent_info.create_agent()?;
@@ -468,7 +473,7 @@ impl DidExchangeSM {
                                 ActorDidExchangeState::Inviter(DidExchangeState::Invited((state, invite).into()))
                             }
                             _ => {
-                                ActorDidExchangeState::Inviter(DidExchangeState::Null(state))
+                                ActorDidExchangeState::Inviter(DidExchangeState::Initialized(state))
                             }
                         }
                     }
@@ -532,6 +537,9 @@ impl DidExchangeSM {
                             }
                         }
                     }
+                    DidExchangeState::Null(state) => {
+                        ActorDidExchangeState::Inviter(DidExchangeState::Null(state))
+                    }
                     DidExchangeState::Completed(state) => {
                         ActorDidExchangeState::Inviter(state.handle_message(message, &agent_info)?)
                     }
@@ -539,13 +547,13 @@ impl DidExchangeSM {
             }
             ActorDidExchangeState::Invitee(state) => {
                 match state {
-                    DidExchangeState::Null(state) => {
+                    DidExchangeState::Initialized(state) => {
                         match message {
                             DidExchangeMessages::InvitationReceived(invitation) => {
                                 ActorDidExchangeState::Invitee(DidExchangeState::Invited((state, invitation).into()))
                             }
                             _ => {
-                                ActorDidExchangeState::Invitee(DidExchangeState::Null(state))
+                                ActorDidExchangeState::Invitee(DidExchangeState::Initialized(state))
                             }
                         }
                     }
@@ -599,6 +607,9 @@ impl DidExchangeSM {
                     DidExchangeState::Responded(state) => {
                         ActorDidExchangeState::Invitee(DidExchangeState::Responded(state))
                     }
+                    DidExchangeState::Null(state) => {
+                        ActorDidExchangeState::Invitee(DidExchangeState::Null(state))
+                    }
                     DidExchangeState::Completed(state) => {
                         ActorDidExchangeState::Invitee(state.handle_message(message, &agent_info)?)
                     }
@@ -613,6 +624,7 @@ impl DidExchangeSM {
             ActorDidExchangeState::Inviter(ref state) =>
                 match state {
                     DidExchangeState::Null(_) => None,
+                    DidExchangeState::Initialized(_) => None,
                     DidExchangeState::Invited(ref state) => Some(DidDoc::from(state.invitation.clone())),
                     DidExchangeState::Requested(ref state) => Some(state.did_doc.clone()),
                     DidExchangeState::Responded(ref state) => Some(state.did_doc.clone()),
@@ -621,6 +633,7 @@ impl DidExchangeSM {
             ActorDidExchangeState::Invitee(ref state) =>
                 match state {
                     DidExchangeState::Null(_) => None,
+                    DidExchangeState::Initialized(_) => None,
                     DidExchangeState::Invited(ref state) => Some(DidDoc::from(state.invitation.clone())),
                     DidExchangeState::Requested(ref state) => Some(state.did_doc.clone()),
                     DidExchangeState::Responded(ref state) => Some(state.did_doc.clone()),
@@ -761,7 +774,7 @@ pub mod test {
 
                 let inviter_sm = inviter_sm();
 
-                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Null(_)), inviter_sm.state);
+                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Initialized(_)), inviter_sm.state);
                 assert_eq!(source_id(), inviter_sm.source_id());
             }
         }
@@ -774,11 +787,11 @@ pub mod test {
                 let _setup = AgencyModeSetup::init();
 
                 let did_exchange_sm = inviter_sm();
-                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Null(_)), did_exchange_sm.state);
+                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Initialized(_)), did_exchange_sm.state);
             }
 
             #[test]
-            fn test_did_exchange_handle_connect_message_from_null_state() {
+            fn test_did_exchange_handle_connect_message_from_initialized_state() {
                 let _setup = AgencyModeSetup::init();
 
                 let mut did_exchange_sm = inviter_sm();
@@ -789,16 +802,16 @@ pub mod test {
             }
 
             #[test]
-            fn test_did_exchange_handle_other_messages_from_null_state() {
+            fn test_did_exchange_handle_other_messages_from_initialized_state() {
                 let _setup = AgencyModeSetup::init();
 
                 let mut did_exchange_sm = inviter_sm();
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
-                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Null(_)), did_exchange_sm.state);
+                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Initialized(_)), did_exchange_sm.state);
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ProblemReportReceived(_problem_report())).unwrap();
-                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Null(_)), did_exchange_sm.state);
+                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Initialized(_)), did_exchange_sm.state);
             }
 
             #[test]
@@ -1201,7 +1214,7 @@ pub mod test {
 
                 let invitee_sm = invitee_sm();
 
-                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Null(_)), invitee_sm.state);
+                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Initialized(_)), invitee_sm.state);
                 assert_eq!(source_id(), invitee_sm.source_id());
             }
         }
@@ -1215,11 +1228,11 @@ pub mod test {
 
                 let did_exchange_sm = invitee_sm();
 
-                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Null(_)), did_exchange_sm.state);
+                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Initialized(_)), did_exchange_sm.state);
             }
 
             #[test]
-            fn test_did_exchange_handle_invite_message_from_null_state() {
+            fn test_did_exchange_handle_invite_message_from_initialized_state() {
                 let _setup = AgencyModeSetup::init();
 
                 let mut did_exchange_sm = invitee_sm();
@@ -1230,16 +1243,16 @@ pub mod test {
             }
 
             #[test]
-            fn test_did_exchange_handle_other_message_from_null_state() {
+            fn test_did_exchange_handle_other_message_from_initialized_state() {
                 let _setup = AgencyModeSetup::init();
 
                 let mut did_exchange_sm = invitee_sm();
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
-                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Null(_)), did_exchange_sm.state);
+                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Initialized(_)), did_exchange_sm.state);
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
-                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Null(_)), did_exchange_sm.state);
+                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Initialized(_)), did_exchange_sm.state);
             }
 
             #[test]
