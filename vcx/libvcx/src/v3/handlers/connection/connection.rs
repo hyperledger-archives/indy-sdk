@@ -178,16 +178,8 @@ impl Connection {
         AgentInfo::send_message_anonymously(message, did_doc)
     }
 
-    pub fn send_generic_message(&self, message: &str, _message_options: &str) -> VcxResult<String> {
-        trace!("Connection::send_generic_message >>> message: {:?}", message);
-
-        let message = match ::serde_json::from_str::<A2AMessage>(message) {
-            Ok(A2AMessage::Generic(message)) => {
-                BasicMessage::create()
-                    .set_content(message.to_string())
-                    .set_time()
-                    .to_a2a_message()
-            }
+    fn parse_generic_message(message: &str, _message_options: &str) -> A2AMessage {
+        match ::serde_json::from_str::<A2AMessage>(message) {
             Ok(a2a_message) => a2a_message,
             Err(_) => {
                 BasicMessage::create()
@@ -195,8 +187,13 @@ impl Connection {
                     .set_time()
                     .to_a2a_message()
             }
-        };
+        }
+    }
 
+    pub fn send_generic_message(&self, message: &str, _message_options: &str) -> VcxResult<String> {
+        trace!("Connection::send_generic_message >>> message: {:?}", message);
+
+        let message = Connection::parse_generic_message(message, _message_options);
         self.send_message(&message).map(|_| String::new())
     }
 
@@ -269,4 +266,40 @@ struct SideConnectionInfo {
     service_endpoint: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     protocols: Option<Vec<ProtocolDescriptor>>,
+}
+
+#[cfg(test)]
+mod tests {
+    use v3::messages::a2a::A2AMessage;
+    use v3::handlers::connection::connection::Connection;
+
+    #[test]
+    fn test_parse_generic_message_plain_string_should_be_parsed_as_basic_msg() -> Result<(), String> {
+        let message = "Some plain text message";
+        let result = Connection::parse_generic_message(message, "");
+        match result {
+            A2AMessage::BasicMessage(basic_msg) => {
+                assert_eq!(basic_msg.content, message);
+                Ok(())
+            }
+            other => Err(format!("Result is not BasicMessage, but: {:?}", other))
+        }
+    }
+
+    #[test]
+    fn test_parse_generic_message_json_msg_should_be_parsed_as_generic() -> Result<(), String> {
+        let message = json!({
+            "@id": "some id",
+            "@type": "some type",
+            "content": "some content"
+        }).to_string();
+        let result = Connection::parse_generic_message(&message, "");
+        match result {
+            A2AMessage::Generic(value) => {
+                assert_eq!(value.to_string(), message);
+                Ok(())
+            }
+            other => Err(format!("Result is not Generic, but: {:?}", other))
+        }
+    }
 }
