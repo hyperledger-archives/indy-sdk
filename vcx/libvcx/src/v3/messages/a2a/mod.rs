@@ -72,7 +72,7 @@ pub enum A2AMessage {
     BasicMessage(BasicMessage),
 
     /// Any Raw Message
-    Generic(String),
+    Generic(Value),
 }
 
 impl<'de> Deserialize<'de> for A2AMessage {
@@ -81,7 +81,7 @@ impl<'de> Deserialize<'de> for A2AMessage {
 
         let message_type: MessageType = match serde_json::from_value(value["@type"].clone()) {
             Ok(message_type) => message_type,
-            Err(_) => return Ok(A2AMessage::Generic(value.to_string()))
+            Err(_) => return Ok(A2AMessage::Generic(value))
         };
 
         match (message_type.family, message_type.type_.as_str()) {
@@ -192,7 +192,7 @@ impl<'de> Deserialize<'de> for A2AMessage {
             }
             (_, other_type) => {
                 warn!("Unexpected @type field structure: {}", other_type);
-                Ok(A2AMessage::Generic(value.to_string()))
+                Ok(A2AMessage::Generic(value))
             }
         }
     }
@@ -229,7 +229,7 @@ impl Serialize for A2AMessage {
             A2AMessage::Query(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::QUERY),
             A2AMessage::Disclose(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::DISCLOSE),
             A2AMessage::BasicMessage(msg) => set_a2a_message_type(msg, MessageFamilies::Basicmessage, A2AMessage::BASIC_MESSAGE),
-            A2AMessage::Generic(msg) => ::serde_json::to_value(msg),
+            A2AMessage::Generic(msg) => Ok(msg.clone())
         }.map_err(ser::Error::custom)?;
 
         value.serialize(serializer)
