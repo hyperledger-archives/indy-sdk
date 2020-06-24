@@ -199,7 +199,7 @@ async function runFaber (options) {
     attrs: proofAttributes,
     preds: proofPredicates,
     name: 'proofForAlice',
-    revocationInterval: {}
+    revocationInterval: { to: Date.now() }
   })
 
   logger.info('#20 Request proof of degree from alice')
