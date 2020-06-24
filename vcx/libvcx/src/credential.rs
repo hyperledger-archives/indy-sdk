@@ -530,6 +530,35 @@ pub fn get_credential(handle: u32) -> VcxResult<String> {
     })
 }
 
+pub fn delete_credential(handle: u32) -> VcxResult<u32> {
+    let source_id = get_source_id(handle).unwrap_or_default();
+    trace!("Credential::delete_credential >>> credential_handle: {}, source_id: {}", handle, source_id);
+
+    HANDLE_MAP.get(handle, |credential| {
+        match credential {
+            Credentials::Pending(_) => {
+                trace!("Cannot delete credential for pending object");
+                Err(VcxError::from_msg(VcxErrorKind::InvalidCredentialHandle, "Cannot delete credential for Pending object"))
+            }
+            Credentials::V1(_) => {
+                // TODO: Implement
+                trace!("delete_credential for V1 is not implemented.");
+                Err(VcxError::from(VcxErrorKind::NotReady))
+            }
+            Credentials::V3(ref credential) => {
+                trace!("Deleting a credential: credential_handle {}, source_id {}", handle, source_id);
+
+                credential.delete_credential()?;
+                Ok(error::SUCCESS.code_num)
+            }
+        }
+    })
+        .map(|_| error::SUCCESS.code_num)
+        .or(Err(VcxError::from(VcxErrorKind::InvalidCredentialHandle)))
+        .and(release(handle))
+        .and_then(|_| Ok(error::SUCCESS.code_num))
+}
+
 pub fn get_payment_txn(handle: u32) -> VcxResult<PaymentTxn> {
     HANDLE_MAP.get(handle, |obj| {
         match obj {

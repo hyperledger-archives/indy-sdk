@@ -13,7 +13,7 @@ use issuer_credential::encode_attributes;
 use v3::messages::status::Status;
 use std::collections::HashMap;
 use connection::{send_message, get_messages};
-use connection::update_message_status;
+use connection;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct IssuerSM {
@@ -54,8 +54,9 @@ impl IssuerSM {
 
         match self.find_message_to_handle(messages) {
             Some((uid, msg)) => {
-                update_message_status(conn_handle, uid)?;
-                self.handle_message(msg.into())
+                let state = self.handle_message(msg.into())?;
+                connection::update_message_status(conn_handle, uid)?;
+                Ok(state)
             }
             None => Ok(self)
         }
