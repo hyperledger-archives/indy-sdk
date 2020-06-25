@@ -1,7 +1,7 @@
 use error::prelude::*;
 use std::convert::TryInto;
 
-use connection;
+use ::{connection, settings};
 use v3::messages::proof_presentation::presentation_request::*;
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::handlers::proof_presentation::verifier::states::VerifierSM;
@@ -99,19 +99,33 @@ impl Verifier {
     pub fn generate_presentation_request_msg(&self) -> VcxResult<String> {
         trace!("Verifier::generate_presentation_request_msg >>>");
 
-        let proof_request: ProofRequestMessage = self.verifier_sm.presentation_request()?.try_into()?;
+        let proof_request = self.verifier_sm.presentation_request()?;
 
-        ::serde_json::to_string(&proof_request)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
+        // strict aries protocol is set. return aries formatted Proof Request
+        if settings::is_strict_aries_protocol_set() {
+            return Ok(json!(proof_request).to_string())
+        }
+
+        // convert Proof Request into proprietary format
+        let proof_request: ProofRequestMessage = proof_request.try_into()?;
+
+        return Ok(json!(proof_request).to_string())
     }
 
     pub fn get_presentation(&self) -> VcxResult<String> {
         trace!("Verifier::get_presentation >>>");
 
-        let proof: ProofMessage = self.verifier_sm.presentation()?.try_into()?;
+        let proof = self.verifier_sm.presentation()?;
 
-        ::serde_json::to_string(&proof)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
+        // strict aries protocol is set. return aries formatted Proof
+        if settings::is_strict_aries_protocol_set() {
+            return Ok(json!(proof).to_string())
+        }
+
+        // convert Proof into proprietary format
+        let proof: ProofMessage = proof.try_into()?;
+
+        return Ok(json!(proof).to_string())
     }
 
     pub fn step(&mut self, message: VerifierMessages) -> VcxResult<()> {

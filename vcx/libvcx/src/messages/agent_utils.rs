@@ -305,7 +305,8 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     let (agent_did, agent_vk) = match my_config.protocol_type {
         settings::ProtocolTypes::V1 => onboarding_v1(&my_did, &my_vk, &my_config.agency_did)?,
         settings::ProtocolTypes::V2 |
-        settings::ProtocolTypes::V3=> onboarding_v2(&my_did, &my_vk, &my_config.agency_did)?,
+        settings::ProtocolTypes::V3 |
+        settings::ProtocolTypes::V4 => onboarding_v2(&my_did, &my_vk, &my_config.agency_did)?,
     };
 
     let config = get_final_config(&my_did, &my_vk, &agent_did, &agent_vk, &wallet_name, &my_config)?;
@@ -438,7 +439,8 @@ pub fn update_agent_info(id: &str, value: &str) -> VcxResult<()> {
             update_agent_info_v1(&to_did, com_method)
         }
         settings::ProtocolTypes::V2 |
-        settings::ProtocolTypes::V3 => {
+        settings::ProtocolTypes::V3 |
+        settings::ProtocolTypes::V4 => {
             update_agent_info_v2(&to_did, com_method)
         }
     }
