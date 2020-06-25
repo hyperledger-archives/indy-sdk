@@ -336,7 +336,7 @@ pub extern fn vcx_wallet_update_record_value(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
-/// Updates the value of a record already in the wallet.
+/// Updates the value of a record tags already in the wallet.
 /// Assumes there is an open wallet and that a type and id pair already exists.
 /// #Params
 ///
@@ -346,7 +346,7 @@ pub extern fn vcx_wallet_update_record_value(command_handle: CommandHandle,
 ///
 /// id: the id ("key") of the record.
 ///
-/// tags: New tags for the record with the associated id and type.
+/// tags_json: New tags for the record with the associated id and type.
 ///
 /// cb: Callback that any errors or a receipt of transfer
 ///
@@ -357,20 +357,33 @@ pub extern fn vcx_wallet_update_record_value(command_handle: CommandHandle,
 pub extern fn vcx_wallet_update_record_tags(command_handle: CommandHandle,
                                             type_: *const c_char,
                                             id: *const c_char,
-                                            tags: *const c_char,
+                                            tags_json: *const c_char,
                                             cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_wallet_update_record_tags >>>");
 
     check_useful_c_str!(type_, VcxErrorKind::InvalidOption);
     check_useful_c_str!(id, VcxErrorKind::InvalidOption);
-    check_useful_c_str!(tags, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(tags_json, VcxErrorKind::InvalidOption);
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_wallet_update_record_tags(command_handle: {}, type_: {}, id: {}, tags: {})",
-           command_handle, secret!(&type_), secret!(&id), secret!(&tags));
+    trace!("vcx_wallet_update_record_tags(command_handle: {}, type_: {}, id: {}, tags_json: {})",
+           command_handle, secret!(&type_), secret!(&id), secret!(&tags_json));
 
     spawn(move || {
-        cb(command_handle, error::SUCCESS.code_num);
+        match wallet::update_record_tags(&type_, &id, &tags_json) {
+            Ok(()) => {
+                trace!("vcx_wallet_update_record_tags(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(x) => {
+                trace!("vcx_wallet_update_record_tags(command_handle: {}, rc: {})",
+                       command_handle, x);
+
+                cb(command_handle, x.into());
+            }
+        };
 
         Ok(())
     });
@@ -388,7 +401,7 @@ pub extern fn vcx_wallet_update_record_tags(command_handle: CommandHandle,
 ///
 /// id: the id ("key") of the record.
 ///
-/// tags: Tags for the record with the associated id and type.
+/// tags_json: Tags for the record with the associated id and type.
 ///
 /// cb: Callback that any errors or a receipt of transfer
 ///
@@ -399,20 +412,34 @@ pub extern fn vcx_wallet_update_record_tags(command_handle: CommandHandle,
 pub extern fn vcx_wallet_add_record_tags(command_handle: CommandHandle,
                                          type_: *const c_char,
                                          id: *const c_char,
-                                         tags: *const c_char,
+                                         tags_json: *const c_char,
                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_wallet_add_record_tags >>>");
 
     check_useful_c_str!(type_, VcxErrorKind::InvalidOption);
     check_useful_c_str!(id, VcxErrorKind::InvalidOption);
-    check_useful_c_str!(tags, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(tags_json, VcxErrorKind::InvalidOption);
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_wallet_add_record_tags(command_handle: {}, type_: {}, id: {}, tags: {})",
-           command_handle, secret!(&type_), secret!(&id), secret!(&tags));
+    trace!("vcx_wallet_add_record_tags(command_handle: {}, type_: {}, id: {}, tags_json: {})",
+           command_handle, secret!(&type_), secret!(&id), secret!(&tags_json));
 
     spawn(move || {
-        cb(command_handle, error::SUCCESS.code_num);
+        match wallet::add_record_tags(&type_, &id, &tags_json) {
+            Ok(()) => {
+                trace!("vcx_wallet_add_record_tags(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(x) => {
+                trace!("vcx_wallet_add_record_tags(command_handle: {}, rc: {})",
+                       command_handle, x);
+
+                cb(command_handle, x.into());
+            }
+        };
+
         Ok(())
     });
 
@@ -429,7 +456,7 @@ pub extern fn vcx_wallet_add_record_tags(command_handle: CommandHandle,
 ///
 /// id: the id ("key") of the record.
 ///
-/// tags: Tags to remove from the record with the associated id and type.
+/// tag_names_json: Tags to remove from the record with the associated id and type.
 ///
 /// cb: Callback that any errors or a receipt of transfer
 ///
@@ -440,20 +467,34 @@ pub extern fn vcx_wallet_add_record_tags(command_handle: CommandHandle,
 pub extern fn vcx_wallet_delete_record_tags(command_handle: CommandHandle,
                                             type_: *const c_char,
                                             id: *const c_char,
-                                            tags: *const c_char,
+                                            tag_names_json: *const c_char,
                                             cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_wallet_delete_record_tags >>>");
 
     check_useful_c_str!(type_, VcxErrorKind::InvalidOption);
     check_useful_c_str!(id, VcxErrorKind::InvalidOption);
-    check_useful_c_str!(tags, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(tag_names_json, VcxErrorKind::InvalidOption);
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_wallet_delete_record_tags(command_handle: {}, type_: {}, id: {}, tags: {})",
-           command_handle, secret!(&type_), secret!(&id), secret!(&tags));
+    trace!("vcx_wallet_delete_record_tags(command_handle: {}, type_: {}, id: {}, tag_names_json: {})",
+           command_handle, secret!(&type_), secret!(&id), secret!(&tag_names_json));
 
     spawn(move || {
-        cb(command_handle, error::SUCCESS.code_num);
+        match wallet::delete_record_tags(&type_, &id, &tag_names_json) {
+            Ok(()) => {
+                trace!("vcx_wallet_delete_record_tags(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(x) => {
+                trace!("vcx_wallet_delete_record_tags(command_handle: {}, rc: {})",
+                       command_handle, x);
+
+                cb(command_handle, x.into());
+            }
+        };
+
         Ok(())
     });
 
