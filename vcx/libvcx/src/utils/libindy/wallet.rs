@@ -214,6 +214,30 @@ pub fn update_record_value(xtype: &str, id: &str, value: &str) -> VcxResult<()> 
         .map_err(VcxError::from)
 }
 
+pub fn add_record_tags(xtype: &str, id: &str, tags: &str) -> VcxResult<()> {
+    trace!("add_record_tags >>> xtype: {}, id: {}, tags: {:?}", secret!(&xtype), secret!(&id), secret!(&tags));
+
+    wallet::add_wallet_record_tags(get_wallet_handle(), xtype, id, tags)
+        .wait()
+        .map_err(VcxError::from)
+}
+
+pub fn update_record_tags(xtype: &str, id: &str, tags: &str) -> VcxResult<()> {
+    trace!("update_record_tags >>> xtype: {}, id: {}, tags: {}", secret!(&xtype), secret!(&id), secret!(&tags));
+
+    wallet::update_wallet_record_tags(get_wallet_handle(), xtype, id, tags)
+        .wait()
+        .map_err(VcxError::from)
+}
+
+pub fn delete_record_tags(xtype: &str, id: &str, tag_names: &str) -> VcxResult<()> {
+    trace!("delete_record_tags >>> xtype: {}, id: {}, tag_names: {}", secret!(&xtype), secret!(&id), secret!(&tag_names));
+
+    wallet::delete_wallet_record_tags(get_wallet_handle(), xtype, id, tag_names)
+        .wait()
+        .map_err(VcxError::from)
+}
+
 pub fn open_search(xtype: &str, query: &str, options: &str) -> VcxResult<SearchHandle> {
     trace!("open_search >>> xtype: {}, query: {}, options: {}", secret!(&xtype), query, options);
 
