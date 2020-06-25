@@ -4,7 +4,7 @@ use indy::{wallet, ErrorCode};
 use settings;
 
 use error::prelude::*;
-use indy::{WalletHandle, INVALID_WALLET_HANDLE};
+use indy::{WalletHandle, SearchHandle, INVALID_WALLET_HANDLE};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WalletRecord {
@@ -210,6 +210,30 @@ pub fn update_record_value(xtype: &str, id: &str, value: &str) -> VcxResult<()> 
     if settings::indy_mocks_enabled() { return Ok(()); }
 
     wallet::update_wallet_record_value(get_wallet_handle(), xtype, id, value)
+        .wait()
+        .map_err(VcxError::from)
+}
+
+pub fn open_search(xtype: &str, query: &str, options: &str) -> VcxResult<SearchHandle> {
+    trace!("open_search >>> xtype: {}, query: {}, options: {}", secret!(&xtype), query, options);
+
+    wallet::open_wallet_search(get_wallet_handle(), xtype, query, options)
+        .wait()
+        .map_err(VcxError::from)
+}
+
+pub fn fetch_next_records(search_handle: SearchHandle, count: usize) -> VcxResult<String> {
+    trace!("fetch_next_records >>> search_handle: {}, count: {}", search_handle, count);
+
+    wallet::fetch_wallet_search_next_records(get_wallet_handle(), search_handle, count)
+        .wait()
+        .map_err(VcxError::from)
+}
+
+pub fn close_search(search_handle: SearchHandle) -> VcxResult<()> {
+    trace!("close_search >>> search_handle: {}", search_handle);
+
+    wallet::close_wallet_search(search_handle)
         .wait()
         .map_err(VcxError::from)
 }
