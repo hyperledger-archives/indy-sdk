@@ -544,6 +544,16 @@ public abstract class LibVcx {
         /** Update a record in wallet */
         public int vcx_wallet_update_record_value(int command_handle, String recordType, String recordId, String recordValue, Callback cb);
 
+        /** Add record tags to a record */
+        public int vcx_wallet_add_record_tags(int command_handle, String recordType, String recordId, String tagsJson, Callback cb);
+
+        /** Update record tags in a record */
+        public int vcx_wallet_update_record_tags(int command_handle, String recordType, String recordId, String tagsJson, Callback cb);
+
+        /** Delete record tags from a record */
+        public int vcx_wallet_delete_record_tags(int command_handle, String recordType, String recordId, String tagNamesJson, Callback cb);
+
+
         /** Opens a wallet search handle */
         public int vcx_wallet_open_search(int command_handle, String recordType, String queryJson, String optionsJson, Callback cb);
 
@@ -552,6 +562,7 @@ public abstract class LibVcx {
 
         /** Close a search */
         public int vcx_wallet_close_search(int command_handle, int search_handle, Callback cb);
+
 
         /** Set wallet handle manually */
         public int vcx_wallet_set_handle(int handle);
