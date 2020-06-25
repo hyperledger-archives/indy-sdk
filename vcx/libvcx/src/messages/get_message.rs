@@ -185,7 +185,8 @@ impl GetMessagesBuilder {
                                            self.pairwise_dids.clone()))
                 ),
             settings::ProtocolTypes::V2 |
-            settings::ProtocolTypes::V3 =>
+            settings::ProtocolTypes::V3 |
+            settings::ProtocolTypes::V4 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
                         GetMessages::build(A2AMessageKinds::GetMessagesByConnections,
@@ -194,7 +195,6 @@ impl GetMessagesBuilder {
                                            self.status_codes.clone(),
                                            self.pairwise_dids.clone()))
                 ),
-
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
@@ -247,7 +247,8 @@ impl GeneralMessage for GetMessagesBuilder {
                                            self.pairwise_dids.clone()))
                 ),
             settings::ProtocolTypes::V2 |
-            settings::ProtocolTypes::V3 =>
+            settings::ProtocolTypes::V3 |
+            settings::ProtocolTypes::V4 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
                         GetMessages::build(A2AMessageKinds::GetMessages,
@@ -295,6 +296,18 @@ pub struct Message {
     pub decrypted_payload: Option<String>,
 }
 
+#[macro_export]
+macro_rules! convert_aries_message {
+    ($message:ident, $target_type:ident, $kind:ident) => (
+        if settings::is_strict_aries_protocol_set() {
+             (PayloadKinds::$kind, json!(&$message).to_string())
+        } else {
+            let converted_message: $target_type = $message.try_into()?;
+            (PayloadKinds::$kind, json!(&converted_message).to_string())
+        }
+    )
+}
+
 impl Message {
     pub fn payload<'a>(&'a self) -> VcxResult<Vec<u8>> {
         match self.payload {
@@ -331,6 +344,7 @@ impl Message {
         use v3::messages::a2a::A2AMessage;
         use v3::utils::encryption_envelope::EncryptionEnvelope;
         use ::issuer_credential::{CredentialOffer, CredentialMessage};
+        use ::messages::proofs::proof_message::ProofMessage;
         use ::messages::payload::{PayloadTypes, PayloadV1, PayloadKinds};
         use std::convert::TryInto;
 
@@ -338,19 +352,21 @@ impl Message {
 
         let (kind, msg) = match a2a_message {
             A2AMessage::PresentationRequest(presentation_request) => {
-                let proof_req: ProofRequestMessage = presentation_request.try_into()?;
-
-                (PayloadKinds::ProofRequest, json!(&proof_req).to_string())
+                convert_aries_message!(presentation_request, ProofRequestMessage, ProofRequest)
             }
             A2AMessage::CredentialOffer(offer) => {
-                let cred_offer: CredentialOffer = offer.try_into()?;
-
-                (PayloadKinds::CredOffer, json!(vec![cred_offer]).to_string())
+                if settings::is_strict_aries_protocol_set() {
+                    (PayloadKinds::CredOffer, json!(&offer).to_string())
+                } else {
+                    let cred_offer: CredentialOffer = offer.try_into()?;
+                    (PayloadKinds::CredOffer, json!(vec![cred_offer]).to_string())
+                }
             }
             A2AMessage::Credential(credential) => {
-                let credential: CredentialMessage = credential.try_into()?;
-
-                (PayloadKinds::Cred, json!(&credential).to_string())
+                convert_aries_message!(credential, CredentialMessage, Cred)
+            }
+            A2AMessage::Presentation(presentation) => {
+                convert_aries_message!(presentation, ProofMessage, Proof)
             }
             msg => {
                 let msg = json!(&msg).to_string();
@@ -512,7 +528,7 @@ mod tests {
         assert_eq!(all_messages.len(), 1);
 
         let invalid_status_code = "abc".to_string();
-        let bad_req = download_agent_messages(Some(vec![invalid_status_code]),  None);
+        let bad_req = download_agent_messages(Some(vec![invalid_status_code]), None);
         assert!(bad_req.is_err());
     }
 

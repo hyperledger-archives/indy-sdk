@@ -248,6 +248,14 @@ pub fn libindy_prover_store_credential(cred_id: Option<&str>,
         .map_err(VcxError::from)
 }
 
+pub fn libindy_prover_delete_credential(cred_id: &str) -> VcxResult<()>{
+
+    anoncreds::prover_delete_credential(get_wallet_handle(),
+                                        cred_id)
+        .wait()
+        .map_err(VcxError::from)
+}
+
 pub fn libindy_prover_create_master_secret(master_secret_id: &str) -> VcxResult<String> {
     if settings::indy_mocks_enabled() { return Ok(settings::DEFAULT_LINK_SECRET_ALIAS.to_string()); }
 

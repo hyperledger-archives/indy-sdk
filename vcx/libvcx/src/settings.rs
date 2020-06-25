@@ -266,7 +266,7 @@ pub fn set_config_value(key: &str, value: &str) {
 
 pub fn get_wallet_name() -> VcxResult<String> {
     get_config_value(CONFIG_WALLET_NAME)
-        .map_err(|_|VcxError::from(VcxErrorKind::MissingWalletKey))
+        .map_err(|_| VcxError::from(VcxErrorKind::MissingWalletKey))
 }
 
 pub fn get_threadpool_size() -> usize {
@@ -314,7 +314,7 @@ pub fn get_opt_config_value(key: &str) -> Option<String> {
 
 pub fn set_opt_config_value(key: &str, value: &Option<String>) {
     if let Some(v) = value {
-       set_config_value(key, v.as_str())
+        set_config_value(key, v.as_str())
     }
 }
 
@@ -361,8 +361,15 @@ pub fn get_communication_method() -> VcxResult<String> {
 }
 
 pub fn is_aries_protocol_set() -> bool {
-    get_protocol_type() == ProtocolTypes::V2 && ARIES_COMMUNICATION_METHOD == get_communication_method().unwrap_or_default() ||
-        get_protocol_type() == ProtocolTypes::V3
+    let protocol_type = get_protocol_type();
+
+    protocol_type == ProtocolTypes::V2 && ARIES_COMMUNICATION_METHOD == get_communication_method().unwrap_or_default() ||
+        protocol_type == ProtocolTypes::V3 ||
+        protocol_type == ProtocolTypes::V4
+}
+
+pub fn is_strict_aries_protocol_set() -> bool {
+    get_protocol_type() == ProtocolTypes::V4
 }
 
 pub fn get_actors() -> Vec<Actors> {
@@ -397,6 +404,8 @@ pub enum ProtocolTypes {
     V2,
     #[serde(rename = "3.0")]
     V3,
+    #[serde(rename = "4.0")]
+    V4,
 }
 
 impl Default for ProtocolTypes {
@@ -411,6 +420,7 @@ impl From<String> for ProtocolTypes {
             "1.0" => ProtocolTypes::V1,
             "2.0" => ProtocolTypes::V2,
             "3.0" => ProtocolTypes::V3,
+            "4.0" => ProtocolTypes::V4,
             type_ @ _ => {
                 error!("Unknown protocol type: {:?}. Use default", type_);
                 ProtocolTypes::default()
@@ -425,6 +435,7 @@ impl ::std::string::ToString for ProtocolTypes {
             ProtocolTypes::V1 => "1.0".to_string(),
             ProtocolTypes::V2 => "2.0".to_string(),
             ProtocolTypes::V3 => "3.0".to_string(),
+            ProtocolTypes::V4 => "4.0".to_string(),
         }
     }
 }

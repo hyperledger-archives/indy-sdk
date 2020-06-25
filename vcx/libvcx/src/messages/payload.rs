@@ -65,7 +65,8 @@ impl Payloads {
                 crypto::prep_msg(&my_vk, &their_vk, &bytes)
             }
             ProtocolTypes::V2 |
-            ProtocolTypes::V3 => {
+            ProtocolTypes::V3 |
+            ProtocolTypes::V4 => {
                 let thread = thread.ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Thread info not found"))?;
 
                 let payload = PayloadV2 {
@@ -168,7 +169,7 @@ pub enum PayloadTypes {
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct PayloadTypeV1 {
-    name: String,
+    pub name: String,
     ver: String,
     fmt: String,
 }
@@ -210,7 +211,8 @@ impl PayloadKinds {
                 }
             }
             ProtocolTypes::V2 |
-            ProtocolTypes::V3 => {
+            ProtocolTypes::V3 |
+            ProtocolTypes::V4 => {
                 match self {
                     PayloadKinds::CredOffer => "credential-offer",
                     PayloadKinds::CredReq => "credential-request",
