@@ -168,7 +168,7 @@ pub enum PayloadTypes {
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct PayloadTypeV1 {
-    name: String,
+    pub name: String,
     ver: String,
     fmt: String,
 }
