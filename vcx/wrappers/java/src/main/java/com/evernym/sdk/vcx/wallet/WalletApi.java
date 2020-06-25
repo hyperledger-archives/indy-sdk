@@ -183,7 +183,8 @@ public class WalletApi extends VcxJava.API {
     public static CompletableFuture<Integer> addRecordWallet(
             String recordType,
             String recordId,
-            String recordValue
+            String recordValue,
+            String tagsJson
     ) throws VcxException {
         ParamGuard.notNull(recordType, "recordType");
         ParamGuard.notNull(recordId, "recordId");
@@ -191,9 +192,9 @@ public class WalletApi extends VcxJava.API {
         logger.debug("addRecordWallet() called with: recordType = [" + recordType + "], recordId = [" + recordId + "], recordValue = [****]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
-        String recordTag = "{}";
+        if (tagsJson.isEmpty()) tagsJson = "{}";
 
-        int result = LibVcx.api.vcx_wallet_add_record(commandHandle, recordType, recordId, recordValue, recordTag, vcxAddRecordWalletCB);
+        int result = LibVcx.api.vcx_wallet_add_record(commandHandle, recordType, recordId, recordValue, tagsJson, vcxAddRecordWalletCB);
         checkResult(result);
 
         return future;
@@ -281,6 +282,88 @@ public class WalletApi extends VcxJava.API {
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_wallet_update_record_value(commandHandle, recordType, recordId, recordValue, vcxUpdateRecordWalletCB);
+        checkResult(result);
+
+        return future;
+    }
+
+    private static Callback vcxOpenSearchWalletCB = new Callback() {
+        public void callback(int commandHandle, int err, int searchHandle) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], searchHandle = [" + searchHandle + "]");
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            if (! checkCallback(future, err)) return;
+            Integer result = searchHandle;
+            future.complete(result);
+        }
+    };
+
+    public static CompletableFuture<Integer> openSearchWallet(
+            String recordType,
+            String queryJson,
+            String optionsJson) throws VcxException {
+        ParamGuard.notNull(recordType, "recordType");
+        ParamGuard.notNull(queryJson, "queryJson");
+        ParamGuard.notNull(optionsJson, "optionsJson");
+        logger.debug("openSearchWallet() called with: recordType = [" + recordType + "], queryJson = [" + queryJson + "], optionsJson = [" + optionsJson + "]");
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+        if (queryJson.isEmpty()) queryJson = "{}";
+        if (optionsJson.isEmpty()) optionsJson = "{}";
+
+        int result = LibVcx.api.vcx_wallet_open_search(
+                commandHandle,
+                recordType,
+                queryJson,
+                optionsJson,
+                vcxOpenSearchWalletCB
+        );
+        checkResult(result);
+        return future;
+    }
+
+    private static Callback vcxSearchNextRecordsWalletCB = new Callback() {
+        public void callback(int commandHandle, int err, String recordValue) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], recordValue = [****]");
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            future.complete(recordValue);
+        }
+    };
+
+    public static CompletableFuture<String> searchNextRecordsWallet(
+            int searchHandle,
+            int count
+    ) throws VcxException {
+        ParamGuard.notNull(searchHandle, "searchHandle");
+        logger.debug("searchNextRecordsWallet() called with: searchHandle = [" + searchHandle + "], count = [" + count + "]");
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_wallet_search_next_records(commandHandle, searchHandle, count, vcxSearchNextRecordsWalletCB);
+        checkResult(result);
+
+        return future;
+    }
+
+    private static Callback vcxCloseSearchWalletCB = new Callback() {
+        public void callback(int commandHandle, int err) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            Integer result = commandHandle;
+            future.complete(result);
+        }
+    };
+
+    public static CompletableFuture<Integer> closeSearchWallet(
+            int searchHandle
+    ) throws VcxException {
+        ParamGuard.notNull(searchHandle, "searchHandle");
+        logger.debug("closeSearchWallet() called with: searchHandle = [" + searchHandle + "]");
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_wallet_close_search(commandHandle, searchHandle, vcxCloseSearchWalletCB);
         checkResult(result);
 
         return future;
