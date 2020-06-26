@@ -478,7 +478,8 @@ pub fn update_agent_webhook(webhook_url: &str) -> VcxResult<()> {
             match settings::get_protocol_type() {
                 settings::ProtocolTypes::V1 => update_agent_webhook_v1(&to_did, com_method)?,
                 settings::ProtocolTypes::V2 |
-                settings::ProtocolTypes::V3 => update_agent_webhook_v2(&to_did, com_method)?,
+                settings::ProtocolTypes::V3 |
+                settings::ProtocolTypes::V4 => update_agent_webhook_v2(&to_did, com_method)?,
             }
         },
         Err(e) => warn!("Unable to update webhook (did you provide remote did in the config?): {}", e)
