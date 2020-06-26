@@ -36,10 +36,17 @@ impl W3cPresentationProof {
             ag = Some(ag.unwrap().as_bytes().to_base58());
         }
         W3cPresentationProof {
-            typ: "AnonCredPresentationProofv1".to_string(),
+            typ: "SafeVPProof-v1".to_string(),
             aggregate_proof: ag
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SchemaForDerivedCredential {
+    id: String,
+    #[serde(rename = "type")]
+    typ: String
 }
 
 /// Embodies a VC inside a verifiable presentation, as opposed to a VC
@@ -54,6 +61,53 @@ struct DerivedCredential {
     #[serde(rename = "type")]
     typ: Vec<String>,
     issuer: String,
+    #[serde(rename = "issuanceDate")]
+    issuance_date: String,
+    #[serde(rename = "credentialSchema")]
+    credential_schema: SchemaForDerivedCredential,
+    #[serde(rename = "credentialSubject")]
+    credential_subject: Vec<String>,
+}
+
+impl DerivedCredential {
+    fn from_proof(proof: &Proof, ledger: &impl LedgerLookup) -> DerivedCredential {
+
+        // Non-safe credentials often have a precise timestamp in the issuanceDate field.
+        // This value can be quite precise and function as a strong correlator all on its
+        // own. The VC spec says that the meaning of this field is "when the credential
+        // begins to be valid." Thus, we can do some work here to make the derived credential
+        // less identifying if we create a random issuance date for the derived credential,
+        // sometime in the previous year. As long as the value we pick is before right now,
+        // the derived credential will look different every time it is seen.
+        use chrono::{Duration, SecondsFormat};
+        use crate::rand::Rng;
+        let mut rng = rand::thread_rng();
+        let random_time_offset = rng.gen_range(0, 365*86400);
+        let seconds_format = if random_time_offset % 2 == 1 { SecondsFormat::Secs } else { SecondsFormat::Millis };
+        let mut fake_issuance_date = chrono::offset::Utc::now();
+        if let Some(new_date) = fake_issuance_date.checked_sub_signed(
+            Duration::seconds(random_time_offset)) {
+            fake_issuance_date = new_date;
+        }
+
+        let primary_cred_def = proof.identifiers[0].cred_def_id.0.clone();
+        DerivedCredential {
+            context: vec![
+                "https://www.w3.org/2018/credentials/v1".to_string(),
+            ],
+            typ: vec![
+                "VerifiableCredential".to_string(),
+                "DerivedFromZKP".to_string()
+            ],
+            issuer: ledger.get_issuer_did_for_cred_def(&primary_cred_def),
+            issuance_date: fake_issuance_date.to_rfc3339_opts(seconds_format, true),
+            credential_schema: SchemaForDerivedCredential {
+                id: primary_cred_def,
+                typ: "DerivedSchema".to_string()
+            },
+            credential_subject: vec![],
+        }
+    }
 }
 
 /// Embodies a verifiable presentation containing one or more derived
@@ -74,25 +128,40 @@ struct VerifiablePresentation {
 /// Convert the JSON for a ZKP into the JSON for a W3C Verifiable
 /// Presentation.
 #[allow(dead_code)]
-pub fn to_vp(proof: &Proof) -> IndyResult<String> {
+pub fn to_vp(proof: &Proof, ledger: &impl LedgerLookup) -> IndyResult<String> {
     let preso = VerifiablePresentation {
         context: vec![
             "https://www.w3.org/2018/credentials/v1".to_string(),
-            proof.identifiers[0].cred_def_id.0.to_string()
+            "https://github.com/hyperledger/ursa/libzmix/docs/safecreds-context-v1.9.jsonld".to_string()
         ],
         typ: "VerifiablePresentation".to_string(),
-        creds: vec![DerivedCredential {
-            context: vec![
-                "https://www.w3.org/2018/credentials/v1".to_string(),
-            ],
-            typ: vec!["VerifiableCredential".to_string()],
-            issuer: "insert DID here".to_string(),
-        }],
+        creds: vec![DerivedCredential::from_proof(proof, ledger)],
         proof: Some(W3cPresentationProof::from_proof(proof)),
     };
     serde_json::to_string(&preso)
         .to_indy(IndyErrorKind::InvalidState, "Cannot serialize FullProof")
 }
+
+/// The purpose of this trait is to break a tight coupling between this module and the guts of ledger
+/// functionality. In production, we will certainly use the ledger to look up cred defs, schemas,
+/// and so forth. However, if we were to directly expose ledger lookup calls to this layer, much
+/// of our code would have to change to take parameters like a command handle, a pool handle,
+/// callbacks, and so forth. Instead, we define an interface that can be satisfied by a struct that
+/// holds all the necessary parameters, without cluttering up this module. Then, in tests, we can
+/// implement the functionality in a mock to avoid tight coupling.
+pub trait LedgerLookup {
+    fn get_issuer_did_for_cred_def(&self, cred_def_id: &str) -> String;
+}
+
+pub struct Ledger {
+}
+
+impl LedgerLookup for Ledger {
+    fn get_issuer_did_for_cred_def(&self, _cred_def_id: &str) -> String {
+        "did:sov:9TifxAwchk6tRrZRvzh5ya".to_string()
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -101,12 +170,14 @@ mod tests {
 
     #[test]
     fn to_vp_works() {
+        let mock_ledger = MockLedger {};
         let proof: Proof = serde_json::from_str(FAKE_PROOF_JSON).unwrap();
-        let vp = to_vp(&proof).unwrap();
+        let vp = to_vp(&proof, &mock_ledger).unwrap();
         let mut errors: Vec<String> = Vec::new();
         let v: Value = serde_json::from_str(&vp).unwrap();
 
         check_structure(&v, "@context", "HAS https://www.w3.org/2018/credentials/v1", &mut errors);
+        check_structure(&v, "@context", "HAS https://github.com/hyperledger/ursa/.*safecreds.*context.*[.]jsonld", &mut errors);
         check_structure(&v, "type", "LIKE VerifiablePresentation", &mut errors);
         if check_structure(&v, "verifiableCredential", "is array", &mut errors) {
             let vcs = v["verifiableCredential"].as_array().unwrap();
@@ -117,7 +188,7 @@ mod tests {
             }
         }
         if check_structure(&v, "proof", "is object", &mut errors) {
-            check_structure(&v["proof"], "proof/type", "LIKE AnonCredPresentationProofv1", &mut errors);
+            check_structure(&v["proof"], "proof/type", r"LIKE SafeVPProof-v\d", &mut errors);
             check_structure(&v["proof"], "proof/aggregateProof", "LIKE ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{50,}$", &mut errors);
         }
 
@@ -138,7 +209,9 @@ mod tests {
                 if bytes.len() >= 2 && (bytes[0] == b'"') && (bytes[bytes.len() - 1] == b'"') {
                     txt = &item.as_str()[1..item.len() - 1];
                 }
-                if txt.eq(value) {
+                use regex::Regex;
+                let pat = Regex::new(value).unwrap();
+                if pat.is_match(txt) {
                     return true;
                 }
             }
@@ -189,14 +262,32 @@ mod tests {
         macro_rules! check {( $item:expr, $path:expr, $ex:expr ) => {
             check_structure($item, format!($path, &prefix).as_str(), $ex, errors) }}
         check!(&vc, "{}/type", "HAS VerifiableCredential");
+        check!(&vc, "{}/type", "HAS DerivedFromZKP");
         check!(&vc, "{}/@context", "HAS https://www.w3.org/2018/credentials/v1");
         if check!(&vc, "{}/credentialSchema", "is object") {
             let sch = &vc["credentialSchema"];
-            check!(&sch, "{}/credentialSchema/id", "LIKE ^did:");
-            check!(&sch, "{}/credentialSchema/type", "LIKE ^did:");
+            check!(&sch, "{}/credentialSchema/id", "LIKE :gvt:1.0:TAG_1$");
+            check!(&sch, "{}/credentialSchema/type", "LIKE ^DerivedSchema");
         }
         check!(&vc, "{}/issuer", "LIKE ^did:");
-        check!(&vc, "{}/credentialSubject", "is object");
+        check!(&vc, "{}/issuanceDate", r"LIKE ^20\d\d-\d\d-\d\dT\d\d:\d\d.*Z");
+        if check!(&vc, "{}/credentialSubject", "is array") {
+            //let vcs = v["verifiableCredential"].as_array().unwrap();
+            //let mut i: usize = 0;
+            //for vc in vcs {
+            //    check_vc(&vc, i, &mut errors);
+            //    i += 1;
+            //}
+        }
+    }
+
+    struct MockLedger {
+    }
+
+    impl LedgerLookup for MockLedger {
+        fn get_issuer_did_for_cred_def(&self, _cred_def_id: &str) -> String {
+            "did:sov:9TifxAwchk6tRrZRvzh5ya".to_string()
+        }
     }
 
     // This JSON exhibits the actual structure of a proof, but numeric values

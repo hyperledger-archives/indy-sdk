@@ -717,7 +717,10 @@ impl ProverCommandExecutor {
         let proof_json = match pr_payload.w3c {
             false => serde_json::to_string(&proof)
                 .to_indy(IndyErrorKind::InvalidState, "Cannot serialize FullProof"),
-            true => w3c::to_vp(&proof)
+            true => {
+                let ledger = w3c::Ledger {};
+                w3c::to_vp(&proof, &ledger)
+            }
         }?;
 
         debug!("create_proof <<< proof_json: {:?}", proof_json);
