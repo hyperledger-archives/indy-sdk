@@ -12,6 +12,7 @@ use v3::messages::a2a::A2AMessage;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DidExchangeMessages {
+    // Connect(ConnectionOptions),
     Connect(),
     InvitationReceived(Invitation),
     ExchangeRequestReceived(Request),

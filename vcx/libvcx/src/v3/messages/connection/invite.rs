@@ -12,6 +12,9 @@ pub struct Invitation {
     pub routing_keys: Vec<String>,
     #[serde(rename = "serviceEndpoint")]
     pub service_endpoint: String,
+    // TODO: Create two types of invitation with traits
+    #[serde(rename = "did")]
+    pub did: Option<String>
 }
 
 impl Invitation {
@@ -43,6 +46,11 @@ impl Invitation {
         self.routing_keys = routing_keys;
         self
     }
+    
+    pub fn set_public_did(mut self, public_did: Option<String>) -> Invitation {
+        self.did = public_did;
+        self
+    }
 }
 
 a2a_message!(Invitation, ConnectionInvitation);
@@ -59,6 +67,18 @@ pub mod tests {
             recipient_keys: _recipient_keys(),
             routing_keys: _routing_keys(),
             service_endpoint: _service_endpoint(),
+            did: None
+        }
+    }
+
+    pub fn _public_invitation(public_did: &str) -> Invitation {
+        Invitation {
+            id: MessageId::id(),
+            label: _label(),
+            recipient_keys: vec!["".to_string()],
+            routing_keys: vec!["".to_string()],
+            service_endpoint: "".to_string(),
+            did: Some(public_did.to_string())
         }
     }
 

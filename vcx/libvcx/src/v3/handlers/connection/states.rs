@@ -1,8 +1,9 @@
-use api::VcxStateType;
+use api::VcxStateType; use settings;
 
 use v3::handlers::connection::messages::DidExchangeMessages;
 use v3::messages::a2a::A2AMessage;
 use v3::handlers::connection::agent::AgentInfo;
+use v3::handlers::connection::connection::ConnectionOptions;
 use v3::messages::connection::invite::Invitation;
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::{Response, SignedResponse};
@@ -20,6 +21,7 @@ use std::collections::HashMap;
 
 use error::prelude::*;
 use v3::utils::pending_message::PendingMessage;
+use utils::libindy::ledger::{add_attrs, get_attr};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DidExchangeSM {
@@ -71,7 +73,8 @@ pub struct NullState {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InvitedState {
-    invitation: Invitation
+    pub invitation: Invitation,
+    // connection_options: ConnectionOptions
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -92,6 +95,13 @@ pub struct CompleteState {
     did_doc: DidDoc,
     protocols: Option<Vec<ProtocolDescriptor>>,
 }
+
+// impl From<(NullState, Invitation, ConnectionOptions)> for InvitedState {
+//     fn from((_state, invitation, connection_options): (NullState, Invitation, ConnectionOptions)) -> InvitedState {
+//         trace!("DidExchangeStateSM: transit state from NullState to InvitedState");
+//         InvitedState { invitation, connection_options }
+//     }
+// }
 
 impl From<(NullState, Invitation)> for InvitedState {
     fn from((_state, invitation): (NullState, Invitation)) -> InvitedState {
@@ -121,6 +131,13 @@ impl From<(InvitedState, Request, SignedResponse, AgentInfo)> for RespondedState
     }
 }
 
+// impl From<(NullState, Request, SignedResponse, AgentInfo)> for RespondedState {
+//     fn from((_state, request, response, prev_agent_info): (NullState, Request, SignedResponse, AgentInfo)) -> RespondedState {
+//         trace!("DidExchangeStateSM: transit state from InvitedState (using public did) to RequestedState");
+//         RespondedState { response, did_doc: request.connection.did_doc, prev_agent_info }
+//     }
+// }
+
 impl From<(RequestedState, ProblemReport)> for NullState {
     fn from((_state, _error): (RequestedState, ProblemReport)) -> NullState {
         trace!("DidExchangeStateSM: transit state from RequestedState to NullState");
@@ -134,6 +151,13 @@ impl From<(RequestedState, Response)> for CompleteState {
         CompleteState { did_doc: response.connection.did_doc, protocols: None }
     }
 }
+
+// impl From<(NullState, ProblemReport)> for NullState {
+//     fn from((_state, _error): (NullState, ProblemReport)) -> NullState {
+//         trace!("DidExchangeStateSM: transit state from NullState to NullState");
+//         NullState {}
+//     }
+// }
 
 impl From<(RespondedState, ProblemReport)> for NullState {
     fn from((_state, _error): (RespondedState, ProblemReport)) -> NullState {
@@ -169,6 +193,72 @@ impl From<(CompleteState, Vec<ProtocolDescriptor>)> for CompleteState {
         CompleteState { did_doc: state.did_doc, protocols: Some(protocols) }
     }
 }
+
+// fn send_response(request: &Request, agent_info: &AgentInfo)  -> VcxResult<(SignedResponse, AgentInfo)> {
+//     request.connection.did_doc.validate()?;
+// 
+//     let prev_agent_info = agent_info.clone();
+// 
+//     // provision a new keys
+//     let new_agent_info: AgentInfo = agent_info.create_agent()?;
+// 
+//     let response = Response::create()
+//         .set_did(new_agent_info.pw_did.to_string())
+//         .set_service_endpoint(new_agent_info.agency_endpoint()?)
+//         .set_keys(new_agent_info.recipient_keys(), new_agent_info.routing_keys()?)
+//         .ask_for_ack();
+// 
+//     let signed_response = response.clone()
+//         .set_thread_id(&request.id.0)
+//         .encode(&prev_agent_info.pw_vk)?;
+// 
+//     new_agent_info.send_message(&signed_response.to_a2a_message(), &request.connection.did_doc)?;
+// 
+//     Ok((signed_response, new_agent_info))
+// }
+
+// fn handle_send_response_result(request: &Request, agent_info: &AgentInfo) -> Result<(SignedResponse, AgentInfo), ProblemReport> {
+//     match send_response(request, agent_info) {
+//         Ok((response, new_agent_info)) => {
+//             let prev_agent_info = agent_info.clone();
+//             agent_info = &new_agent_info;
+//             Ok((response, prev_agent_info))
+//         }
+//         Err(err) => {
+//             let problem_report = ProblemReport::create()
+//                 .set_problem_code(ProblemCode::RequestProcessingError)
+//                 .set_explain(err.to_string())
+//                 .set_thread_id(&request.id.0);
+// 
+//             agent_info.send_message(&problem_report.to_a2a_message(), &request.connection.did_doc).ok(); // IS is possible?
+//             Err(problem_report)
+//         }
+//     }
+// }
+// 
+// impl NullState {
+//     fn handle_connection_request(&self, request: Request,
+//                                  agent_info: AgentInfo, state: NullState) -> ActorDidExchangeState {
+//         trace!("NullState:handle_connection_request >>> request: {:?}, agent_info: {:?}", request, agent_info);
+//         
+//         match handle_send_response_result(&request, &agent_info) {
+//             Ok((response, prev_agent_info)) => ActorDidExchangeState::Inviter(DidExchangeState::Responded((state, request, response, prev_agent_info).into())),
+//             Err(problem_report) => ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
+//         }
+//     }
+// }
+// 
+// impl InvitedState {
+//     fn handle_connection_request(&self, request: Request,
+//                                  agent_info: AgentInfo, state: InvitedState) -> ActorDidExchangeState {
+//         trace!("InvitedState:handle_connection_request >>> request: {:?}, agent_info: {:?}", request, agent_info);
+//         
+//         match handle_send_response_result(&request, &agent_info) {
+//             Ok((response, prev_agent_info)) => ActorDidExchangeState::Inviter(DidExchangeState::Responded((state, request, response, prev_agent_info).into())),
+//             Err(problem_report) => ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
+//         }
+//     }
+// }
 
 impl InvitedState {
     fn handle_connection_request(&self, request: &Request,
@@ -462,16 +552,37 @@ impl DidExchangeSM {
                                     .set_service_endpoint(agent_info.agency_endpoint()?)
                                     .set_recipient_keys(agent_info.recipient_keys())
                                     .set_routing_keys(agent_info.routing_keys()?);
+                            // DidExchangeMessages::Connect(options) => {
+                            //     let invite: Invitation = match options.use_public_did {
+                            //         Some(true) => {
+                            //             agent_info = agent_info.get_pub_agent()?;
+                            //             let public_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
+                            //             Invitation::create()
+                            //                 .set_label(source_id.to_string())
+                            //                 .set_public_did(Some(public_did))
+                            //         }
+                            //         _ => {
+                            //             agent_info = agent_info.create_agent()?;
+                            //             Invitation::create()
+                            //                 .set_label(source_id.to_string())
+                            //                 .set_service_endpoint(agent_info.agency_endpoint()?)
+                            //                 .set_recipient_keys(agent_info.recipient_keys())
+                            //                 .set_routing_keys(agent_info.routing_keys()?)
+                            //         }
+                            //     };
 
                                 ActorDidExchangeState::Inviter(DidExchangeState::Invited((state, invite).into()))
+                                // ActorDidExchangeState::Inviter(DidExchangeState::Invited((state, invite, options).into()))
                             }
                             _ => {
                                 ActorDidExchangeState::Inviter(DidExchangeState::Null(state))
                             }
+                            // DidExchangeMessages::ExchangeRequestReceived(request) => state.handle_connection_request(request, agent_info, state)
                         }
                     }
                     DidExchangeState::Invited(state) => {
                         match message {
+                            // DidExchangeMessages::ExchangeRequestReceived(request) => state.handle_connection_request(request, agent_info, state),
                             DidExchangeMessages::ExchangeRequestReceived(request) => {
                                 match state.handle_connection_request(&request, &agent_info) {
                                     Ok((response, new_agent_info)) => {

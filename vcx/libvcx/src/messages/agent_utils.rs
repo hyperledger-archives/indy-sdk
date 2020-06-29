@@ -10,6 +10,11 @@ use utils::libindy::signus::create_and_store_my_did;
 use utils::option_util::get_or_default;
 use error::prelude::*;
 use utils::httpclient::AgencyMock;
+use utils::libindy::ledger::{ add_attrs, add_service };
+use connection::create_agent_keys;
+use v3::handlers::connection::agent::AgentInfo;
+use v3::messages::connection::invite::Invitation;
+use v3::messages::connection::did_doc::Service;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Connect {
@@ -301,6 +306,7 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     trace!("***Configuring Wallet");
     let (my_did, my_vk, wallet_name) = configure_wallet(&my_config)?;
 
+
     trace!("Connecting to Agency");
     let (agent_did, agent_vk) = match my_config.protocol_type {
         settings::ProtocolTypes::V1 => onboarding_v1(&my_did, &my_vk, &my_config.agency_did)?,
@@ -309,6 +315,38 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     };
 
     let config = get_final_config(&my_did, &my_vk, &agent_did, &agent_vk, &wallet_name, &my_config)?;
+
+    let agent_info: AgentInfo = AgentInfo::default().create_agent()?;
+
+    trace!("***Write agency endpoint and routing keys to the ledger");
+
+    // add_attrs(&my_did, &json!({
+    //     "service": {
+    //         "serviceEndpoint": &my_config.agency_url,
+    //         "routingKeys": &agent_info.routing_keys()?,
+    //         "recipientKeys": &agent_info.recipient_keys()
+    //     }
+    // }).to_string())?;
+
+    let service = Service {
+        service_endpoint: String::from(&my_config.agency_url),
+        recipient_keys: agent_info.recipient_keys(),
+        routing_keys: agent_info.routing_keys()?,
+        ..Default::default()
+    };
+
+    add_service(&my_did, &service)?;
+
+    let label = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME)?;
+    let pub_invite = Invitation::create().set_label(label).set_public_did(Some(my_did));
+
+    let ser_pub_invite: &str = &serde_json::to_string(&pub_invite)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Public invite serialization failed: {}", err)))?;
+    wallet::add_record("pub_invite", "pub_invite", ser_pub_invite, None)?;
+
+    // let ser_agent_info: &str = &serde_json::to_string(&agent_info)
+    //     .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Agent info serialization failed: {}", err)))?;
+    // wallet::add_record("pub_agent_info", "pub_agent_info", ser_agent_info, None)?;
 
     wallet::close_wallet()?;
 

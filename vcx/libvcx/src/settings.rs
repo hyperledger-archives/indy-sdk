@@ -26,7 +26,7 @@ pub static CONFIG_SDK_TO_REMOTE_DID: &str = "sdk_to_remote_did";// functionally 
 pub static CONFIG_SDK_TO_REMOTE_VERKEY: &str = "sdk_to_remote_verkey";
 pub static CONFIG_SDK_TO_REMOTE_ROLE: &str = "sdk_to_remote_role";
 pub static CONFIG_INSTITUTION_DID: &str = "institution_did";
-pub static CONFIG_INSTITUTION_VERKEY: &str = "institution_verkey";// functionally not used
+pub static CONFIG_INSTITUTION_VERKEY: &str = "institution_verkey";
 pub static CONFIG_INSTITUTION_NAME: &str = "institution_name";
 pub static CONFIG_INSTITUTION_LOGO_URL: &str = "institution_logo_url";
 pub static CONFIG_WEBHOOK_URL: &str = "webhook_url";
@@ -52,6 +52,8 @@ pub static CONFIG_POOL_CONFIG: &'static str = "pool_config";
 pub static CONFIG_DID_METHOD: &str = "did_method";
 pub static COMMUNICATION_METHOD: &str = "communication_method";// proprietary or aries
 pub static CONFIG_ACTORS: &str = "actors"; // inviter, invitee, issuer, holder, prover, verifier, sender, receiver
+pub static CONFIG_PUB_AGENT_DID: &str = "pub_agent_did";
+pub static CONFIG_PUB_AGENT_VERKEY: &str = "pub_agent_verkey";
 
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;

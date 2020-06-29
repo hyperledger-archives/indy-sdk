@@ -52,6 +52,18 @@ impl AgentInfo {
         Ok(AgentInfo { pw_did, pw_vk, agent_did, agent_vk })
     }
 
+    pub fn get_pub_agent() -> VcxResult<AgentInfo> {
+        trace!("Agent::get_pub_agent >>>");
+
+        let pub_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
+        let pub_vk = settings::get_config_value(settings::CONFIG_INSTITUTION_VERKEY)?;
+
+        let agent_did = settings::get_config_value(settings::CONFIG_PUB_AGENT_DID)?;
+        let agent_vk = settings::get_config_value(settings::CONFIG_PUB_AGENT_VERKEY)?;
+
+        Ok(AgentInfo { pw_did: pub_did, pw_vk: pub_vk, agent_did, agent_vk })
+    }
+
     pub fn agency_endpoint(&self) -> VcxResult<String> {
         settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)
             .map(|str| format!("{}/agency/msg", str))

@@ -17,11 +17,13 @@ use object_cache::ObjectCache;
 use settings;
 use utils::error;
 use utils::libindy::signus::create_and_store_my_did;
-use utils::libindy::crypto;
+use utils::libindy::{wallet, crypto};
 use utils::json::mapped_key_rewrite;
 use utils::json::KeyMatch;
 
 use v3::handlers::connection::connection::Connection as ConnectionV3;
+use v3::handlers::connection::connection::ConnectionOptions as ConnectionOptionsV3;
+use v3::messages::connection::request::Request;
 use v3::handlers::connection::states::ActorDidExchangeState;
 use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::connection::invite::Invitation as InvitationV3;
@@ -60,7 +62,7 @@ impl Default for ConnectionOptions {
 }
 
 impl ConnectionOptions {
-    pub fn from_opt_str(options: Option<String>) -> VcxResult<ConnectionOptions> {
+    pub fn from_opt_str(options: &Option<String>) -> VcxResult<ConnectionOptions> {
         Ok(
             match options.as_ref().map(|opt| opt.trim()) {
                 None => ConnectionOptions::default(),
@@ -736,6 +738,18 @@ pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResul
     store_connection(Connections::V1(connection))
 }
 
+pub fn create_connection_with_request(source_id: &str, request: &str) -> VcxResult<u32> {
+    debug!("create connection {} with request {}", source_id, request);
+
+    match serde_json::from_str::<Request>(request) {
+        Ok(request) => {
+            let connection = Connections::V3(ConnectionV3::create_with_request(source_id, request)?);
+            store_connection(connection)
+        }
+        Err(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Not implemented for legacy protocol"))
+    }
+}
+
 pub fn parse_acceptance_details(message: &Message) -> VcxResult<SenderDetail> {
     let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
@@ -962,18 +976,19 @@ pub fn delete_connection(handle: u32) -> VcxResult<u32> {
 }
 
 pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
-    let options_obj: ConnectionOptions = ConnectionOptions::from_opt_str(options)?;
 
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
             Connections::V1(ref mut connection) => {
+                let options_obj: ConnectionOptions = ConnectionOptions::from_opt_str(&options)?;
                 debug!("establish connection {}", connection.source_id);
                 connection.update_agent_profile(&options_obj)?;
                 connection.create_agent_pairwise()?;
                 connection.connect(&options_obj)
             }
             Connections::V3(ref mut connection) => {
-                connection.connect()?;
+                let options_obj: ConnectionOptionsV3 = ConnectionOptionsV3::from_opt_str(&options)?;
+                connection.connect(options_obj)?;
                 Ok(error::SUCCESS.code_num)
             }
         }
@@ -1076,6 +1091,11 @@ pub fn get_invite_details(handle: u32, abbreviated: bool) -> VcxResult<String> {
             }
         }
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
+}
+
+pub fn get_public_invite_details() -> VcxResult<String> {
+    // TODO: Error handling, validation
+    wallet::get_record("pub_invite", "pub_invite", "")
 }
 
 pub fn set_invite_details(handle: u32, invite_detail: &InviteDetail) -> VcxResult<()> {
