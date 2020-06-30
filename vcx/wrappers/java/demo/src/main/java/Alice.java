@@ -44,8 +44,8 @@ public class Alice {
                 "}").jsonString();
 
         // Communication method. aries.
-        provisionConfig = JsonPath.parse(provisionConfig).put("$", "protocol_type", "3.0").jsonString();
-        logger.info("Running with Aries VCX Enabled! Make sure VCX agency is configured to use protocol_type 3.0");
+        provisionConfig = JsonPath.parse(provisionConfig).put("$", "protocol_type", "4.0").jsonString();
+        logger.info("Running with Aries VCX Enabled! Make sure VCX agency is configured to use protocol_type 4.0");
 
         if (options.hasOption("postgres")) {
             Common.loadPostgresPlugin();
@@ -85,7 +85,7 @@ public class Alice {
         Thread.sleep(5000);
         String offers = CredentialApi.credentialGetOffers(connectionHandle).get();
         logger.info("Alice found " + JsonPath.read(offers, "$.length()") + " credential offers.");
-        String credentialOffer = JsonPath.parse((List)JsonPath.read(offers, "$.[0]")).jsonString();
+        String credentialOffer = JsonPath.parse((LinkedHashMap)JsonPath.read(offers, "$.[0]")).jsonString();
         logger.info("credential offer:\n" + prettyJson(credentialOffer));
 
         // Create a credential object from the credential offer
