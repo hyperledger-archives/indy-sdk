@@ -11,7 +11,7 @@ use v3::messages::a2a::A2AMessage;
 use v3::messages::status::Status;
 use connection;
 
-use utils::libindy::anoncreds::{self, libindy_prover_store_credential};
+use utils::libindy::anoncreds::{self, libindy_prover_store_credential, libindy_prover_delete_credential};
 use error::prelude::*;
 use std::collections::HashMap;
 
@@ -60,8 +60,10 @@ impl HolderSM {
 
         match self.find_message_to_handle(messages) {
             Some((uid, msg)) => {
+                let state = self.handle_message(msg.into())?;
                 connection::update_message_status(conn_handle, uid)?;
-                self.handle_message(msg.into())
+                Ok(state)
+
             }
             None => Ok(self)
         }
@@ -119,7 +121,6 @@ impl HolderSM {
                         Ok((cred_request, req_meta, cred_def_json)) => {
                             let cred_request = cred_request
                                 .set_thread_id(&thread_id);
-                            connection::remove_pending_message(connection_handle, &state_data.offer.id)?;
                             connection::send_message(connection_handle, cred_request.to_a2a_message())?;
                             HolderState::RequestSent((state_data, req_meta, cred_def_json, connection_handle).into())
                         }
@@ -199,6 +200,18 @@ impl HolderSM {
             _ => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot get credential: Credential Issuance is not finished yet"))
         }
     }
+
+    pub fn delete_credential(&self) -> VcxResult<()> {
+        trace!("Holder::delete_credential");
+        
+        match self.state {
+            HolderState::Finished(ref state) => {
+                let cred_id = state.cred_id.clone().ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get credential: credential id not found"))?;
+                _delete_credential(&cred_id)
+            }
+            _ => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot delete credential: credential issuance is not finished yet"))
+        }
+    }
 }
 
 fn _parse_cred_def_from_cred_offer(cred_offer: &str) -> VcxResult<String> {
@@ -242,6 +255,12 @@ fn _store_credential(credential: &Credential,
                                     &credential_json,
                                     cred_def_json,
                                     rev_reg_def_json.as_ref().map(String::as_str))
+}
+
+fn _delete_credential(cred_id: &str) -> VcxResult<()> {
+    trace!("Holder::_delete_credential >>> cred_id: {}", cred_id);
+
+    libindy_prover_delete_credential(cred_id)
 }
 
 fn _make_credential_request(conn_handle: u32, offer: &CredentialOffer) -> VcxResult<(CredentialRequest, String, String)> {
