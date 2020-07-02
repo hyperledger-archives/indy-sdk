@@ -275,7 +275,8 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     let (agent_did, agent_vk) = match my_config.protocol_type {
         settings::ProtocolTypes::V1 => onboarding_v1(&my_did, &my_vk, &my_config.agency_did)?,
         settings::ProtocolTypes::V2 |
-        settings::ProtocolTypes::V3=> onboarding_v2(&my_did, &my_vk, &my_config.agency_did)?,
+        settings::ProtocolTypes::V3 |
+        settings::ProtocolTypes::V4 => onboarding_v2(&my_did, &my_vk, &my_config.agency_did)?,
     };
 
     let config = get_final_config(&my_did, &my_vk, &agent_did, &agent_vk, &wallet_name, &my_config)?;
@@ -408,7 +409,8 @@ pub fn update_agent_info(id: &str, value: &str) -> VcxResult<()> {
             update_agent_info_v1(&to_did, com_method)
         }
         settings::ProtocolTypes::V2 |
-        settings::ProtocolTypes::V3 => {
+        settings::ProtocolTypes::V3 |
+        settings::ProtocolTypes::V4 => {
             update_agent_info_v2(&to_did, com_method)
         }
     }
@@ -443,8 +445,44 @@ pub fn send_message_to_agency(message: &A2AMessage, did: &str) -> VcxResult<Vec<
 
 #[cfg(test)]
 mod tests {
+    use std::env;
     use super::*;
     use utils::devsetup::*;
+    use api::vcx::vcx_shutdown;
+
+    #[test]
+    fn test_connect_register_provision_config_path() {
+        let agency_did = "LTjTWsezEmV4wJYD5Ufxvk";
+        let agency_vk = "BcCSmgdfChLqmtBkkA26YotWVFBNnyY45WCnQziF4cqN";
+        let host = "https://eas.pdev.evernym.com";
+        let wallet_key = "test_key";
+
+        let path = if cfg!(target_os = "android") {
+            env::var("EXTERNAL_STORAGE").unwrap() + "/tmp/custom1/"
+        } else {
+            "/tmp/custom1/".to_owned()
+        };
+
+        let config = json!({
+            "wallet_name": "test_wallet",
+            "storage_config": json!({
+                "path": path
+            }).to_string(),
+            "agency_url": host.to_string(),
+            "agency_did": agency_did.to_string(),
+            "agency_verkey": agency_vk.to_string(),
+            "wallet_key": wallet_key.to_string(),
+        });
+
+        //Creates wallet at custom location
+        connect_register_provision(&config.to_string()).unwrap();
+        assert!(std::path::Path::new(&(path + "test_wallet")).exists());
+        vcx_shutdown(false);
+        let my_config: Config = serde_json::from_str(&config.to_string()).unwrap();
+
+        //Opens already created wallet at custom location
+        configure_wallet(&my_config).unwrap();
+    }
 
     #[test]
     fn test_connect_register_provision() {

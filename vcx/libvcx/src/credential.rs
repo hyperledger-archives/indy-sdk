@@ -1,4 +1,4 @@
-use serde_json;
+use ::{serde_json, settings};
 use serde_json::Value;
 use std::convert::TryInto;
 
@@ -439,7 +439,7 @@ fn create_credential_v3(source_id: &str, offer: &str) -> VcxResult<Option<Creden
         serde_json::Value::Array(mut offer) => { // legacy offer format
             offer.pop()
                 .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot get Credential Offer"))?
-        },
+        }
         offer => offer //aries offer format
     };
 
@@ -454,6 +454,16 @@ fn create_credential_v3(source_id: &str, offer: &str) -> VcxResult<Option<Creden
 
 pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u32> {
     trace!("credential_create_with_offer >>> source_id: {}, offer: {}", source_id, secret!(&offer));
+
+    // strict aries protocol is set. Credential Offer must be in aries format
+    if settings::is_strict_aries_protocol_set() {
+        let cred_offer: CredentialOfferV3 = serde_json::from_str(offer)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                              format!("Strict `aries` protocol is enabled. Can not parse `aries` formatted Credential Offer: {}", err)))?;
+
+        let holder = Holder::create(cred_offer, source_id)?;
+        return HANDLE_MAP.add(Credentials::V3(holder));
+    }
 
     let credential =
         match create_credential_v3(source_id, &offer)? {
@@ -519,6 +529,12 @@ pub fn get_credential(handle: u32) -> VcxResult<String> {
             }
             Credentials::V3(ref credential) => {
                 let (cred_id, credential) = credential.get_credential()?;
+
+                // strict aries protocol is set. Return aries formatted credential
+                if settings::is_strict_aries_protocol_set() {
+                    return Ok(json!(credential).to_string());
+                }
+
                 let credential: CredentialMessage = credential.try_into()?;
 
                 let mut json = serde_json::Map::new();
@@ -528,6 +544,35 @@ pub fn get_credential(handle: u32) -> VcxResult<String> {
             }
         }
     })
+}
+
+pub fn delete_credential(handle: u32) -> VcxResult<u32> {
+    let source_id = get_source_id(handle).unwrap_or_default();
+    trace!("Credential::delete_credential >>> credential_handle: {}, source_id: {}", handle, source_id);
+
+    HANDLE_MAP.get(handle, |credential| {
+        match credential {
+            Credentials::Pending(_) => {
+                trace!("Cannot delete credential for pending object");
+                Err(VcxError::from_msg(VcxErrorKind::InvalidCredentialHandle, "Cannot delete credential for Pending object"))
+            }
+            Credentials::V1(_) => {
+                // TODO: Implement
+                trace!("delete_credential for V1 is not implemented.");
+                Err(VcxError::from(VcxErrorKind::NotReady))
+            }
+            Credentials::V3(ref credential) => {
+                trace!("Deleting a credential: credential_handle {}, source_id {}", handle, source_id);
+
+                credential.delete_credential()?;
+                Ok(error::SUCCESS.code_num)
+            }
+        }
+    })
+        .map(|_| error::SUCCESS.code_num)
+        .or(Err(VcxError::from(VcxErrorKind::InvalidCredentialHandle)))
+        .and(release(handle))
+        .and_then(|_| Ok(error::SUCCESS.code_num))
 }
 
 pub fn get_payment_txn(handle: u32) -> VcxResult<PaymentTxn> {
@@ -676,6 +721,13 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
 
     if connection::is_v3_connection(connection_handle)? {
         let credential_offers = Holder::get_credential_offer_messages(connection_handle)?;
+
+        // strict aries protocol is set. Return aries formatted Credential Offers
+        if settings::is_strict_aries_protocol_set() {
+            return Ok(json!(credential_offers).to_string());
+        }
+
+        // map credential offers into proprietary format
         let msgs: Vec<Vec<::serde_json::Value>> = credential_offers
             .into_iter()
             .map(|credential_offer| credential_offer.try_into())
