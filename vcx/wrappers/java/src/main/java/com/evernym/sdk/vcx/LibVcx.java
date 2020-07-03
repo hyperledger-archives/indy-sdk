@@ -12,7 +12,7 @@ public abstract class LibVcx {
      * Native library interface
      */
 
-    private static final String LIBVCX_LOGGER_PREFIX = String.format("%s.native.%s", LibVcx.class.getName(), target.replace("::", "."));
+    private static final String LIBVCX_LOGGER_PREFIX = String.format("%s.native", LibVcx.class.getName());
 
 
     /**
@@ -751,7 +751,7 @@ public abstract class LibVcx {
                     message = message.substring(0, 10240);
                 }
                 String msg = String.format("%s:%d | %s", file, line, message);
-                logMessage(LIBVCX_LOGGER_PREFIX, level, msg);
+                logMessage(LIBVCX_LOGGER_PREFIX + target.replace("::", "."), level, msg);
             }
         };
 
