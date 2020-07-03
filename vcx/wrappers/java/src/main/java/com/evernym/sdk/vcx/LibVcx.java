@@ -632,7 +632,7 @@ public abstract class LibVcx {
         int vcx_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
 
         /** Set custom logger implementation with max lvl. */
-        int vcx_set_logger(Pointer context, Callback enabled, Callback log, Callback flush, int max_lvl);
+        int vcx_set_logger_with_max_lvl(Pointer context, Callback enabled, Callback log, Callback flush, int max_lvl);
 
         /** Set max lvl for current logger implementation. */
         int vcx_set_log_max_lvl(int max_lvl);
