@@ -86,7 +86,9 @@ impl DidDoc {
     }
 
     pub fn set_keys(&mut self, recipient_keys: Vec<String>, routing_keys: Vec<String>) {
-        // let mut id = 0;
+        let mut id = 0;
+        let mut public_key = Vec::new();
+        let controller = String::from(&self.id); // TODO: Will not be a valid did if created from pairwise invitation
 
         recipient_keys
             .iter()
@@ -94,9 +96,18 @@ impl DidDoc {
                 self.service.get_mut(0)
                     .map(|service| {
                         service.recipient_keys.push(key.to_string());
+                        public_key.push(
+                            Ed25519PublicKey {
+                                id: id.to_string(),
+                                type_: KEY_TYPE.to_string(),
+                                controller: controller.clone(),
+                                public_key_base_58: String::from(key)
+                            });
+                        id += 1;
                         service
                     });
             });
+        self.public_key = public_key;
 
         routing_keys
             .iter()
@@ -107,6 +118,7 @@ impl DidDoc {
                         service
                     });
             });
+
     }
 
     pub fn validate(&self) -> VcxResult<()> {
@@ -261,9 +273,11 @@ impl From<Invitation> for DidDoc {
         let mut did_doc: DidDoc = DidDoc::default();
         let (service_endpoint, recipient_keys, routing_keys) = match invitation {
             Invitation::Public(invitation) => {
-                did_doc.set_id(invitation.id.0.clone());
-                // TODO: How to best handle this - just print error and return default?
-                let service = ledger::get_service(&invitation.did).unwrap();
+                did_doc.set_id(invitation.did.clone());
+                let service = ledger::get_service(&invitation.did).unwrap_or_else(|err| {
+                    error!("Failed to obtain service definition from the ledger: {}", err);
+                    Service::default()                
+                });
                 (service.service_endpoint, service.recipient_keys, service.routing_keys)
             },
             Invitation::Pairwise(invitation) => {
@@ -501,8 +515,9 @@ pub mod tests {
     }
 
     #[test]
+    #[cfg(feature = "pool_tests")]
     fn test_did_doc_from_public_invitation_works() {
-        // TODO: Setup ledger mocks
+        // TODO: Either make part of ledger tests, or setup ledger mocks
         let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let mut did_doc = DidDoc::default();

@@ -180,8 +180,7 @@ impl InvitedState {
                                  agent_info: &AgentInfo) -> VcxResult<(SignedResponse, AgentInfo)> {
         trace!("InvitedState:handle_connection_request >>> request: {:?}, agent_info: {:?}", request, agent_info);
 
-        // TODO: Fix
-        // request.connection.did_doc.validate()?;
+        request.connection.did_doc.validate()?;
 
         let prev_agent_info = agent_info.clone();
 
