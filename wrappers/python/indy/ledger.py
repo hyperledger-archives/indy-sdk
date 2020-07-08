@@ -1549,8 +1549,8 @@ async def build_txn_author_agreement_request(submitter_did: str,
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_text = c_char_p(text.encode('utf-8')) if text is not None else None
     c_version = c_char_p(version.encode('utf-8'))
-    c_ratification_ts = c_int64(ratification_ts) if ratification_ts is not None else c_int(-1)
-    c_retirement_ts = c_int64(retirement_ts) if retirement_ts is not None else c_int(-1)
+    c_ratification_ts = c_int64(ratification_ts if ratification_ts is not None else -1)
+    c_retirement_ts = c_int64(retirement_ts if retirement_ts is not None else -1)
 
     request_json = await do_call('indy_build_txn_author_agreement_request',
                                  c_submitter_did,
@@ -1719,7 +1719,7 @@ async def build_get_acceptance_mechanisms_request(submitter_did: Optional[str],
         build_get_acceptance_mechanisms_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
-    c_timestamp = c_int64(timestamp) if timestamp is not None else c_int(-1)
+    c_timestamp = c_int64(timestamp if timestamp is not None else -1)
     c_version = c_char_p(version.encode('utf-8')) if version is not None else None
 
     request_json = await do_call('indy_build_get_acceptance_mechanisms_request',

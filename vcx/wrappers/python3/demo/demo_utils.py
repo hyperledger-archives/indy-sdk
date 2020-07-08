@@ -14,6 +14,7 @@ from vcx.api.credential import Credential
 from vcx.api.proof import Proof
 from vcx.api.disclosed_proof import DisclosedProof
 from vcx.api.schema import Schema
+from vcx.api.utils import vcx_messages_download, vcx_messages_update_status
 from vcx.state import State, ProofState
 
 
