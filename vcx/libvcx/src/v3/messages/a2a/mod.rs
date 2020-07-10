@@ -32,7 +32,7 @@ use v3::messages::discovery::disclose::Disclose;
 
 use v3::messages::basic_message::message::BasicMessage;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum A2AMessage {
     /// routing
     Forward(Forward),

@@ -298,9 +298,9 @@ pub struct Message {
 
 #[macro_export]
 macro_rules! convert_aries_message {
-    ($message:ident, $target_type:ident, $kind:ident) => (
+    ($message:ident, $a2a_msg:ident, $target_type:ident, $kind:ident) => (
         if settings::is_strict_aries_protocol_set() {
-             (PayloadKinds::$kind, json!(&$message).to_string())
+             (PayloadKinds::$kind, json!(&$a2a_msg).to_string())
         } else {
             let converted_message: $target_type = $message.try_into()?;
             (PayloadKinds::$kind, json!(&converted_message).to_string())
@@ -350,9 +350,9 @@ impl Message {
 
         let a2a_message = EncryptionEnvelope::open(self.payload()?)?;
 
-        let (kind, msg) = match a2a_message {
+        let (kind, msg) = match a2a_message.clone() {
             A2AMessage::PresentationRequest(presentation_request) => {
-                convert_aries_message!(presentation_request, ProofRequestMessage, ProofRequest)
+                convert_aries_message!(presentation_request, a2a_message, ProofRequestMessage, ProofRequest)
             }
             A2AMessage::CredentialOffer(offer) => {
                 if settings::is_strict_aries_protocol_set() {
@@ -363,10 +363,10 @@ impl Message {
                 }
             }
             A2AMessage::Credential(credential) => {
-                convert_aries_message!(credential, CredentialMessage, Cred)
+                convert_aries_message!(credential, a2a_message, CredentialMessage, Cred)
             }
             A2AMessage::Presentation(presentation) => {
-                convert_aries_message!(presentation, ProofMessage, Proof)
+                convert_aries_message!(presentation, a2a_message, ProofMessage, Proof)
             }
             msg => {
                 let msg = json!(&msg).to_string();
