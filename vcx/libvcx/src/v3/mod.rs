@@ -9,13 +9,12 @@ pub const SERIALIZE_VERSION: &'static str = "2.0";
 pub mod test {
     use rand;
     use rand::Rng;
-    use utils::devsetup::config_with_wallet_handle;
+    use utils::devsetup::*;
     use messages::agent_utils::connect_register_provision;
     use utils::libindy::wallet::*;
-    use v3::messages::a2a::A2AMessage;
     use indy_sys::WalletHandle;
     use utils::plugins::init_plugin;
-    use messages::get_message::Message;
+    use messages::payload::PayloadV1;
 
     pub fn source_id() -> String {
         String::from("test source id")
@@ -105,13 +104,27 @@ pub mod test {
         }
     }
 
-    fn download_message(did: String) -> ::messages::get_message::Message {
+    #[derive(Debug)]
+    pub struct Message {
+        uid: String,
+        message: String,
+    }
+
+    fn download_message(did: String, type_: &str) -> Message {
         let mut messages = ::messages::get_message::download_messages(Some(vec![did]), Some(vec![String::from("MS-103")]), None).unwrap();
         assert_eq!(1, messages.len());
-        let mut messages = messages.pop().unwrap();
-        assert_eq!(1, messages.msgs.len());
-        let message = messages.msgs.pop().unwrap();
-        message
+        let messages = messages.pop().unwrap();
+
+        for message in  messages.msgs.into_iter(){
+            let payload: PayloadV1 = serde_json::from_str(&message.decrypted_payload.clone().unwrap()).unwrap();
+            if payload.type_.name == type_ {
+                return Message{
+                    uid: message.uid,
+                    message: payload.msg
+                }
+            }
+        }
+        panic!("Message not found")
     }
 
     pub struct Faber {
@@ -131,9 +144,9 @@ pub mod test {
             let wallet_name = "faber_wallet";
 
             let config = json!({
-                "agency_url": "http://localhost:8080",
-                "agency_did": "VsKV7grR1BUE29mG2Fm2kX",
-                "agency_verkey": "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR",
+                "agency_url": AGENCY_ENDPOINT,
+                "agency_did": AGENCY_DID,
+                "agency_verkey": AGENCY_VERKEY,
                 "wallet_name": wallet_name,
                 "wallet_key": "123",
                 "payment_method": "null",
@@ -214,19 +227,6 @@ pub mod test {
             self.activate();
             ::connection::update_state(self.connection_handle, None).unwrap();
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
-        }
-
-        pub fn update_state_with_message(&self, expected_state: u32) -> A2AMessage {
-            self.activate();
-            let did = ::connection::get_pw_did(self.connection_handle).unwrap();
-            let message = download_message(did);
-
-            let a2a_message = ::connection::decode_message(self.connection_handle, message.clone()).unwrap();
-
-            ::connection::update_state_with_message(self.connection_handle, message).unwrap();
-            assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
-
-            a2a_message
         }
 
         pub fn ping(&self) {
@@ -324,9 +324,9 @@ pub mod test {
             let wallet_name = "alice_wallet";
 
             let config = json!({
-                "agency_url": "http://localhost:8080",
-                "agency_did": "VsKV7grR1BUE29mG2Fm2kX",
-                "agency_verkey": "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR",
+                "agency_url": C_AGENCY_ENDPOINT,
+                "agency_did": C_AGENCY_DID,
+                "agency_verkey": C_AGENCY_VERKEY,
                 "wallet_name": wallet_name,
                 "wallet_key": "123",
                 "payment_method": "null",
@@ -368,21 +368,10 @@ pub mod test {
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
 
-        pub fn download_message(&self) -> Message {
+        pub fn download_message(&self, message_type: &str) -> Message {
             self.activate();
             let did = ::connection::get_pw_did(self.connection_handle).unwrap();
-            download_message(did)
-        }
-
-        pub fn update_state_with_message(&self, expected_state: u32) -> A2AMessage {
-            let message = self.download_message();
-
-            let a2a_message = ::connection::decode_message(self.connection_handle, message.clone()).unwrap();
-
-            ::connection::update_state_with_message(self.connection_handle, message).unwrap();
-            assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
-
-            a2a_message
+            download_message(did, message_type)
         }
 
         pub fn accept_offer(&mut self) {
@@ -531,21 +520,11 @@ pub mod test {
         alice.send_presentation();
         faber.verify_presentation();
         alice.ensure_presentation_verified();
-
-        // Decline Presentation
-        faber.request_presentation();
-        alice.decline_presentation_request();
-        faber.update_proof_state(0, 2);
-
-        // Propose Presentation
-        faber.request_presentation();
-        alice.propose_presentation();
-        faber.update_proof_state(0, 2);
     }
 
     #[cfg(feature = "aries")]
     #[test]
-    fn aries_demo_update_state_with_message_flow() {
+    fn aries_demo_handle_connection_related_messages() {
         PaymentPlugin::load();
         let _pool = Pool::open();
 
@@ -563,18 +542,16 @@ pub mod test {
         let invite = faber.create_invite();
         alice.accept_invite(&invite);
 
-        faber.update_state_with_message(3);
-        alice.update_state_with_message(4);
-        faber.update_state_with_message(4);
+        faber.update_state(3);
+        alice.update_state(4);
+        faber.update_state(4);
 
         // Ping
         faber.ping();
 
-        let message = alice.update_state_with_message(4);
-        assert_match!(A2AMessage::Ping(_), message);
+        alice.update_state(4);
 
-        let message = faber.update_state_with_message(4);
-        assert_match!(A2AMessage::PingResponse(_), message);
+        faber.update_state(4);
 
         let faber_connection_info = faber.connection_info();
         assert!(faber_connection_info["their"]["protocols"].as_array().is_none());
@@ -582,54 +559,12 @@ pub mod test {
         // Discovery Features
         faber.discovery_features();
 
-        let message = alice.update_state_with_message(4);
-        assert_match!(A2AMessage::Query(_), message);
+        alice.update_state(4);
 
-        let message = faber.update_state_with_message(4);
-        assert_match!(A2AMessage::Disclose(_), message);
+        faber.update_state(4);
 
         let faber_connection_info = faber.connection_info();
         assert!(faber_connection_info["their"]["protocols"].as_array().unwrap().len() > 0);
-
-        /*
-         Create with message id flow
-        */
-
-        // Credential issuance
-        faber.offer_credential();
-
-        // Alice creates Credential object with message id
-        {
-            let message = alice.download_message();
-            let (credential_handle, _credential_offer) = ::credential::credential_create_with_msgid("test", alice.connection_handle, &message.uid).unwrap();
-            alice.credential_handle = credential_handle;
-
-            ::credential::send_credential_request(alice.credential_handle, alice.connection_handle).unwrap();
-            assert_eq!(2, ::credential::get_state(alice.credential_handle).unwrap());
-        }
-
-        faber.send_credential();
-        alice.accept_credential();
-
-        // Credential Presentation
-        faber.request_presentation();
-
-        // Alice creates Presentation object with message id
-        {
-            let message = alice.download_message();
-            let (presentation_handle, _presentation_request) = ::disclosed_proof::create_proof_with_msgid("test", alice.connection_handle, &message.uid).unwrap();
-            alice.presentation_handle = presentation_handle;
-
-            let credentials = alice.get_credentials_for_presentation();
-
-            ::disclosed_proof::generate_proof(alice.presentation_handle, credentials.to_string(), String::from("{}")).unwrap();
-            assert_eq!(3, ::disclosed_proof::get_state(alice.presentation_handle).unwrap());
-
-            ::disclosed_proof::send_proof(alice.presentation_handle, alice.connection_handle).unwrap();
-            assert_eq!(2, ::disclosed_proof::get_state(alice.presentation_handle).unwrap());
-        }
-
-        faber.verify_presentation();
     }
 
     #[cfg(feature = "aries")]
@@ -652,9 +587,9 @@ pub mod test {
         let invite = faber.create_invite();
         alice.accept_invite(&invite);
 
-        faber.update_state_with_message(3);
-        alice.update_state_with_message(4);
-        faber.update_state_with_message(4);
+        faber.update_state(3);
+        alice.update_state(4);
+        faber.update_state(4);
 
         /*
          Create with message id flow
@@ -665,7 +600,7 @@ pub mod test {
 
         // Alice creates Credential object with message id
         {
-            let message = alice.download_message();
+            let message = alice.download_message("credential-offer");
             let (credential_handle, _credential_offer) = ::credential::credential_create_with_msgid("test", alice.connection_handle, &message.uid).unwrap();
             alice.credential_handle = credential_handle;
 
@@ -681,7 +616,7 @@ pub mod test {
 
         // Alice creates Presentation object with message id
         {
-            let message = alice.download_message();
+            let message = alice.download_message("presentation-request");
             let (presentation_handle, _presentation_request) = ::disclosed_proof::create_proof_with_msgid("test", alice.connection_handle, &message.uid).unwrap();
             alice.presentation_handle = presentation_handle;
 
@@ -717,9 +652,9 @@ pub mod test {
         let invite = faber.create_invite();
         alice.accept_invite(&invite);
 
-        faber.update_state_with_message(3);
-        alice.update_state_with_message(4);
-        faber.update_state_with_message(4);
+        faber.update_state(3);
+        alice.update_state(4);
+        faber.update_state(4);
 
         /*
          Create with message flow
@@ -730,12 +665,9 @@ pub mod test {
 
         // Alice creates Credential object with Offer
         {
-            let message = alice.download_message();
+            let message = alice.download_message("credential-offer");
 
-            let msg: serde_json::Value = ::serde_json::from_str(&message.decrypted_payload.unwrap()).unwrap();
-            let offer = msg["@msg"].as_str().unwrap();
-
-            alice.credential_handle = ::credential::credential_create_with_offer("test", &offer).unwrap();
+            alice.credential_handle = ::credential::credential_create_with_offer("test", &message.message).unwrap();
 
             ::connection::update_message_status(alice.connection_handle, message.uid).unwrap();
 
@@ -751,12 +683,9 @@ pub mod test {
 
         // Alice creates Presentation object with Proof Request
         {
-            let message = alice.download_message();
+            let message = alice.download_message("presentation-request");
 
-            let msg: serde_json::Value = ::serde_json::from_str(&message.decrypted_payload.unwrap()).unwrap();
-            let request = msg["@msg"].as_str().unwrap();
-
-            alice.presentation_handle = ::disclosed_proof::create_proof("test", &request).unwrap();
+            alice.presentation_handle = ::disclosed_proof::create_proof("test", &message.message).unwrap();
 
             ::connection::update_message_status(alice.connection_handle, message.uid).unwrap();
 

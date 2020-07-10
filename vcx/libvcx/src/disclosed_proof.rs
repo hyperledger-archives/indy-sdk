@@ -612,6 +612,16 @@ pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
 
     debug!("creating disclosed proof with id: {}", source_id);
 
+    // strict aries protocol is set. Presentation Request must be in aries format
+    if settings::is_strict_aries_protocol_set() {
+        let presentation_request: PresentationRequest = serde_json::from_str(proof_req)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                              format!("Strict `aries` protocol is enabled. Can not parse `aries` formatted Presentation Request: {}", err)))?;
+
+        let proof = Prover::create(source_id, presentation_request)?;
+        return HANDLE_MAP.add(DisclosedProofs::V3(proof));
+    }
+
     let proof =
         match create_proof_v3(source_id, &proof_req)? {
             Some(proof) => proof,
@@ -885,6 +895,11 @@ fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<String> 
 pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&str>) -> VcxResult<String> {
     if connection::is_v3_connection(connection_handle)? {
         let presentation_requests = Prover::get_presentation_request_messages(connection_handle, match_name)?;
+
+        // strict aries protocol is set. return aries formatted Proof Request.
+        if settings::is_strict_aries_protocol_set() {
+            return Ok(json!(presentation_requests).to_string());
+        }
 
         let msgs: Vec<ProofRequestMessage> = presentation_requests
             .into_iter()
