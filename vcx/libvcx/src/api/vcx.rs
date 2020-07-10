@@ -87,14 +87,9 @@ pub extern fn vcx_init(command_handle: CommandHandle,
             settings::set_defaults();
         } else {
             match settings::process_config_file(&config_path) {
+                Ok(_) => (),
                 Err(_) => {
                     return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot initialize with given config path.").into();
-                }
-                Ok(_) => {
-                    match settings::validate_payment_method() {
-                        Ok(_) => (),
-                        Err(e) => return e.into()
-                    }
                 }
             };
         }
@@ -586,7 +581,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_file_no_payment_method() {
-        let _setup = SetupEmpty::init();
+        let _setup = SetupWalletAndPool::init();
 
         let config = json!({
             "wallet_name": settings::DEFAULT_WALLET_NAME,
@@ -596,8 +591,7 @@ mod tests {
 
         let config = TempFile::create_with_data("test_init.json", &config);
 
-        let rc = _vcx_init_c_closure(&config.path).unwrap_err();
-        assert_eq!(rc, error::MISSING_PAYMENT_METHOD.code_num);
+        _vcx_init_c_closure(&config.path).unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
