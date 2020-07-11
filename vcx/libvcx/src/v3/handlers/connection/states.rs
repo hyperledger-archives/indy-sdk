@@ -13,13 +13,11 @@ use v3::messages::ack::Ack;
 use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::discovery::query::Query;
 use v3::messages::discovery::disclose::{Disclose, ProtocolDescriptor};
-use v3::messages::a2a::MessageId;
 use v3::messages::a2a::protocol_registry::ProtocolRegistry;
 
 use std::collections::HashMap;
 
 use error::prelude::*;
-use v3::utils::pending_message::PendingMessage;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DidExchangeSM {
@@ -671,32 +669,6 @@ impl DidExchangeSM {
             ActorDidExchangeState::Inviter(_) => Actor::Inviter,
             ActorDidExchangeState::Invitee(_) => Actor::Invitee
         }
-    }
-
-    pub fn add_pending_messages(&self, messages: HashMap<MessageId, String>) -> VcxResult<()> {
-        match self.state {
-            ActorDidExchangeState::Inviter(DidExchangeState::Completed(ref _state)) |
-            ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref _state)) => {
-                for (key, value) in messages {
-                    PendingMessage::add(&key.0, &value).ok();
-                }
-            }
-            _ => {}
-        };
-        Ok(())
-    }
-
-    pub fn remove_pending_message(&self, id: MessageId) -> VcxResult<()> {
-        match self.state {
-            ActorDidExchangeState::Inviter(DidExchangeState::Completed(ref _state)) |
-            ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref _state)) => {
-                if let Some(uid_) = PendingMessage::get(&id.0) {
-                    self.agent_info.update_message_status(uid_.to_string()).ok();
-                }
-            }
-            _ => {}
-        };
-        Ok(())
     }
 }
 
