@@ -5,7 +5,7 @@ Automated build: clone the repo and run `mac.build.sh` in the `libindy` folder.
 ## Manual steps
 
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
-2. Install required native libraries and utilities (libsodium is added with URL to homebrew since version<1.0.15 is required)
+2. Install required native libraries and utilities
    ```
    brew install pkg-config
    brew install libsodium   
