@@ -12,6 +12,7 @@ const logger = require('./logger')
 const url = require('url')
 const isPortReachable = require('is-port-reachable')
 const { runScript } = require('./script-comon')
+const assert = require('assert')
 
 const utime = Math.floor(new Date() / 1000)
 const optionalWebhook = 'http://localhost:7209/notifications/faber'
@@ -37,8 +38,7 @@ async function runFaber (options) {
   await demoCommon.initRustApiAndLogger(logLevel)
 
   if (options.comm === 'aries') {
-    provisionConfig.protocol_type = '2.0'
-    provisionConfig.communication_method = 'aries'
+    provisionConfig.protocol_type = '4.0'
     logger.info('Running with Aries VCX Enabled! Make sure VCX agency is configured to use protocol_type 2.0')
   }
 
@@ -68,8 +68,8 @@ async function runFaber (options) {
   if (TAA_ACCEPT) {
     logger.info('#2.1 Accept transaction author agreement')
     const taa = await getLedgerAuthorAgreement()
-    const taa_json = JSON.parse(taa)
-    await setActiveTxnAuthorAgreementMeta(taa_json.text, taa_json.version, null, Object.keys(taa_json.aml)[0], utime)
+    const taaJson = JSON.parse(taa)
+    await setActiveTxnAuthorAgreementMeta(taaJson.text, taaJson.version, null, Object.keys(taaJson.aml)[0], utime)
   }
 
   const version = `${getRandomInt(1, 101)}.${getRandomInt(1, 101)}.${getRandomInt(1, 101)}`
@@ -194,7 +194,7 @@ async function runFaber (options) {
   ]
 
   logger.info('#19 Create a Proof object')
-  const proof = await Proof.create({
+  const vcxProof = await Proof.create({
     sourceId: '213',
     attrs: proofAttributes,
     preds: proofPredicates,
@@ -203,30 +203,39 @@ async function runFaber (options) {
   })
 
   logger.info('#20 Request proof of degree from alice')
-  await proof.requestProof(connectionToAlice)
+  await vcxProof.requestProof(connectionToAlice)
 
   logger.info('#21 Poll agency and wait for alice to provide proof')
-  let proofState = await proof.getState()
-  const revokedState = options.revocation ? StateType.None : StateType.Revoked
-  while (proofState !== StateType.Accepted) {
-    if (proofState === revokedState) {
-      logger.info('Alice failed to provide proof, credential revoked')
-      process.exit(0)
-    }
+  let proofProtocolState = await vcxProof.getState()
+  logger.info(`vcxProof = ${JSON.stringify(vcxProof)}`)
+  logger.info(`proofState = ${proofProtocolState}`)
+  while (proofProtocolState !== StateType.Accepted) {
+    // even if revoked credential was used, vcxProof.getState() should in final state return StateType.Accepted
     await sleepPromise(2000)
-    await proof.updateState()
-    proofState = await proof.getState()
+    await vcxProof.updateState()
+    proofProtocolState = await vcxProof.getState()
+    logger.info(`proofState=${proofProtocolState}`)
   }
 
-  logger.info('#27 Process the proof provided by alice')
-  await proof.getProof(connectionToAlice)
+  logger.info('#27 Process the proof provided by alice.')
+  const { proofState, proof } = await vcxProof.getProof(connectionToAlice)
+  assert(proofState)
+  assert(proof)
+  logger.info(`proofState = ${JSON.stringify(proofProtocolState)}`)
+  logger.info(`vcxProof = ${JSON.stringify(vcxProof)}`)
 
-  logger.info('#28 Check if proof is valid')
-  if (proof.proofState === ProofState.Verified) {
-    logger.info('Proof is verified')
+  logger.info('#28 Check if proof is valid.')
+  if (proofState === ProofState.Verified) {
+    logger.warn('Proof is verified.')
+    assert(options.revocation === false)
+  } else if (proofState === ProofState.Invalid) {
+    logger.warn('Proof verification failed, credential has been revoked.')
+    assert(options.revocation === true)
   } else {
-    logger.info('Proof verification failed, credential revoked')
+    logger.error(`Unexpected proof state '${proofState}'.`)
+    process.exit(-1)
   }
+  logger.info(`Serialized proof ${JSON.stringify(await vcxProof.serialize())}`)
   process.exit(0)
 }
 

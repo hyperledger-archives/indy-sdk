@@ -32,10 +32,10 @@ async function runAlice (options) {
   await demoCommon.initRustApiAndLogger(logLevel)
 
   if (options.comm === 'aries') {
-    provisionConfig.protocol_type = '2.0'
-    provisionConfig.communication_method = 'aries'
+    provisionConfig.protocol_type = '4.0'
     logger.info('Running with Aries VCX Enabled! Make sure VCX agency is configured to use protocol_type 2.0')
   }
+
   if (options.postgresql) {
     await demoCommon.loadPostgresPlugin(provisionConfig)
     provisionConfig.wallet_type = 'postgres_storage'
