@@ -23,6 +23,7 @@ use messages::proofs::proof_message::get_credential_info;
 
 use v3::handlers::proof_presentation::verifier::verifier::Verifier;
 use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
+use settings::get_config_value;
 
 lazy_static! {
     static ref PROOF_MAP: ObjectCache<Proofs> = Default::default();
@@ -285,7 +286,10 @@ impl Proof {
     }
 
     pub fn validate_indy_proof(proof_json: &str, proof_req_json: &str) -> VcxResult<bool> {
-        if settings::indy_mocks_enabled() { return Ok(true); }
+        if settings::indy_mocks_enabled() {
+            let mock_result: bool = get_config_value(settings::MOCK_INDY_PROOF_VALIDATION).unwrap_or("true".into()).parse().unwrap();
+            return Ok(mock_result);
+        }
 
         Proof::validate_proof_revealed_attributes(&proof_json)?;
 
