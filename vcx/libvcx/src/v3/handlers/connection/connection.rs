@@ -4,7 +4,7 @@ use error::prelude::*;
 use v3::handlers::connection::states::{DidExchangeSM, Actor, ActorDidExchangeState};
 use v3::handlers::connection::messages::DidExchangeMessages;
 use v3::handlers::connection::agent::AgentInfo;
-use v3::messages::a2a::{A2AMessage, MessageId};
+use v3::messages::a2a::A2AMessage;
 use v3::messages::connection::invite::Invitation;
 
 use std::collections::HashMap;
@@ -126,16 +126,11 @@ impl Connection {
     pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
         trace!("Connection: update_state_with_message: {}", message);
 
-        let agent_info = self.agent_info().clone();
-
-        let message: Message = ::serde_json::from_str(&message)
+        let message: A2AMessage = ::serde_json::from_str(&message)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption,
                                               format!("Cannot updated state with messages: Message deserialization failed: {:?}", err)))?;
 
-        let a2a_message = self.decode_message(&message)?;
-        self.handle_message(a2a_message.into())?;
-
-        agent_info.update_message_status(message.uid)?;
+        self.handle_message(message.into())?;
 
         Ok(())
     }
@@ -215,16 +210,6 @@ impl Connection {
     fn step(&mut self, message: DidExchangeMessages) -> VcxResult<()> {
         self.connection_sm = self.connection_sm.clone().step(message)?;
         Ok(())
-    }
-
-    pub fn add_pending_messages(&self, messages: HashMap<MessageId, String>) -> VcxResult<()> {
-        trace!("Connection::add_pending_messages >>> messages: {:?}", messages);
-        self.connection_sm.add_pending_messages(messages)
-    }
-
-    pub fn remove_pending_message(&self, id: MessageId) -> VcxResult<()> {
-        trace!("Connection::remove_pending_message >>> id: {:?}", id);
-        self.connection_sm.remove_pending_message(id)
     }
 
     pub fn send_discovery_features(&mut self, query: Option<String>, comment: Option<String>) -> VcxResult<()> {
