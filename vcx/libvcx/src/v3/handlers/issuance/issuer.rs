@@ -1,6 +1,6 @@
 use api::VcxStateType;
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
-use v3::handlers::issuance::states::{IssuerState, InitialState};
+use v3::handlers::issuance::states::{IssuerState, InitialState };
 use v3::messages::a2a::A2AMessage;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
@@ -8,7 +8,7 @@ use v3::messages::issuance::credential::Credential;
 use v3::messages::error::ProblemReport;
 use v3::messages::mime_type::MimeType;
 use error::{VcxResult, VcxError, VcxErrorKind};
-use utils::libindy::anoncreds::{self, libindy_issuer_create_credential_offer};
+use utils::libindy::anoncreds::{self, libindy_issuer_create_credential_offer, revoke_credential};
 use issuer_credential::encode_attributes;
 use v3::messages::status::Status;
 use std::collections::HashMap;
@@ -37,6 +37,26 @@ impl IssuerSM {
         IssuerSM {
             state,
             source_id
+        }
+    }
+
+    pub fn revoke(&self) -> VcxResult<()> {
+
+        match &self.state {
+            IssuerState::Finished(state) => {
+                match &state.revocation_info_v1 {
+                    Some(rev_info) => {
+                        if let (Some(cred_rev_id), Some(rev_reg_id), Some(tails_file)) = (&rev_info.cred_rev_id, &rev_info.rev_reg_id, &rev_info.tails_file) {
+                            revoke_credential(&tails_file, &rev_reg_id, &cred_rev_id)?;
+                            Ok(())
+                        } else {
+                            Err(VcxError::from(VcxErrorKind::InvalidRevocationDetails))
+                        }
+                    },
+                    None => Err(VcxError::from(VcxErrorKind::NotReady))
+                }
+            },
+            _ => Err(VcxError::from(VcxErrorKind::NotReady))
         }
     }
 
@@ -177,10 +197,10 @@ impl IssuerSM {
                 CredentialIssuanceMessage::CredentialSend() => {
                     let credential_msg = _create_credential(&state_data.request, &state_data.rev_reg_id, &state_data.tails_file, &state_data.offer, &state_data.cred_data);
                     match credential_msg {
-                        Ok(credential_msg) => {
+                        Ok((credential_msg, cred_rev_id)) => {
                             let credential_msg = credential_msg.set_thread_id(&state_data.thread_id);
                             send_message(state_data.connection_handle, credential_msg.to_a2a_message())?;
-                            IssuerState::Finished(state_data.into())
+                            IssuerState::Finished((state_data, cred_rev_id).into())
                         }
                         Err(err) => {
                             let problem_report = ProblemReport::create()
@@ -260,20 +280,21 @@ fn _append_credential_preview(cred_offer_msg: CredentialOffer, credential_json: 
     Ok(new_offer)
 }
 
-fn _create_credential(request: &CredentialRequest, rev_reg_id: &Option<String>, tails_file: &Option<String>, offer: &str, cred_data: &str) -> VcxResult<Credential> {
+fn _create_credential(request: &CredentialRequest, rev_reg_id: &Option<String>, tails_file: &Option<String>, offer: &str, cred_data: &str) -> VcxResult<(Credential, Option<String>)> {
     trace!("Issuer::_create_credential >>> request: {:?}, rev_reg_id: {:?}, tails_file: {:?}, offer: {:?}, cred_data: {:?}", request, rev_reg_id, tails_file, offer, cred_data);
 
     let request = &request.requests_attach.content()?;
 
     let cred_data = encode_attributes(cred_data)?;
 
-    let (credential, _, _) = anoncreds::libindy_issuer_create_credential(offer,
+    let (ser_credential, cred_rev_id, _) = anoncreds::libindy_issuer_create_credential(offer,
                                                                          &request,
                                                                          &cred_data,
                                                                          rev_reg_id.clone(),
                                                                          tails_file.clone())?;
-    Credential::create()
-        .set_credential(credential)
+    let credential = Credential::create().set_credential(ser_credential)?;
+
+    Ok((credential, cred_rev_id))
 }
 
 #[cfg(test)]
