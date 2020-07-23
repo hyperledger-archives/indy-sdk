@@ -142,13 +142,13 @@ impl HolderSM {
                 CredentialIssuanceMessage::Credential(credential) => {
                     let result = _store_credential(&credential, &state_data.req_meta, &state_data.cred_def_json);
                     match result {
-                        Ok(cred_id) => {
+                        Ok((cred_id, rev_reg_def_json)) => {
                             if credential.please_ack.is_some() {
                                 let ack = CredentialAck::create().set_thread_id(&thread_id);
                                 connection::send_message(state_data.connection_handle, A2AMessage::CredentialAck(ack))?;
                             }
 
-                            HolderState::Finished((state_data, cred_id, credential).into())
+                            HolderState::Finished((state_data, cred_id, credential, rev_reg_def_json).into())
                         }
                         Err(err) => {
                             let problem_report = ProblemReport::create()
@@ -238,7 +238,7 @@ fn _parse_rev_reg_id_from_credential(credential: &str) -> VcxResult<Option<Strin
 }
 
 fn _store_credential(credential: &Credential,
-                     req_meta: &str, cred_def_json: &str) -> VcxResult<String> {
+                     req_meta: &str, cred_def_json: &str) -> VcxResult<(String, Option<String>)> {
     trace!("Holder::_store_credential >>>");
 
     let credential_json = credential.credentials_attach.content()?;
@@ -250,11 +250,12 @@ fn _store_credential(credential: &Credential,
         None
     };
 
-    libindy_prover_store_credential(None,
+    let cred_id = libindy_prover_store_credential(None,
                                     req_meta,
                                     &credential_json,
                                     cred_def_json,
-                                    rev_reg_def_json.as_ref().map(String::as_str))
+                                    rev_reg_def_json.as_ref().map(String::as_str))?;
+    Ok((cred_id, rev_reg_def_json))
 }
 
 fn _delete_credential(cred_id: &str) -> VcxResult<()> {

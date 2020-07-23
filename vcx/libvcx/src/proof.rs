@@ -23,6 +23,7 @@ use messages::proofs::proof_message::get_credential_info;
 
 use v3::handlers::proof_presentation::verifier::verifier::Verifier;
 use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
+use settings::get_config_value;
 
 lazy_static! {
     static ref PROOF_MAP: ObjectCache<Proofs> = Default::default();
@@ -285,7 +286,10 @@ impl Proof {
     }
 
     pub fn validate_indy_proof(proof_json: &str, proof_req_json: &str) -> VcxResult<bool> {
-        if settings::indy_mocks_enabled() { return Ok(true); }
+        if settings::indy_mocks_enabled() {
+            let mock_result: bool = get_config_value(settings::MOCK_INDY_PROOF_VALIDATION).unwrap_or("true".into()).parse().unwrap();
+            return Ok(mock_result);
+        }
 
         Proof::validate_proof_revealed_attributes(&proof_json)?;
 
@@ -474,11 +478,10 @@ pub fn create_proof(source_id: String,
                     requested_predicates: String,
                     revocation_details: String,
                     name: String) -> VcxResult<u32> {
-
-    // strict aries protocol is set. Initiate proof of new format -- redirect to v3 folder
-    if settings::is_strict_aries_protocol_set() {
+    if settings::is_aries_protocol_set() {
         let verifier = Verifier::create(source_id, requested_attrs, requested_predicates, revocation_details, name)?;
         return PROOF_MAP.add(Proofs::V3(verifier))
+            .or(Err(VcxError::from(VcxErrorKind::CreateProof)));
     }
 
     trace!("create_proof >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}", source_id, requested_attrs, requested_predicates, name);

@@ -60,7 +60,6 @@ Indy SDK provides libindy wrappers for the following programming languages and p
 [Libnullpay](/libnullpay/README.md) is a libindy plugin that can be used for development of applications that use the Payments API of Indy SDK.
 
 ### Libvcx
-
 [Libvcx](/vcx/README.md) is a c-callable library built on top of libindy that provides a high-level
 credential exchange protocol. It simplifies creation of agent applications and provides
 better agent-2-agent interoperability for [Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy)
@@ -82,16 +81,19 @@ Indy SDK provides libvcx wrappers for the following programming languages and pl
 These wrappers are currently in **experimental** state and it is not part of official releases.
 
 ##### Example use
-For the main workflow example check [VCX Python demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
+- For the main workflow example check [VCX Python demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
+- Another libvcx example is available as [VCX NodeJS demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/node#run-demo).
+- For mobile see [iOS Demo project](https://github.com/sktston/vcx-demo-ios) 
 
-### Dummy Cloud Agent
-[Dummy Cloud Agent](/vcx/dummy-cloud-agent/README.md) is simple implementation of VCX compatible Cloud Agent.
+### LibVCX Agency
+LibVCX can be used with 
+[mediator agency](https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0046-mediators-and-relays/README.md)
+which enables asynchronous communication between 2 parties. 
+- [Dummy Cloud Agent](/vcx/dummy-cloud-agent/README.md) is simple implementation of VCX compatible Cloud Agent.
 The main purpose of this implementation is VCX testing, demos and documentation of VCX protocol.
-There is an parallel work on providing reference implementation of Agent2Agent protocol in indy-agent repo.
-We plan to migrate to this protocol and implementation soon.
+- [NodeVCXAgency](https://github.com/AbsaOSS/vcxagencynode) is alternative implementation in NodeJS.
 
 ## How-To Tutorials
-
 Short, simple tutorials that demonstrate how to accomplish common tasks
 are also available. See the [docs/how-tos](docs/how-tos) folder.
 
