@@ -35,7 +35,7 @@ async def main():
             "1 - check for credential offer \n "
             "2 - check for proof request \n "
             "3 - pass vc_auth_oidc-challenge \n "
-            "else finish \n") \
+            "x - finish \n") \
             .lower().strip()
         if answer == '0':
             connection_to_faber = await connect()
@@ -55,8 +55,11 @@ async def main():
             print("#23 Create a Disclosed proof object from proof request")
             proof = await DisclosedProof.create('proof', request)
             await create_proof(None, proof)
-        else:
+        elif answer == 'x' or answer == 'X':
             break
+        else:
+            print('invalid option !')
+
 
     print("Finished")
 
@@ -110,12 +113,17 @@ async def accept_offer(connection_to_faber, credential):
 async def create_proof(connection_to_faber, proof):
     print("#24 Query for credentials in the wallet that satisfy the proof request")
     credentials = await proof.get_creds()
-
     # Use the first available credentials to satisfy the proof request
     for attr in credentials['attrs']:
-        credentials['attrs'][attr] = {
-            'credential': credentials['attrs'][attr][0]
-        }
+        if credentials['attrs'][attr][0]['interval'] == None:
+            credentials['attrs'][attr] = {
+                'credential': credentials['attrs'][attr][0],
+            }
+        else:
+            credentials['attrs'][attr] = {
+                'credential': credentials['attrs'][attr][0],
+                "tails_file": "/tmp/tails_py"
+            }
 
     print("#25 Generate the proof")
     await proof.generate_proof(credentials, {})
@@ -124,8 +132,9 @@ async def create_proof(connection_to_faber, proof):
     await proof.send_proof(connection_to_faber)
 
     proof_state = await proof.get_state()
-    while proof_state != State.Accepted:
+    while proof_state != State.Accepted and proof_state != State.Undefined:
         sleep(2)
+        print(f'proof_state is {proof_state}')
         await proof.update_state()
         proof_state = await proof.get_state()
 
