@@ -1,3 +1,4 @@
+import os
 import asyncio
 import json
 from time import sleep
@@ -10,6 +11,8 @@ from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State
 from vc_auth_oidc.alice_vc_auth import handle_challenge
 
+# Setting up for interop with other aries agent
+INTEROP = os.getenv("INTEROP", "0") == "1"
 
 # logging.basicConfig(level=logging.DEBUG) uncomment to get logs
 
@@ -115,14 +118,14 @@ async def create_proof(connection_to_faber, proof):
     credentials = await proof.get_creds()
     # Use the first available credentials to satisfy the proof request
     for attr in credentials['attrs']:
-        if credentials['attrs'][attr][0]['interval'] == None:
+        if credentials['attrs'][attr][0]['interval'] != None and not INTEROP:
             credentials['attrs'][attr] = {
                 'credential': credentials['attrs'][attr][0],
+                "tails_file": "/tmp/tails_py"
             }
         else:
             credentials['attrs'][attr] = {
                 'credential': credentials['attrs'][attr][0],
-                "tails_file": "/tmp/tails_py"
             }
 
     print("#25 Generate the proof")
