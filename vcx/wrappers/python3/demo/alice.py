@@ -1,7 +1,7 @@
 import os
 import asyncio
 import json
-from time import sleep
+from time import sleep, time
 
 from vcx.api.connection import Connection
 from vcx.api.credential import Credential
@@ -15,12 +15,12 @@ from vc_auth_oidc.alice_vc_auth import handle_challenge
 INTEROP = os.getenv("INTEROP", "0") == "1"
 
 # logging.basicConfig(level=logging.DEBUG) uncomment to get logs
-
+u_time=int(time())
 provisionConfig = {
     'agency_url': 'http://localhost:8080',
     'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
     'agency_verkey': 'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
-    'wallet_name': 'alice_wallet',
+    'wallet_name': f'alice_wallet_{u_time}',
     'wallet_key': '123',
     'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
@@ -117,15 +117,16 @@ async def create_proof(connection_to_faber, proof):
     print("#24 Query for credentials in the wallet that satisfy the proof request")
     credentials = await proof.get_creds()
     # Use the first available credentials to satisfy the proof request
-    for attr in credentials['attrs']:
-        if credentials['attrs'][attr][0]['interval'] != None and not INTEROP:
+    if INTEROP:
+        for attr in credentials['attrs']:
             credentials['attrs'][attr] = {
-                'credential': credentials['attrs'][attr][0],
-                "tails_file": "/tmp/tails_py"
+                'credential': credentials['attrs'][attr][0]
             }
-        else:
+    else:
+        for attr in credentials['attrs']:
             credentials['attrs'][attr] = {
                 'credential': credentials['attrs'][attr][0],
+                "tails_file": "/tmp/tails"
             }
 
     print("#25 Generate the proof")

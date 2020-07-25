@@ -27,11 +27,12 @@ REVOKE = bool(os.getenv("REVOKE", "0") == "1")
 # 'wallet_name': name for newly created encrypted wallet
 # 'wallet_key': encryption key for encoding wallet
 # 'payment_method': method that will be used for payments
+u_time=int(time.time())
 provisionConfig = {
     'agency_url': 'http://localhost:8080',
     'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
     'agency_verkey': 'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
-    'wallet_name': 'faber_wallet',
+    'wallet_name': f'faber_wallet_{u_time}',
     'wallet_key': '123',
     'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
@@ -70,13 +71,16 @@ async def main():
     version = format("%d.%d.%d" % (random.randint(1, 101), random.randint(1, 101), random.randint(1, 101)))
     schema = await Schema.create('schema_uuid', 'degree schema', version, ['email', 'first_name', 'last_name'], 0)
     schema_id = await schema.get_schema_id()
+    print("schema_id ", schema_id)
 
     print("#4 Create a new credential definition on the ledger")
     if REVOKE:
-        cred_def = await CredentialDef.create('credef_uuid', 'degree', schema_id, 0, {"support_revocation": True, "tails_file": "/tmp/tails_py", "max_creds": 5})
+        cred_def = await CredentialDef.create('credef_uuid', 'degree', schema_id, 0, {"support_revocation": True, "tails_file": "/tmp/tails", "max_creds": 5})
     else:
         cred_def = await CredentialDef.create('credef_uuid', 'degree', schema_id, 0, {"support_revocation": False})
     cred_def_handle = cred_def.handle
+    cred_def_id = await cred_def.get_cred_def_id()
+    print("credential_definition ", cred_def_id)
 
     print("#5 Create a connection to alice and print out the invite details")
     connection_to_alice = await Connection.create('alice')
@@ -172,10 +176,7 @@ async def ask_for_proof(connection_to_alice, institution_did):
     ]
 
     print("#19 Create a Proof object")
-    if REVOKE:
-        proof = await Proof.create('proof_uuid', 'proof_from_alice', proof_attrs, {'to': int(time.time())})
-    else:
-        proof = await Proof.create('proof_uuid', 'proof_from_alice', proof_attrs, {})
+    proof = await Proof.create('proof_uuid', 'proof_from_alice', proof_attrs, {'to': int(round(time.time() * 1000))})
 
     print("#20 Request proof of degree from alice")
     await proof.request_proof(connection_to_alice)
