@@ -11,9 +11,6 @@ from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State
 from vc_auth_oidc.alice_vc_auth import handle_challenge
 
-# Setting up for interop with other aries agent
-INTEROP = os.getenv("INTEROP", "0") == "1"
-
 # logging.basicConfig(level=logging.DEBUG) uncomment to get logs
 u_time=int(time())
 provisionConfig = {
@@ -117,17 +114,12 @@ async def create_proof(connection_to_faber, proof):
     print("#24 Query for credentials in the wallet that satisfy the proof request")
     credentials = await proof.get_creds()
     # Use the first available credentials to satisfy the proof request
-    if INTEROP:
-        for attr in credentials['attrs']:
-            credentials['attrs'][attr] = {
-                'credential': credentials['attrs'][attr][0]
-            }
-    else:
-        for attr in credentials['attrs']:
-            credentials['attrs'][attr] = {
-                'credential': credentials['attrs'][attr][0],
-                "tails_file": "/tmp/tails"
-            }
+    # When use with other aries project should specify tails file on correct destination server
+    for attr in credentials['attrs']:
+        credentials['attrs'][attr] = {
+            'credential': credentials['attrs'][attr][0],
+            "tails_file": "/tmp/tails"
+        }
 
     print("#25 Generate the proof")
     await proof.generate_proof(credentials, {})
