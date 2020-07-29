@@ -1,4 +1,3 @@
-import os
 import asyncio
 import json
 from time import sleep, time
