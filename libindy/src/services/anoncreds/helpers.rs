@@ -117,7 +117,7 @@ pub fn get_non_revoc_interval(global_interval: &Option<NonRevocedInterval>, loca
 
     trace!("get_non_revoc_interval <<< interval: {:?}", interval);
 
-    interval
+    interval.filter(|x| x.to.is_some() || x.from.is_some())
 }
 
 macro_rules! _id_to_unqualified {
