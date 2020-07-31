@@ -113,11 +113,14 @@ pub fn parse_cred_rev_id(cred_rev_id: &str) -> IndyResult<u32> {
 pub fn get_non_revoc_interval(global_interval: &Option<NonRevocedInterval>, local_interval: &Option<NonRevocedInterval>) -> Option<NonRevocedInterval> {
     trace!("get_non_revoc_interval >>> global_interval: {:?}, local_interval: {:?}", global_interval, local_interval);
 
-    let interval = local_interval.clone().or_else(|| global_interval.clone().or(None));
+    let interval = local_interval
+        .clone()
+        .or_else(|| global_interval.clone().or(None))
+        .filter(|x| x.to.is_some() || x.from.is_some());
 
     trace!("get_non_revoc_interval <<< interval: {:?}", interval);
 
-    interval.filter(|x| x.to.is_some() || x.from.is_some())
+    interval
 }
 
 macro_rules! _id_to_unqualified {
@@ -175,6 +178,12 @@ mod tests {
     #[test]
     fn get_non_revoc_interval_for_none() {
         let res = get_non_revoc_interval(&None, &None);
+        assert_eq!(None, res);
+    }
+
+    #[test]
+    fn get_non_revoc_interval_for_empty_interval() {
+        let res = get_non_revoc_interval(&Some(NonRevocedInterval { from: None, to: None }), &None);
         assert_eq!(None, res);
     }
 
