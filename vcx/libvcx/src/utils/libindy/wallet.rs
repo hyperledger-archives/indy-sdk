@@ -242,6 +242,7 @@ pub mod tests {
     use super::*;
     use utils::get_temp_dir_path;
     use utils::devsetup::{SetupLibraryWallet, SetupDefaults, TempFile, SetupEmpty};
+    use ::utils::libindy::signus::create_and_store_my_did;
 
     fn _record() -> (&'static str, &'static str, &'static str) {
         ("type1", "id1", "value1")
@@ -253,6 +254,11 @@ pub mod tests {
         let export_file = TempFile::prepare_path(wallet_name);
 
         let handle = init_wallet(wallet_name, None, None, None).unwrap();
+
+        let (my_did, my_vk) = create_and_store_my_did(None, None).unwrap();
+
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
+        settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY, &my_vk);
 
         let backup_key = settings::get_config_value(settings::CONFIG_WALLET_BACKUP_KEY).unwrap();
 

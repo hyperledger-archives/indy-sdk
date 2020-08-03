@@ -1,13 +1,12 @@
 use error::prelude::*;
 use std::convert::TryInto;
 
-use messages::get_message::Message;
-
-use connection;
+use ::{connection, settings};
 use v3::messages::proof_presentation::presentation_request::*;
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::handlers::proof_presentation::verifier::states::VerifierSM;
 use v3::handlers::proof_presentation::verifier::messages::VerifierMessages;
+use v3::messages::a2a::A2AMessage;
 
 use messages::proofs::proof_request::ProofRequestMessage;
 use messages::proofs::proof_message::ProofMessage;
@@ -74,16 +73,10 @@ impl Verifier {
     pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
         trace!("Verifier::update_state_with_message >>> message: {:?}", message);
 
-        let message: Message = ::serde_json::from_str(&message)
+        let message: A2AMessage = ::serde_json::from_str(&message)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot update state with message: Message deserialization failed: {:?}", err)))?;
 
-        let connection_handle = self.verifier_sm.connection_handle()?;
-
-        let uid = message.uid.clone();
-        let a2a_message = connection::decode_message(connection_handle, message)?;
-
-        self.handle_message(a2a_message.into())?;
-        connection::update_message_status(connection_handle, uid)?;
+        self.handle_message(message.into())?;
 
         Ok(())
     }
@@ -106,19 +99,33 @@ impl Verifier {
     pub fn generate_presentation_request_msg(&self) -> VcxResult<String> {
         trace!("Verifier::generate_presentation_request_msg >>>");
 
-        let proof_request: ProofRequestMessage = self.verifier_sm.presentation_request()?.try_into()?;
+        let proof_request = self.verifier_sm.presentation_request()?;
 
-        ::serde_json::to_string(&proof_request)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
+        // strict aries protocol is set. return aries formatted Proof Request
+        if settings::is_strict_aries_protocol_set() {
+            return Ok(json!(proof_request).to_string())
+        }
+
+        // convert Proof Request into proprietary format
+        let proof_request: ProofRequestMessage = proof_request.try_into()?;
+
+        return Ok(json!(proof_request).to_string())
     }
 
     pub fn get_presentation(&self) -> VcxResult<String> {
         trace!("Verifier::get_presentation >>>");
 
-        let proof: ProofMessage = self.verifier_sm.presentation()?.try_into()?;
+        let proof = self.verifier_sm.presentation()?;
 
-        ::serde_json::to_string(&proof)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
+        // strict aries protocol is set. return aries formatted Proof
+        if settings::is_strict_aries_protocol_set() {
+            return Ok(json!(proof).to_string())
+        }
+
+        // convert Proof into proprietary format
+        let proof: ProofMessage = proof.try_into()?;
+
+        return Ok(json!(proof).to_string())
     }
 
     pub fn step(&mut self, message: VerifierMessages) -> VcxResult<()> {

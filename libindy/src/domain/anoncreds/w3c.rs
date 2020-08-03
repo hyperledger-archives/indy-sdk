@@ -72,7 +72,7 @@ struct DerivedCredential {
 impl DerivedCredential {
     fn from_proof(proof: &Proof, subproof_index: usize, ledger: &impl LedgerLookup) -> DerivedCredential {
 
-        // Non-safe credentials often have a precise timestamp in the issuanceDate field.
+        // Non-safe credentials often have a timestamp in the issuanceDate field.
         // This value can be quite precise and function as a strong correlator all on its
         // own. The VC spec says that the meaning of this field is "when the credential
         // begins to be valid." Thus, we can do some work here to make the derived credential
@@ -110,12 +110,22 @@ impl DerivedCredential {
     }
 }
 
-fn get_derived_cred_attribs(proof: &Proof, subproof_index: usize) -> Vec<serde_json::Value> {
+fn get_derived_cred_attribs(_proof: &Proof, subproof_index: usize) -> Vec<serde_json::Value> {
     let attribs: Vec<serde_json::Value> = vec![];
-    let revealed = &proof.proof.proofs[subproof_index].primary_proof.eq_proof.revealed_attrs;
-    for (key, encoding) in &revealed {
-
-    }
+    // TODO: the code below violates encapsulation because it peers inside private member
+    // variables to get at the data it needs. I had to hack Ursa to get it to compile. I don't
+    // think we want that, long-term. What we may want, instead, is to change from consuming
+    // a Rust data structure to consuming simple JSON text. We could then pull out of the JSON
+    // text the specific substructure we need, without worrrying about how that text maps to
+    // internal structs in Rust, and without worrying about whether they are managed in Ursa
+    // or libindy, or whether the specific pieces of data are private or not. This is how code
+    // would work if it were converting anoncreds data to W3C format without any view into
+    // libindy or Ursa internals. It would mean that we have to rewrite this function and some
+    // other functions in this module so they take text instead of Proof objects.
+    //let revealed = &proof.proof.proofs[subproof_index].primary_proof.eq_proof.revealed_attrs;
+    //for (key, encoding) in &revealed {
+    //
+    //}
     attribs
 }
 

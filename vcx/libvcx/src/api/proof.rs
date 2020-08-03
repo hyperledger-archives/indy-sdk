@@ -9,7 +9,7 @@ use error::prelude::*;
 use indy_sys::CommandHandle;
 
 /*
-    The API represents an Verifier side in credential presentation process.
+    APIs in this module are called by a verifier throughout the request-proof-and-verify process.
     Assumes that pairwise connection between Verifier and Prover is already established.
 
     # State
@@ -557,11 +557,6 @@ pub extern fn vcx_proof_get_request_msg(command_handle: CommandHandle,
 }
 
 
-/// Todo: This api should remove the connection_handle!! It is not being used within the code. I assume
-/// the only reason it still has it as an input was to not break it for existing users. vcx_get_proof_msg
-/// is the updated api that we should use.
-/// Get Proof message
-///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
@@ -573,10 +568,14 @@ pub extern fn vcx_proof_get_request_msg(command_handle: CommandHandle,
 ///
 /// #Returns
 /// Error code as a u32
+#[deprecated(
+    since = "1.15.0",
+    note = "Use vcx_get_proof_msg() instead. This api is similar, but requires an extra parameter (connection_handle) which is unnecessary and unused in the internals."
+)]
 #[no_mangle]
 pub extern fn vcx_get_proof(command_handle: CommandHandle,
                             proof_handle: u32,
-                            _connection_handle: u32,
+                            _unused_connection_handle: u32,
                             cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, proof_state:u32, response_data: *const c_char)>) -> u32 {
     info!("vcx_get_proof >>>");
 

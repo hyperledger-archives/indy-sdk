@@ -8,7 +8,8 @@ use messages::thread::Thread;
 pub struct CredentialProposal {
     #[serde(rename = "@id")]
     pub id: MessageId,
-    pub comment: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
     pub credential_proposal: CredentialPreviewData,
     pub schema_id: String,
     pub cred_def_id: String,
@@ -23,7 +24,7 @@ impl CredentialProposal {
     }
 
     pub fn set_comment(mut self, comment: String) -> Self {
-        self.comment = comment;
+        self.comment = Some(comment);
         self
     }
 
@@ -77,7 +78,7 @@ pub mod tests {
     pub fn _credential_proposal() -> CredentialProposal {
         CredentialProposal {
             id: MessageId::id(),
-            comment: _comment(),
+            comment: Some(_comment()),
             credential_proposal: _credential_preview_data(),
             schema_id: _schema_id(),
             thread: Some(thread()),
