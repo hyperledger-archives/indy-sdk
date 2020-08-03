@@ -66,11 +66,11 @@ struct DerivedCredential {
     #[serde(rename = "credentialSchema")]
     credential_schema: SchemaForDerivedCredential,
     #[serde(rename = "credentialSubject")]
-    credential_subject: Vec<String>,
+    credential_subject: Vec<serde_json::Value>,
 }
 
 impl DerivedCredential {
-    fn from_proof(proof: &Proof, ledger: &impl LedgerLookup) -> DerivedCredential {
+    fn from_proof(proof: &Proof, subproof_index: usize, ledger: &impl LedgerLookup) -> DerivedCredential {
 
         // Non-safe credentials often have a precise timestamp in the issuanceDate field.
         // This value can be quite precise and function as a strong correlator all on its
@@ -105,9 +105,18 @@ impl DerivedCredential {
                 id: primary_cred_def,
                 typ: "DerivedSchema".to_string()
             },
-            credential_subject: vec![],
+            credential_subject: get_derived_cred_attribs(&proof, subproof_index),
         }
     }
+}
+
+fn get_derived_cred_attribs(proof: &Proof, subproof_index: usize) -> Vec<serde_json::Value> {
+    let attribs: Vec<serde_json::Value> = vec![];
+    let revealed = &proof.proof.proofs[subproof_index].primary_proof.eq_proof.revealed_attrs;
+    for (key, encoding) in &revealed {
+
+    }
+    attribs
 }
 
 /// Embodies a verifiable presentation containing one or more derived
@@ -135,11 +144,19 @@ pub fn to_vp(proof: &Proof, ledger: &impl LedgerLookup) -> IndyResult<String> {
             "https://github.com/hyperledger/ursa/libzmix/docs/safecreds-context-v1.9.jsonld".to_string()
         ],
         typ: "VerifiablePresentation".to_string(),
-        creds: vec![DerivedCredential::from_proof(proof, ledger)],
+        creds: get_derived_creds(proof, ledger),
         proof: Some(W3cPresentationProof::from_proof(proof)),
     };
     serde_json::to_string(&preso)
         .to_indy(IndyErrorKind::InvalidState, "Cannot serialize FullProof")
+}
+
+fn get_derived_creds(proof: &Proof, ledger: &impl LedgerLookup) -> Vec<DerivedCredential> {
+    let mut items: Vec<DerivedCredential> = vec![];
+    for i in 0..proof.proof.proofs.len() {
+        items.push(DerivedCredential::from_proof(proof, i, ledger));
+    }
+    items
 }
 
 /// The purpose of this trait is to break a tight coupling between this module and the guts of ledger
