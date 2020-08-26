@@ -146,7 +146,7 @@ const _CREATE_SCHEMA: [&str; 12] = [
             ON UPDATE CASCADE
     )",
     "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_name ON tags_encrypted(name)",
-    "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_value ON tags_encrypted(md5(value))",
+    "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_value ON tags_encrypted(sha256(value))",
     "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_item_id ON tags_encrypted(item_id)",
     "CREATE TABLE IF NOT EXISTS tags_plaintext(
         name BYTEA NOT NULL,
