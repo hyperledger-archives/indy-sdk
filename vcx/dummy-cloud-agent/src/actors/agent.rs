@@ -402,6 +402,7 @@ impl Agent {
             A2AMessageV2::UpdateConfigs(msg) => self.handle_update_configs_v2(msg),
             A2AMessageV2::GetConfigs(msg) => self.handle_get_configs_v2(msg),
             A2AMessageV2::RemoveConfigs(msg) => self.handle_remove_configs_v2(msg),
+            A2AMessageV2::UpdateComMethod(msg) => self.handle_update_com_method_v2(msg),
             _ => err_act!(self, err_msg("Unsupported message"))
         }
             .and_then(move |msg, slf, _|
@@ -695,6 +696,18 @@ impl Agent {
         trace!("UpdateComMethod: {:?}", _msg);
         let messages = vec![A2AMessage::Version1(A2AMessageV1::ComMethodUpdated(ComMethodUpdated { id: "123".to_string() }))];
         ok_act!(self,  messages)
+    }
+
+    fn handle_update_com_method_v2(&mut self, msg: UpdateComMethod) -> ResponseActFuture<Self, A2AMessageV2, Error> {
+        trace!("UpdateComMethodV2 (msg={:?})", msg);
+        match msg.com_method.e_type {
+            ComMethodType::Webhook => {
+                self.configs.insert(String::from("notificationWebhookUrl"), String::from(msg.com_method.value));
+            }
+            _ => warn!("Agent was trying to handle unsupported communication type {:?}", msg.com_method.e_type)
+        };
+        let message = A2AMessageV2::ComMethodUpdated(ComMethodUpdated { id: msg.com_method.id });
+        ok_act!(self, message)
     }
 
     fn handle_update_configs_v1(&mut self, msg: UpdateConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {

@@ -46,6 +46,10 @@ impl Issuer {
         Ok(self.issuer_sm.get_source_id())
     }
 
+    pub fn revoke_credential(&self) -> VcxResult<()> {
+        self.issuer_sm.revoke()
+    }
+
     pub fn update_status(&mut self, msg: Option<String>) -> VcxResult<()> {
         match msg {
             Some(msg) => {
@@ -116,6 +120,10 @@ impl Holder {
 
     pub fn get_credential(&self) -> VcxResult<(String, Credential)> {
         self.holder_sm.get_credential()
+    }
+
+    pub fn delete_credential(&self) -> VcxResult<()> {
+        self.holder_sm.delete_credential()
     }
 
     pub fn get_credential_status(&self) -> VcxResult<u32> {

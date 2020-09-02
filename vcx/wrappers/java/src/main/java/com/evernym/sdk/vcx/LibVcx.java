@@ -520,6 +520,9 @@ public abstract class LibVcx {
         /** Retrieve information about a stored credential in user's wallet, including credential id and the credential itself. */
         public int vcx_get_credential(int command_handle, int credential_handle, Callback cb);
 
+        /** Delete a credential from the wallet and release it from memory. */
+        public int vcx_delete_credential(int command_handle, int credential_handle, Callback cb);
+
         /**
          * wallet object
          *

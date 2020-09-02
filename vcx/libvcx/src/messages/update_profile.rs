@@ -114,7 +114,8 @@ impl UpdateProfileDataBuilder {
                     )
                 ),
             settings::ProtocolTypes::V2 |
-            settings::ProtocolTypes::V3 =>
+            settings::ProtocolTypes::V3 |
+            settings::ProtocolTypes::V4 =>
                 A2AMessage::Version2(
                     A2AMessageV2::UpdateConfigs(
                         UpdateConfigs {
