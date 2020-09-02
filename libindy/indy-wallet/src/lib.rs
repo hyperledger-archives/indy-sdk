@@ -12,7 +12,7 @@ extern crate serde;
 extern crate serde_derive;
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::BufReader;
 use std::path::PathBuf;
@@ -47,6 +47,7 @@ mod wallet;
 pub struct WalletService {
     storage_types: RefCell<HashMap<String, Box<dyn WalletStorageType>>>,
     wallets: RefCell<HashMap<WalletHandle, Box<Wallet>>>,
+    wallet_ids: RefCell<HashSet<String>>,
     pending_for_open: RefCell<HashMap<WalletHandle, (String /* id */, Box<dyn WalletStorage>, Metadata, Option<KeyDerivationData>)>>,
     pending_for_import: RefCell<HashMap<WalletHandle, (BufReader<::std::fs::File>, chacha20poly1305_ietf::Nonce, usize, Vec<u8>, KeyDerivationData)>>,
 }
@@ -62,6 +63,7 @@ impl WalletService {
         WalletService {
             storage_types,
             wallets: RefCell::new(HashMap::new()),
+            wallet_ids: RefCell::new(HashSet::new()),
             pending_for_open: RefCell::new(HashMap::new()),
             pending_for_import: RefCell::new(HashMap::new()),
         }
@@ -152,7 +154,7 @@ impl WalletService {
     pub fn delete_wallet_prepare(&self, config: &Config, credentials: &Credentials) -> IndyResult<(Metadata, KeyDerivationData)> {
         trace!("delete_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
-        if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == WalletService::_get_wallet_id(config)) {
+        if self.wallet_ids.borrow_mut().contains(&WalletService::_get_wallet_id(config)) {
             return Err(err_msg(IndyErrorKind::InvalidState, format!("Wallet has to be closed before deleting: {:?}", WalletService::_get_wallet_id(config))));
         }
 
@@ -217,10 +219,12 @@ impl WalletService {
             storage.set_storage_metadata(&metadata)?;
         }
 
-        let wallet = Wallet::new(id, storage, Rc::new(keys));
+        let wallet = Wallet::new(id.clone(), storage, Rc::new(keys));
 
         let mut wallets = self.wallets.borrow_mut();
         wallets.insert(wallet_handle, Box::new(wallet));
+        let mut wallet_ids = self.wallet_ids.borrow_mut();
+        wallet_ids.insert(id.to_string());
 
         trace!("open_wallet <<< res: {:?}", wallet_handle);
         Ok(wallet_handle)
@@ -241,7 +245,10 @@ impl WalletService {
         trace!("close_wallet >>> handle: {:?}", handle);
 
         match self.wallets.borrow_mut().remove(&handle) {
-            Some(mut wallet) => wallet.close(),
+            Some(mut wallet) => {
+                self.wallet_ids.borrow_mut().remove(wallet.get_id());
+                wallet.close()
+            },
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, "Unknown wallet handle"))
         }?;
 
@@ -536,7 +543,8 @@ impl WalletService {
     }
 
     fn _is_id_from_config_not_used(&self, config: &Config) -> IndyResult<()> {
-        if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == WalletService::_get_wallet_id(config)) {
+        let id = WalletService::_get_wallet_id(config);
+        if self.wallet_ids.borrow_mut().contains(&id) {
             return Err(err_msg(IndyErrorKind::WalletAlreadyOpened, format!("Wallet {} already opened", WalletService::_get_wallet_id(config))));
         }
 

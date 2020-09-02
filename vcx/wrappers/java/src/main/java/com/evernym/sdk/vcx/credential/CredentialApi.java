@@ -184,6 +184,31 @@ public class CredentialApi extends VcxJava.API {
         return future;
     }
 
+    private static Callback vcxDeleteCredentialCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int command_handle, int err) {
+            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "]");
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(command_handle);
+            if (!checkCallback(future,err)) return;
+            // returning empty string from here because we don't want to complete future with null
+            future.complete("");
+        }
+    };
+
+    public static CompletableFuture<String> deleteCredential(
+            int credentialHandle
+    ) throws VcxException {
+        ParamGuard.notNull(credentialHandle, "credentialHandle");
+        logger.debug("deleteCredential() called with: credentialHandle = [" + credentialHandle + "]");
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_delete_credential(commandHandle, credentialHandle, vcxDeleteCredentialCB);
+        checkResult(result);
+
+        return future;
+    }
+
     private static Callback vcxCredentialUpdateStateCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int command_handle, int err, int state) {
