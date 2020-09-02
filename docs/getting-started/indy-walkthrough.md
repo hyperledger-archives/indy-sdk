@@ -297,7 +297,7 @@ The same way **Acme** creates and publishes a **Credential Definition** for the 
   await ledger.sign_and_submit_request(acme['pool'], acme['wallet'], acme['did'], cred_def_request)
 ```
 
-**Acme** anticipates revoking **Job-Certificate* credentials. It decides to create a revocation registry. One of Hyperledger Indy's revocation registry types uses cryptographic accumulators for publishing revoked credentials. For details about the inner working of those accumulators see [here](https://github.com/fabienpe/indy-sdk/blob/master/docs/concepts/revocation/cred-revocation.md)). The use of those accumulators requires the publication of "validity tails" outside of the Ledger. For the purpose of this demo, the validity tails are written in a file using a 'blob storage'. 
+**Acme** anticipates revoking **Job-Certificate** credentials. It decides to create a revocation registry. One of Hyperledger Indy's revocation registry types uses cryptographic accumulators for publishing revoked credentials. For details about the inner working of those accumulators see [here](https://github.com/fabienpe/indy-sdk/blob/master/docs/concepts/revocation/cred-revocation.md)). The use of those accumulators requires the publication of "validity tails" outside of the Ledger. For the purpose of this demo, the validity tails are written in a file using a 'blob storage'. 
 
 ```python
     # Acme Agent
