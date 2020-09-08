@@ -12,7 +12,8 @@ use std::convert::TryInto;
 pub struct Credential {
     #[serde(rename = "@id")]
     pub id: MessageId,
-    pub comment: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
     #[serde(rename = "credentials~attach")]
     pub credentials_attach: Attachments,
     #[serde(rename = "~thread")]
@@ -28,7 +29,7 @@ impl Credential {
     }
 
     pub fn set_comment(mut self, comment: String) -> Self {
-        self.comment = comment;
+        self.comment = Some(comment);
         self
     }
 
@@ -98,7 +99,7 @@ pub mod tests {
 
         Credential {
             id: MessageId::id(),
-            comment: _comment(),
+            comment: Some(_comment()),
             thread: thread(),
             credentials_attach: attachment,
             please_ack: None,
