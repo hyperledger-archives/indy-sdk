@@ -1649,14 +1649,14 @@ Builds an ATTRIB request. Request to add attribute to a NYM record.
 
 Errors: `Common*`
 
-#### buildGetAttribRequest \( submitterDid, targetDid, hash, raw, enc \) -&gt; request
+#### buildGetAttribRequest \( submitterDid, targetDid, raw, hash, enc \) -&gt; request
 
 Builds a GET\_ATTRIB request. Request to get information about an Attribute for the specified DID.
 
 * `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
-* `hash`: String - \(Optional\) Requested attribute hash.
 * `raw`: String - \(Optional\) Requested attribute name.
+* `hash`: String - \(Optional\) Requested attribute hash.
 * `enc`: String - \(Optional\) Requested attribute encrypted value.
 * __->__ `request`: Json
 
