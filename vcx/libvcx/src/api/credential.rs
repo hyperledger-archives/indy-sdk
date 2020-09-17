@@ -240,6 +240,52 @@ pub extern fn vcx_get_credential(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Delete a Credential from the wallet and release its handle.
+///
+/// # Params
+/// command_handle: command handle to map callback to user context.
+///
+/// credential_handle: handle of the credential to delete.
+///
+/// cb: Callback that provides error status of delete credential request
+///
+/// # Returns
+/// Error code as a u32
+#[no_mangle]
+#[allow(unused_assignments)]
+pub extern fn vcx_delete_credential(command_handle: CommandHandle,
+                                    credential_handle: u32,
+                                    cb: Option<extern fn(
+                                        xcommand_handle: CommandHandle,
+                                        err: u32)>) -> u32 {
+    info!("vcx_delete_credential >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    if !credential::is_valid_handle(credential_handle) {
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+    }
+
+    let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
+    trace!("vcx_delete_credential(command_handle: {}, credential_handle: {}), source_id: {})", command_handle, credential_handle, source_id);
+
+    spawn(move || {
+        match credential::delete_credential(credential_handle) {
+            Ok(_) => {
+                trace!("vcx_delete_credential_cb(command_handle: {}, rc: {}), credential_handle: {}, source_id: {})", command_handle, error::SUCCESS.message, credential_handle, source_id);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                trace!("vcx_delete_credential_cb(command_handle: {}, rc: {}), credential_handle: {}, source_id: {})", command_handle, e, credential_handle, source_id);
+                cb(command_handle, e.into());
+            }
+        }
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Create a Credential object based off of a known message id for a given connection.
 ///
 /// #Params

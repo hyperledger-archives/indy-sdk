@@ -431,9 +431,9 @@ indy.buildAttribRequest = function buildAttribRequest (submitterDid, targetDid, 
   return cb.promise
 }
 
-indy.buildGetAttribRequest = function buildGetAttribRequest (submitterDid, targetDid, hash, raw, enc, cb) {
+indy.buildGetAttribRequest = function buildGetAttribRequest (submitterDid, targetDid, raw, hash, enc, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildGetAttribRequest(submitterDid, targetDid, hash, raw, enc, cb)
+  capi.buildGetAttribRequest(submitterDid, targetDid, raw, hash, enc, cb)
   return cb.promise
 }
 
