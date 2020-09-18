@@ -141,7 +141,7 @@
   {
     retrieveType: (optional, false by default) Retrieve record type,
     retrieveValue: (optional, true by default) Retrieve record value,
-    retrieveTags: (optional, true by default) Retrieve record tags
+    retrieveTags: (optional, false by default) Retrieve record tags
   } 
  
  @param completion Completion callback that returns error code and wallet record:
@@ -181,7 +181,7 @@
     retrieveTotalCount: (optional, false by default) Calculate total count,
     retrieveType: (optional, false by default) Retrieve record type,
     retrieveValue: (optional, true by default) Retrieve record value,
-    retrieveTags: (optional, true by default) Retrieve record tags,
+    retrieveTags: (optional, false by default) Retrieve record tags,
   }
  
  @param completion Completion callback that returns error code and searchHandle that can be used later
