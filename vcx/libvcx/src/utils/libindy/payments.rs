@@ -428,7 +428,7 @@ pub fn inputs(cost: u64) -> VcxResult<(u64, Vec<String>, String)> {
     // Todo: explore 'smarter' ways of selecting utxos ie bitcoin algorithms etc
     'outer: for address in wallet_info.addresses.iter() {
         refund_address = address.address.clone();
-        'inner: for utxo in address.utxo.iter() {
+        '_inner: for utxo in address.utxo.iter() {
             if balance < cost {
                 inputs.push(utxo.source.clone().ok_or(VcxErrorKind::InsufficientTokenAmount)?.to_string());
                 balance += utxo.amount;

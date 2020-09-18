@@ -284,7 +284,7 @@ async def get_wallet_record(wallet_handle: int,
       {
         retrieveType: (optional, false by default) Retrieve record type,
         retrieveValue: (optional, true by default) Retrieve record value,
-        retrieveTags: (optional, true by default) Retrieve record tags
+        retrieveTags: (optional, false by default) Retrieve record tags
       }
     :return: wallet record json:
      {
@@ -346,7 +346,7 @@ async def open_wallet_search(wallet_handle: int,
         retrieveTotalCount: (optional, false by default) Calculate total count,
         retrieveType: (optional, false by default) Retrieve record type,
         retrieveValue: (optional, true by default) Retrieve record value,
-        retrieveTags: (optional, true by default) Retrieve record tags,
+        retrieveTags: (optional, false by default) Retrieve record tags,
       }
     :return: search_handle: Wallet search handle that can be used later
              to fetch records by small batches (with fetch_wallet_search_next_records)
