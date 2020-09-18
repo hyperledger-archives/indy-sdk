@@ -109,7 +109,7 @@ public class WalletSearch extends IndyJava.API implements AutoCloseable {
 	 *                      retrieveTotalCount: (optional, false by default) Calculate total count,
 	 *                      retrieveType: (optional, false by default) Retrieve record type,
 	 *                      retrieveValue: (optional, true by default) Retrieve record value,
-	 *                      retrieveTags: (optional, true by default) Retrieve record tags,
+	 *                      retrieveTags: (optional, false by default) Retrieve record tags,
 	 *                    }
 	 * @return A future that resolves to WalletSearch instance.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
