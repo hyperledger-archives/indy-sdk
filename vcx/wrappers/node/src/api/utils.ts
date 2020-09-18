@@ -158,12 +158,29 @@ export interface IUpdateWebhookUrl {
   webhookUrl: string,
 }
 
-export function vcxUpdateWebhookUrl ({ webhookUrl }: IUpdateWebhookUrl): number {
-  const rc = rustAPI().vcx_update_webhook_url(webhookUrl)
-  if (rc) {
-      throw new VCXInternalError(rc)
-    }
-  return rc
+export async function vcxUpdateWebhookUrl ({ webhookUrl }: IUpdateWebhookUrl): Promise<void> {
+  try {
+    return await createFFICallbackPromise<void>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_update_webhook_url(0, webhookUrl, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32','uint32'],
+        (xhandle: number, err: number) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve()
+        })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err)
+  }
 }
 
 export interface IUpdateInstitutionConfigs {
