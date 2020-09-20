@@ -81,6 +81,10 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)agentProvisionAsync:(NSString *)config
                  completion:(void (^)(NSError *error, NSString *config))completion;
 
+- (int)updateWebhookUrl:(NSString *) notification_webhook_url;
+
+- (NSString *)errorCMessage:(NSInteger) errorCode;
+
 - (void)connectionCreateWithInvite:(NSString *)invitationId
                      inviteDetails:(NSString *)inviteDetails
                         completion:(void (^)(NSError *error, NSInteger connectionHandle))completion;
@@ -105,6 +109,12 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 
 - (void)deleteConnection:(VcxHandle)connectionHandle
           withCompletion:(void (^)(NSError *error))completion;
+
+- (void)connectionGetPwDid:(NSInteger)connectionHandle
+                completion:(void (^)(NSError *error, NSString *pwDid))completion;
+
+- (void)connectionGetTheirPwDid:(NSInteger)connectionHandle
+                     completion:(void (^)(NSError *error, NSString *theirPwDid))completion;
 
 - (void)connectionSendMessage:(VcxHandle)connectionHandle
                   withMessage:(NSString *)message
