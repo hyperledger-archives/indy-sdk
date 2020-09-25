@@ -347,6 +347,24 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
 }
 
+- (int)updateWebhookUrl:(NSString *) notification_webhook_url {
+    const char *notification_webhook_url_char = [notification_webhook_url cStringUsingEncoding:NSUTF8StringEncoding];
+    
+    return vcx_update_webhook_url(notification_webhook_url_char);
+}
+
+- (NSString *)errorCMessage:(NSInteger) errorCode {
+    const char * ret = vcx_error_c_message(errorCode);
+    
+    NSString *message = nil;
+    
+    if (ret) {
+        message = [NSString stringWithUTF8String:ret];
+    }
+    
+    return message;
+}
+
 - (void)connectionCreateWithInvite:(NSString *)invitationId
                 inviteDetails:(NSString *)inviteDetails
              completion:(void (^)(NSError *error, NSInteger connectionHandle)) completion
@@ -468,6 +486,42 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
             completion([NSError errorFromVcxError: ret]);
         });
     }
+}
+
+- (void)connectionGetPwDid:(NSInteger)connectionHandle
+                   completion:(void (^)(NSError *error, NSString *pwDid))completion
+{
+   vcx_error_t ret;
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_connection_get_pw_did(handle,connectionHandle, VcxWrapperCommonStringCallback);
+
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret],nil);
+       });
+   }
+}
+
+- (void)connectionGetTheirPwDid:(NSInteger)connectionHandle
+                   completion:(void (^)(NSError *error, NSString *theirPwDid))completion
+{
+   vcx_error_t ret;
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_connection_get_their_pw_did(handle,connectionHandle, VcxWrapperCommonStringCallback);
+
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret],nil);
+       });
+   }
 }
 
 - (void)connectionSendMessage:(VcxHandle)connectionHandle

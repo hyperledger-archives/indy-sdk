@@ -1702,8 +1702,8 @@ NAN_METHOD(buildGetAttribRequest) {
   INDY_ASSERT_NARGS(buildGetAttribRequest, 6)
   INDY_ASSERT_STRING(buildGetAttribRequest, 0, submitterDid)
   INDY_ASSERT_STRING(buildGetAttribRequest, 1, targetDid)
-  INDY_ASSERT_STRING(buildGetAttribRequest, 2, hash)
-  INDY_ASSERT_STRING(buildGetAttribRequest, 3, raw)
+  INDY_ASSERT_STRING(buildGetAttribRequest, 2, raw)
+  INDY_ASSERT_STRING(buildGetAttribRequest, 3, hash)
   INDY_ASSERT_STRING(buildGetAttribRequest, 4, enc)
   INDY_ASSERT_FUNCTION(buildGetAttribRequest, 5)
   const char* arg0 = argToCString(info[0]);
