@@ -68,6 +68,8 @@ vcx_error_t vcx_init(vcx_command_handle_t handle, const char *config_path, void 
 vcx_error_t vcx_create_agent(vcx_command_handle_t handle, const char *config, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *xconfig));
 vcx_error_t vcx_update_agent_info(vcx_command_handle_t handle, const char *info, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
 
+vcx_error_t vcx_update_webhook_url(const char *notification_webhook_url);
+
 const char *vcx_error_c_message(int);
 const char *vcx_version();
 
@@ -152,6 +154,12 @@ vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handl
 
 /** Deletes a connection, send an API call to agency to stop sending messages from this connection */
 vcx_error_t vcx_connection_delete_connection(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t, vcx_error_t err));
+
+/** Retrieves pw_did from Connection object. */
+vcx_error_t vcx_connection_get_pw_did(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *pw_did));
+
+/** Retrieves their_pw_did from Connection object. */
+vcx_error_t vcx_connection_get_their_pw_did(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *their_pw_did));
 
 /** Send a message to the specified connection
 ///
