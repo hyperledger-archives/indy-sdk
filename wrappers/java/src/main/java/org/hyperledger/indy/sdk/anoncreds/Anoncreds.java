@@ -321,7 +321,7 @@ public class Anoncreds extends IndyJava.API {
 	 *
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String>issuerRotateCredentialDefStart(
+	public static CompletableFuture<String> issuerRotateCredentialDefStart(
 			Wallet wallet,
 			String credDefId,
 			String configJson) throws IndyException {
@@ -358,7 +358,7 @@ public class Anoncreds extends IndyJava.API {
 	 *
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<Void>issuerRotateCredentialDefApply(
+	public static CompletableFuture<Void> issuerRotateCredentialDefApply(
 			Wallet wallet,
 			String credDefId) throws IndyException {
 
@@ -1003,7 +1003,7 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				credId,
-				stringCb);
+				voidCb);
 
 		checkResult(future, result);
 
