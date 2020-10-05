@@ -397,7 +397,7 @@ impl Verifier {
             .map(|(referent, info)| (referent.to_string(), info.clone()))
             .collect();
 
-        for (referent, info) in requested_attrs {
+        for (referent, info) in requested_attrs.clone() {
             if let Some(ref query) = info.restrictions {
                 let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers)?;
 
@@ -428,8 +428,39 @@ impl Verifier {
             if let Some(ref query) = info.restrictions {
                 let filter = Verifier::_gather_filter_info(&referent, received_predicates)?;
 
-                Verifier::_process_operator(&info.name, &query, &filter, None)
+                // start with the predicate requested attribute, which is un-revealed
+                let mut attr_value_map = HashMap::new();
+                attr_value_map.insert(info.name.to_string(), None);
+
+                // include any revealed attributes for the same credential (based on sub_proof_index)
+                let pred_sub_proof_index = requested_proof.predicates.get(referent).unwrap().sub_proof_index;
+                for attr_referent in requested_proof.revealed_attrs.keys() {
+                    let attr_info = requested_proof.revealed_attrs.get(attr_referent).unwrap();
+                    let attr_sub_proof_index = attr_info.sub_proof_index;
+                    if pred_sub_proof_index == attr_sub_proof_index {
+                        let attr_name = requested_attrs.get(attr_referent).unwrap().name.clone();
+                        if let Some(name) = attr_name {
+                            attr_value_map.insert(name, Some(attr_info.raw.as_str()));
+                        }
+                    }
+                }
+                for attr_referent in requested_proof.revealed_attr_groups.keys() {
+                    let attr_info = requested_proof.revealed_attr_groups.get(attr_referent).unwrap();
+                    let attr_sub_proof_index = attr_info.sub_proof_index;
+                    if pred_sub_proof_index == attr_sub_proof_index {
+                        for name in attr_info.values.keys() {
+                            let raw_val = attr_info.values.get(name).unwrap().raw.as_str();
+                            attr_value_map.insert(name.clone(), Some(raw_val.clone()));
+                        }
+                    }
+                }
+
+                Verifier::_do_process_operator(&attr_value_map, &query, &filter)
                     .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" predicate", &info.name)))?;
+
+                // old style :-/ which fails for attribute restrictions on predicates
+                //Verifier::_process_operator(&info.name, &query, &filter, None)
+                //    .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" predicate", &info.name)))?;
             }
         }
 
