@@ -1043,7 +1043,7 @@ mod medium_cases {
             let dids = did::list_my_dids_with_meta(setup.wallet_handle).unwrap();
             let info_list: serde_json::Value = serde_json::from_str(&dids).unwrap();
             assert_eq!(info_list.as_array().unwrap().len(), 1);
-	    assert!(info_list[0]["metadata"].is_null());
+            assert!(info_list[0]["metadata"].is_null());
             assert_eq!(setup.verkey, info_list[0]["verkey"].as_str().unwrap().to_string());
         }
 
@@ -1058,7 +1058,7 @@ mod medium_cases {
             }
             let dids = did::list_my_dids_with_meta(setup.wallet_handle).unwrap();
             let info_list: serde_json::Value = serde_json::from_str(&dids).unwrap();
-            assert_eq!(info_list.as_array().unwrap().len(), did2verkey.len());
+            assert_eq!(info_list.as_array().unwrap().len(), 10);
             for info in info_list.as_array().unwrap() {
                 assert_eq!(info["metadata"].as_str().unwrap().to_string(),
                            METADATA.to_string());
