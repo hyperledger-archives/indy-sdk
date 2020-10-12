@@ -12,6 +12,7 @@ import org.hyperledger.indy.sdk.did.DidResults;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.ledger.LedgerResults;
 import org.hyperledger.indy.sdk.ledger.LedgerResults.ParseResponseResult;
+import org.hyperledger.indy.sdk.utils.EnvironmentUtils;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONArray;
@@ -29,7 +30,7 @@ import static org.junit.Assert.assertFalse;
 public class AnoncredsVerifyProofAfterCredentialRevokeTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 	// This test is a copy of a project attached to IS-1368. We omitted pool and wallet preparation.
 
-	private static String indyClientPath;
+	private static final String indyClientPath = EnvironmentUtils.getTmpPath();
 
 	@Test
 	public void testAnoncredsVerifyProofAfterCredentialRevoke() throws Exception {
