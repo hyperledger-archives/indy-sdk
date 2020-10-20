@@ -18,6 +18,7 @@ use crate::commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
 use crate::commands::pool::{PoolCommand, PoolCommandExecutor};
 use crate::commands::wallet::{WalletCommand, WalletCommandExecutor};
 use crate::commands::cache::{CacheCommand, CacheCommandExecutor};
+use crate::commands::metrics::{MetricsCommand, MetricsCommandExecutor};
 use crate::domain::IndyConfig;
 use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::AnoncredsService;
@@ -41,6 +42,7 @@ pub mod pairwise;
 pub mod non_secrets;
 pub mod payments;
 pub mod cache;
+pub mod metrics;
 
 type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>) + Send>;
 
@@ -57,6 +59,7 @@ pub enum Command {
     NonSecrets(NonSecretsCommand),
     Payments(PaymentsCommand),
     Cache(CacheCommand),
+    Metrics(MetricsCommand),
 }
 
 lazy_static! {
@@ -119,6 +122,7 @@ impl CommandExecutor {
                 let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
                 let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
                 let cache_command_executor = CacheCommandExecutor::new(wallet_service.clone());
+                let metrics_command_executor = MetricsCommandExecutor::new();
 
                 loop {
                     match receiver.recv() {
@@ -165,6 +169,10 @@ impl CommandExecutor {
                         Ok(Command::Cache(cmd)) => {
                             debug!("CacheCommand command received");
                             cache_command_executor.execute(cmd);
+                        }
+                        Ok(Command::Metrics(cmd)) => {
+                            debug!("MetricsCommand command received");
+                            metrics_command_executor.execute(cmd);
                         }
                         Ok(Command::Exit) => {
                             debug!("Exit command received");
