@@ -17,6 +17,7 @@ use crate::api::{INVALID_WALLET_HANDLE, INVALID_POOL_HANDLE};
 
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;
+use std::collections::HashMap;
 
 pub const ENCRYPTED_MESSAGE: &'static [u8; 45] = &[187, 227, 10, 29, 46, 178, 12, 179, 197, 69, 171, 70, 228, 204, 52, 22, 199, 54, 62, 13, 115, 5, 216, 66, 20, 131, 121, 29, 251, 224, 253, 201, 75, 73, 225, 237, 219, 133, 35, 217, 131, 135, 232, 129, 32];
 pub const SIGNATURE: &'static [u8; 64] = &[20, 191, 100, 213, 101, 12, 197, 198, 203, 49, 89, 220, 205, 192, 224, 221, 97, 77, 220, 190, 90, 60, 142, 23, 16, 240, 189, 129, 45, 148, 245, 8, 102, 95, 95, 249, 100, 89, 41, 227, 213, 25, 100, 1, 232, 188, 245, 235, 186, 21, 52, 176, 236, 11, 99, 70, 155, 159, 89, 215, 197, 239, 138, 5];
@@ -1030,6 +1031,58 @@ mod medium_cases {
         fn indy_abbreviate_verkey_works_for_invalid_verkey() {
             let res = did::abbreviate_verkey(DID_TRUSTEE, INVALID_BASE58_VERKEY);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
+        }
+    }
+
+    mod list_my_dids_with_meta{
+        use super::*;
+
+        #[test]
+        fn indy_list_dids(){
+            let setup = Setup::did();
+            let dids = did::list_my_dids_with_meta(setup.wallet_handle).unwrap();
+            let info_list: serde_json::Value = serde_json::from_str(&dids).unwrap();
+            assert_eq!(info_list.as_array().unwrap().len(), 1);
+            assert!(info_list[0]["metadata"].is_null());
+            assert_eq!(setup.verkey, info_list[0]["verkey"].as_str().unwrap().to_string());
+        }
+
+        #[test]
+        fn indy_list_dids_after_creating_dids(){
+            let setup = Setup::wallet();
+            let mut did2verkey: HashMap<String, String> = HashMap::new();
+            for _x in 0..10{
+                let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, "{}").unwrap();
+                did::set_did_metadata(setup.wallet_handle, &my_did, METADATA).unwrap();
+                did2verkey.insert(String::from(my_did), String::from(my_verkey));
+            }
+            let dids = did::list_my_dids_with_meta(setup.wallet_handle).unwrap();
+            let info_list: serde_json::Value = serde_json::from_str(&dids).unwrap();
+            assert_eq!(info_list.as_array().unwrap().len(), 10);
+            for info in info_list.as_array().unwrap() {
+                assert_eq!(info["metadata"].as_str().unwrap().to_string(),
+                           METADATA.to_string());
+                assert_eq!(&info["verkey"].as_str().unwrap().to_string(),
+                           did2verkey.get(&(info["did"]).as_str().unwrap().to_string()).unwrap());
+            }
+        }
+
+        #[test]
+        fn indy_list_dids_after_replace_keys_start(){
+            let setup = Setup::wallet();
+            let mut did2tempverkey: HashMap<String, String> = HashMap::new();
+            for _x in 0..10{
+                let (my_did, _my_verkey) = did::create_my_did(setup.wallet_handle, "{}").unwrap();
+                let temp_verkey = did::replace_keys_start(setup.wallet_handle, &my_did, "{}").unwrap();
+                did2tempverkey.insert(String::from(&my_did), temp_verkey);
+            }
+            let dids = did::list_my_dids_with_meta(setup.wallet_handle).unwrap();
+            let info_list: serde_json::Value = serde_json::from_str(&dids).unwrap();
+            for info in info_list.as_array().unwrap() {
+                let did = info["did"].as_str().unwrap().to_string();
+                assert_eq!(&info["tempVerkey"].as_str().unwrap().to_string(),
+                           did2tempverkey.get(&did).unwrap());
+            }
         }
     }
 }
