@@ -1,6 +1,6 @@
 use super::*;
 
-use {CString, Error, CommandHandle, StorageHandle};
+use {Error, CommandHandle};
 
 extern {
     #[no_mangle]
