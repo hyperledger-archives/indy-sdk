@@ -594,7 +594,9 @@ impl Verifier {
 
     fn _is_attr_internal_tag(key: &str, attr_value_map: &HashMap<String, Option<&str>>) -> bool {
         INTERNAL_TAG_MATCHER.captures(key).map( |caps|
-            caps.get(1).map(|s| attr_value_map.contains_key(&s.as_str().to_string())).unwrap_or(false)
+            caps.get(1).map(|s|
+                attr_value_map.keys().any(|key| attr_common_view(key)  == attr_common_view(s.as_str()))
+            ).unwrap_or(false)
         ).unwrap_or(false)
     }
 
@@ -604,11 +606,20 @@ impl Verifier {
             .get(1)
             .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, format!("No name has been parsed")))?
             .as_str();
-        if let Some(Some(revealed_value)) = attr_value_map.get(attr_name) {
+
+        let revealed_value =
+            attr_value_map
+                .iter()
+                .find(|(key, _)| attr_common_view(key)  == attr_common_view(attr_name));
+
+        if let Some((_key, Some(revealed_value))) = revealed_value {
             if *revealed_value != tag_value {
                 return Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
                                                format!("\"{}\" values are different: expected: \"{}\", actual: \"{}\"", key, tag_value, revealed_value)));
             }
+        } else {
+            return Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
+                                           format!("Revealed value hasn't been find by key: expected key: \"{}\", attr_value_map: \"{:?}\"", key, attr_value_map)));
         }
         Ok(())
     }
@@ -890,6 +901,21 @@ mod tests {
 
         op = Query::Eq(attr_tag_value(), value.to_string());
         assert!(Verifier::_process_operator("zip", &op, &filter, Some("NOT HERE")).is_err());
+    }
+
+    #[test]
+    fn test_process_op_eq_revealed_value_case_insensitive() {
+        let filter = filter();
+        let value = "Alice Clark";
+
+        let mut op = Query::Eq("attr::givenname::value".to_string(), value.to_string());
+        Verifier::_process_operator("Given Name", &op, &filter, Some(value)).unwrap();
+
+        op = Query::And(vec![
+            Query::Eq("attr::givenname::value".to_string(), value.to_string()),
+            Query::Eq(schema_issuer_did_tag(), SCHEMA_ISSUER_DID.to_string()),
+        ]);
+        Verifier::_process_operator("Given Name", &op, &filter, Some(value)).unwrap();
     }
 
     fn _received() -> HashMap<String, Identifier> {
