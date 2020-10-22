@@ -29,7 +29,7 @@ impl MetricsCommandExecutor {
         let res = serde_json::to_string(&metrics_map).unwrap();
 
         trace!("_collect <<< res: {:?}", res);
-        debug!("collecting metrics from the current thread");
+        debug!("collecting metrics from command thread");
         Ok(res)
 
     }
