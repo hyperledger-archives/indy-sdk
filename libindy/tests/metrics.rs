@@ -15,8 +15,6 @@ mod collect {
     #[test]
     fn collect_metrics_works() {
         let result_metrics = metrics::collect_metrics().unwrap();
-        println!("result_metrics");
-        println!("{}", &result_metrics);
         assert_eq!("{}", &result_metrics);
     }
 }
