@@ -35,8 +35,6 @@ impl MetricsCommandExecutor {
             }
         };
     }
-
-
     fn _collect(&self) -> IndyResult<String> {
         trace!("_collect >>>");
         let metrics_map: HashMap<&str, usize> = {
@@ -52,7 +50,8 @@ impl MetricsCommandExecutor {
                 (PENDING_FOR_OPEN_WALLETS_COUNT, self.wallet_service.get_pending_for_open_count())
             ].iter().cloned().collect()
         };
-        let res = serde_json::to_string(&metrics_map).unwrap();
+        let res = serde_json::to_string(&metrics_map)
+            .to_indy(IndyErrorKind::InvalidState, "Can't serialize a metrics map")?;
 
         trace!("_collect <<< res: {:?}", res);
         debug!("collecting metrics from command thread");
