@@ -1,3 +1,8 @@
+#[macro_use] extern crate serde_json;
+#[macro_use] extern crate serde_derive;
+extern crate rmp_serde;
+extern crate byteorder;
+extern crate futures;
 extern crate indyrs as indy;
 #[macro_use]
 use indy::metrics;
