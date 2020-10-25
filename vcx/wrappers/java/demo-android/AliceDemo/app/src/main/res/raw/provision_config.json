@@ -1,0 +1,10 @@
+{
+  "agency_url": "http://your_agency_url:port",
+  "agency_did": "VsKV7grR1BUE29mG2Fm2kX",
+  "agency_verkey": "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR",
+  "wallet_name": "alice_wallet",
+  "wallet_key": "123",
+  "payment_method": "null",
+  "enterprise_seed": "000000000000000000000000Trustee1",
+  "protocol_type": "3.0"
+}

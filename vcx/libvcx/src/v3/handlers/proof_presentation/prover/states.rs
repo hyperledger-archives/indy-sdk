@@ -271,7 +271,6 @@ impl ProverSM {
                         match state.presentation_request.service.clone() {
                             None => {
                                 connection::send_message(connection_handle, state.presentation.to_a2a_message())?;
-                                connection::remove_pending_message(connection_handle, &state.presentation_request.id)?;
                                 ProverState::PresentationSent((state, connection_handle).into())
                             }
                             Some(service) => {
@@ -344,7 +343,6 @@ impl ProverSM {
             Some(service) => connection::send_message_to_self_endpoint(problem_report.to_a2a_message(), &service.into())?
         }
 
-        connection::remove_pending_message(connection_handle, &presentation_request.id)?;
         Ok(())
     }
 
@@ -358,7 +356,6 @@ impl ProverSM {
             Some(service) => connection::send_message_to_self_endpoint(proposal.to_a2a_message(), &service.into())?
         }
 
-        connection::remove_pending_message(connection_handle, &presentation_request.id)?;
         Ok(())
     }
 
