@@ -122,7 +122,7 @@ impl CommandExecutor {
                 let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
                 let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
                 let cache_command_executor = CacheCommandExecutor::new(wallet_service.clone());
-                let metrics_command_executor = MetricsCommandExecutor::new();
+                let metrics_command_executor = MetricsCommandExecutor::new(wallet_service.clone());
 
                 loop {
                     match receiver.recv() {
