@@ -524,6 +524,22 @@ impl WalletService {
         res
     }
 
+    pub fn get_wallets_count(&self) -> usize {
+        self.wallets.borrow().len()
+    }
+
+    pub fn get_wallet_ids_count(&self) -> usize {
+        self.wallet_ids.borrow().len()
+    }
+
+    pub fn get_pending_for_import_count(&self) -> usize {
+        self.pending_for_import.borrow().len()
+    }
+
+    pub fn get_pending_for_open_count(&self) -> usize {
+        self.pending_for_open.borrow().len()
+    }
+
     fn _get_config_and_cred_for_storage<'a>(config: &Config, credentials: &Credentials, storage_types: &'a HashMap<String, Box<dyn WalletStorageType>>) -> IndyResult<(&'a Box<dyn WalletStorageType>, Option<String>, Option<String>)> {
         let storage_type = {
             let storage_type = config.storage_type
