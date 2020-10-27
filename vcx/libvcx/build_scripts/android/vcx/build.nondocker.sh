@@ -217,23 +217,23 @@ printenv
 
 python3 ${ANDROID_NDK_ROOT}/build/tools/make_standalone_toolchain.py --arch ${TARGET_ARCH_DIR} --api ${TARGET_API} --stl=libc++  --force --install-dir ${TOOLCHAIN_DIR}
 cat << EOF > ~/.cargo/config
-[target.${CROSS_COMPILE_PREFIX}]
+[target.${CROSS_COMPILE}]
 ar = "${AR}"
 linker = "${CXX}"
 EOF
 
-rustup target add ${CROSS_COMPILE_PREFIX}
+rustup target add ${CROSS_COMPILE}
 
 pushd $LIBVCX
 export OPENSSL_STATIC=1
 #cargo clean
-cargo build --release --no-default-features --features "ci" --target=${CROSS_COMPILE_PREFIX}
+cargo build --release --no-default-features --features "ci" --target=${CROSS_COMPILE}
 # TEMPORARY HACK (need to build libvcx without duplicate .o object files):
 # There are duplicate .o object files inside the libvcx.a file and these
 # lines of logic remove those duplicate .o object files
-rm -rf target/${CROSS_COMPILE_PREFIX}/release/tmpobjs
-mkdir target/${CROSS_COMPILE_PREFIX}/release/tmpobjs
-pushd target/${CROSS_COMPILE_PREFIX}/release/tmpobjs
+rm -rf target/${CROSS_COMPILE}/release/tmpobjs
+mkdir target/${CROSS_COMPILE}/release/tmpobjs
+pushd target/${CROSS_COMPILE}/release/tmpobjs
     ${AR} -x ../libvcx.a
     ls > ../objfiles
     xargs ${AR} cr ../libvcx.a.new < ../objfiles
@@ -253,7 +253,7 @@ mkdir -p ${LIBVCX_BUILDS}
 # echo "CROSS_COMPILE_PREFIX: ${CROSS_COMPILE_PREFIX}"
 
 echo "$CXX -v -shared -o ${LIBVCX_BUILDS}/libvcx.so -Wl,--whole-archive \
-${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a \
+${LIBVCX}/target/${CROSS_COMPILE}/release/libvcx.a \
 ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libm.a \
 ${LIBINDY_DIR}/libindy.a \
 ${LIBSOVTOKEN_DIR}/libsovtoken.a \
@@ -267,7 +267,7 @@ ${LIBZMQ_LIB_DIR}/libzmq.a \
 # ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libm.a \
 
 $CXX -v -shared -o ${LIBVCX_BUILDS}/libvcx.so -Wl,--whole-archive \
-${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a \
+${LIBVCX}/target/${CROSS_COMPILE}/release/libvcx.a \
 ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libm.a \
 ${LIBINDY_DIR}/libindy.a \
 ${LIBSOVTOKEN_DIR}/libsovtoken.a \
@@ -283,12 +283,12 @@ ${LIBZMQ_LIB_DIR}/libzmq.a \
 ${STRIP} -S -x -o ${LIBVCX_BUILDS}/libvcx.so.new ${LIBVCX_BUILDS}/libvcx.so
 mv ${LIBVCX_BUILDS}/libvcx.so.new ${LIBVCX_BUILDS}/libvcx.so
 
-# cp "${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a" ${LIBVCX_BUILDS}/
+# cp "${LIBVCX}/target/${CROSS_COMPILE}/release/libvcx.a" ${LIBVCX_BUILDS}/
 # cp ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libz.so ${LIBVCX_BUILDS}
 # cp ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/liblog.so ${LIBVCX_BUILDS}
 # cp ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libc++_shared.so ${LIBVCX_BUILDS}
 
-cp "${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a" ${LIBVCX_BUILDS}
+cp "${LIBVCX}/target/${CROSS_COMPILE}/release/libvcx.a" ${LIBVCX_BUILDS}
 cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libz.so ${LIBVCX_BUILDS}
 cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/liblog.so ${LIBVCX_BUILDS}
 cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libc++_shared.so ${LIBVCX_BUILDS}
