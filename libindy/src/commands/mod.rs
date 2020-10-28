@@ -30,6 +30,7 @@ use crate::services::pool::{PoolService, set_freshness_threshold};
 use indy_wallet::WalletService;
 
 use self::threadpool::ThreadPool;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 pub mod anoncreds;
 pub mod blob_storage;
@@ -62,6 +63,21 @@ pub enum Command {
     Metrics(MetricsCommand),
 }
 
+pub struct InstrumentedCommand {
+    pub enqueue_ts: u64,
+    pub command: Command
+}
+
+impl InstrumentedCommand {
+    pub fn new(command: Command) -> InstrumentedCommand {
+        InstrumentedCommand {
+            enqueue_ts: get_cur_time(),
+            command
+        }
+    }
+}
+
+
 lazy_static! {
     static ref THREADPOOL: Mutex<ThreadPool> = Mutex::new(ThreadPool::new(4));
 }
@@ -80,9 +96,14 @@ pub fn indy_set_runtime_config(config: IndyConfig) {
     }
 }
 
+fn get_cur_time() -> u64 {
+    let since_epoch = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time has gone backwards");
+    since_epoch.as_secs()
+}
+
 pub struct CommandExecutor {
     worker: Option<thread::JoinHandle<()>>,
-    sender: Sender<Command>
+    sender: Sender<InstrumentedCommand>
 }
 
 // Global (lazy inited) instance of CommandExecutor
@@ -125,64 +146,76 @@ impl CommandExecutor {
                 let metrics_command_executor = MetricsCommandExecutor::new(wallet_service.clone());
 
                 loop {
-                    match receiver.recv() {
-                        Ok(Command::Anoncreds(cmd)) => {
-                            debug!("AnoncredsCommand command received");
-                            anoncreds_command_executor.execute(cmd);
-                        }
-                        Ok(Command::BlobStorage(cmd)) => {
-                            debug!("BlobStorageCommand command received");
-                            blob_storage_command_executor.execute(cmd);
-                        }
-                        Ok(Command::Crypto(cmd)) => {
-                            debug!("CryptoCommand command received");
-                            crypto_command_executor.execute(cmd);
-                        }
-                        Ok(Command::Ledger(cmd)) => {
-                            debug!("LedgerCommand command received");
-                            ledger_command_executor.execute(cmd);
-                        }
-                        Ok(Command::Pool(cmd)) => {
-                            debug!("PoolCommand command received");
-                            pool_command_executor.execute(cmd);
-                        }
-                        Ok(Command::Did(cmd)) => {
-                            debug!("DidCommand command received");
-                            did_command_executor.execute(cmd);
-                        }
-                        Ok(Command::Wallet(cmd)) => {
-                            debug!("WalletCommand command received");
-                            wallet_command_executor.execute(cmd);
-                        }
-                        Ok(Command::Pairwise(cmd)) => {
-                            debug!("PairwiseCommand command received");
-                            pairwise_command_executor.execute(cmd);
-                        }
-                        Ok(Command::NonSecrets(cmd)) => {
-                            debug!("NonSecretCommand command received");
-                            non_secret_command_executor.execute(cmd);
-                        }
-                        Ok(Command::Payments(cmd)) => {
-                            debug!("PaymentsCommand command received");
-                            payments_command_executor.execute(cmd);
-                        }
-                        Ok(Command::Cache(cmd)) => {
-                            debug!("CacheCommand command received");
-                            cache_command_executor.execute(cmd);
-                        }
-                        Ok(Command::Metrics(cmd)) => {
-                            debug!("MetricsCommand command received");
-                            metrics_command_executor.execute(cmd);
-                        }
-                        Ok(Command::Exit) => {
-                            debug!("Exit command received");
-                            break
+                    let mut instrumented_cmd = match receiver.recv() {
+                        Ok(cmd) => {
+                            cmd
                         }
                         Err(err) => {
                             error!("Failed to get command!");
                             panic!("Failed to get command! {:?}", err)
                         }
-                    }
+                    };
+                    let start_execution_ts = get_cur_time();
+                    metrics_command_executor.metric_storage.cmd_left_queue(instrumented_cmd.command,
+                                                   start_execution_ts - instrumented_cmd.enqueue_ts);
+                    //
+                    // match instrumented_cmd.command {
+                    //     Command::Anoncreds(cmd) => {
+                    //         debug!("AnoncredsCommand command received");
+                    //         anoncreds_command_executor.execute(cmd);
+                    //     }
+                    //     Command::BlobStorage(cmd) => {
+                    //         debug!("BlobStorageCommand command received");
+                    //         blob_storage_command_executor.execute(cmd);
+                    //     }
+                    //     Command::Crypto(cmd) => {
+                    //         debug!("CryptoCommand command received");
+                    //         crypto_command_executor.execute(cmd);
+                    //     }
+                    //     Command::Ledger(cmd) => {
+                    //         debug!("LedgerCommand command received");
+                    //         ledger_command_executor.execute(cmd);
+                    //     }
+                    //     Command::Pool(cmd) => {
+                    //         debug!("PoolCommand command received");
+                    //         pool_command_executor.execute(cmd);
+                    //     }
+                    //     Command::Did(cmd) => {
+                    //         debug!("DidCommand command received");
+                    //         did_command_executor.execute(cmd);
+                    //     }
+                    //     Command::Wallet(cmd) => {
+                    //         debug!("WalletCommand command received");
+                    //         wallet_command_executor.execute(cmd);
+                    //     }
+                    //     Command::Pairwise(cmd) => {
+                    //         debug!("PairwiseCommand command received");
+                    //         pairwise_command_executor.execute(cmd);
+                    //     }
+                    //     Command::NonSecrets(cmd) => {
+                    //         debug!("NonSecretCommand command received");
+                    //         non_secret_command_executor.execute(cmd);
+                    //     }
+                    //     Command::Payments(cmd) => {
+                    //         debug!("PaymentsCommand command received");
+                    //         payments_command_executor.execute(cmd);
+                    //     }
+                    //     Command::Cache(cmd) => {
+                    //         debug!("CacheCommand command received");
+                    //         cache_command_executor.execute(cmd);
+                    //     }
+                    //     Command::Metrics(cmd) => {
+                    //         debug!("MetricsCommand command received");
+                    //         metrics_command_executor.execute(cmd);
+                    //     }
+                    //     Command::Exit => {
+                    //         debug!("Exit command received");
+                    //         break
+                    //     }
+                    // }
+                    // metrics_command_executor.metric_storage
+                    //     .cmd_executed(instrumented_cmd.command,
+                    //                   get_cur_time() - start_execution_ts);
                 }
             }))
         }
@@ -190,7 +223,7 @@ impl CommandExecutor {
 
     pub fn send(&self, cmd: Command) -> IndyResult<()> {
         self.sender
-            .send(cmd)
+            .send(InstrumentedCommand::new(cmd))
             .map_err(|err| err_msg(IndyErrorKind::InvalidState, format!("Can't send msg to CommandExecutor: {}", err)))
     }
 }
