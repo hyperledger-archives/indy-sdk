@@ -12,6 +12,7 @@ use indy_utils::crypto::{chacha20poly1305_ietf, randombytes};
 use indy_utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
 use indy_api_types::{WalletHandle, CallbackHandle};
 use rand::Rng;
+use rust_base58::ToBase58;
 
 type DeriveKeyResult<T> = IndyResult<T>;
 
