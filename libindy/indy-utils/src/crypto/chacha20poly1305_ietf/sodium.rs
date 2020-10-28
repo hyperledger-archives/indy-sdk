@@ -240,6 +240,7 @@ mod tests {
 
     use super::*;
     use rand;
+    use rand::Rng;
 
     #[test]
     fn derivation_argon2i_mod_produces_expected_result() {
