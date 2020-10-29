@@ -25,24 +25,19 @@ const PENDING_FOR_OPEN_WALLETS_COUNT: &str = "pending_for_open_wallets_count";
 #[cfg(test)]
 mod collect {
     use super::*;
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashMap;
 
     #[test]
     fn collect_metrics() {
         let result_metrics = metrics::collect_metrics().wait().unwrap();
         let metrics_map = serde_json::from_str::<HashMap<String, usize>>(&result_metrics).unwrap();
-        let expected_keys: HashSet<&str> = [
-            THREADPOOL_ACTIVE_COUNT,
-            THREADPOOL_QUEUED_COUNT,
-            THREADPOOL_MAX_COUNT,
-            THREADPOOL_PANIC_COUNT,
-            OPENED_WALLETS_COUNT,
-            OPENED_WALLET_IDS_COUNT,
-            PENDING_FOR_IMPORT_WALLETS_COUNT,
-            PENDING_FOR_OPEN_WALLETS_COUNT
-        ].iter().cloned().collect();
-        for exp_key in expected_keys {
-            assert!(metrics_map.contains_key(exp_key));
-        }
+        assert!(metrics_map.contains_key(THREADPOOL_ACTIVE_COUNT));
+        assert!(metrics_map.contains_key(THREADPOOL_QUEUED_COUNT));
+        assert!(metrics_map.contains_key(THREADPOOL_MAX_COUNT));
+        assert!(metrics_map.contains_key(THREADPOOL_PANIC_COUNT));
+        assert!(metrics_map.contains_key(OPENED_WALLETS_COUNT));
+        assert!(metrics_map.contains_key(OPENED_WALLET_IDS_COUNT));
+        assert!(metrics_map.contains_key(PENDING_FOR_IMPORT_WALLETS_COUNT));
+        assert!(metrics_map.contains_key(PENDING_FOR_OPEN_WALLETS_COUNT));
     }
 }
