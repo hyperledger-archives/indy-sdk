@@ -18,7 +18,7 @@ use crate::commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
 use crate::commands::pool::{PoolCommand, PoolCommandExecutor};
 use crate::commands::wallet::{WalletCommand, WalletCommandExecutor};
 use crate::commands::cache::{CacheCommand, CacheCommandExecutor};
-use crate::commands::metrics::{MetricsCommand, MetricsCommandExecutor};
+use crate::commands::metrics::{MetricsCommand, MetricsCommandExecutor, MetricsStorage};
 use crate::domain::IndyConfig;
 use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::AnoncredsService;
@@ -30,7 +30,7 @@ use crate::services::pool::{PoolService, set_freshness_threshold};
 use indy_wallet::WalletService;
 
 use self::threadpool::ThreadPool;
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub mod anoncreds;
 pub mod blob_storage;
@@ -143,10 +143,10 @@ impl CommandExecutor {
                 let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
                 let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
                 let cache_command_executor = CacheCommandExecutor::new(wallet_service.clone());
-                let metrics_command_executor = MetricsCommandExecutor::new(wallet_service.clone());
+                let mut metrics_command_executor = MetricsCommandExecutor::new(wallet_service.clone());
 
                 loop {
-                    let mut instrumented_cmd = match receiver.recv() {
+                    let instrumented_cmd = match receiver.recv() {
                         Ok(cmd) => {
                             cmd
                         }
@@ -155,67 +155,68 @@ impl CommandExecutor {
                             panic!("Failed to get command! {:?}", err)
                         }
                     };
+                    let command_index = MetricsStorage::cmd_index(&instrumented_cmd.command);
                     let start_execution_ts = get_cur_time();
-                    metrics_command_executor.metric_storage.cmd_left_queue(instrumented_cmd.command,
+                    metrics_command_executor.metric_storage.cmd_left_queue(command_index,
                                                    start_execution_ts - instrumented_cmd.enqueue_ts);
-                    //
-                    // match instrumented_cmd.command {
-                    //     Command::Anoncreds(cmd) => {
-                    //         debug!("AnoncredsCommand command received");
-                    //         anoncreds_command_executor.execute(cmd);
-                    //     }
-                    //     Command::BlobStorage(cmd) => {
-                    //         debug!("BlobStorageCommand command received");
-                    //         blob_storage_command_executor.execute(cmd);
-                    //     }
-                    //     Command::Crypto(cmd) => {
-                    //         debug!("CryptoCommand command received");
-                    //         crypto_command_executor.execute(cmd);
-                    //     }
-                    //     Command::Ledger(cmd) => {
-                    //         debug!("LedgerCommand command received");
-                    //         ledger_command_executor.execute(cmd);
-                    //     }
-                    //     Command::Pool(cmd) => {
-                    //         debug!("PoolCommand command received");
-                    //         pool_command_executor.execute(cmd);
-                    //     }
-                    //     Command::Did(cmd) => {
-                    //         debug!("DidCommand command received");
-                    //         did_command_executor.execute(cmd);
-                    //     }
-                    //     Command::Wallet(cmd) => {
-                    //         debug!("WalletCommand command received");
-                    //         wallet_command_executor.execute(cmd);
-                    //     }
-                    //     Command::Pairwise(cmd) => {
-                    //         debug!("PairwiseCommand command received");
-                    //         pairwise_command_executor.execute(cmd);
-                    //     }
-                    //     Command::NonSecrets(cmd) => {
-                    //         debug!("NonSecretCommand command received");
-                    //         non_secret_command_executor.execute(cmd);
-                    //     }
-                    //     Command::Payments(cmd) => {
-                    //         debug!("PaymentsCommand command received");
-                    //         payments_command_executor.execute(cmd);
-                    //     }
-                    //     Command::Cache(cmd) => {
-                    //         debug!("CacheCommand command received");
-                    //         cache_command_executor.execute(cmd);
-                    //     }
-                    //     Command::Metrics(cmd) => {
-                    //         debug!("MetricsCommand command received");
-                    //         metrics_command_executor.execute(cmd);
-                    //     }
-                    //     Command::Exit => {
-                    //         debug!("Exit command received");
-                    //         break
-                    //     }
-                    // }
-                    // metrics_command_executor.metric_storage
-                    //     .cmd_executed(instrumented_cmd.command,
-                    //                   get_cur_time() - start_execution_ts);
+
+                    match instrumented_cmd.command {
+                        Command::Anoncreds(cmd) => {
+                            debug!("AnoncredsCommand command received");
+                            anoncreds_command_executor.execute(cmd);
+                        }
+                        Command::BlobStorage(cmd) => {
+                            debug!("BlobStorageCommand command received");
+                            blob_storage_command_executor.execute(cmd);
+                        }
+                        Command::Crypto(cmd) => {
+                            debug!("CryptoCommand command received");
+                            crypto_command_executor.execute(cmd);
+                        }
+                        Command::Ledger(cmd) => {
+                            debug!("LedgerCommand command received");
+                            ledger_command_executor.execute(cmd);
+                        }
+                        Command::Pool(cmd) => {
+                            debug!("PoolCommand command received");
+                            pool_command_executor.execute(cmd);
+                        }
+                        Command::Did(cmd) => {
+                            debug!("DidCommand command received");
+                            did_command_executor.execute(cmd);
+                        }
+                        Command::Wallet(cmd) => {
+                            debug!("WalletCommand command received");
+                            wallet_command_executor.execute(cmd);
+                        }
+                        Command::Pairwise(cmd) => {
+                            debug!("PairwiseCommand command received");
+                            pairwise_command_executor.execute(cmd);
+                        }
+                        Command::NonSecrets(cmd) => {
+                            debug!("NonSecretCommand command received");
+                            non_secret_command_executor.execute(cmd);
+                        }
+                        Command::Payments(cmd) => {
+                            debug!("PaymentsCommand command received");
+                            payments_command_executor.execute(cmd);
+                        }
+                        Command::Cache(cmd) => {
+                            debug!("CacheCommand command received");
+                            cache_command_executor.execute(cmd);
+                        }
+                        Command::Metrics(cmd) => {
+                            debug!("MetricsCommand command received");
+                            metrics_command_executor.execute(cmd);
+                        }
+                        Command::Exit => {
+                            debug!("Exit command received");
+                            break
+                        }
+                    }
+                    metrics_command_executor.metric_storage
+                        .cmd_executed(command_index,
+                                      get_cur_time() - start_execution_ts);
                 }
             }))
         }
