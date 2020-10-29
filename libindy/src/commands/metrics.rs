@@ -627,14 +627,8 @@ impl MetricsCommandExecutor {
         self._append_threapool_metrics(&mut metrics_map);
         self._append_wallet_metrics(&mut metrics_map);
         self._append_command_metrics(&mut metrics_map);
-
-        // metrics_map[THREADPOOL_ACTIVE_COUNT] = Value::from(5);
-        // serde_json::Map::
-        //        let mut metrics_map = serde_json::Map::from()
-
-        // let res = serde_json::to_string(&metrics_map).unwrap();
         let res = serde_json::to_string(&metrics_map)
-            .to_indy(IndyErrorKind::InvalidStructure,"Can't serialize a metrics map")?;
+            .to_indy(IndyErrorKind::InvalidState,"Can't serialize a metrics map")?;
 
         trace!("_collect <<< res: {:?}", res);
         debug!("collecting metrics from command thread");
