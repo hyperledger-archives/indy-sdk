@@ -17,7 +17,7 @@ mod collect {
     use std::collections::HashMap;
 
     #[test]
-    fn collect_metrics_works() {
+    fn collect_metrics_contains_thread_pool_and_wallet_service_statistics() {
         let result_metrics = metrics::collect_metrics().unwrap();
         let metrics_map = serde_json::from_str::<HashMap<String, usize>>(&result_metrics).unwrap();
         assert!(metrics_map.contains_key("threadpool_active_count"));
@@ -31,7 +31,7 @@ mod collect {
     }
 
     #[test]
-    fn collect_metrics_after_works() {
+    fn collect_metrics_includes_statistics_for_wallet_command() {
         let setup = Setup::empty();
         let config = config(&setup.name);
         wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
