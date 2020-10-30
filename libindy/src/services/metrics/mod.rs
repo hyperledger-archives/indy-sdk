@@ -62,49 +62,70 @@ impl MetricsService {
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
 
     #[test]
-    fn test_cmd_left_queue() {
+    fn test_counters_are_initialized_as_zeros() {
+        let metrics_service = MetricsService::new();
+        for index in (0..MetricsService::commands_count()).rev() {
+            assert_eq!(metrics_service.queued_commands_count.borrow()[index as usize], 0);
+            assert_eq!(metrics_service.queued_commands_duration_ms.borrow()[index as usize], 0);
+            assert_eq!(metrics_service.executed_commands_count.borrow()[index as usize], 0);
+            assert_eq!(metrics_service.executed_commands_duration_ms.borrow()[index as usize], 0);
+        }
+    }
+
+    #[test]
+    fn test_cmd_left_queue_increments_relevant_queued_counters() {
         let metrics_service = MetricsService::new();
         let index = CommandIndex::IssuerCommandCreateSchema;
-        let durations = [5u128, 2u128, 3u128];
-        let command_count: u128 = durations.len() as u128;
+        let duration1 = 5u128;
+        let duration2 = 2u128;
 
-        for duration in durations.iter() {
-            metrics_service.cmd_left_queue(index, *duration);
-        }
+        metrics_service.cmd_left_queue(index, duration1);
 
-        assert_eq!(metrics_service.queued_commands_count.borrow()[index as usize], command_count);
-        assert_eq!(metrics_service.queued_commands_duration_ms.borrow()[index as usize], durations.iter().sum::<u128>());
+        assert_eq!(metrics_service.queued_commands_count.borrow()[index as usize], 1);
+        assert_eq!(metrics_service.queued_commands_duration_ms.borrow()[index as usize], duration1);
+
+        metrics_service.cmd_left_queue(index, duration2);
+
+        assert_eq!(metrics_service.queued_commands_count.borrow()[index as usize], 1 + 1);
+        assert_eq!(metrics_service.queued_commands_duration_ms.borrow()[index as usize],
+                   duration1 + duration2);
         assert_eq!(metrics_service.executed_commands_count.borrow()[index as usize], 0);
         assert_eq!(metrics_service.executed_commands_duration_ms.borrow()[index as usize], 0);
     }
+
     #[test]
-    fn test_cmd_executed() {
+    fn test_cmd_executed_increments_relevant_executed_counters() {
         let metrics_service = MetricsService::new();
         let index = CommandIndex::IssuerCommandCreateSchema;
-        let durations = [5u128, 2u128, 3u128];
-        let command_count: u128 = durations.len() as u128;
+        let duration1 = 5u128;
+        let duration2 = 2u128;
 
-        for duration in durations.iter() {
-            metrics_service.cmd_executed(index, *duration);
-        }
+        metrics_service.cmd_executed(index, duration1);
+
+        assert_eq!(metrics_service.executed_commands_count.borrow()[index as usize], 1);
+        assert_eq!(metrics_service.executed_commands_duration_ms.borrow()[index as usize], duration1);
+
+        metrics_service.cmd_executed(index, duration2);
 
         assert_eq!(metrics_service.queued_commands_count.borrow()[index as usize], 0);
         assert_eq!(metrics_service.queued_commands_duration_ms.borrow()[index as usize], 0);
-        assert_eq!(metrics_service.executed_commands_count.borrow()[index as usize], command_count);
-        assert_eq!(metrics_service.executed_commands_duration_ms.borrow()[index as usize], durations.iter().sum::<u128>());
+        assert_eq!(metrics_service.executed_commands_count.borrow()[index as usize], 1+1);
+        assert_eq!(metrics_service.executed_commands_duration_ms.borrow()[index as usize], duration1 + duration2);
     }
+
     #[test]
     fn test_append_command_metrics() {
-        let payment_service = MetricsService::new();
-        let mut metrics_map= serde_json::Map::new();
+        let metrics_service = MetricsService::new();
+        let mut metrics_map = serde_json::Map::new();
 
-        payment_service.append_command_metrics(&mut metrics_map);
+        metrics_service.append_command_metrics(&mut metrics_map);
 
-        assert_eq!(metrics_map.len(), COMMANDS_COUNT*4);
+        assert_eq!(metrics_map.len(), COMMANDS_COUNT * 4);
         assert!(metrics_map.contains_key("issuer_command_create_schema_queued_commands_count"));
         assert!(metrics_map.contains_key("issuer_command_create_schema_queued_commands_duration_ms"));
         assert!(metrics_map.contains_key("issuer_command_create_schema_executed_commands_count"));
