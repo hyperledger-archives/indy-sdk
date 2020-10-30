@@ -17,7 +17,7 @@ mod collect {
     use std::collections::HashMap;
 
     #[test]
-    fn collect_metrics_works() {
+    fn collect_metrics_contains_thread_pool_and_wallet_service_statistics() {
         let result_metrics = metrics::collect_metrics().unwrap();
         let metrics_map = serde_json::from_str::<HashMap<String, usize>>(&result_metrics).unwrap();
         assert!(metrics_map.contains_key("threadpool_active_count"));
@@ -31,7 +31,7 @@ mod collect {
     }
 
     #[test]
-    fn collect_metrics_after_works() {
+    fn collect_metrics_includes_statistics_for_wallet_command() {
         let setup = Setup::empty();
         let config = config(&setup.name);
         wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
@@ -40,9 +40,9 @@ mod collect {
         let metrics_map = serde_json::from_str::<HashMap<String, u128>>(&result_metrics).unwrap();
 
         assert_eq!(metrics_map.get("wallet_command_create_queued_commands_count").unwrap(), &1u128);
-        assert!(metrics_map.get("wallet_command_create_queued_commands_duration_ms").unwrap() > &0u128);
+        assert!(metrics_map.contains_key("wallet_command_create_queued_commands_duration_ms"));
         assert_eq!(metrics_map.get("wallet_command_create_executed_commands_count").unwrap(), &1u128);
-        assert!(metrics_map.get("wallet_command_create_executed_commands_duration_ms").unwrap() > &0u128);
+        assert!(metrics_map.contains_key("wallet_command_create_executed_commands_duration_ms"));
     }
     fn config(name: &str) -> String {
         json!({"id": name}).to_string()
