@@ -26,14 +26,14 @@ async def main():
         elif answer == '1':
             print("Check agency for a credential offer")
             pw_did = await connection_to_faber.get_my_pw_did()
-            uid, offer, _ = await download_message(pw_did)
+            uid, offer, _ = await download_message(pw_did, 'credential-offer')
             credential = await Credential.create('credential', json.loads(offer))
             await accept_offer(connection_to_faber, credential)
             await update_message_as_read(pw_did, uid)
         elif answer == '2':
             print("Check agency for a proof request")
             pw_did = await connection_to_faber.get_my_pw_did()
-            uid, request, _ = await download_message(pw_did)
+            uid, request, _ = await download_message(pw_did, 'presentation-request')
             print("#23 Create a Disclosed proof object from proof request")
             proof = await DisclosedProof.create('proof', json.loads(request))
             await create_proof(connection_to_faber, proof)

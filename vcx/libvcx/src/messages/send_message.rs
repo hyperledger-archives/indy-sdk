@@ -121,7 +121,8 @@ impl SendMessageBuilder {
                 1
             }
             settings::ProtocolTypes::V2 |
-            settings::ProtocolTypes::V3 => 0
+            settings::ProtocolTypes::V3 |
+            settings::ProtocolTypes::V4 => 0
         };
 
         match response.remove(index) {
@@ -164,7 +165,8 @@ impl GeneralMessage for SendMessageBuilder {
                          A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::General(detail)))]
                 }
                 settings::ProtocolTypes::V2 |
-                settings::ProtocolTypes::V3 => {
+                settings::ProtocolTypes::V3 |
+                settings::ProtocolTypes::V4 => {
                     let msg: ::serde_json::Value = ::serde_json::from_slice(self.payload.as_slice())
                         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
 
