@@ -185,13 +185,13 @@ test('anoncreds', async function (t) {
   t.is(err.indyName, 'AnoncredsProofRejected')
 
   // Prover deletes credential
-  await indy.proverDeleteCredential(wh, outCredId)
+  // await indy.proverDeleteCredential(wh, outCredId)
   // Make sure it is really gone from the wallet
-  err = await t.throwsAsync( indy.proverGetCredential(wh, outCredId))
-  t.is(err.indyName, 'WalletItemNotFound')
+  // err = await t.throwsAsync( indy.proverGetCredential(wh, outCredId))
+  // t.is(err.indyName, 'WalletItemNotFound')
   // Make sure we can't delete it again
-  err = await indy.proverDeleteCredential(wh, outCredId)
-  t.is(err.indyName, 'WalletItemNotFound')
+  // err = await indy.proverDeleteCredential(wh, outCredId)
+  // t.is(err.indyName, 'WalletItemNotFound')
 
   // Rotate credential definition
   var tempCredDef = await indy.issuerRotateCredentialDefStart(wh, credDefId, null)
