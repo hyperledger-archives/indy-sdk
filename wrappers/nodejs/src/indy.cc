@@ -825,6 +825,24 @@ NAN_METHOD(proverCloseCredentialsSearchForProofReq) {
   indyCalled(icb, indy_prover_close_credentials_search_for_proof_req(icb->handle, arg0, proverCloseCredentialsSearchForProofReq_cb));
 }
 
+void proverDeleteCredential_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(proverDeleteCredential) {
+  INDY_ASSERT_NARGS(proverDeleteCredential, 3)
+  INDY_ASSERT_NUMBER(proverDeleteCredential, 0, wh)
+  INDY_ASSERT_STRING(proverDeleteCredential, 1, credId)
+  INDY_ASSERT_FUNCTION(proverDeleteCredential, 2)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  IndyCallback* icb = argToIndyCb(info[2]);
+  indyCalled(icb, indy_prover_delete_credential(icb->handle, arg0, arg1, proverDeleteCredential_cb));
+  delete arg1;
+}
+
 void proverCreateProof_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
