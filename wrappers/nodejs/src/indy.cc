@@ -3659,6 +3659,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "proverSearchCredentialsForProofReq", proverSearchCredentialsForProofReq);
   Nan::Export(target, "proverFetchCredentialsForProofReq", proverFetchCredentialsForProofReq);
   Nan::Export(target, "proverCloseCredentialsSearchForProofReq", proverCloseCredentialsSearchForProofReq);
+  Nan::Export(target, "proverDeleteCredential", proverDeleteCredential);
   Nan::Export(target, "proverCreateProof", proverCreateProof);
   Nan::Export(target, "verifierVerifyProof", verifierVerifyProof);
   Nan::Export(target, "createRevocationState", createRevocationState);
