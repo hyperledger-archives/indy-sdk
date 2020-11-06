@@ -309,7 +309,34 @@ impl DidCommandExecutor {
         let mut did_search =
             self.wallet_service.search_indy_records::<Did>(wallet_handle, "{}", &SearchOptions::id_value())?;
 
+	let mut metadata_search =
+            self.wallet_service.search_indy_records::<DidMetadata>(wallet_handle, "{}", &SearchOptions::id_value())?;
+
+	let mut temporarydid_search =
+            self.wallet_service.search_indy_records::<TemporaryDid>(wallet_handle, "{}", &SearchOptions::id_value())?;
+
         let mut dids: Vec<DidWithMeta> = Vec::new();
+ 
+        let mut metadata_map: HashMap<String, String>= HashMap::new();
+        let mut temporarydid_map: HashMap<String, String>= HashMap::new();
+
+        while let Some(record) = metadata_search.fetch_next_record()? {
+            let did_id = record.get_id();
+            let tup: DidMetadata = record.get_value()
+                .ok_or(err_msg(IndyErrorKind::InvalidState, "No value for DID record"))
+                .and_then(|tags_json| serde_json::from_str(&tags_json)
+                          .to_indy(IndyErrorKind::InvalidState, format!("Cannot deserialize Did: {:?}", did_id)))?;
+            metadata_map.insert(String::from(did_id), tup.value);
+        }
+
+        while let Some(record) = temporarydid_search.fetch_next_record()? {
+            let did_id = record.get_id();
+            let did: TemporaryDid = record.get_value()
+                .ok_or(err_msg(IndyErrorKind::InvalidState, "No value for DID record"))
+                .and_then(|tags_json| serde_json::from_str(&tags_json)
+                          .to_indy(IndyErrorKind::InvalidState, format!("Cannot deserialize Did: {:?}", did_id)))?;
+            temporarydid_map.insert(did.did.0, did.verkey);
+        }
 
         while let Some(did_record) = did_search.fetch_next_record()? {
             let did_id = did_record.get_id();
@@ -319,14 +346,14 @@ impl DidCommandExecutor {
                 .and_then(|tags_json| serde_json::from_str(&tags_json)
                     .to_indy(IndyErrorKind::InvalidState, format!("Cannot deserialize Did: {:?}", did_id)))?;
 
-            let metadata = self.wallet_service.get_indy_opt_object::<DidMetadata>(wallet_handle, &did.did.0, &RecordOptions::id_value())?;
-            let temp_verkey = self.wallet_service.get_indy_opt_object::<TemporaryDid>(wallet_handle, &did.did.0, &RecordOptions::id_value())?;
+            let temp_verkey = temporarydid_map.remove(&did.did.0);
+            let metadata = metadata_map.remove(&did.did.0);
 
             let did_with_meta = DidWithMeta {
                 did: did.did,
                 verkey: did.verkey,
-                temp_verkey: temp_verkey.map(|tv| tv.verkey),
-                metadata: metadata.map(|m| m.value),
+                temp_verkey: temp_verkey,
+                metadata: metadata,
             };
 
             dids.push(did_with_meta);
