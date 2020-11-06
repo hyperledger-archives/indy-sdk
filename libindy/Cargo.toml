@@ -56,6 +56,10 @@ indy-api-types = { path = "./indy-api-types"}
 indy-utils = { path = "./indy-utils"}
 indy-wallet = { path = "./indy-wallet"}
 quote = "=1.0.7"
+variant_count = "*"
+num-traits = "0.2"
+num-derive = "0.2"
+convert_case = "0.3.2"
 
 [dependencies.uuid]
 version = "0.7.4"
