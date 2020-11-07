@@ -12,6 +12,7 @@ pub mod pool;
 pub mod wallet;
 pub mod logger;
 pub mod cache;
+pub mod metrics;
 
 extern crate serde;
 
