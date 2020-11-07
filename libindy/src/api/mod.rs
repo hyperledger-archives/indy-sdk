@@ -11,6 +11,7 @@ pub mod payments;
 pub mod payments_v2;
 pub mod logger;
 pub mod cache;
+pub mod metrics;
 
 use libc::c_char;
 
