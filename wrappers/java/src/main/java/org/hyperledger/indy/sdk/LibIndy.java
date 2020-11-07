@@ -201,6 +201,9 @@ public abstract class LibIndy {
 		int indy_sign_with_address(int command_handle, int wallet_handle, String address, byte[] message_raw, int message_len, Callback cb);
 		int indy_verify_with_address(int command_handle, String address, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
 
+		// metrics.rs
+		int indy_collect_metrics(int command_handle, Callback cb);
+
 		int indy_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
 		int indy_set_logger_with_max_lvl(Pointer context, Callback enabled, Callback log, Callback flush, int max_lvl);
 		int indy_set_log_max_lvl(int max_lvl);
