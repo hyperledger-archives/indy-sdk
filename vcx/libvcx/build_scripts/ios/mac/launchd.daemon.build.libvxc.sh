@@ -26,9 +26,9 @@ fi
 # git merge libindy_refactor
 IOS_TARGETS="aarch64-apple-ios,x86_64-apple-ios"
 IOS_ARCHS="arm64,x86_64"
-#IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,x86_64-apple-ios"
-#IOS_ARCHS="arm64,armv7,armv7s,x86_64"
-#IOS_TARGETS="i386-apple-ios,x86_64-apple-ios"
+#IOS_TARGETS="aarch64-apple-ios,x86_64-apple-ios"
+#IOS_ARCHS="arm64,x86_64"
+#IOS_TARGETS="x86_64-apple-ios"
 #IOS_ARCHS="i386,x86_64"
 cd vcx/libvcx/build_scripts/ios/mac
 ./mac.03.libindy.build.sh nodebug "${IOS_TARGETS}" cleanbuild > ./mac.03.libindy.build.sh.out 2>&1
