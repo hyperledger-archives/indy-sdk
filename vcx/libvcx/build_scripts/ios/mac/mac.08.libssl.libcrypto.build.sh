@@ -21,7 +21,7 @@ OPENSSL_VER="1.0.2o"
 echo "Using version number: $OPENSSL_VER"
 ./build-libssl.sh --version=$OPENSSL_VER
 
-IOS_ARCHS="arm64,armv7,armv7s,i386,x86_64"
+IOS_ARCHS="arm64,x86_64"
 if [ ! -z "$1" ]; then
     IOS_ARCHS=$1
 fi
