@@ -8,7 +8,7 @@ Cocoapod will search for spec files in the root Specs folder.
 # Binaries
 
 * There are 2 types of automatically built archives containing libindy core library which can be used for your iOS application.
-    * library built for aarch64-apple-ios targets.
+    * library built for aarch64-apple-ios target.
     * universal libindy built for all architectures.
     
     Add pod to target:
