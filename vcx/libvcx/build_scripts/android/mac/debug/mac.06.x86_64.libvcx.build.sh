@@ -84,7 +84,7 @@ unset LIBINDY_DIR
 # To build for iOS
 #LIBINDY_DIR=/usr/local/lib RUST_BACKTRACE=1 cargo lipo --release
 
-#cargo lipo --release --verbose --targets="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,i386-apple-ios,x86_64-apple-ios"
+#cargo lipo --release --verbose --targets="aarch64-apple-ios,x86_64-apple-ios"
 
 #LIBINDY_DIR=/usr/local/lib RUST_BACKTRACE=1 cargo lipo
 #LIBINDY_DIR=/usr/local/lib cargo test
