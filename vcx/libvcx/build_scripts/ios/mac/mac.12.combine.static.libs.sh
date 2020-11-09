@@ -2,7 +2,7 @@
 
 # Combined all static libaries in the current directory into a single static library
 # The script takes a single argument, which is the name of the final, combined library to be created.
-# If libvcxpartial is passed in as the parameter, only arm64 are packaged
+# If libvcxpartial is passed in as the parameter, only arm64 is packaged
 #
 #   For example:
 #  =>    combine_static_libraries.sh combined-library
