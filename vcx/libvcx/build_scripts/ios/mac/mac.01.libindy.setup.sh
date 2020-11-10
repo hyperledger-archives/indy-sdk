@@ -79,7 +79,7 @@ if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
     brew list automake &>/dev/null || brew install automake
     brew list autoconf &>/dev/null || brew install autoconf
     brew list cmake &>/dev/null || brew install cmake
-    brew list openssl &>/dev/null || brew install openssl
+    brew list openssl &>/dev/null || brew install openssl --universal
     brew list zmq &>/dev/null || brew install zmq
     brew list wget &>/dev/null || brew install wget
     brew list truncate &>/dev/null || brew install truncate

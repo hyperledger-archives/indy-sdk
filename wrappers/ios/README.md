@@ -46,7 +46,7 @@ Cocoapod will search for spec files in the root Specs folder.
    ```
    brew install libsodium
    brew install zeromq
-   brew install openssl (1.0.2q can be any fresh version)
+   brew install openssl --universal(1.0.2q can be any fresh version)
    ```
 1. Setup environment variables:
    

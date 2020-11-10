@@ -37,6 +37,6 @@ if [[ $RUSTC_VERSION =~ ^'rustc ' ]]; then
     brew install automake 
     brew install autoconf
     brew install cmake
-    brew install openssl
+    brew install openssl --universal
     brew install zmq
 fi

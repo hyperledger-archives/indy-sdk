@@ -87,7 +87,7 @@ if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
     brew install automake 
     brew install autoconf
     brew install cmake
-    brew install openssl
+    brew install openssl --universal
     brew install zmq
     brew install wget
     brew install truncate
