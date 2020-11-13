@@ -49,7 +49,7 @@ if [ "$#" -gt 0 ]; then
 
     IOS_TARGETS=$2
     if [ -z "${IOS_TARGETS}" ]; then
-        echo "please provide the targets e.g aarch64-apple-ios,armv7-apple-ios,i386-apple-ios,x86_64-apple-ios"
+        echo "please provide the targets e.g aarch64-apple-ios,x86_64-apple-ios"
         exit 1
     fi
 
