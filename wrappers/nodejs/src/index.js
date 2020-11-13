@@ -185,6 +185,12 @@ indy.proverCloseCredentialsSearchForProofReq = function proverCloseCredentialsSe
   return cb.promise
 }
 
+indy.proverDeleteCredential = function proverDeleteCredential (wh, credId, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.proverDeleteCredential(wh, credId, cb)
+  return cb.promise
+}
+
 indy.proverCreateProof = function proverCreateProof (wh, proofReq, requestedCredentials, masterSecretName, schemas, credentialDefs, revStates, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.proverCreateProof(wh, toJson(proofReq), toJson(requestedCredentials), masterSecretName, toJson(schemas), toJson(credentialDefs), toJson(revStates), cb)
