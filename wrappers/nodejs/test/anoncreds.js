@@ -195,6 +195,15 @@ test('anoncreds', async function (t) {
   t.is(unqualified, await indy.toUnqualified(qualified))
   t.is(unqualified, await indy.toUnqualified(unqualified))
 
+  // Prover deletes credential
+  await indy.proverDeleteCredential(wh, outCredId)
+  // Make sure it is really gone from the wallet
+  err = await t.throwsAsync(indy.proverGetCredential(wh, outCredId))
+  t.is(err.indyName, 'WalletItemNotFound')
+  // Make sure we can't delete it again
+  err = await t.throwsAsync(indy.proverDeleteCredential(wh, outCredId))
+  t.is(err.indyName, 'WalletItemNotFound')
+
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)
   pool.cleanup()

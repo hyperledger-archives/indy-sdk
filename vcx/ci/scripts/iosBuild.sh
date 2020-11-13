@@ -81,11 +81,11 @@ build_cocoapod() {
 
 VCX_VERSION=''
 vcx_version VCX_VERSION
-set_ios_platforms "arm64,armv7,i386,x86_64" "aarch64-apple-ios,armv7-apple-ios,i386-apple-ios,x86_64-apple-ios"
+set_ios_platforms "arm64,x86_64" "aarch64-apple-ios,x86_64-apple-ios"
 setup_env $@
 clear_previous_builds
 build_vcx ${IOS_TARGETS}
 build_cocoapod libvcxall ${IOS_ARCHS} ${VCX_VERSION}
 
-set_ios_platforms "arm64,armv7" "aarch64-apple-ios,armv7-apple-ios"
+set_ios_platforms "arm64" "aarch64-apple-ios"
 build_cocoapod libvcxpartial ${IOS_ARCHS} ${VCX_VERSION}
