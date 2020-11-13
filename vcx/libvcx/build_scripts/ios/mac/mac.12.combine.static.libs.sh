@@ -1,9 +1,8 @@
 #!/bin/sh
 
 # Combined all static libaries in the current directory into a single static library
-# It is hardcoded to use the i386, armv7, and armv7s architectures; this can easily be changed via the 'archs' variable at the top
 # The script takes a single argument, which is the name of the final, combined library to be created.
-# If libvcxpartial is passed in as the parameter, only armv7 and arm64 are packaged
+# If libvcxpartial is passed in as the parameter, only arm64 is packaged
 #
 #   For example:
 #  =>    combine_static_libraries.sh combined-library
@@ -50,7 +49,7 @@ fi
 
 IOS_ARCHS=$4
 if [ -z "${IOS_ARCHS}" ]; then
-    echo "please provide the arch e.g arm, arm64, armv7, x86, or x86_64"
+    echo "please provide the arch e.g arm, arm64 or x86_64"
     exit 1
 fi
 
