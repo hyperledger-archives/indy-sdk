@@ -140,6 +140,9 @@ vcx_error_t vcx_connection_deserialize(vcx_command_handle_t command_handle, cons
 /** Request a state update from the agent for the given connection. */
 vcx_error_t vcx_connection_update_state(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));
 
+/** Update the state of the connection based on the given message. */
+vcx_error_t vcx_connection_update_state_with_message(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, const char *message, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));
+
 /** Retrieves the state of the connection */
 vcx_error_t vcx_connection_get_state(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));
 
@@ -256,6 +259,9 @@ vcx_error_t vcx_proof_accepted(vcx_proof_handle_t proof_handle);
 /** Populates status with the current state of this proof request. */
 vcx_error_t vcx_proof_update_state(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));
 
+/** Update the state of the proof based on the given message. */
+vcx_error_t vcx_proof_update_state_with_message(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, const char *message, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));
+
 /** Retrieves the state of the proof. */
 vcx_error_t vcx_proof_get_state(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));
 
@@ -301,6 +307,9 @@ vcx_error_t vcx_connection_get_redirect_details(vcx_command_handle_t command_han
 /** Populates status with the current state of this disclosed_proof request. */
 vcx_error_t vcx_disclosed_proof_update_state(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));
 
+/** Checks for any state change from the given message and updates the state attribute. */
+vcx_error_t vcx_disclosed_proof_update_state_with_message(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, const char *message, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));
+
 /** Check for any proof requests from the connection. */
 vcx_error_t vcx_disclosed_proof_get_requests(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *requests));
 
@@ -345,6 +354,9 @@ vcx_error_t vcx_credential_get_offers(vcx_command_handle_t command_handle, vcx_c
 
 /** Updates the state of the credential from the agency. */
 vcx_error_t vcx_credential_update_state(vcx_command_handle_t command_handle, vcx_credential_handle_t credential_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));
+
+/** Update the state of the credential based on the given message. */
+vcx_error_t vcx_credential_update_state_with_message(vcx_command_handle_t command_handle, vcx_credential_handle_t credential_handle, const char *message, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));
 
 /** Retrieves the state of the credential - including storing the credential if it has been sent. */
 vcx_error_t vcx_credential_get_state(vcx_command_handle_t command_handle, vcx_credential_handle_t credential_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));

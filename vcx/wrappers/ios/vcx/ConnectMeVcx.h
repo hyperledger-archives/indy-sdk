@@ -130,6 +130,16 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                 withSignatureData:(NSData *)signatureRaw
                    withCompletion:(void (^)(NSError *error, vcx_bool_t valid))completion;
 
+- (void)connectionUpdateState:(VcxHandle) connectionHandle
+               withCompletion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void)connectionUpdateStateWithMessage:(VcxHandle) connectionHandle
+                                 message:(NSString *)message
+                          withCompletion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void)connectionGetState:(VcxHandle) connectionHandle
+            withCompletion:(void (^)(NSError *error, NSInteger state))completion;
+
 - (void)agentUpdateInfo:(NSString *)config
              completion:(void (^)(NSError *error))completion;
 
@@ -155,6 +165,10 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 
 - (void)credentialUpdateState:(NSInteger )credentailHandle
                 completion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void)credentialUpdateStateWithMessage:(VcxHandle) credentialHandle
+                                 message:(NSString *)message
+                          withCompletion:(void (^)(NSError *error, NSInteger state))completion;
 
 - (void)credentialGetOffers:(VcxHandle)connectionHandle
                  completion:(void (^)(NSError *error, NSString *offers))completion;
@@ -246,6 +260,10 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
            withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle)) completion;
 
 - (int)proofRelease:(NSInteger) proofHandle;
+
+- (void)proofUpdateStateWithMessage:(VcxHandle) proofHandle
+                            message:(NSString *)message
+                     withCompletion:(void (^)(NSError *error, NSInteger state))completion;
 
 - (int)vcxShutdown:(BOOL *)deleteWallet;
 
