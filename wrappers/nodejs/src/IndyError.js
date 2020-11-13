@@ -17,6 +17,8 @@ var errors = {
   112: 'CommonInvalidState',
   113: 'CommonInvalidStructure',
   114: 'CommonIOError',
+  115: 'CommonInvalidParam13',
+  116: 'CommonInvalidParam14',
   200: 'WalletInvalidHandle',
   201: 'WalletUnknownTypeError',
   202: 'WalletTypeAlreadyRegisteredError',
