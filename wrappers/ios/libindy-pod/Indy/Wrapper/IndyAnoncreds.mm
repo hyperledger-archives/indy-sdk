@@ -357,6 +357,29 @@
     }
 }
 
++ (void)proverDeleteCredentialsWithId:(NSString *)credId
+                         walletHandle:(IndyHandle)walletHandle
+                           completion:(void (^)(NSError * error))completion {
+
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_prover_delete_credential(handle,
+                                        walletHandle,
+                                        [credId UTF8String],
+                                        IndyWrapperCommonCallback
+    );
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret]);
+        });
+    }
+
+}
+
 + (void)proverGetCredentialsForFilter:(NSString *)filterJSON
                          walletHandle:(IndyHandle)walletHandle
                            completion:(void (^)(NSError *error, NSString *credentialsJSON))completion {
