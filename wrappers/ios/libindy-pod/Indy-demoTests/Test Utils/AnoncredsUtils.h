@@ -11,6 +11,8 @@
 
 + (AnoncredsUtils *)sharedInstance;
 
++ (void)clearInstance;
+
 - (NSString *)defaultCredentialDefConfig;
 
 - (NSString *)getGvtSchemaId;
@@ -32,6 +34,8 @@
 - (NSString *)credentialId1;
 
 - (NSString *)credentialId2;
+
+- (NSString *)credentialId3;
 
 - (NSString *)gvtCredDef;
 
@@ -130,6 +134,9 @@
 - (NSError *)proverGetCredentialWithId:(NSString *)credId
                           walletHandle:(IndyHandle)walletHandle
                         credentialJson:(NSString **)outCredentialJson;
+
+- (NSError *)proverDeleteCredentialsWithId:(NSString *)credId
+                              walletHandle:(IndyHandle)walletHandle;
 
 - (NSError *)proverGetCredentialsForFilter:(NSString *)filterJSON
                               walletHandle:(IndyHandle)walletHandle
