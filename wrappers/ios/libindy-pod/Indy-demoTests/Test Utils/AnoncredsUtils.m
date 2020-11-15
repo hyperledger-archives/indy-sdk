@@ -17,15 +17,28 @@
 
 + (AnoncredsUtils *)sharedInstance {
     static AnoncredsUtils *instance = nil;
-    static dispatch_once_t dispatch_once_block;
 
-    dispatch_once(&dispatch_once_block, ^{
-        instance = [AnoncredsUtils new];
-        instance.isCommonWalletCreated = false;
-        instance.walletHandle = 0;
-    });
+    @synchronized(self) {
+        if (instance == nil) {
+            instance = [AnoncredsUtils new];
+            instance.isCommonWalletCreated = false;
+            instance.walletHandle = 0;
+        }
+    }
 
     return instance;
+}
+
++ (void)clearInstance {
+    @synchronized (self) {
+        AnoncredsUtils *utils = [AnoncredsUtils sharedInstance];
+        utils.walletHandle = 0;
+        utils.singletoneCredentialdefJson = nil;
+        utils.singletoneCredentialofferJson = nil;
+        utils.singletoneCredentialreqJson = nil;
+        utils.singletoneCredentialJson = nil;
+        utils.isCommonWalletCreated = false;
+    }
 }
 
 // MARK: - Json configurators
@@ -121,6 +134,10 @@
 
 - (NSString *)credentialId2 {
     return @"credentialID2";
+}
+
+- (NSString *)credentialId3 {
+    return @"credentialID3";
 }
 
 // NOTE: for Anoncreds test
@@ -609,6 +626,25 @@
     if (outCredentialJson) {*outCredentialJson = outJson;}
 
     return err;
+}
+
+- (NSError *)proverDeleteCredentialsWithId:(NSString *)credId
+                              walletHandle:(IndyHandle)walletHandle {
+    __block NSError *err = nil;
+    XCTestExpectation *completionExpectation = nil;
+
+    completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+
+    [IndyAnoncreds proverDeleteCredentialsWithId:credId
+                                    walletHandle:walletHandle
+                                      completion:^(NSError *error) {
+        err = error;
+        [completionExpectation fulfill];
+    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    return err;
+
 }
 
 - (NSError *)proverGetCredentialsForFilter:(NSString *)filterJSON
@@ -1153,7 +1189,7 @@
 
     //18. Prover store GVT credential from Issuer2
     ret = [self proverStoreCredential:issuer2GvtCredential
-                               credID:@"credentialID3"
+                               credID:[self credentialId3]
                   credReqMetadataJSON:issuer2GvtCredentialRequestMetadata
                           credDefJSON:issuer2GvtCredentialDefJson
                         revRegDefJSON:nil
