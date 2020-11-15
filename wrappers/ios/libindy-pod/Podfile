@@ -6,9 +6,9 @@ workspace 'Indy.xcworkspace'
 
 def appPods
     pod 'libsodium'
-    pod 'libzmq',"4.2.3"
+    pod 'libzmq', "4.2.3"
     pod 'OpenSSL'
-    pod 'libindy', "1.10.0"
+    pod 'libindy', "1.15.0"
 end
 
 target 'Indy-demo' do
