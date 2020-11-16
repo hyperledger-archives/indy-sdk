@@ -25,7 +25,7 @@
         "url": "git+https://github.com/evernym/vcx.git",
         "type": "git"
     },
-    "version": "0.6.2",
+    "version": "0.8.0",
     "dependencies": {
         "@types/ffi": "0.0.19",
         "@types/node": "^8.0.47",
@@ -42,6 +42,7 @@
         "demo:notifyserver": "node notification-server.js",
         "demo:alice": "node demo/alice.js",
         "demo:faber": "node demo/faber.js",
+        "demo:faber:rev": "node demo/faber.js --revocation",
         "demo:alice:pg": "node demo/alice.js --postgresql",
         "demo:faber:pg": "node demo/faber.js --postgresql",
         "demo:alice:sign": "node demo/alice-signature.js",
@@ -51,7 +52,7 @@
         "jslint:fix": "standard --fix",
         "lint:demo": "standard demo/*",
         "doc-gen": "./node_modules/.bin/typedoc --out doc --excludePrivate --excludeProtected --ignoreCompilerErrors src",
-        "test": "export TS_NODE_PROJECT=\"./test/tsconfig.json\" export NODE_ENV='test' && export RUST_LOG=\"info\" && export RUST_BACKTRACE=full && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite1/**/*.test.ts && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite2/**/*.test.ts",
+        "test": "export TS_NODE_PROJECT=\"./test/tsconfig.json\" export NODE_ENV='test' && export RUST_LOG=\"info\" && export RUST_BACKTRACE=full && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite1/connection.test.ts && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite1/credential-def.test.ts && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite1/credential.test.ts && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite1/disclosed-proof.test.ts && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite1/issuer-credential.test.ts && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite1/proof.test.ts && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite1/schema.test.ts && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite1/utils.test.ts && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite1/wallet.test.ts && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite2/ffi.test.ts",
         "test-logging": "export TS_NODE_PROJECT=\"./test/tsconfig.json\" export NODE_ENV='test'&& find ./test/suite3 -name '*.test.ts' -exec ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register \\{} \\;"
     },
     "devDependencies": {
@@ -68,17 +69,17 @@
         "express": "^4.17.1",
         "is-port-reachable": "^2.0.1",
         "jsdoc": "^3.6.3",
-        "mocha": "^5.2.0",
+        "mocha": "^7.2.0",
         "readline-sync": "^1.4.9",
         "sinon": "^4.1.2",
         "sleep-promise": "^8.0.1",
+        "standard": "^14.3.1",
         "ts-node": "^6.1.2",
         "tslint": "^5.8.0",
         "tslint-config-standard": "^7.1.0",
         "typedoc": "^0.15.4",
         "typescript": "^3.0.0",
-        "winston": "^3.2.1",
-        "standard": "^14.3.1"
+        "winston": "^3.2.1"
     },
     "main": "dist/src/index.js",
     "homepage": "https://github.com/evernym/vcx#readme",

@@ -314,7 +314,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 - (void)initWithConfig:(NSString *)config
             completion:(void (^)(NSError *error))completion
 {
-    const char *config_char = [config cString];
+    const char *config_char = [config cStringUsingEncoding:NSUTF8StringEncoding];
     vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion] ;
     vcx_error_t ret = vcx_init_with_config(handle, config_char, VcxWrapperCommonCallback);
     if( ret != 0 )
@@ -332,7 +332,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 - (void)agentProvisionAsync:(NSString *)config
                completion:(void (^)(NSError *error, NSString *config))completion
 {
-    const char *config_char = [config cString];
+    const char *config_char = [config cStringUsingEncoding:NSUTF8StringEncoding];
     vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion] ;
     vcx_error_t ret = vcx_agent_provision_async(handle, config_char, VcxWrapperCommonStringCallback);
     if( ret != 0 )
@@ -347,6 +347,24 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
 }
 
+- (int)updateWebhookUrl:(NSString *) notification_webhook_url {
+    const char *notification_webhook_url_char = [notification_webhook_url cStringUsingEncoding:NSUTF8StringEncoding];
+    
+    return vcx_update_webhook_url(notification_webhook_url_char);
+}
+
+- (NSString *)errorCMessage:(NSInteger) errorCode {
+    const char * ret = vcx_error_c_message(errorCode);
+    
+    NSString *message = nil;
+    
+    if (ret) {
+        message = [NSString stringWithUTF8String:ret];
+    }
+    
+    return message;
+}
+
 - (void)connectionCreateWithInvite:(NSString *)invitationId
                 inviteDetails:(NSString *)inviteDetails
              completion:(void (^)(NSError *error, NSInteger connectionHandle)) completion
@@ -354,8 +372,8 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    vcx_error_t ret;
 
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-   const char *invitationId_char = [invitationId cString];
-   const char *inviteDetails_char = [inviteDetails cString];
+   const char *invitationId_char = [invitationId cStringUsingEncoding:NSUTF8StringEncoding];
+   const char *inviteDetails_char = [inviteDetails cStringUsingEncoding:NSUTF8StringEncoding];
    ret = vcx_connection_create_with_invite(handle, invitationId_char, inviteDetails_char, VcxWrapperCommonHandleCallback);
    if( ret != 0 )
    {
@@ -374,7 +392,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    vcx_error_t ret;
 
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-   const char *connectionType_char = [connectionType cString];
+   const char *connectionType_char = [connectionType cStringUsingEncoding:NSUTF8StringEncoding];
     ret = vcx_connection_connect(handle, connectionHandle, connectionType_char, VcxWrapperCommonStringCallback);
    if( ret != 0 )
    {
@@ -384,6 +402,36 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
            completion([NSError errorFromVcxError: ret], nil);
        });
    }
+}
+
+- (void)connectionGetState:(NSInteger)connectionHandle
+                completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_connection_get_state(handle, connectionHandle, VcxWrapperCommonNumberCallback);
+    
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
+}
+
+- (void)connectionUpdateState:(NSInteger) connectionHandle
+                   completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_connection_update_state(handle, connectionHandle, VcxWrapperCommonNumberCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
 }
 
 - (void)connectionSerialize:(NSInteger)connectionHandle
@@ -407,7 +455,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
                     completion:(void (^)(NSError *error, NSInteger connectionHandle))completion{
    vcx_error_t ret;
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-    const char *serialized_connection=[serializedConnection cString];
+    const char *serialized_connection=[serializedConnection cStringUsingEncoding:NSUTF8StringEncoding];
     ret = vcx_connection_deserialize(handle, serialized_connection, VcxWrapperCommonHandleCallback);
 
    if( ret != 0 )
@@ -420,10 +468,14 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    }
 }
 
+- (int)connectionRelease:(NSInteger) connectionHandle {
+    return vcx_connection_release(connectionHandle);
+}
+
 - (void)deleteConnection:(VcxHandle)connectionHandle
           withCompletion:(void (^)(NSError *error))completion
 {
-    vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion] ;
+    vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     vcx_error_t ret = vcx_connection_delete_connection(handle, connectionHandle, VcxWrapperCommonCallback);
     if( ret != 0 )
     {
@@ -434,6 +486,42 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
             completion([NSError errorFromVcxError: ret]);
         });
     }
+}
+
+- (void)connectionGetPwDid:(NSInteger)connectionHandle
+                   completion:(void (^)(NSError *error, NSString *pwDid))completion
+{
+   vcx_error_t ret;
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_connection_get_pw_did(handle,connectionHandle, VcxWrapperCommonStringCallback);
+
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret],nil);
+       });
+   }
+}
+
+- (void)connectionGetTheirPwDid:(NSInteger)connectionHandle
+                   completion:(void (^)(NSError *error, NSString *theirPwDid))completion
+{
+   vcx_error_t ret;
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_connection_get_their_pw_did(handle,connectionHandle, VcxWrapperCommonStringCallback);
+
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret],nil);
+       });
+   }
 }
 
 - (void)connectionSendMessage:(VcxHandle)connectionHandle
@@ -459,50 +547,107 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 }
 
 - (void)connectionSignData:(VcxHandle)connectionHandle
-                   data:(NSData *)data
-                completion:(void (^)(NSError *, NSData *signature))completion
+                  withData:(NSData *)dataRaw
+            withCompletion:(void (^)(NSError *error, NSData *signature_raw, vcx_u32_t signature_len))completion
 {
-    vcx_error_t ret;
+    vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-    uint8_t *data_raw = (uint8_t *) [data bytes];
-    uint32_t data_length = (uint32_t) [data length];
+    uint8_t *data_raw = (uint8_t *) [dataRaw bytes];
+    uint32_t data_length = (uint32_t) [dataRaw length];
 
-    ret = vcx_connection_sign_data(handle, connectionHandle, data_raw, data_length, VcxWrapperCommonDataCallback);
-    if( ret != 0 )
+    vcx_error_t ret = vcx_connection_sign_data(handle, connectionHandle, data_raw, data_length, VcxWrapperCommonDataCallback);
+    if (ret != 0)
     {
-        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
-
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor:handle];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], 0);
+            completion([NSError errorFromVcxError: ret], nil, 0);
         });
     }
 }
 
 - (void)connectionVerifySignature:(VcxHandle)connectionHandle
-                             data:(NSData *)data
-                        signature:(NSData *)signature
-                       completion:(void (^)(NSError *, BOOL *valid))completion
+                         withData:(NSData *)dataRaw
+                withSignatureData:(NSData *)signatureRaw
+                   withCompletion:(void (^)(NSError *error, vcx_bool_t valid))completion
 {
-    vcx_error_t ret;
+    vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-    uint8_t *data_raw = (uint8_t *) [data bytes];
-    uint32_t data_length = (uint32_t) [data length];
-    uint8_t *signature_raw = (uint8_t *) [signature bytes];
-    uint32_t signature_length = (uint32_t) [signature length];
+    uint8_t *data_raw = (uint8_t *) [dataRaw bytes];
+    uint32_t data_length = (uint32_t) [dataRaw length];
 
-    ret = vcx_connection_verify_signature(handle, connectionHandle, data_raw, data_length, signature_raw, signature_length, VcxWrapperCommonBoolCallback);
-    if( ret != 0 )
+    uint8_t *signature_raw = (uint8_t *) [signatureRaw bytes];
+    uint32_t signature_length = (uint32_t) [signatureRaw length];
+
+    vcx_error_t ret = vcx_connection_verify_signature(handle,
+                                                      connectionHandle,
+                                                      data_raw,
+                                                      data_length,
+                                                      signature_raw,
+                                                      signature_length,
+                                                      VcxWrapperCommonBoolCallback);
+    if (ret != 0)
     {
-        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
-
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor:handle];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], 0);
+            completion([NSError errorFromVcxError: ret], false);
         });
     }
 }
 
+
+- (void)connectionUpdateState:(VcxHandle) connectionHandle
+               withCompletion:(void (^)(NSError *error, NSInteger state))completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_connection_update_state(handle, connectionHandle, VcxWrapperCommonNumberCallback);
+
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
+    }
+}
+
+
+- (void)connectionUpdateStateWithMessage:(VcxHandle) connectionHandle
+                                 message:(NSString *)message
+                          withCompletion:(void (^)(NSError *error, NSInteger state))completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * cMessage = [message cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_connection_update_state_with_message(handle, connectionHandle, cMessage, VcxWrapperCommonNumberCallback);
+
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
+    }
+}
+
+- (void)connectionGetState:(VcxHandle) connectionHandle
+            withCompletion:(void (^)(NSError *error, NSInteger state))completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_credential_update_state(handle, connectionHandle, VcxWrapperCommonNumberCallback);
+
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
+    }
+}
 
 - (void)agentUpdateInfo: (NSString *) config
             completion: (void (^)(NSError *error)) completion
@@ -510,7 +655,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    vcx_error_t ret;
 
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-   const char *config_char = [config cString];
+   const char *config_char = [config cStringUsingEncoding:NSUTF8StringEncoding];
     ret = vcx_agent_update_info(handle, config_char, VcxWrapperCommonCallback);
    if( ret != 0 )
    {
@@ -521,6 +666,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
        });
    }
 }
+
 
 - (void)getCredential:(NSInteger)credentialHandle
            completion:(void (^)(NSError *error, NSString *credential))completion {
@@ -543,8 +689,8 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
            completion:(void (^)(NSError *error, NSInteger credentialHandle))completion{
    vcx_error_t ret;
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-   const char * credential_offer=[credentialOffer cString];
-   const char * source_id = [sourceId cString];
+   const char * credential_offer=[credentialOffer cStringUsingEncoding:NSUTF8StringEncoding];
+   const char * source_id = [sourceId cStringUsingEncoding:NSUTF8StringEncoding];
     ret = vcx_credential_create_with_offer(handle, source_id,credential_offer, VcxWrapperCommonNumberCallback);
 
    if( ret != 0 )
@@ -563,8 +709,8 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
                        completion:(void (^)(NSError *error, NSInteger credentialHandle, NSString *credentialOffer))completion {
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-    const char * source_id = [sourceId cString];
-    const char * msg_id=[msgId cString];
+    const char * source_id = [sourceId cStringUsingEncoding:NSUTF8StringEncoding];
+    const char * msg_id= [msgId cStringUsingEncoding:NSUTF8StringEncoding];
     ret = vcx_credential_create_with_msgid(handle, source_id, connectionHandle, msg_id, VcxWrapperCommonNumberStringCallback);
 
     if( ret != 0 )
@@ -626,6 +772,24 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     }
 }
 
+- (void)credentialUpdateStateWithMessage:(VcxHandle) credentialHandle
+                                 message:(NSString *)message
+                          withCompletion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * cMessage = [message cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_credential_update_state_with_message(handle, credentialHandle, cMessage, VcxWrapperCommonNumberCallback);
+
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
+    }
+}
+
 - (void)credentialGetOffers:(VcxHandle)connectionHandle
                    completion:(void (^)(NSError *error, NSString *offers))completion{
    vcx_error_t ret;
@@ -651,10 +815,10 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     vcx_error_t ret;
 
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-    const char *proofRequestId_char = [proofRequestId cString];
-    const char *requestedAttrs_char = [requestedAttrs cString];
-    const char *requestedPredicates_char = [requestedPredicates cString];
-    const char *proofName_char = [proofName cString];
+    const char *proofRequestId_char = [proofRequestId cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *requestedAttrs_char = [requestedAttrs cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *requestedPredicates_char = [requestedPredicates cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *proofName_char = [proofName cStringUsingEncoding:NSUTF8StringEncoding];
     ret = vcx_proof_create(handle, proofRequestId_char, requestedAttrs_char, requestedPredicates_char, proofName_char, VcxWrapperCommonStringCallback);
 
     if ( ret != 0 )
@@ -688,7 +852,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
                     completion:(void (^)(NSError *error, NSInteger credentialHandle))completion{
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-    const char *serialized_credential = [serializedCredential cString];
+    const char *serialized_credential = [serializedCredential cStringUsingEncoding:NSUTF8StringEncoding];
     ret = vcx_credential_deserialize(handle, serialized_credential, VcxWrapperCommonNumberCallback);
 
     if ( ret != 0 )
@@ -701,13 +865,17 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     }
 }
 
+- (int)credentialRelease:(NSInteger) credentialHandle {
+    return vcx_credential_release(credentialHandle);
+}
+
 - (void)exportWallet:(NSString *)exportPath
             encryptWith:(NSString *)encryptionKey
            completion:(void (^)(NSError *error, NSInteger exportHandle))completion {
    vcx_error_t ret;
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-   const char * export_path=[exportPath cString];
-   const char * encryption_key = [encryptionKey cString];
+   const char * export_path=[exportPath cStringUsingEncoding:NSUTF8StringEncoding];
+   const char * encryption_key = [encryptionKey cStringUsingEncoding:NSUTF8StringEncoding];
     ret = vcx_wallet_export(handle, export_path, encryption_key, VcxWrapperCommonCallback);
 
    if( ret != 0 )
@@ -724,7 +892,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
            completion:(void (^)(NSError *error))completion {
    vcx_error_t ret;
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-    ret = vcx_wallet_import(handle, [config cString], VcxWrapperCommonCallback);
+    ret = vcx_wallet_import(handle, [config cStringUsingEncoding:NSUTF8StringEncoding], VcxWrapperCommonCallback);
 
    if( ret != 0 )
    {
@@ -742,9 +910,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
              completion:(void (^)(NSError *error))completion {
    vcx_error_t ret;
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-   const char * record_type =[recordType cString];
-   const char * record_id = [recordId cString];
-   const char * record_value =[recordValue cString];
+   const char * record_type =[recordType cStringUsingEncoding:NSUTF8StringEncoding];
+   const char * record_id = [recordId cStringUsingEncoding:NSUTF8StringEncoding];
+   const char * record_value =[recordValue cStringUsingEncoding:NSUTF8StringEncoding];
    const char * record_tag = "{}";
     ret = vcx_wallet_add_record(handle, record_type, record_id, record_value, record_tag, VcxWrapperCommonCallback);
 
@@ -763,8 +931,8 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
              completion:(void (^)(NSError *error, NSString* walletValue))completion {
    vcx_error_t ret;
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-   const char * record_type =[recordType cString];
-   const char * record_id = [recordId cString];
+   const char * record_type =[recordType cStringUsingEncoding:NSUTF8StringEncoding];
+   const char * record_id = [recordId cStringUsingEncoding:NSUTF8StringEncoding];
    const char * record_tag = "{}";
     ret = vcx_wallet_get_record(handle, record_type, record_id, record_tag, VcxWrapperCommonStringCallback);
 
@@ -788,8 +956,8 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
            completion:(void (^)(NSError *error))completion {
    vcx_error_t ret;
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-   const char * record_type =[recordType cString];
-   const char * record_id = [recordId cString];
+   const char * record_type =[recordType cStringUsingEncoding:NSUTF8StringEncoding];
+   const char * record_id = [recordId cStringUsingEncoding:NSUTF8StringEncoding];
    ret = vcx_wallet_delete_record(handle, record_type, record_id, VcxWrapperCommonCallback);
 
    if( ret != 0 )
@@ -809,9 +977,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-    const char * record_type =[recordType cString];
-    const char * record_id = [recordId cString];
-    const char * record_value =[recordValue cString];
+    const char * record_type =[recordType cStringUsingEncoding:NSUTF8StringEncoding];
+    const char * record_id = [recordId cStringUsingEncoding:NSUTF8StringEncoding];
+    const char * record_value =[recordValue cStringUsingEncoding:NSUTF8StringEncoding];
 
     ret = vcx_wallet_update_record_value(handle, record_type, record_id, record_value, VcxWrapperCommonCallback);
 
@@ -823,6 +991,23 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
             completion([NSError errorFromVcxError: ret]);
         });
     }
+}
+
+- (void)proofGetRequests:(NSInteger)connectionHandle
+                   completion:(void (^)(NSError *error, NSString *requests))completion{
+   vcx_error_t ret;
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_disclosed_proof_get_requests(handle,connectionHandle, VcxWrapperCommonStringCallback);
+
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret],nil);
+       });
+   }
 }
 
 - (void) proofCreateWithMsgId:(NSString *)sourceId
@@ -898,6 +1083,36 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 
         dispatch_async(dispatch_get_main_queue(), ^{
             completion([NSError errorFromVcxError: ret]);
+        });
+    }
+}
+
+- (void)proofGetState:(NSInteger)proofHandle
+                completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_disclosed_proof_get_state(handle, proofHandle, VcxWrapperCommonNumberCallback);
+    
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
+}
+
+- (void)proofUpdateState:(NSInteger) proofHandle
+                   completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_disclosed_proof_update_state(handle, proofHandle, VcxWrapperCommonNumberCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
         });
     }
 }
@@ -1042,6 +1257,26 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     }
 }
 
+- (int)proofRelease:(NSInteger) proofHandle {
+    return vcx_disclosed_proof_release(proofHandle);
+}
+- (void)proofUpdateStateWithMessage:(VcxHandle) proofHandle
+                            message:(NSString *)message
+                     withCompletion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * cMessage = [message cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_disclosed_proof_update_state_with_message(handle, proofHandle, cMessage, VcxWrapperCommonNumberCallback);
+
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
+    }
+}
 
 - (void)createPaymentAddress:(NSString *)seed
               withCompletion:(void (^)(NSError *error, NSString *address))completion {
@@ -1109,9 +1344,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
               completion:(void (^)(NSError *error, NSString* messages))completion{
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-    const char * message_status = [messageStatus cString];
-    const char * uids = [uid_s cString];
-    const char * pw_dids = [pwdids cString];
+    const char * message_status = [messageStatus cStringUsingEncoding:NSUTF8StringEncoding];
+    const char * uids = [uid_s cStringUsingEncoding:NSUTF8StringEncoding];
+    const char * pw_dids = [pwdids cStringUsingEncoding:NSUTF8StringEncoding];
     ret = vcx_messages_download(handle, message_status, uids, pw_dids, VcxWrapperCommonStringCallback);
 
     if( ret != 0 )
@@ -1125,7 +1360,7 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 }
 
 - (void)downloadAgentMessages:(NSString *)messageStatus
-                        uid_s:(NSString *)uid_s              
+                        uid_s:(NSString *)uid_s
                         completion:(void (^)(NSError *error, NSString* messages))completion{
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -1148,8 +1383,8 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
               completion:(void (^)(NSError *error))completion{
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-    const char * message_status = [messageStatus cString];
-    const char * msg_json = [pwdidsJson cString];
+    const char * message_status = [messageStatus cStringUsingEncoding:NSUTF8StringEncoding];
+    const char * msg_json = [pwdidsJson cStringUsingEncoding:NSUTF8StringEncoding];
     ret = vcx_messages_update_status(handle, message_status, msg_json, VcxWrapperCommonCallback);
 
     if( ret != 0 )
@@ -1176,6 +1411,60 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
             completion([NSError errorFromVcxError: ret], nil);
         });
     }
+}
+
+/// Retrieve author agreement set on the Ledger
+///
+/// #params
+/// completion: Callback that provides array of matching messages retrieved
+///
+/// #Returns
+/// Error code as a u32
+- (void) getTxnAuthorAgreement:(void(^)(NSError *error, NSString *authorAgreement)) completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_get_ledger_author_agreement(handle, VcxWrapperCommonStringCallback);
+
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+
+
+/// Set some accepted agreement as active.
+///
+/// As result of succesfull call of this funciton appropriate metadata will be appended to each write request by `indy_append_txn_author_agreement_meta_to_request` libindy call.
+///
+/// #Params
+/// text and version - (optional) raw data about TAA from ledger.
+///     These parameters should be passed together.
+///     These parameters are required if hash parameter is ommited.
+/// hash - (optional) hash on text and version. This parameter is required if text and version parameters are ommited.
+/// acc_mech_type - mechanism how user has accepted the TAA
+/// time_of_acceptance - UTC timestamp when user has accepted the TAA
+///
+/// #Returns
+/// Error code as a u32
+- (vcx_error_t) activateTxnAuthorAgreement:(NSString *)text
+                               withVersion:(NSString *)version
+                                  withHash:(NSString *)hash
+                             withMechanism:(NSString *)mechanism
+                             withTimestamp:(long)timestamp
+{
+    return vcx_set_active_txn_author_agreement_meta(
+        [text UTF8String],
+        [version UTF8String],
+        [hash UTF8String],
+        [mechanism UTF8String],
+        timestamp
+    );
+
 }
 
 @end

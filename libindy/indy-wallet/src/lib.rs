@@ -12,13 +12,12 @@ extern crate serde;
 extern crate serde_derive;
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use named_type::NamedType;
 use serde_json::Value as SValue;
 
 use indy_api_types::wallet::*;
@@ -48,6 +47,7 @@ mod wallet;
 pub struct WalletService {
     storage_types: RefCell<HashMap<String, Box<dyn WalletStorageType>>>,
     wallets: RefCell<HashMap<WalletHandle, Box<Wallet>>>,
+    wallet_ids: RefCell<HashSet<String>>,
     pending_for_open: RefCell<HashMap<WalletHandle, (String /* id */, Box<dyn WalletStorage>, Metadata, Option<KeyDerivationData>)>>,
     pending_for_import: RefCell<HashMap<WalletHandle, (BufReader<::std::fs::File>, chacha20poly1305_ietf::Nonce, usize, Vec<u8>, KeyDerivationData)>>,
 }
@@ -63,6 +63,7 @@ impl WalletService {
         WalletService {
             storage_types,
             wallets: RefCell::new(HashMap::new()),
+            wallet_ids: RefCell::new(HashSet::new()),
             pending_for_open: RefCell::new(HashMap::new()),
             pending_for_import: RefCell::new(HashMap::new()),
         }
@@ -153,7 +154,7 @@ impl WalletService {
     pub fn delete_wallet_prepare(&self, config: &Config, credentials: &Credentials) -> IndyResult<(Metadata, KeyDerivationData)> {
         trace!("delete_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
-        if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == WalletService::_get_wallet_id(config)) {
+        if self.wallet_ids.borrow_mut().contains(&WalletService::_get_wallet_id(config)) {
             return Err(err_msg(IndyErrorKind::InvalidState, format!("Wallet has to be closed before deleting: {:?}", WalletService::_get_wallet_id(config))));
         }
 
@@ -218,10 +219,12 @@ impl WalletService {
             storage.set_storage_metadata(&metadata)?;
         }
 
-        let wallet = Wallet::new(id, storage, Rc::new(keys));
+        let wallet = Wallet::new(id.clone(), storage, Rc::new(keys));
 
         let mut wallets = self.wallets.borrow_mut();
         wallets.insert(wallet_handle, Box::new(wallet));
+        let mut wallet_ids = self.wallet_ids.borrow_mut();
+        wallet_ids.insert(id.to_string());
 
         trace!("open_wallet <<< res: {:?}", wallet_handle);
         Ok(wallet_handle)
@@ -242,7 +245,10 @@ impl WalletService {
         trace!("close_wallet >>> handle: {:?}", handle);
 
         match self.wallets.borrow_mut().remove(&handle) {
-            Some(mut wallet) => wallet.close(),
+            Some(mut wallet) => {
+                self.wallet_ids.borrow_mut().remove(wallet.get_id());
+                wallet.close()
+            },
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, "Unknown wallet handle"))
         }?;
 
@@ -267,14 +273,14 @@ impl WalletService {
     }
 
     pub fn add_indy_record<T>(&self, wallet_handle: WalletHandle, name: &str, value: &str, tags: &Tags)
-                              -> IndyResult<()> where T: NamedType {
-        self.add_record(wallet_handle, &self.add_prefix(T::short_type_name()), name, value,tags)
+                              -> IndyResult<()> where T: Sized {
+        self.add_record(wallet_handle, &self.add_prefix(short_type_name::<T>()), name, value,tags)
     }
 
     pub fn add_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, object: &T, tags: &Tags)
-                              -> IndyResult<String> where T: ::serde::Serialize + Sized + NamedType {
+                              -> IndyResult<String> where T: ::serde::Serialize + Sized {
         let object_json = serde_json::to_string(object)
-            .to_indy(IndyErrorKind::InvalidState, format!("Cannot serialize {:?}", T::short_type_name()))?;
+            .to_indy(IndyErrorKind::InvalidState, format!("Cannot serialize {:?}", short_type_name::<T>()))?;
 
         self.add_indy_record::<T>(wallet_handle, name, &object_json, tags)?;
         Ok(object_json)
@@ -289,8 +295,8 @@ impl WalletService {
         }
     }
 
-    pub fn update_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, object: &T) -> IndyResult<String> where T: ::serde::Serialize + Sized + NamedType {
-        let type_ = T::short_type_name();
+    pub fn update_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, object: &T) -> IndyResult<String> where T: ::serde::Serialize + Sized {
+        let type_ = short_type_name::<T>();
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
                 let object_json = serde_json::to_string(object)
@@ -334,8 +340,8 @@ impl WalletService {
         }
     }
 
-    pub fn delete_indy_record<T>(&self, wallet_handle: WalletHandle, name: &str) -> IndyResult<()> where T: NamedType {
-        self.delete_record(wallet_handle, &self.add_prefix(T::short_type_name()), name)
+    pub fn delete_indy_record<T>(&self, wallet_handle: WalletHandle, name: &str) -> IndyResult<()> where T: Sized {
+        self.delete_record(wallet_handle, &self.add_prefix(short_type_name::<T>()), name)
     }
 
     pub fn get_record(&self, wallet_handle: WalletHandle, type_: &str, name: &str, options_json: &str) -> IndyResult<WalletRecord> {
@@ -347,12 +353,12 @@ impl WalletService {
         }
     }
 
-    pub fn get_indy_record<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<WalletRecord> where T: NamedType {
-        self.get_record(wallet_handle, &self.add_prefix(T::short_type_name()), name, options_json)
+    pub fn get_indy_record<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<WalletRecord> where T: Sized {
+        self.get_record(wallet_handle, &self.add_prefix(short_type_name::<T>()), name, options_json)
     }
 
-    pub fn get_indy_record_value<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<String> where T: NamedType {
-        let type_ = T::short_type_name();
+    pub fn get_indy_record_value<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<String> where T: Sized {
+        let type_ = short_type_name::<T>();
 
         let record: WalletRecord = match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => wallet.get(&self.add_prefix(type_), name, options_json),
@@ -366,15 +372,15 @@ impl WalletService {
     }
 
     // Dirty hack. json must live longer then result T
-    pub fn get_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<T> where T: ::serde::de::DeserializeOwned + NamedType {
+    pub fn get_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<T> where T: ::serde::de::DeserializeOwned + Sized {
         let record_value = self.get_indy_record_value::<T>(wallet_handle, name, options_json)?;
 
         serde_json::from_str(&record_value)
-            .to_indy(IndyErrorKind::InvalidState, format!("Cannot deserialize {:?}", T::short_type_name()))
+            .to_indy(IndyErrorKind::InvalidState, format!("Cannot deserialize {:?}", short_type_name::<T>()))
     }
 
     // Dirty hack. json must live longer then result T
-    pub fn get_indy_opt_object<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<Option<T>> where T: ::serde::de::DeserializeOwned + NamedType {
+    pub fn get_indy_opt_object<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<Option<T>> where T: ::serde::de::DeserializeOwned + Sized {
         match self.get_indy_object::<T>(wallet_handle, name, options_json) {
             Ok(res) => Ok(Some(res)),
             Err(ref err) if err.kind() == IndyErrorKind::WalletItemNotFound => Ok(None),
@@ -389,8 +395,8 @@ impl WalletService {
         }
     }
 
-    pub fn search_indy_records<T>(&self, wallet_handle: WalletHandle, query_json: &str, options_json: &str) -> IndyResult<WalletSearch> where T: NamedType {
-        self.search_records(wallet_handle, &self.add_prefix(T::short_type_name()), query_json, options_json)
+    pub fn search_indy_records<T>(&self, wallet_handle: WalletHandle, query_json: &str, options_json: &str) -> IndyResult<WalletSearch> where T: Sized {
+        self.search_records(wallet_handle, &self.add_prefix(short_type_name::<T>()), query_json, options_json)
     }
 
     #[allow(dead_code)] // TODO: Should we implement getting all records or delete everywhere?
@@ -403,7 +409,7 @@ impl WalletService {
     }
 
     pub fn upsert_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, object: &T) -> IndyResult<String>
-        where T: ::serde::Serialize + Sized + NamedType {
+        where T: ::serde::Serialize + Sized {
         if self.record_exists::<T>(wallet_handle, name)? {
             self.update_indy_object::<T>(wallet_handle, name, object)
         } else {
@@ -411,10 +417,10 @@ impl WalletService {
         }
     }
 
-    pub fn record_exists<T>(&self, wallet_handle: WalletHandle, name: &str) -> IndyResult<bool> where T: NamedType {
+    pub fn record_exists<T>(&self, wallet_handle: WalletHandle, name: &str) -> IndyResult<bool> where T: Sized {
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) =>
-                match wallet.get(&self.add_prefix(T::short_type_name()), name, &RecordOptions::id()) {
+                match wallet.get(&self.add_prefix(short_type_name::<T>()), name, &RecordOptions::id()) {
                     Ok(_) => Ok(true),
                     Err(ref err) if err.kind() == IndyErrorKind::WalletItemNotFound => Ok(false),
                     Err(err) => Err(err),
@@ -518,6 +524,22 @@ impl WalletService {
         res
     }
 
+    pub fn get_wallets_count(&self) -> usize {
+        self.wallets.borrow().len()
+    }
+
+    pub fn get_wallet_ids_count(&self) -> usize {
+        self.wallet_ids.borrow().len()
+    }
+
+    pub fn get_pending_for_import_count(&self) -> usize {
+        self.pending_for_import.borrow().len()
+    }
+
+    pub fn get_pending_for_open_count(&self) -> usize {
+        self.pending_for_open.borrow().len()
+    }
+
     fn _get_config_and_cred_for_storage<'a>(config: &Config, credentials: &Credentials, storage_types: &'a HashMap<String, Box<dyn WalletStorageType>>) -> IndyResult<(&'a Box<dyn WalletStorageType>, Option<String>, Option<String>)> {
         let storage_type = {
             let storage_type = config.storage_type
@@ -537,7 +559,8 @@ impl WalletService {
     }
 
     fn _is_id_from_config_not_used(&self, config: &Config) -> IndyResult<()> {
-        if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == WalletService::_get_wallet_id(config)) {
+        let id = WalletService::_get_wallet_id(config);
+        if self.wallet_ids.borrow_mut().contains(&id) {
             return Err(err_msg(IndyErrorKind::WalletAlreadyOpened, format!("Wallet {} already opened", WalletService::_get_wallet_id(config))));
         }
 
@@ -777,6 +800,11 @@ impl Default for SearchOptions {
             retrieve_tags: false,
         }
     }
+}
+
+fn short_type_name<T>() -> &'static str {
+    let type_name = std::any::type_name::<T>();
+    type_name.rsplitn(2, "::").next().unwrap_or(type_name)
 }
 
 #[cfg(test)]
@@ -2449,5 +2477,10 @@ mod tests {
         let mut path = environment::tmp_path();
         path.push(name);
         path.to_str().unwrap().to_owned()
+    }
+
+    #[test]
+    fn short_type_name_works() {
+        assert_eq!("WalletRecord", short_type_name::<WalletRecord>());
     }
 }

@@ -1,23 +1,22 @@
-use api::VcxStateType;
+use std::collections::HashMap;
 
+use api::VcxStateType;
+use connection::{get_pw_did, get_their_pw_verkey};
+use connection;
+use error::prelude::*;
+use proof::Proof;
 use v3::handlers::proof_presentation::verifier::messages::VerifierMessages;
 use v3::messages::a2a::A2AMessage;
-use v3::messages::proof_presentation::presentation_request::{PresentationRequest, PresentationRequestData};
+use v3::messages::error::ProblemReport;
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::proof_presentation::presentation_ack::PresentationAck;
-use v3::messages::error::ProblemReport;
+use v3::messages::proof_presentation::presentation_request::{PresentationRequest, PresentationRequestData};
 use v3::messages::status::Status;
-use connection::{get_pw_did, get_their_pw_verkey};
-use proof::Proof;
-use connection;
-
-use std::collections::HashMap;
-use error::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct VerifierSM {
     source_id: String,
-    state: VerifierState
+    state: VerifierState,
 }
 
 impl VerifierSM {
@@ -49,11 +48,18 @@ pub struct PresentationRequestSentState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum RevocationStatus {
+    Revoked,
+    NonRevoked
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FinishedState {
     connection_handle: u32,
     presentation_request: PresentationRequest,
     presentation: Option<Presentation>,
-    status: Status
+    status: Status,
+    revocation_status: Option<RevocationStatus>
 }
 
 impl From<(InitialState, PresentationRequest, u32)> for PresentationRequestSentState {
@@ -63,14 +69,15 @@ impl From<(InitialState, PresentationRequest, u32)> for PresentationRequestSentS
     }
 }
 
-impl From<(PresentationRequestSentState, Presentation)> for FinishedState {
-    fn from((state, presentation): (PresentationRequestSentState, Presentation)) -> Self {
+impl From<(PresentationRequestSentState, Presentation, RevocationStatus)> for FinishedState {
+    fn from((state, presentation, was_revoked): (PresentationRequestSentState, Presentation, RevocationStatus)) -> Self {
         trace!("transit state from PresentationRequestSentState to FinishedState");
         FinishedState {
             connection_handle: state.connection_handle,
             presentation_request: state.presentation_request,
             presentation: Some(presentation),
             status: Status::Success,
+            revocation_status: Some(was_revoked)
         }
     }
 }
@@ -83,9 +90,11 @@ impl From<(PresentationRequestSentState, ProblemReport)> for FinishedState {
             presentation_request: state.presentation_request,
             presentation: None,
             status: Status::Failed(problem_report),
+            revocation_status: None
         }
     }
 }
+
 
 impl PresentationRequestSentState {
     fn verify_presentation(&self, presentation: &Presentation) -> VcxResult<()> {
@@ -180,7 +189,7 @@ impl VerifierSM {
                     VerifierMessages::VerifyPresentation(presentation) => {
                         match state.verify_presentation(&presentation) {
                             Ok(()) => {
-                                VerifierState::Finished((state, presentation).into())
+                                VerifierState::Finished((state, presentation, RevocationStatus::NonRevoked).into())
                             }
                             Err(err) => {
                                 let problem_report =
@@ -189,7 +198,12 @@ impl VerifierSM {
                                         .set_thread_id(&state.presentation_request.id.0);
 
                                 connection::send_message(state.connection_handle, problem_report.to_a2a_message())?;
-                                VerifierState::Finished((state, problem_report).into())
+                                match err.kind() {
+                                    VcxErrorKind::InvalidProof => {
+                                        VerifierState::Finished((state, presentation, RevocationStatus::Revoked).into())
+                                    }
+                                    _ => VerifierState::Finished((state, problem_report).into())
+                                }
                             }
                         }
                     }
@@ -229,7 +243,7 @@ impl VerifierSM {
                     Status::Success => VcxStateType::VcxStateAccepted as u32,
                     _ => VcxStateType::VcxStateNone as u32,
                 }
-            },
+            }
         }
     }
 
@@ -243,7 +257,23 @@ impl VerifierSM {
 
     pub fn presentation_status(&self) -> u32 {
         match self.state {
-            VerifierState::Finished(ref state) => state.status.code(),
+            VerifierState::Finished(ref state) => {
+                match &state.status {
+                    Status::Success => {
+                        match state.revocation_status {
+                            Some(RevocationStatus::NonRevoked) => Status::Success.code(),
+                            None => Status::Success.code(), // for backward compatibility
+                            Some(RevocationStatus::Revoked) => {
+                                let problem_report = ProblemReport::create().set_comment(String::from("Revoked credential was used."));
+                                Status::Failed(problem_report).code()
+                            },
+                        }
+                    }
+                    _ => state.status.code(),
+                }
+
+
+            },
             _ => Status::Undefined.code()
         }
     }
@@ -288,16 +318,16 @@ impl VerifierSM {
 
 #[cfg(test)]
 pub mod test {
-    use super::*;
-
+    use utils::devsetup::SetupAriesMocks;
     use v3::handlers::connection::tests::mock_connection;
-    use v3::test::source_id;
-    use v3::test::setup::TestModeSetup;
-    use v3::messages::proof_presentation::presentation_request::tests::_presentation_request;
-    use v3::messages::proof_presentation::presentation_request::tests::_presentation_request_data;
     use v3::messages::proof_presentation::presentation::tests::_presentation;
     use v3::messages::proof_presentation::presentation_proposal::tests::_presentation_proposal;
+    use v3::messages::proof_presentation::presentation_request::tests::_presentation_request;
+    use v3::messages::proof_presentation::presentation_request::tests::_presentation_request_data;
     use v3::messages::proof_presentation::test::{_ack, _problem_report};
+    use v3::test::source_id;
+
+    use super::*;
 
     pub fn _verifier_sm() -> VerifierSM {
         VerifierSM::new(_presentation_request_data(), source_id())
@@ -321,7 +351,7 @@ pub mod test {
 
         #[test]
         fn test_verifier_new() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let verifier_sm = _verifier_sm();
 
@@ -332,10 +362,12 @@ pub mod test {
 
     mod step {
         use super::*;
+        use settings::set_config_value;
+        use settings;
 
         #[test]
         fn test_verifier_init() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let verifier_sm = _verifier_sm();
             assert_match!(VerifierState::Initiated(_), verifier_sm.state);
@@ -343,7 +375,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_send_presentation_request_message_from_initiated_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut verifier_sm = _verifier_sm();
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
@@ -353,7 +385,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_other_messages_from_initiated_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut verifier_sm = _verifier_sm();
 
@@ -366,7 +398,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_verify_presentation_message_from_presentation_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut verifier_sm = _verifier_sm();
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
@@ -374,6 +406,20 @@ pub mod test {
 
             assert_match!(VerifierState::Finished(_), verifier_sm.state);
             assert_eq!(Status::Success.code(), verifier_sm.presentation_status());
+        }
+
+        #[test]
+        fn test_prover_handle_invalid_presentation_message() {
+            let _setup = SetupAriesMocks::init();
+            set_config_value(settings::MOCK_INDY_PROOF_VALIDATION, "false");
+
+            let mut verifier_sm = _verifier_sm();
+            verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
+            verifier_sm = verifier_sm.step(VerifierMessages::VerifyPresentation(_presentation())).unwrap();
+
+            assert_match!(VerifierState::Finished(_), verifier_sm.state);
+            assert_eq!(VcxStateType::VcxStateAccepted as u32, verifier_sm.state());
+            assert_eq!(Status::Failed(ProblemReport::create()).code(), verifier_sm.presentation_status());
         }
 
         //    #[test]
@@ -390,7 +436,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_presentation_proposal_message_from_presentation_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut verifier_sm = _verifier_sm();
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
@@ -402,7 +448,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_presentation_reject_message_from_presentation_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut verifier_sm = _verifier_sm();
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
@@ -414,7 +460,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_other_messages_from_presentation_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut verifier_sm = _verifier_sm();
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
@@ -425,7 +471,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_messages_from_presentation_finished_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut verifier_sm = _verifier_sm();
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
@@ -444,7 +490,7 @@ pub mod test {
 
         #[test]
         fn test_verifier_find_message_to_handle_from_initiated_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let verifier = _verifier_sm();
 
@@ -464,7 +510,7 @@ pub mod test {
 
         #[test]
         fn test_verifier_find_message_to_handle_from_presentation_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let verifier = _verifier_sm().to_presentation_request_sent_state();
 
@@ -531,7 +577,7 @@ pub mod test {
 
         #[test]
         fn test_verifier_find_message_to_handle_from_finished_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let verifier = _verifier_sm().to_finished_state();
 
@@ -555,7 +601,7 @@ pub mod test {
 
         #[test]
         fn test_get_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             assert_eq!(VcxStateType::VcxStateInitialized as u32, _verifier_sm().state());
             assert_eq!(VcxStateType::VcxStateOfferSent as u32, _verifier_sm().to_presentation_request_sent_state().state());

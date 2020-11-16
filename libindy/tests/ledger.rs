@@ -3760,6 +3760,67 @@ mod medium_cases {
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
             assert!(get_txn_response.result.data.is_none());
         }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_txn_request_works_for_attrib_request_raw_value() {
+            let setup = Setup::new_identity();
+
+            let attrib_request = ledger::build_attrib_request(&setup.did,
+                                                              &setup.did,
+                                                              None,
+                                                              Some(ATTRIB_RAW_DATA),
+                                                              None).unwrap();
+            let attrib_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &attrib_request).unwrap();
+            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
+
+            let seq_no = ledger::extract_seq_no_from_reply(&attrib_req_resp).unwrap() as i32;
+
+            thread::sleep(std::time::Duration::from_secs(1));
+
+            let get_txn_request = ledger::build_get_txn_request(Some(&setup.did), seq_no, None).unwrap();
+            let get_txn_response = ledger::submit_request(setup.pool_handle, &get_txn_request).unwrap();
+
+            let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
+
+            let data: serde_json::Value = serde_json::from_value(
+                serde_json::Value::Object(get_txn_response.result.data.unwrap()["txn"]["data"].as_object().unwrap().clone())
+            ).unwrap();
+            let expected_data = json!({"dest": setup.did, "raw": ATTRIB_RAW_DATA});
+            assert_eq!(expected_data, data);
+        }
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_txn_request_works_for_attrib_request_enc_value() {
+            let setup = Setup::new_identity();
+
+            let key = secretbox::gen_key();
+            let nonce = secretbox::gen_nonce();
+            let encryted_attr = hex::encode(secretbox::seal(&ATTRIB_RAW_DATA.as_bytes(), &nonce, &key));
+
+            let attrib_request = ledger::build_attrib_request(&setup.did,
+                                                              &setup.did,
+                                                              None,
+                                                              None,
+                                                              Some(&encryted_attr)).unwrap();
+            let attrib_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &attrib_request).unwrap();
+            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
+
+            let seq_no = ledger::extract_seq_no_from_reply(&attrib_req_resp).unwrap() as i32;
+
+            thread::sleep(std::time::Duration::from_secs(1));
+
+            let get_txn_request = ledger::build_get_txn_request(Some(&setup.did), seq_no, None).unwrap();
+            let get_txn_response = ledger::submit_request(setup.pool_handle, &get_txn_request).unwrap();
+
+            let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
+
+            let data: serde_json::Value = serde_json::from_value(
+                serde_json::Value::Object(get_txn_response.result.data.unwrap()["txn"]["data"].as_object().unwrap().clone())
+            ).unwrap();
+            let expected_data = json!({"dest": setup.did, "enc": encryted_attr});
+            assert_eq!(expected_data, data);
+        }
     }
 
     mod revoc_reg_def_requests {

@@ -60,7 +60,6 @@ Indy SDK provides libindy wrappers for the following programming languages and p
 [Libnullpay](/libnullpay/README.md) is a libindy plugin that can be used for development of applications that use the Payments API of Indy SDK.
 
 ### Libvcx
-
 [Libvcx](/vcx/README.md) is a c-callable library built on top of libindy that provides a high-level
 credential exchange protocol. It simplifies creation of agent applications and provides
 better agent-2-agent interoperability for [Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy)
@@ -82,16 +81,19 @@ Indy SDK provides libvcx wrappers for the following programming languages and pl
 These wrappers are currently in **experimental** state and it is not part of official releases.
 
 ##### Example use
-For the main workflow example check [VCX Python demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
+- For the main workflow example check [VCX Python demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
+- Another libvcx example is available as [VCX NodeJS demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/node#run-demo).
+- For mobile see [iOS Demo project](https://github.com/sktston/vcx-demo-ios) 
 
-### Dummy Cloud Agent
-[Dummy Cloud Agent](/vcx/dummy-cloud-agent/README.md) is simple implementation of VCX compatible Cloud Agent.
+### LibVCX Agency
+LibVCX can be used with 
+[mediator agency](https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0046-mediators-and-relays/README.md)
+which enables asynchronous communication between 2 parties. 
+- [Dummy Cloud Agent](/vcx/dummy-cloud-agent/README.md) is simple implementation of VCX compatible Cloud Agent.
 The main purpose of this implementation is VCX testing, demos and documentation of VCX protocol.
-There is an parallel work on providing reference implementation of Agent2Agent protocol in indy-agent repo.
-We plan to migrate to this protocol and implementation soon.
+- [NodeVCXAgency](https://github.com/AbsaOSS/vcxagencynode) is alternative implementation in NodeJS.
 
 ## How-To Tutorials
-
 Short, simple tutorials that demonstrate how to accomplish common tasks
 are also available. See the [docs/how-tos](docs/how-tos) folder.
 
@@ -189,7 +191,7 @@ that may be need for your applications.
 
 {library} must be replaced with libindy, libnullpay or libvcx.
 
- [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/docs/android-build.md#usage)  
+ [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/docs/build-guides/android-build.md#usage)  
 
 {release channel} must be replaced with rc or stable to define corresponded release channel.
 See section "Release channels" for more details.
@@ -224,6 +226,8 @@ See section "Release channels" for more details.
         * `library.a`
         * `library.dylib`
     
+5. Install dependent libraries: libsodium, zeromq, openssl. The dependent libraries should match the version with what you can find from ``otool -L libindy.dylib``.
+
 You need add the path to lib folder to LIBRARY_PATH environment variable. 
     
 {library} must be replaced with libindy, libnullpay, libvcx or indy-cli to define corresponded library.
@@ -340,6 +344,7 @@ The documents that provide necessary information for Libindy migrations.
 * [v1.11.0 → v1.12.x](docs/migration-guides/migration-guide-1.11.0-1.12.0.md)
 * [v1.12.0 → v1.13.x](docs/migration-guides/migration-guide-1.12.0-1.13.0.md)
 * [v1.13.0 → v1.14.x](docs/migration-guides/migration-guide-1.13.0-1.14.0.md)
+* [v1.14.0 → v1.15.x](docs/migration-guides/migration-guide-1.14.0-1.15.0.md)
 
 ## How to Contribute
 * We'd love your help; see these [HL Indy Wiki](https://wiki.hyperledger.org/display/indy/How+to+Contribute) and [slides on how to contribute](http://bit.ly/2ugd0bq).

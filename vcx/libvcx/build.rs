@@ -64,8 +64,7 @@ fn main() {
     }else if target.contains("aarch64-linux-android") || target.contains("armv7-linux-androideabi") ||
         target.contains("arm-linux-androideabi") || target.contains("i686-linux-android") ||
         target.contains("x86_64-linux-android") || target.contains("aarch64-apple-ios") ||
-        target.contains("armv7-apple-ios") || target.contains("armv7s-apple-ios") ||
-        target.contains("i386-apple-ios") || target.contains("x86_64-apple-ios") {
+        target.contains("x86_64-apple-ios") {
 
         let libindy_lib_path = match env::var("LIBINDY_DIR"){
             Ok(val) => val,
@@ -88,6 +87,8 @@ fn main() {
 
     }else if target.contains("darwin"){
         //OSX specific logic
+        println!("cargo:rustc-link-lib=sodium");
+        println!("cargo:rustc-link-lib=zmq");
         println!("cargo:rustc-link-lib=indy");
         //OSX does not allow 3rd party libs to be installed in /usr/lib. Instead install it in /usr/local/lib
         println!("cargo:rustc-link-search=native=/usr/local/lib");

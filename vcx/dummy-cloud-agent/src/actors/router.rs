@@ -1,17 +1,33 @@
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::sync::RwLock;
 
 use actix::prelude::*;
 use failure::{err_msg, Error};
+use failure::Fail;
+use futures::*;
 use futures::*;
 use futures::future::Either;
 
-use crate::actors::{AddA2ARoute, AddA2ConnRoute, AdminRegisterRouter, HandleA2AMsg, HandleA2ConnMsg, HandleAdminMessage, RemoteMsg, RouteA2AMsg, RouteA2ConnMsg};
+use crate::actors::{HandleA2AMsg, HandleA2ConnMsg, HandleAdminMessage, RemoteMsg, RouteA2ConnMsg};
 use crate::actors::admin::Admin;
 use crate::actors::requester::Requester;
 use crate::domain::a2connection::A2ConnMessage;
 use crate::domain::admin_message::ResAdminQuery;
+use crate::domain::config::WalletStorageConfig;
+use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet, WalletHandle};
 use crate::utils::futures::*;
 
+/// Router stores DID and Verkeys and handle all Forward messages. More info on Aries FWD messages:
+/// https://github.com/hyperledger/aries-rfcs/tree/master/concepts/0094-cross-domain-messaging
+/// When agency (its Forward Agent) receives Forward message, it's passed to Router instance to
+/// take care of it. Router is aware of DIDs and Verkeys for Forward Agent, every
+/// Forward Agent Connection, every Agent and every Agent Connection, as each of those actors
+/// has its own DID and Verkey which can be used to address them a message.
+///
+/// So when a Forward message arrives to Router, its destination. If the destination is associated
+/// with an existing entity whin the agency (some Actix actor), it's forwarded to him to handle.
+/// If the destination is unknown, an error is returned.
 pub struct Router {
     routes: HashMap<String, Recipient<HandleA2AMsg>>,
     pairwise_routes: HashMap<String, Recipient<HandleA2ConnMsg>>,
@@ -19,7 +35,7 @@ pub struct Router {
 }
 
 impl Router {
-    pub fn new(admin: Option<Addr<Admin>>) -> ResponseFuture<Addr<Router>, Error> {
+    pub fn new() -> ResponseFuture<Rc<RwLock<Router>>, Error> {
         trace!("Router::new >>");
         future::ok(())
             .and_then(move |_| {
@@ -27,29 +43,20 @@ impl Router {
                 let router = Router {
                     routes: HashMap::new(),
                     pairwise_routes: HashMap::new(),
-                    requester,
+                    requester
                 };
-                let router= router.start();
-                if let Some(admin) = admin {
-                    Either::A(admin.send(AdminRegisterRouter(router.clone().recipient()))
-                        .from_err()
-                        .map(move |_| router)
-                        .map_err(|err: Error| err.context("Can't register Router in Admin").into())
-                    )
-                } else {
-                    Either::B(future::ok(router))
-                }
+                future::ok( Rc::new(RwLock::new(router)))
             })
             .into_box()
     }
 
-    fn add_a2a_route(&mut self, did: String, verkey: String, handler: Recipient<HandleA2AMsg>) {
+    pub fn add_a2a_route(&mut self, did: String, verkey: String, handler: Recipient<HandleA2AMsg>) {
         trace!("Router::handle_add_route >> {}, {}", did, verkey);
         self.routes.insert(did, handler.clone());
         self.routes.insert(verkey, handler);
     }
 
-    fn add_a2conn_route(&mut self, did: String, verkey: String, handler: Recipient<HandleA2ConnMsg>) {
+    pub fn add_a2conn_route(&mut self, did: String, verkey: String, handler: Recipient<HandleA2ConnMsg>) {
         trace!("Router::add_a2conn_route >> {}, {}", did, verkey);
         self.pairwise_routes.insert(did, handler.clone());
         self.pairwise_routes.insert(verkey, handler);
@@ -65,7 +72,7 @@ impl Router {
                 .and_then(|res| res)
                 .into_box()
         } else {
-            err!(err_msg("No route found."))
+            panic!("Cant resolve route") // todo: We should not panic but handle this
         }
     }
 
@@ -91,63 +98,5 @@ impl Router {
             .from_err()
             .and_then(|res| res)
             .into_box()
-    }
-}
-
-impl Actor for Router {
-    type Context = Context<Self>;
-}
-
-impl Handler<AddA2ARoute> for Router {
-    type Result = ();
-
-    fn handle(&mut self, msg: AddA2ARoute, _: &mut Self::Context) -> Self::Result {
-        trace!("Handler<AddA2ARoute>::handle >> {}", msg.0);
-        self.add_a2a_route(msg.0, msg.1, msg.2)
-    }
-}
-
-impl Handler<AddA2ConnRoute> for Router {
-    type Result = ();
-
-    fn handle(&mut self, msg: AddA2ConnRoute, _: &mut Self::Context) -> Self::Result {
-        trace!("Handler<AddA2ConnRoute>::handle >> {}", msg.0);
-        self.add_a2conn_route(msg.0, msg.1, msg.2)
-    }
-}
-
-impl Handler<RouteA2AMsg> for Router {
-    type Result = ResponseFuture<Vec<u8>, Error>;
-
-    fn handle(&mut self, msg: RouteA2AMsg, _: &mut Self::Context) -> Self::Result {
-        trace!("Handler<RouteA2AMsg>::handle >> {:?}", msg);
-        self.route_a2a_msg(msg.0, msg.1)
-    }
-}
-
-impl Handler<RouteA2ConnMsg> for Router {
-    type Result = ResponseFuture<A2ConnMessage, Error>;
-
-    fn handle(&mut self, msg: RouteA2ConnMsg, _: &mut Self::Context) -> Self::Result {
-        trace!("Handler<RouteA2ConnMsg>::handle >> {:?}", msg);
-        self.route_a2conn_msg(msg.0, msg.1)
-    }
-}
-
-impl Handler<RemoteMsg> for Router {
-    type Result = ResponseFuture<(), Error>;
-
-    fn handle(&mut self, msg: RemoteMsg, _: &mut Self::Context) -> Self::Result {
-        trace!("Handler<RemoteMsg>::handle >> {:?}", msg);
-        self.route_to_requester(msg)
-    }
-}
-
-impl Handler<HandleAdminMessage> for Router {
-    type Result = Result<ResAdminQuery, Error>;
-
-    fn handle(&mut self, _msg: HandleAdminMessage, _cnxt: &mut Self::Context) -> Self::Result {
-        trace!("Router Handler<HandleAdminMessage>::handle >>",);
-        Ok(ResAdminQuery::Router)
     }
 }

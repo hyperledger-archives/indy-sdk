@@ -22,7 +22,7 @@ use self::update_profile::{UpdateProfileDataBuilder, UpdateConfigs, UpdateConfig
 use self::invite::{
     SendInviteBuilder, ConnectionRequest, SendInviteMessageDetails, SendInviteMessageDetailsResponse, ConnectionRequestResponse,
     RedirectConnectionMessageDetails, ConnectionRequestRedirect, ConnectionRequestRedirectResponse,
-    AcceptInviteBuilder, RedirectConnectionBuilder, ConnectionRequestAnswer, AcceptInviteMessageDetails, ConnectionRequestAnswerResponse
+    AcceptInviteBuilder, RedirectConnectionBuilder, ConnectionRequestAnswer, AcceptInviteMessageDetails, ConnectionRequestAnswerResponse,
 };
 use self::get_message::{GetMessagesBuilder, GetMessages, GetMessagesResponse, MessagesByConnections};
 use self::send_message::SendMessageBuilder;
@@ -451,7 +451,7 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map_err(de::Error::custom),
             MessageTypes::MessageTypeV2(_) =>
                 A2AMessageV2::deserialize(value)
-                    .map(A2AMessage::Version2 )
+                    .map(A2AMessage::Version2)
                     .map_err(de::Error::custom)
         }
     }
@@ -489,7 +489,9 @@ impl Forward {
                     }
                 )))
             }
-            settings::ProtocolTypes::V2 => {
+            settings::ProtocolTypes::V2 |
+            settings::ProtocolTypes::V3 |
+            settings::ProtocolTypes::V4 => {
                 let msg = serde_json::from_slice(msg.as_slice())
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
 
@@ -536,7 +538,7 @@ pub struct GeneralMessageDetail {
 pub struct MessageCreated {
     #[serde(rename = "@type")]
     msg_type: MessageTypeV1,
-    pub uid: String
+    pub uid: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -626,7 +628,7 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
         match value.as_str() {
             Some("connReq") => Ok(RemoteMessageType::ConnReq),
             Some("connReqAnswer") | Some("CONN_REQ_ACCEPTED") => Ok(RemoteMessageType::ConnReqAnswer),
-            Some("connReqRedirect") | Some("CONN_REQ_REDIRECTED") | Some("connReqRedirected")  => Ok(RemoteMessageType::ConnReqRedirect),
+            Some("connReqRedirect") | Some("CONN_REQ_REDIRECTED") | Some("connReqRedirected") => Ok(RemoteMessageType::ConnReqRedirect),
             Some("credOffer") => Ok(RemoteMessageType::CredOffer),
             Some("credReq") => Ok(RemoteMessageType::CredReq),
             Some("cred") => Ok(RemoteMessageType::Cred),
@@ -803,7 +805,9 @@ impl A2AMessageKinds {
 pub fn prepare_message_for_agency(message: &A2AMessage, agency_did: &str, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
     match version {
         settings::ProtocolTypes::V1 => bundle_for_agency_v1(message, &agency_did),
-        settings::ProtocolTypes::V2 => pack_for_agency_v2(message, agency_did)
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3 |
+        settings::ProtocolTypes::V4 => pack_for_agency_v2(message, agency_did)
     }
 }
 
@@ -839,7 +843,9 @@ fn pack_for_agency_v2(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u
 fn parse_response_from_agency(response: &Vec<u8>, version: &ProtocolTypes) -> VcxResult<Vec<A2AMessage>> {
     match version {
         settings::ProtocolTypes::V1 => parse_response_from_agency_v1(response),
-        settings::ProtocolTypes::V2 => parse_response_from_agency_v2(response)
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3 |
+        settings::ProtocolTypes::V4 => parse_response_from_agency_v2(response)
     }
 }
 
@@ -900,7 +906,7 @@ pub fn try_i8_bundle(data: Vec<u8>) -> VcxResult<Bundled<Vec<u8>>> {
     let bundle: Bundled<Vec<i8>> =
         rmp_serde::from_slice(&data[..])
             .map_err(|_| {
-                warn!("could not deserialize bundle with i8, will try u8");
+                trace!("could not deserialize bundle with i8, will try u8");
                 VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Could not deserialize bundle with i8")
             })?;
 
@@ -962,7 +968,9 @@ fn prepare_forward_message_for_agency_v2(message: &ForwardV2, agency_vk: &str) -
 pub fn prepare_message_for_agent(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
     match version {
         settings::ProtocolTypes::V1 => prepare_message_for_agent_v1(messages, pw_vk, agent_did, agent_vk),
-        settings::ProtocolTypes::V2 => prepare_message_for_agent_v2(messages, pw_vk, agent_did, agent_vk)
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3 |
+        settings::ProtocolTypes::V4 => prepare_message_for_agent_v2(messages, pw_vk, agent_did, agent_vk)
     }
 }
 
@@ -1045,7 +1053,7 @@ pub trait GeneralMessage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ObjectWithVersion<'a, T> {
     pub version: &'a str,
-    pub data: T
+    pub data: T,
 }
 
 impl<'a, 'de, T> ObjectWithVersion<'a, T> where T: ::serde::Serialize + ::serde::de::DeserializeOwned {
@@ -1094,9 +1102,12 @@ pub fn proof_request() -> ProofRequestMessage { ProofRequestMessage::create() }
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use utils::devsetup::*;
 
     #[test]
     fn test_to_u8() {
+        let _setup = SetupDefaults::init();
+
         let vec: Vec<i8> = vec![-127, -89, 98, 117, 110, 100, 108, 101, 100, -111, -36, 5, -74];
 
         let buf = to_u8(&vec);
@@ -1105,6 +1116,8 @@ pub mod tests {
 
     #[test]
     fn test_to_i8() {
+        let _setup = SetupDefaults::init();
+
         let vec: Vec<u8> = vec![129, 167, 98, 117, 110, 100, 108, 101, 100, 145, 220, 19, 13];
         let buf = to_i8(&vec);
         println!("new bundle: {:?}", buf);
@@ -1112,14 +1125,16 @@ pub mod tests {
 
     #[test]
     fn test_general_message_null_parameters() {
+        let _setup = SetupDefaults::init();
+
         let details = GeneralMessageDetail {
             msg_type: MessageTypeV1 {
                 name: "Name".to_string(),
-                ver: "1.0".to_string()
+                ver: "1.0".to_string(),
             },
             msg: vec![1, 2, 3],
             title: None,
-            detail: None
+            detail: None,
         };
 
         let string: String = serde_json::to_string(&details).unwrap();
@@ -1129,15 +1144,17 @@ pub mod tests {
 
     #[test]
     fn test_create_message_null_parameters() {
+        let _setup = SetupDefaults::init();
+
         let details = CreateMessage {
             msg_type: MessageTypeV1 {
                 name: "Name".to_string(),
-                ver: "1.0".to_string()
+                ver: "1.0".to_string(),
             },
             mtype: RemoteMessageType::ProofReq,
             send_msg: true,
             uid: None,
-            reply_to_msg_id: None
+            reply_to_msg_id: None,
         };
 
         let string: String = serde_json::to_string(&details).unwrap();

@@ -21,6 +21,8 @@ use crate::commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 use crate::commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
 use crate::commands::pool::{PoolCommand, PoolCommandExecutor};
 use crate::commands::wallet::{WalletCommand, WalletCommandExecutor};
+use crate::commands::cache::{CacheCommand, CacheCommandExecutor};
+use crate::commands::metrics::{MetricsCommand, MetricsCommandExecutor};
 use crate::domain::IndyConfig;
 use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::AnoncredsService;
@@ -29,10 +31,13 @@ use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
 use crate::services::payments::PaymentsService;
 use crate::services::pool::{PoolService, set_freshness_threshold};
+use crate::services::metrics::MetricsService;
+use crate::services::metrics::command_index::CommandIndex;
 use indy_wallet::WalletService;
 
 use self::threadpool::ThreadPool;
 use futures::stream::FuturesUnordered;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub mod anoncreds;
 pub mod blob_storage;
@@ -45,6 +50,7 @@ pub mod pairwise;
 pub mod non_secrets;
 pub mod payments;
 pub mod cache;
+pub mod metrics;
 
 type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>) + Send>;
 
@@ -61,6 +67,21 @@ pub enum Command {
     NonSecrets(NonSecretsCommand),
     Payments(PaymentsCommand),
     Cache(CacheCommand),
+    Metrics(MetricsCommand),
+}
+
+pub struct InstrumentedCommand {
+    pub enqueue_ts: u128,
+    pub command: Command
+}
+
+impl InstrumentedCommand {
+    pub fn new(command: Command) -> InstrumentedCommand {
+        InstrumentedCommand {
+            enqueue_ts: get_cur_time(),
+            command
+        }
+    }
 }
 
 lazy_static! {
@@ -81,9 +102,14 @@ pub fn indy_set_runtime_config(config: IndyConfig) {
     }
 }
 
+fn get_cur_time() -> u128 {
+    let since_epoch = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time has gone backwards");
+    since_epoch.as_millis()
+}
+
 pub struct CommandExecutor {
     worker: Option<thread::JoinHandle<()>>,
-    sender: UnboundedSender<Command>
+    sender: UnboundedSender<InstrumentedCommand>
 }
 
 // Global (lazy inited) instance of CommandExecutor
@@ -112,6 +138,7 @@ impl CommandExecutor {
                 let payments_service = Rc::new(PaymentsService::new());
                 let pool_service = Rc::new(PoolService::new());
                 let wallet_service = Rc::new(WalletService::new());
+                let metrics_service = Rc::new(MetricsService::new());
 
                 let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), blob_storage_service.clone(), pool_service.clone(), wallet_service.clone(), crypto_service.clone());
                 let crypto_command_executor = CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone());
@@ -124,6 +151,7 @@ impl CommandExecutor {
                 let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
                 let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
                 let cache_command_executor = CacheCommandExecutor::new(crypto_service.clone(), ledger_service.clone(), pool_service.clone(), wallet_service.clone());
+                let metrics_command_executor = MetricsCommandExecutor::new(wallet_service.clone(), metrics_service.clone());
 
                 async fn _exec_cmd(cmd: Option<Command>,
                                    anoncreds_command_executor: &AnoncredsCommandExecutor,
@@ -138,52 +166,70 @@ impl CommandExecutor {
                                    payments_command_executor: &PaymentsCommandExecutor,
                                    cache_command_executor: &CacheCommandExecutor,
                 ) -> bool {
-                    match cmd {
-                        Some(Command::Anoncreds(cmd)) => {
+                    let instrumented_cmd = match receiver.recv() {
+                        Ok(cmd) => {
+                            cmd
+                        }
+                        Err(err) => {
+                            error!("Failed to get command!");
+                            panic!("Failed to get command! {:?}", err)
+                        }
+                    };
+                    let cmd_index: CommandIndex = (&instrumented_cmd.command).into();
+                    let start_execution_ts = get_cur_time();
+                    metrics_service.cmd_left_queue(cmd_index,
+                                                   start_execution_ts - instrumented_cmd.enqueue_ts);
+
+                    match instrumented_cmd.command {
+                        Command::Anoncreds(cmd) => {
                             debug!("AnoncredsCommand command received");
                             anoncreds_command_executor.execute(cmd);
                         }
-                        Some(Command::BlobStorage(cmd)) => {
+                        Command::BlobStorage(cmd) => {
                             debug!("BlobStorageCommand command received");
                             blob_storage_command_executor.execute(cmd);
                         }
-                        Some(Command::Crypto(cmd)) => {
+                        Command::Crypto(cmd) => {
                             debug!("CryptoCommand command received");
                             crypto_command_executor.execute(cmd);
                         }
-                        Some(Command::Ledger(cmd)) => {
+                        Command::Ledger(cmd) => {
                             debug!("LedgerCommand command received");
                             ledger_command_executor.execute(cmd).await;
                         }
-                        Some(Command::Pool(cmd)) => {
+                        Command::Pool(cmd) => {
                             debug!("PoolCommand command received");
                             pool_command_executor.execute(cmd).await;
                         }
-                        Some(Command::Did(cmd)) => {
+                        Command::Did(cmd) => {
                             debug!("DidCommand command received");
                             did_command_executor.execute(cmd).await;
                         }
-                        Some(Command::Wallet(cmd)) => {
+                        Command::Wallet(cmd) => {
                             debug!("WalletCommand command received");
                             wallet_command_executor.execute(cmd).await;
                         }
-                        Some(Command::Pairwise(cmd)) => {
+                        Command::Pairwise(cmd) => {
                             debug!("PairwiseCommand command received");
                             pairwise_command_executor.execute(cmd);
                         }
-                        Some(Command::NonSecrets(cmd)) => {
+                        Command::NonSecrets(cmd) => {
                             debug!("NonSecretCommand command received");
                             non_secret_command_executor.execute(cmd);
                         }
-                        Some(Command::Payments(cmd)) => {
+                        Command::Payments(cmd) => {
                             debug!("PaymentsCommand command received");
                             payments_command_executor.execute(cmd).await;
                         }
-                        Some(Command::Cache(cmd)) => {
+                        Command::Cache(cmd) => {
                             debug!("CacheCommand command received");
                             cache_command_executor.execute(cmd).await;
                         }
-                        Some(Command::Exit) => {
+                        Command::Metrics(cmd) => {
+                            debug!("MetricsCommand command received");
+                            metrics_command_executor.execute(cmd);
+                        }
+                        Command::Exit => {
                             debug!("Exit command received");
                             return true
                         }
@@ -222,6 +268,9 @@ impl CommandExecutor {
                         break
                     }
                     trace!("CommandExecutor main loop <<");
+                    }
+                    metrics_service.cmd_executed(cmd_index,
+                                                 get_cur_time() - start_execution_ts);
                 }
                 trace!("CommandExecutor main loop finished");
             }).unwrap())
@@ -230,7 +279,7 @@ impl CommandExecutor {
 
     pub fn send(&mut self, cmd: Command) -> IndyResult<()> {
         self.sender
-            .unbounded_send(cmd)
+            .unbounded_send(InstrumentedCommand::new(cmd))
             .map_err(|err| err_msg(IndyErrorKind::InvalidState, format!("Can't send msg to CommandExecutor: {}", err)))
     }
 }

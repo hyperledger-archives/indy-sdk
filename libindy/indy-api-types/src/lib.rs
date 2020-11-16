@@ -417,7 +417,7 @@ pub mod wallet {
     ///  {
     ///    retrieveType: (optional, false by default) Retrieve record type,
     ///    retrieveValue: (optional, true by default) Retrieve record value,
-    ///    retrieveTags: (optional, true by default) Retrieve record tags
+    ///    retrieveTags: (optional, false by default) Retrieve record tags
     ///  }
     /// record_handle_p: pointer to store retrieved record handle
     pub type WalletGetRecord = extern fn(storage_handle: StorageHandle,
@@ -537,7 +537,7 @@ pub mod wallet {
     ///    retrieveTotalCount: (optional, false by default) Calculate total count,
     ///    retrieveType: (optional, false by default) Retrieve record type,
     ///    retrieveValue: (optional, true by default) Retrieve record value,
-    ///    retrieveTags: (optional, true by default) Retrieve record tags,
+    ///    retrieveTags: (optional, false by default) Retrieve record tags,
     ///  }
     /// search_handle_p: pointer to store wallet search handle
     pub type WalletSearchRecords = extern fn(storage_handle: StorageHandle,

@@ -7,12 +7,13 @@ use utils::{get_temp_dir_path, error};
 use std::path::Path;
 use url::Url;
 use messages::validation;
-use std::fs;
-use std::io::prelude::*;
 use serde_json::Value;
 use strum::IntoEnumIterator;
+use std::borrow::Borrow;
 
 use error::prelude::*;
+use utils::file::read_file;
+use indy_sys::INVALID_WALLET_HANDLE;
 
 pub static CONFIG_POOL_NAME: &str = "pool_name";
 pub static CONFIG_PROTOCOL_TYPE: &str = "protocol_type";
@@ -21,11 +22,11 @@ pub static CONFIG_AGENCY_DID: &str = "agency_did";
 pub static CONFIG_AGENCY_VERKEY: &str = "agency_verkey";
 pub static CONFIG_REMOTE_TO_SDK_DID: &str = "remote_to_sdk_did";
 pub static CONFIG_REMOTE_TO_SDK_VERKEY: &str = "remote_to_sdk_verkey";
-pub static CONFIG_SDK_TO_REMOTE_DID: &str = "sdk_to_remote_did"; // functionally not used
+pub static CONFIG_SDK_TO_REMOTE_DID: &str = "sdk_to_remote_did";// functionally not used
 pub static CONFIG_SDK_TO_REMOTE_VERKEY: &str = "sdk_to_remote_verkey";
 pub static CONFIG_SDK_TO_REMOTE_ROLE: &str = "sdk_to_remote_role";
 pub static CONFIG_INSTITUTION_DID: &str = "institution_did";
-pub static CONFIG_INSTITUTION_VERKEY: &str = "institution_verkey"; // functionally not used
+pub static CONFIG_INSTITUTION_VERKEY: &str = "institution_verkey";// functionally not used
 pub static CONFIG_INSTITUTION_NAME: &str = "institution_name";
 pub static CONFIG_INSTITUTION_LOGO_URL: &str = "institution_logo_url";
 pub static CONFIG_WEBHOOK_URL: &str = "webhook_url";
@@ -36,21 +37,22 @@ pub static CONFIG_LINK_SECRET_ALIAS: &str = "link_secret_alias";
 pub static CONFIG_EXPORTED_WALLET_PATH: &str = "exported_wallet_path";
 pub static CONFIG_WALLET_BACKUP_KEY: &str = "backup_key";
 pub static CONFIG_WALLET_KEY: &str = "wallet_key";
-pub static CONFIG_WALLET_NAME: &str = "wallet_name";
-pub static CONFIG_WALLET_TYPE: &str = "wallet_type";
-pub static CONFIG_WALLET_STORAGE_CONFIG: &str = "storage_config";
-pub static CONFIG_WALLET_STORAGE_CREDS: &str = "storage_credentials";
-pub static CONFIG_WALLET_HANDLE: &str = "wallet_handle";
-pub static CONFIG_THREADPOOL_SIZE: &str = "threadpool_size";
-pub static CONFIG_WALLET_KEY_DERIVATION: &str = "wallet_key_derivation";
-pub static CONFIG_PROTOCOL_VERSION: &str = "protocol_version";
-pub static CONFIG_PAYMENT_METHOD: &str = "payment_method";
-pub static CONFIG_TXN_AUTHOR_AGREEMENT: &str = "author_agreement";
+pub static CONFIG_WALLET_NAME: &'static str = "wallet_name";
+pub static CONFIG_WALLET_TYPE: &'static str = "wallet_type";
+pub static CONFIG_WALLET_STORAGE_CONFIG: &'static str = "storage_config";
+pub static CONFIG_WALLET_STORAGE_CREDS: &'static str = "storage_credentials";
+pub static CONFIG_WALLET_HANDLE: &'static str = "wallet_handle";
+pub static CONFIG_THREADPOOL_SIZE: &'static str = "threadpool_size";
+pub static CONFIG_WALLET_KEY_DERIVATION: &'static str = "wallet_key_derivation";
+pub static CONFIG_PROTOCOL_VERSION: &'static str = "protocol_version";
+pub static CONFIG_PAYMENT_METHOD: &'static str = "payment_method";
+pub static CONFIG_TXN_AUTHOR_AGREEMENT: &'static str = "author_agreement";
 pub static CONFIG_USE_LATEST_PROTOCOLS: &'static str = "use_latest_protocols";
-pub static CONFIG_POOL_CONFIG: &str = "pool_config";
+pub static CONFIG_POOL_CONFIG: &'static str = "pool_config";
 pub static CONFIG_DID_METHOD: &str = "did_method";
-pub static COMMUNICATION_METHOD: &str = "communication_method"; // proprietary or aries
-pub static ACTORS: &str = "actors"; // inviter, invitee, issuer, holder, prover, verifier, sender, receiver
+pub static COMMUNICATION_METHOD: &str = "communication_method";// proprietary or aries
+pub static CONFIG_ACTORS: &str = "actors"; // inviter, invitee, issuer, holder, prover, verifier, sender, receiver
+pub static MOCK_INDY_PROOF_VALIDATION: &str = "mock_indy_proof_validation";
 
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
@@ -77,6 +79,7 @@ pub static DEFAULT_USE_LATEST_PROTOCOLS: &str = "false";
 pub static DEFAULT_PAYMENT_METHOD: &str = "null";
 pub static DEFAULT_PROTOCOL_TYPE: &str = "1.0";
 pub static MAX_THREADPOOL_SIZE: usize = 128;
+pub static MOCK_DEFAULT_INDY_PROOF_VALIDATION: &str = "true";
 
 lazy_static! {
     static ref SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::new());
@@ -89,7 +92,7 @@ trait ToString {
 impl ToString for HashMap<String, String> {
     fn to_string(&self) -> Self {
         let mut v = self.clone();
-        v.insert(CONFIG_WALLET_KEY.to_string(), "********".to_string());
+        v.insert(CONFIG_WALLET_KEY.to_string(), MASK_VALUE.to_string());
         v
     }
 }
@@ -120,10 +123,11 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_LINK_SECRET_ALIAS.to_string(), DEFAULT_LINK_SECRET_ALIAS.to_string());
     settings.insert(CONFIG_PROTOCOL_VERSION.to_string(), DEFAULT_PROTOCOL_VERSION.to_string());
     settings.insert(CONFIG_EXPORTED_WALLET_PATH.to_string(),
-                    get_temp_dir_path(Some(DEFAULT_EXPORTED_WALLET_PATH)).to_str().unwrap_or("").to_string());
+                    get_temp_dir_path(DEFAULT_EXPORTED_WALLET_PATH).to_str().unwrap_or("").to_string());
     settings.insert(CONFIG_WALLET_BACKUP_KEY.to_string(), DEFAULT_WALLET_BACKUP_KEY.to_string());
     settings.insert(CONFIG_THREADPOOL_SIZE.to_string(), DEFAULT_THREADPOOL_SIZE.to_string());
     settings.insert(CONFIG_PAYMENT_METHOD.to_string(), DEFAULT_PAYMENT_METHOD.to_string());
+    settings.insert(CONFIG_USE_LATEST_PROTOCOLS.to_string(), DEFAULT_USE_LATEST_PROTOCOLS.to_string());
 
     error::SUCCESS.code_num
 }
@@ -132,7 +136,7 @@ pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
     trace!("validate_config >>> config: {:?}", config);
 
     //Mandatory parameters
-    if config.get(CONFIG_WALLET_KEY).is_none() {
+    if ::utils::libindy::wallet::get_wallet_handle() == INVALID_WALLET_HANDLE && config.get(CONFIG_WALLET_KEY).is_none() {
         return Err(VcxError::from(VcxErrorKind::MissingWalletKey));
     }
 
@@ -154,7 +158,15 @@ pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
 
     validate_optional_config_val(config.get(CONFIG_WEBHOOK_URL), VcxErrorKind::InvalidUrl, Url::parse)?;
 
-    validate_optional_config_val(config.get(ACTORS), VcxErrorKind::InvalidOption, validation::validate_actors)?;
+    validate_optional_config_val(config.get(CONFIG_ACTORS), VcxErrorKind::InvalidOption, validation::validate_actors)?;
+
+    Ok(error::SUCCESS.code_num)
+}
+
+fn validate_mandatory_config_val<F, S, E>(val: Option<&String>, err: VcxErrorKind, closure: F) -> VcxResult<u32>
+    where F: Fn(&str) -> Result<S, E> {
+    closure(val.as_ref().ok_or(VcxError::from(err))?)
+        .or(Err(VcxError::from(err)))?;
 
     Ok(error::SUCCESS.code_num)
 }
@@ -169,12 +181,17 @@ fn validate_optional_config_val<F, S, E>(val: Option<&String>, err: VcxErrorKind
     Ok(error::SUCCESS.code_num)
 }
 
+pub fn validate_payment_method() -> VcxResult<u32> {
+    validate_mandatory_config_val(get_config_value(CONFIG_PAYMENT_METHOD).ok().as_ref(),
+                                  VcxErrorKind::MissingPaymentMethod, validation::validate_payment_method)
+}
+
 pub fn log_settings() {
     let settings = SETTINGS.read().unwrap();
     trace!("loaded settings: {:?}", settings.to_string());
 }
 
-pub fn test_indy_mode_enabled() -> bool {
+pub fn indy_mocks_enabled() -> bool {
     let config = SETTINGS.read().unwrap();
 
     match config.get(CONFIG_ENABLE_TEST_MODE) {
@@ -183,20 +200,7 @@ pub fn test_indy_mode_enabled() -> bool {
     }
 }
 
-pub fn get_threadpool_size() -> usize {
-    let size = match get_config_value(CONFIG_THREADPOOL_SIZE) {
-        Ok(x) => x.parse::<usize>().unwrap_or(DEFAULT_THREADPOOL_SIZE),
-        Err(_) => DEFAULT_THREADPOOL_SIZE,
-    };
-
-    if size > MAX_THREADPOOL_SIZE {
-        MAX_THREADPOOL_SIZE
-    } else {
-        size
-    }
-}
-
-pub fn test_agency_mode_enabled() -> bool {
+pub fn agency_mocks_enabled() -> bool {
     let config = SETTINGS.read().unwrap();
 
     match config.get(CONFIG_ENABLE_TEST_MODE) {
@@ -209,7 +213,7 @@ pub fn process_config_string(config: &str, do_validation: bool) -> VcxResult<u32
     trace!("process_config_string >>> config {}", config);
 
     let configuration: Value = serde_json::from_str(config)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize config: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse config: {}", err)))?;
 
     if let Value::Object(ref map) = configuration {
         for (key, value) in map {
@@ -217,13 +221,16 @@ pub fn process_config_string(config: &str, do_validation: bool) -> VcxResult<u32
                 Value::String(value_) => set_config_value(key, &value_),
                 Value::Array(value_) => set_config_value(key, &json!(value_).to_string()),
                 Value::Object(value_) => set_config_value(key, &json!(value_).to_string()),
+                Value::Bool(value_) => set_config_value(key, &json!(value_).to_string()),
                 _ => return Err(VcxError::from(VcxErrorKind::InvalidJson)),
             }
         }
     }
 
     if do_validation {
-        validate_config(&SETTINGS.read().or(Err(VcxError::from(VcxErrorKind::InvalidConfiguration)))?.clone())
+        let setting = SETTINGS.read()
+            .or(Err(VcxError::from(VcxErrorKind::InvalidConfiguration)))?;
+        validate_config(&setting.borrow())
     } else {
         Ok(error::SUCCESS.code_num)
     }
@@ -236,7 +243,44 @@ pub fn process_config_file(path: &str) -> VcxResult<u32> {
         error!("Configuration path was invalid");
         Err(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot find config file"))
     } else {
-        process_config_string(&read_config_file(path)?, true)
+        let config = read_file(path)?;
+        process_config_string(&config, true)
+    }
+}
+
+pub fn get_config_value(key: &str) -> VcxResult<String> {
+    trace!("get_config_value >>> key: {}", key);
+
+    SETTINGS
+        .read()
+        .or(Err(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot read settings")))?
+        .get(key)
+        .map(|v| v.to_string())
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot read \"{}\" from settings", key)))
+}
+
+pub fn set_config_value(key: &str, value: &str) {
+    trace!("set_config_value >>> key: {}, value: {}", key, value);
+    SETTINGS
+        .write().unwrap()
+        .insert(key.to_string(), value.to_string());
+}
+
+pub fn get_wallet_name() -> VcxResult<String> {
+    get_config_value(CONFIG_WALLET_NAME)
+        .map_err(|_| VcxError::from(VcxErrorKind::MissingWalletKey))
+}
+
+pub fn get_threadpool_size() -> usize {
+    let size = match get_config_value(CONFIG_THREADPOOL_SIZE) {
+        Ok(x) => x.parse::<usize>().unwrap_or(DEFAULT_THREADPOOL_SIZE),
+        Err(_) => DEFAULT_THREADPOOL_SIZE,
+    };
+
+    if size > MAX_THREADPOOL_SIZE {
+        MAX_THREADPOOL_SIZE
+    } else {
+        size
     }
 }
 
@@ -260,22 +304,20 @@ pub fn get_protocol_version() -> usize {
     }
 }
 
-pub fn get_config_value(key: &str) -> VcxResult<String> {
-    trace!("get_config_value >>> key: {}", key);
-
-    SETTINGS
-        .read()
-        .or(Err(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot read settings")))?
+pub fn get_opt_config_value(key: &str) -> Option<String> {
+    trace!("get_opt_config_value >>> key: {}", key);
+    match SETTINGS.read() {
+        Ok(x) => x,
+        Err(_) => return None
+    }
         .get(key)
         .map(|v| v.to_string())
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot read \"{}\" from settings", key)))
 }
 
-pub fn set_config_value(key: &str, value: &str) {
-    trace!("set_config_value >>> key: {}, value: {}", key, value);
-    SETTINGS
-        .write().unwrap()
-        .insert(key.to_string(), value.to_string());
+pub fn set_opt_config_value(key: &str, value: &Option<String>) {
+    if let Some(v) = value {
+        set_config_value(key, v.as_str())
+    }
 }
 
 pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, _storage_config: Option<&str>) -> String { // TODO: _storage_config must be used
@@ -284,8 +326,9 @@ pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, _storage_
         "storage_type": wallet_type
     });
 
-    let storage_config = get_config_value(CONFIG_WALLET_STORAGE_CONFIG).ok();
-    if let Some(_config) = storage_config { config["storage_config"] = serde_json::from_str(&_config).unwrap(); }
+    if let Ok(_config) = get_config_value(CONFIG_WALLET_STORAGE_CONFIG) {
+        config["storage_config"] = serde_json::from_str(&_config).unwrap();
+    }
 
     config.to_string()
 }
@@ -311,16 +354,6 @@ pub fn get_connecting_protocol_version() -> ProtocolTypes {
     }
 }
 
-pub fn validate_payment_method() -> VcxResult<()> {
-    let config = SETTINGS.read().unwrap();
-    if let Some(method) = config.get(CONFIG_PAYMENT_METHOD) {
-        if !method.to_string().is_empty() {
-            return Ok(());
-        }
-    }
-    Err(VcxError::from(VcxErrorKind::MissingPaymentMethod))
-}
-
 pub fn get_payment_method() -> String {
     get_config_value(CONFIG_PAYMENT_METHOD).unwrap_or(DEFAULT_PAYMENT_METHOD.to_string())
 }
@@ -329,8 +362,20 @@ pub fn get_communication_method() -> VcxResult<String> {
     get_config_value(COMMUNICATION_METHOD)
 }
 
+pub fn is_aries_protocol_set() -> bool {
+    let protocol_type = get_protocol_type();
+
+    protocol_type == ProtocolTypes::V2 && ARIES_COMMUNICATION_METHOD == get_communication_method().unwrap_or_default() ||
+        protocol_type == ProtocolTypes::V3 ||
+        protocol_type == ProtocolTypes::V4
+}
+
+pub fn is_strict_aries_protocol_set() -> bool {
+    get_protocol_type() == ProtocolTypes::V4
+}
+
 pub fn get_actors() -> Vec<Actors> {
-    get_config_value(ACTORS)
+    get_config_value(CONFIG_ACTORS)
         .and_then(|actors|
             ::serde_json::from_str(&actors)
                 .map_err(|_| VcxError::from(VcxErrorKind::InvalidOption))
@@ -338,7 +383,7 @@ pub fn get_actors() -> Vec<Actors> {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, EnumIter)]
-#[serde(rename_all="lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum Actors {
     Inviter,
     Invitee,
@@ -347,7 +392,7 @@ pub enum Actors {
     Prover,
     Verifier,
     Sender,
-    Receiver
+    Receiver,
 }
 
 pub const ARIES_COMMUNICATION_METHOD: &str = "aries";
@@ -359,6 +404,10 @@ pub enum ProtocolTypes {
     V1,
     #[serde(rename = "2.0")]
     V2,
+    #[serde(rename = "3.0")]
+    V3,
+    #[serde(rename = "4.0")]
+    V4,
 }
 
 impl Default for ProtocolTypes {
@@ -372,6 +421,8 @@ impl From<String> for ProtocolTypes {
         match type_.as_str() {
             "1.0" => ProtocolTypes::V1,
             "2.0" => ProtocolTypes::V2,
+            "3.0" => ProtocolTypes::V3,
+            "4.0" => ProtocolTypes::V4,
             type_ @ _ => {
                 error!("Unknown protocol type: {:?}. Use default", type_);
                 ProtocolTypes::default()
@@ -385,44 +436,15 @@ impl ::std::string::ToString for ProtocolTypes {
         match self {
             ProtocolTypes::V1 => "1.0".to_string(),
             ProtocolTypes::V2 => "2.0".to_string(),
+            ProtocolTypes::V3 => "3.0".to_string(),
+            ProtocolTypes::V4 => "4.0".to_string(),
         }
     }
 }
 
 pub fn get_protocol_type() -> ProtocolTypes {
-    ProtocolTypes::from(get_config_value(CONFIG_PROTOCOL_TYPE).unwrap_or(DEFAULT_PROTOCOL_TYPE.to_string()))
-}
-
-pub fn write_config_to_file(config: &str, path_string: &str) -> VcxResult<()> {
-    trace!("write_config_to_file >>> config: {}, path_string: {}", config, path_string);
-
-    let mut file = fs::File::create(Path::new(path_string))
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::UnknownError, err))?;
-
-    file.write_all(config.as_bytes())
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::UnknownError, err))?;
-
-    Ok(())
-}
-
-pub fn read_config_file(path: &str) -> VcxResult<String> {
-    trace!("read_config_file >>> path: {}", path);
-    let mut file = fs::File::open(path)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::UnknownError, err))?;
-    let mut config = String::new();
-    file.read_to_string(&mut config)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::UnknownError, err))?;
-    Ok(config)
-}
-
-pub fn remove_file_if_exists(filename: &str) {
-    trace!("remove_file_if_exists >>> filename: {}", filename);
-    if Path::new(filename).exists() {
-        match fs::remove_file(filename) {
-            Ok(()) => (),
-            Err(e) => println!("Unable to remove file: {:?}", e)
-        }
-    }
+    ProtocolTypes::from(get_config_value(CONFIG_PROTOCOL_TYPE)
+        .unwrap_or(DEFAULT_PROTOCOL_TYPE.to_string()))
 }
 
 pub fn clear_config() {
@@ -434,20 +456,18 @@ pub fn clear_config() {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use utils::get_temp_dir_path;
+    use utils::devsetup::{TempFile, SetupDefaults};
 
-    #[test]
-    fn test_bad_path() {
-        let path = "garbage.txt";
-        assert_eq!(process_config_file(&path).unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
+    fn _institution_name() -> String {
+        "enterprise".to_string()
     }
 
-    #[test]
-    fn test_read_config_file() {
-        let config_path_buf = get_temp_dir_path(Some("test_init.json"));
-        let config_path = config_path_buf.to_str().unwrap();
+    fn _pool_config() -> String {
+        r#"{"timeout":40}"#.to_string()
+    }
 
-        let content = json!({
+    fn base_config() -> serde_json::Value {
+        json!({
             "pool_name" : "pool1",
             "config_name":"config1",
             "wallet_name":"test_read_config_file",
@@ -455,160 +475,128 @@ pub mod tests {
             "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
             "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
             "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "institution_name" : "evernym enterprise",
-            "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "genesis_path":"/tmp/pool1.txn",
-            "wallet_key":"key"
-        }).to_string();
-        write_config_to_file(&content, config_path).unwrap();
-
-        assert_eq!(read_config_file(config_path).unwrap(), content);
-    }
-
-    #[test]
-    fn test_process_file() {
-        clear_config();
-
-        let config_path_buf = get_temp_dir_path(Some("test_init.json"));
-        let config_path = config_path_buf.to_str().unwrap();
-
-        let content = json!({
-            "pool_name" : "pool1",
-            "config_name":"config1",
-            "wallet_name":"test_process_file",
-            "agency_did" : "72x8p4HubxzUK1dwxcc5FU",
-            "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
-            "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
-            "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "institution_name" : "evernym enterprise",
-            "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "genesis_path":"/tmp/pool1.txn",
-            "wallet_key":"key"
-        }).to_string();
-        write_config_to_file(&content, config_path).unwrap();
-
-        assert_eq!(process_config_file(config_path).unwrap(), error::SUCCESS.code_num);
-
-        assert_eq!(get_config_value("institution_name").unwrap(), "evernym enterprise".to_string());
-    }
-
-    #[test]
-    fn test_process_config_str() {
-        clear_config();
-
-        let content = json!({
-            "pool_name" : "pool1",
-            "config_name":"config1",
-            "wallet_name":"test_process_config_str",
-            "agency_did" : "72x8p4HubxzUK1dwxcc5FU",
-            "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
-            "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
-            "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "institution_name" : "evernym enterprise",
-            "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "genesis_path":"/tmp/pool1.txn",
-            "wallet_key":"key"
-        }).to_string();
-
-        assert_eq!(process_config_string(&content, true).unwrap(), error::SUCCESS.code_num);
-    }
-
-    #[test]
-    fn test_process_for_pool_config() {
-        let pool_config = r#"{"timeout":40}"#;
-        let config = json!({
-            "pool_config" : pool_config,
-        }).to_string();
-
-        assert_eq!(process_config_string(&config, false).unwrap(), error::SUCCESS.code_num);
-        assert_eq!(get_config_value("pool_config").unwrap(), pool_config.to_string());
-    }
-
-    #[test]
-    fn test_validate_config() {
-        let content = json!({
-            "pool_name" : "pool1",
-            "config_name":"config1",
-            "wallet_name":"test_validate_config",
-            "agency_did" : "72x8p4HubxzUK1dwxcc5FU",
-            "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
-            "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
-            "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "institution_name" : "evernym enterprise",
+            "institution_name" : _institution_name(),
             "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
             "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
             "genesis_path":"/tmp/pool1.txn",
             "wallet_key":"key",
-            "institution_did": "44x8p4HubxzUK1dwxcc5FU",
-            "institution_verkey": "444MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-        }).to_string();
-        let config: HashMap<String, String> = serde_json::from_str(&content).unwrap();
+            "pool_config": _pool_config(),
+            "payment_method": "null"
+        })
+    }
+
+    fn config_json() -> String {
+        base_config().to_string()
+    }
+
+    #[test]
+    fn test_bad_path() {
+        let _setup = SetupDefaults::init();
+
+        let path = "garbage.txt";
+        assert_eq!(process_config_file(&path).unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
+    }
+
+    #[test]
+    fn test_read_config_file() {
+        let _setup = SetupDefaults::init();
+
+        let mut config_file: TempFile = TempFile::create("test_init.json");
+        config_file.write(&config_json());
+
+        assert_eq!(read_file(&config_file.path).unwrap(), config_json());
+    }
+
+    #[test]
+    fn test_process_file() {
+        let _setup = SetupDefaults::init();
+
+        let mut config_file: TempFile = TempFile::create("test_init.json");
+        config_file.write(&config_json());
+
+        assert_eq!(process_config_file(&config_file.path).unwrap(), error::SUCCESS.code_num);
+
+        assert_eq!(get_config_value("institution_name").unwrap(), _institution_name());
+    }
+
+    #[test]
+    fn test_process_config_str() {
+        let _setup = SetupDefaults::init();
+
+        assert_eq!(process_config_string(&config_json(), true).unwrap(), error::SUCCESS.code_num);
+
+        assert_eq!(get_config_value("institution_name").unwrap(), _institution_name());
+        assert_eq!(get_config_value("pool_config").unwrap(), _pool_config());
+    }
+
+    #[test]
+    fn test_validate_config() {
+        let _setup = SetupDefaults::init();
+
+        let config: HashMap<String, String> = serde_json::from_str(&config_json()).unwrap();
         assert_eq!(validate_config(&config).unwrap(), error::SUCCESS.code_num);
+    }
+
+    fn _mandatory_config() -> HashMap<String, String> {
+        let mut config: HashMap<String, String> = HashMap::new();
+        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
+        config
     }
 
     #[test]
     fn test_validate_config_failures() {
+        let _setup = SetupDefaults::init();
+
         let invalid = "invalid";
 
-        let mut config: HashMap<String, String> = HashMap::new();
+        let config = HashMap::new();
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::MissingWalletKey);
 
-        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
+        let mut config = _mandatory_config();
         config.insert(CONFIG_INSTITUTION_DID.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::InvalidDid);
-        config.drain();
 
-        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
+        let mut config = _mandatory_config();
         config.insert(CONFIG_INSTITUTION_VERKEY.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::InvalidVerkey);
-        config.drain();
 
-        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
+        let mut config = _mandatory_config();
         config.insert(CONFIG_AGENCY_DID.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::InvalidDid);
-        config.drain();
 
-        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
+        let mut config = _mandatory_config();
         config.insert(CONFIG_AGENCY_VERKEY.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::InvalidVerkey);
-        config.drain();
 
-        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
+        let mut config = _mandatory_config();
         config.insert(CONFIG_SDK_TO_REMOTE_DID.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::InvalidDid);
-        config.drain();
 
-        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
+        let mut config = _mandatory_config();
         config.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::InvalidVerkey);
-        config.drain();
 
-        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
+        let mut config = _mandatory_config();
         config.insert(CONFIG_REMOTE_TO_SDK_DID.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::InvalidDid);
-        config.drain();
 
-        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
+        let mut config = _mandatory_config();
         config.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::InvalidVerkey);
-        config.drain();
 
-        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
+        let mut config = _mandatory_config();
         config.insert(CONFIG_INSTITUTION_LOGO_URL.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::InvalidUrl);
-        config.drain();
 
-        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
+        let mut config = _mandatory_config();
         config.insert(CONFIG_WEBHOOK_URL.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::InvalidUrl);
-        config.drain();
     }
 
     #[test]
     fn test_validate_optional_config_val() {
+        let _setup = SetupDefaults::init();
+
         let closure = Url::parse;
         let mut config: HashMap<String, String> = HashMap::new();
         config.insert("valid".to_string(), DEFAULT_URL.to_string());
@@ -630,6 +618,8 @@ pub mod tests {
 
     #[test]
     fn test_get_and_set_values() {
+        let _setup = SetupDefaults::init();
+
         let key = "key1".to_string();
         let value1 = "value1".to_string();
 
@@ -641,27 +631,9 @@ pub mod tests {
     }
 
     #[test]
-    fn test_payment_plugin_validation() {
-        clear_config();
-        set_config_value(CONFIG_PAYMENT_METHOD, "null");
-        assert_eq!(validate_payment_method().unwrap(), ());
-    }
-
-    #[test]
-    fn test_payment_plugin_validation_empty_string() {
-        clear_config();
-        set_config_value(CONFIG_PAYMENT_METHOD, "");
-        assert_eq!(validate_payment_method().unwrap_err().kind(), VcxErrorKind::MissingPaymentMethod);
-    }
-
-    #[test]
-    fn test_payment_plugin_validation_missing_option() {
-        clear_config();
-        assert_eq!(validate_payment_method().unwrap_err().kind(), VcxErrorKind::MissingPaymentMethod);
-    }
-
-    #[test]
     fn test_clear_config() {
+        let _setup = SetupDefaults::init();
+
         let content = json!({
             "pool_name" : "pool1",
             "config_name":"config1",
@@ -671,7 +643,7 @@ pub mod tests {
             "wallet_key":"key",
         }).to_string();
 
-        assert_eq!(process_config_string(&content, true).unwrap(), error::SUCCESS.code_num);
+        assert_eq!(process_config_string(&content, false).unwrap(), error::SUCCESS.code_num);
 
         assert_eq!(get_config_value("pool_name").unwrap(), "pool1".to_string());
         assert_eq!(get_config_value("config_name").unwrap(), "config1".to_string());
@@ -682,7 +654,7 @@ pub mod tests {
 
         clear_config();
 
-        // Fails after  config is cleared
+        // Fails after config is cleared
         assert_eq!(get_config_value("pool_name").unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
         assert_eq!(get_config_value("config_name").unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
         assert_eq!(get_config_value("wallet_name").unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
@@ -693,23 +665,10 @@ pub mod tests {
 
     #[test]
     fn test_process_config_str_for_actors() {
-        clear_config();
+        let _setup = SetupDefaults::init();
 
-        let mut config = json!({
-            "pool_name" : "pool1",
-            "config_name":"config1",
-            "wallet_name":"test_read_config_file",
-            "agency_did" : "72x8p4HubxzUK1dwxcc5FU",
-            "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
-            "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
-            "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "institution_name" : "evernym enterprise",
-            "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "genesis_path":"/tmp/pool1.txn",
-            "wallet_key":"key",
-            "actors": ["invitee", "holder"]
-        });
+        let mut config = base_config();
+        config["actors"] = json!(["invitee", "holder"]);
 
         process_config_string(&config.to_string(), true).unwrap();
 

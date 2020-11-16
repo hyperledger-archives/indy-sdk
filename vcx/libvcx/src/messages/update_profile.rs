@@ -4,6 +4,7 @@ use messages::message_type::MessageTypes;
 use utils::httpclient;
 use utils::constants::*;
 use error::prelude::*;
+use utils::httpclient::AgencyMock;
 
 #[derive(Debug)]
 pub struct UpdateProfileDataBuilder {
@@ -92,9 +93,7 @@ impl UpdateProfileDataBuilder {
     pub fn send_secure(&mut self) -> VcxResult<()> {
         trace!("UpdateProfileData::send_secure >>>");
 
-        if settings::test_agency_mode_enabled() {
-            return self.parse_response(UPDATE_PROFILE_RESPONSE.to_vec());
-        }
+        AgencyMock::set_next_response(UPDATE_PROFILE_RESPONSE.to_vec());
 
         let data = self.prepare_request()?;
 
@@ -114,7 +113,9 @@ impl UpdateProfileDataBuilder {
                         }
                     )
                 ),
-            settings::ProtocolTypes::V2 =>
+            settings::ProtocolTypes::V2 |
+            settings::ProtocolTypes::V3 |
+            settings::ProtocolTypes::V4 =>
                 A2AMessage::Version2(
                     A2AMessageV2::UpdateConfigs(
                         UpdateConfigs {
@@ -146,10 +147,12 @@ mod tests {
     use super::*;
     use messages::update_data;
     use utils::libindy::signus::create_and_store_my_did;
+    use utils::devsetup::*;
 
     #[test]
     fn test_update_data_post() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
         let name = "name";
         let url = "https://random.com";
@@ -162,10 +165,11 @@ mod tests {
 
     #[test]
     fn test_update_data_set_values_and_post() {
-        init!("false");
-        let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
-        let (_my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
-        let (_agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
+        let _setup = SetupLibraryWallet::init();
+
+        let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED), None).unwrap();
+        let (_my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED), None).unwrap();
+        let (_agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED), None).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
@@ -181,7 +185,8 @@ mod tests {
 
     #[test]
     fn test_parse_update_profile_response() {
-        init!("indy");
+        let _setup = SetupIndyMocks::init();
+
         UpdateProfileDataBuilder::create().parse_response(UPDATE_PROFILE_RESPONSE.to_vec()).unwrap();
     }
 }

@@ -64,7 +64,7 @@ pub fn get_credential_info(proof: &str) -> VcxResult<Vec<CredInfo>> {
     let mut rtn = Vec::new();
 
     let credentials: Value = serde_json::from_str(&proof)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize liibndy proof: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize libndy proof: {}", err)))?;
 
     if let Value::Array(ref identifiers) = credentials["identifiers"] {
         for identifier in identifiers {
@@ -94,6 +94,7 @@ pub fn get_credential_info(proof: &str) -> VcxResult<Vec<CredInfo>> {
 pub mod tests {
     use super::*;
     use ::utils::constants::{SCHEMA_ID, CRED_DEF_ID, REV_REG_ID};
+    use utils::devsetup::*;
 
     pub fn create_default_proof() -> ProofMessage {
         let mut proof = ProofMessage::new();
@@ -104,20 +105,24 @@ pub mod tests {
 
     #[test]
     fn test_proof_struct() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let offer = create_default_proof();
         assert_eq!(offer.from_did, Some(::settings::get_config_value(::settings::CONFIG_INSTITUTION_DID).unwrap()));
     }
 
     #[test]
     fn test_proof_reject() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let proof = ProofMessage::new_reject();
         assert_eq!(proof.state, Some(VcxStateType::VcxStateRejected));
     }
 
     #[test]
     fn test_serialize_deserialize() {
+        let _setup = SetupDefaults::init();
+
         let proof = create_default_proof();
         let serialized = proof.to_string().unwrap();
         let proof2 = ProofMessage::from_str(&serialized).unwrap();
@@ -126,7 +131,8 @@ pub mod tests {
 
     #[test]
     fn test_get_credential_data() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let mut proof = ProofMessage::new();
         proof.libindy_proof = "".to_string();
         assert_eq!(proof.get_credential_info().unwrap_err().kind(), VcxErrorKind::InvalidJson);

@@ -9,7 +9,7 @@ use crate::domain::anoncreds::schema::{SchemaV1, SchemaId};
 use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::helpers::*;
 
-
+use ursa::bn::BigNumber;
 use ursa::cl::{CredentialPublicKey, new_nonce, Nonce};
 use ursa::cl::verifier::Verifier as CryptoVerifier;
 use crate::utils::wql::Query;
@@ -359,8 +359,7 @@ impl Verifier {
     fn _verify_revealed_attribute_value(attr_name: &str,
                                         proof: &Proof,
                                         attr_info: &RevealedAttributeInfo) -> IndyResult<()> {
-        let reveal_attr_encoded = attr_info.encoded.to_string();
-        let reveal_attr_encoded = Regex::new("^0*").unwrap().replace_all(&reveal_attr_encoded, "").to_owned();
+        let reveal_attr_encoded = &attr_info.encoded;
         let sub_proof_index = attr_info.sub_proof_index as usize;
 
         let crypto_proof_encoded = proof.proof.proofs
@@ -372,7 +371,7 @@ impl Verifier {
             .map(|(_, val)| val.to_string())
             .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with name \"{}\" not found in CryptoProof", attr_name)))?;
 
-        if reveal_attr_encoded != crypto_proof_encoded {
+        if BigNumber::from_dec(reveal_attr_encoded)? != BigNumber::from_dec(&crypto_proof_encoded)? {
             return Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
                                            format!("Encoded Values for \"{}\" are different in RequestedProof \"{}\" and CryptoProof \"{}\"", attr_name, reveal_attr_encoded, crypto_proof_encoded)));
         }
@@ -398,7 +397,7 @@ impl Verifier {
             .map(|(referent, info)| (referent.to_string(), info.clone()))
             .collect();
 
-        for (referent, info) in requested_attrs {
+        for (referent, info) in requested_attrs.clone() {
             if let Some(ref query) = info.restrictions {
                 let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers)?;
 
@@ -429,8 +428,39 @@ impl Verifier {
             if let Some(ref query) = info.restrictions {
                 let filter = Verifier::_gather_filter_info(&referent, received_predicates)?;
 
-                Verifier::_process_operator(&info.name, &query, &filter, None)
+                // start with the predicate requested attribute, which is un-revealed
+                let mut attr_value_map = HashMap::new();
+                attr_value_map.insert(info.name.to_string(), None);
+
+                // include any revealed attributes for the same credential (based on sub_proof_index)
+                let pred_sub_proof_index = requested_proof.predicates.get(referent).unwrap().sub_proof_index;
+                for attr_referent in requested_proof.revealed_attrs.keys() {
+                    let attr_info = requested_proof.revealed_attrs.get(attr_referent).unwrap();
+                    let attr_sub_proof_index = attr_info.sub_proof_index;
+                    if pred_sub_proof_index == attr_sub_proof_index {
+                        let attr_name = requested_attrs.get(attr_referent).unwrap().name.clone();
+                        if let Some(name) = attr_name {
+                            attr_value_map.insert(name, Some(attr_info.raw.as_str()));
+                        }
+                    }
+                }
+                for attr_referent in requested_proof.revealed_attr_groups.keys() {
+                    let attr_info = requested_proof.revealed_attr_groups.get(attr_referent).unwrap();
+                    let attr_sub_proof_index = attr_info.sub_proof_index;
+                    if pred_sub_proof_index == attr_sub_proof_index {
+                        for name in attr_info.values.keys() {
+                            let raw_val = attr_info.values.get(name).unwrap().raw.as_str();
+                            attr_value_map.insert(name.clone(), Some(raw_val.clone()));
+                        }
+                    }
+                }
+
+                Verifier::_do_process_operator(&attr_value_map, &query, &filter)
                     .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" predicate", &info.name)))?;
+
+                // old style :-/ which fails for attribute restrictions on predicates
+                //Verifier::_process_operator(&info.name, &query, &filter, None)
+                //    .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" predicate", &info.name)))?;
             }
         }
 

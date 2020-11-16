@@ -81,6 +81,10 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)agentProvisionAsync:(NSString *)config
                  completion:(void (^)(NSError *error, NSString *config))completion;
 
+- (int)updateWebhookUrl:(NSString *) notification_webhook_url;
+
+- (NSString *)errorCMessage:(NSInteger) errorCode;
+
 - (void)connectionCreateWithInvite:(NSString *)invitationId
                      inviteDetails:(NSString *)inviteDetails
                         completion:(void (^)(NSError *error, NSInteger connectionHandle))completion;
@@ -89,14 +93,28 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
            connectionType:(NSString *)connectionType
                completion:(void (^)(NSError *error, NSString *inviteDetails))completion;
 
+- (void)connectionGetState:(NSInteger)connectionHandle
+                completion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void)connectionUpdateState:(NSInteger) connectionHandle
+                   completion:(void (^)(NSError *error, NSInteger state))completion;
+
 - (void)connectionSerialize:(NSInteger)connectionHandle
                  completion:(void (^)(NSError *error, NSString *serializedConnection))completion;
 
 - (void)connectionDeserialize:(NSString *)serializedConnection
                    completion:(void (^)(NSError *error, NSInteger connectionHandle))completion;
 
+- (int)connectionRelease:(NSInteger) connectionHandle;
+
 - (void)deleteConnection:(VcxHandle)connectionHandle
           withCompletion:(void (^)(NSError *error))completion;
+
+- (void)connectionGetPwDid:(NSInteger)connectionHandle
+                completion:(void (^)(NSError *error, NSString *pwDid))completion;
+
+- (void)connectionGetTheirPwDid:(NSInteger)connectionHandle
+                     completion:(void (^)(NSError *error, NSString *theirPwDid))completion;
 
 - (void)connectionSendMessage:(VcxHandle)connectionHandle
                   withMessage:(NSString *)message
@@ -104,13 +122,23 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                withCompletion:(void (^)(NSError *error, NSString *msg_id))completion;
 
 - (void)connectionSignData:(VcxHandle)connectionHandle
-                   data:(NSData *)data
-                completion:(void (^)(NSError *, NSData *signature))completion;
+                  withData:(NSData *)dataRaw
+            withCompletion:(void (^)(NSError *error, NSData *signature_raw, vcx_u32_t signature_len))completion;
 
 - (void)connectionVerifySignature:(VcxHandle)connectionHandle
-                             data:(NSData *)data
-                        signature:(NSData *)signature
-                       completion:(void (^)(NSError *, BOOL *valid))completion;
+                         withData:(NSData *)dataRaw
+                withSignatureData:(NSData *)signatureRaw
+                   withCompletion:(void (^)(NSError *error, vcx_bool_t valid))completion;
+
+- (void)connectionUpdateState:(VcxHandle) connectionHandle
+               withCompletion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void)connectionUpdateStateWithMessage:(VcxHandle) connectionHandle
+                                 message:(NSString *)message
+                          withCompletion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void)connectionGetState:(VcxHandle) connectionHandle
+            withCompletion:(void (^)(NSError *error, NSInteger state))completion;
 
 - (void)agentUpdateInfo:(NSString *)config
              completion:(void (^)(NSError *error))completion;
@@ -138,6 +166,10 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)credentialUpdateState:(NSInteger )credentailHandle
                 completion:(void (^)(NSError *error, NSInteger state))completion;
 
+- (void)credentialUpdateStateWithMessage:(VcxHandle) credentialHandle
+                                 message:(NSString *)message
+                          withCompletion:(void (^)(NSError *error, NSInteger state))completion;
+
 - (void)credentialGetOffers:(VcxHandle)connectionHandle
                  completion:(void (^)(NSError *error, NSString *offers))completion;
 
@@ -146,6 +178,8 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 
 - (void)credentialDeserialize:(NSString *)serializedCredential
                    completion:(void (^)(NSError *error, NSInteger credentialHandle))completion;
+
+- (int)credentialRelease:(NSInteger) credentialHandle;
 
 - (void)exportWallet:(NSString *)exportPath
          encryptWith:(NSString *)encryptionKey
@@ -172,6 +206,9 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
             recordId:(NSString *)recordId
            completion:(void (^)(NSError *error))completion;
 
+- (void) proofGetRequests:(NSInteger)connectionHandle
+              completion:(void (^)(NSError *error, NSString *requests))completion;
+
 - (void) proofRetrieveCredentials:(vcx_proof_handle_t)proofHandle
                    withCompletion:(void (^)(NSError *error, NSString *matchingCredentials))completion;
 
@@ -188,6 +225,12 @@ withSelectedCredentials:(NSString *)selectedCredentials
 - (void) proofSend:(vcx_proof_handle_t)proof_handle
 withConnectionHandle:(vcx_connection_handle_t)connection_handle
     withCompletion:(void (^)(NSError *error))completion;
+
+- (void)proofGetState:(NSInteger)proofHandle
+           completion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void)proofUpdateState:(NSInteger) proofHandle
+              completion:(void (^)(NSError *error, NSInteger state))completion;
 
 - (void) proofReject: (vcx_proof_handle_t)proof_handle
       withConnectionHandle:(vcx_connection_handle_t)connection_handle
@@ -216,6 +259,12 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 - (void) proofDeserialize:(NSString *) serializedProof
            withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle)) completion;
 
+- (int)proofRelease:(NSInteger) proofHandle;
+
+- (void)proofUpdateStateWithMessage:(VcxHandle) proofHandle
+                            message:(NSString *)message
+                     withCompletion:(void (^)(NSError *error, NSInteger state))completion;
+
 - (int)vcxShutdown:(BOOL *)deleteWallet;
 
 - (void)createPaymentAddress:(NSString *)seed
@@ -238,8 +287,19 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
             pwdidsJson:(NSString *)pwdidsJson
             completion:(void (^)(NSError *error))completion;
 
+- (void)downloadAgentMessages:(NSString *)messageStatus
+                    uid_s:(NSString *)uid_s
+                    completion:(void (^)(NSError *error, NSString* messages))completion;
+
 - (void) getLedgerFees:(void(^)(NSError *error, NSString *fees)) completion;
 
+- (void) getTxnAuthorAgreement:(void(^)(NSError *error, NSString *authorAgreement)) completion;
+
+- (vcx_error_t) activateTxnAuthorAgreement:(NSString *)text
+                               withVersion:(NSString *)version
+                                  withHash:(NSString *)hash
+                             withMechanism:(NSString *)mechanism
+                             withTimestamp:(long)timestamp;
 @end
 
 #endif /* init_h */

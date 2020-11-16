@@ -22,13 +22,13 @@ RUN apt-get update -y && apt-get install -y \
     curl \
 	libffi-dev \
     ruby \
-    ruby-dev \ 
+    ruby-dev \
 	sudo \
     rubygems \
     libzmq5 \
     python3
 
-# Install Nodejs 
+# Install Nodejs
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
     && apt-get install -y nodejs
 
@@ -45,8 +45,8 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 &&
     add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable" && \
     add-apt-repository 'deb https://repo.sovrin.org/deb xenial master'
 
-ARG LIBINDY_VER="1.10.1"
-ARG LIBNULL_VER="1.10.1"
+ARG LIBINDY_VER="1.13.0"
+ARG LIBNULL_VER="1.13.0"
 
 RUN apt-get update && apt-get install -y \
     libindy=${LIBINDY_VER} \
@@ -60,7 +60,7 @@ ARG uid=1000
 RUN useradd -ms /bin/bash -u $uid vcx
 USER vcx
 
-ARG RUST_VER="1.39.0"
+ARG RUST_VER="1.46.0"
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUST_VER
 ENV PATH /home/vcx/.cargo/bin:$PATH
 
