@@ -437,6 +437,18 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
                        completion:(void (^)(NSError *error, NSString *credentialJSON))completion;
 
 /**
+ Deletes credential by given id.
+
+ @param credId: Identifier by which requested credential is stored in the wallet
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter.
+ Returns void
+ */
++ (void)proverDeleteCredentialsWithId:(NSString *)credId
+                         walletHandle:(IndyHandle)walletHandle
+                           completion:(void (^)(NSError * error))completion;
+
+/**
  Gets human readable credentials according to the filter.
  If filter is NULL, then all credentials are returned.
  Credentials can be filtered by tags created during saving of credential.
