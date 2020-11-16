@@ -19,7 +19,7 @@ cd $WORK_DIR/libzmq-ios/libsodium-ios
 cd ..
 ./libzmq.rb
 
-IOS_ARCHS="arm64,armv7,armv7s,i386,x86_64"
+IOS_ARCHS="arm64,x86_64"
 if [ ! -z "$1" ]; then
     IOS_ARCHS=$1
 fi
