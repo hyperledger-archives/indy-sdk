@@ -1,6 +1,10 @@
-libindy (1.15.0) unstable; urgency=medium
+libindy (1.16.0) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.16.0
+* TODO
+* Bugfixes
 
 ## 1.15.0
 * Correction for `Fix proof verification in case of credential attribute encoded value contains leading zeros` (IS-1491).

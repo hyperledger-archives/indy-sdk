@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.16.0 - 2020-11-17
+* TODO change summary
+* Bugfixes
+
 ## 1.15.0 - 2020-03-25
 * Correction for `Fix proof verification in case of credential attribute encoded value contains leading zeros` (IS-1491).
   Indy 1.14.3 changes "0" to "" which leads to proof rejection. 

@@ -1,6 +1,9 @@
-indy-cli (1.15.0) unstable; urgency=medium
+indy-cli (1.16.0) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.16.0
+* Bugfixes
 
 ## 1.15.0
 * Bugfixes
