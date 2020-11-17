@@ -1,6 +1,6 @@
 [package]
 name = "null-payment-method"
-version = "1.15.0"
+version = "1.16.0"
 authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 license = "MIT/Apache-2.0"
 description = """\
@@ -35,7 +35,7 @@ indy = { version="1.15.0", path="../wrappers/rust" }
 android_logger = "0.5"
 
 [package.metadata.deb]
-depends = "libindy (= 1.15.0)"
+depends = "libindy (= 1.16.0)"
 section = "devel"
 priority = "optional"
 assets = [
@@ -46,8 +46,8 @@ changelog = "./debian/changelog"
 
 [package.metadata.deb.variants.libnullpay-xenial]
 name = "libnullpay"
-provides = "libnullpay (= 1.15.0)"
+provides = "libnullpay (= 1.16.0)"
 
 [package.metadata.deb.variants.libnullpay-bionic]
 name = "libnullpay"
-provides = "libnullpay (= 1.15.0)"
+provides = "libnullpay (= 1.16.0)"
