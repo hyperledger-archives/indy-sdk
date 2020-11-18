@@ -37,6 +37,7 @@ use indy_wallet::WalletService;
 use self::threadpool::ThreadPool;
 use futures::stream::FuturesUnordered;
 use std::time::{SystemTime, UNIX_EPOCH};
+use futures::task::LocalSpawnExt;
 
 pub mod anoncreds;
 pub mod blob_storage;
@@ -166,14 +167,14 @@ impl CommandExecutor {
                                    payments_command_executor: &PaymentsCommandExecutor,
                                    cache_command_executor: &CacheCommandExecutor,
                                    metrics_command_executor: &MetricsCommandExecutor,
-                ) -> bool {
+                ) {
                     let instrumented_cmd = match cmd {
                         Some(cmd) => {
                             cmd
                         }
                         None => {
                             warn!("No command to execute");
-                            return false;
+                            return ();
                         }
                     };
                     let cmd_index: CommandIndex = (&instrumented_cmd.command).into();
@@ -232,42 +233,20 @@ impl CommandExecutor {
                         }
                         Command::Exit => {
                             debug!("Exit command received");
-                            return true
                         }
 
                     }
 
                     metrics_service.cmd_executed(cmd_index,
                                                  get_cur_time() - start_execution_ts);
-                    false
                 };
 
-                let mut in_progress_tasks = FuturesUnordered::new();
+                let mut in_progress_tasks = futures::executor::LocalPool::new();
+                let spawner = in_progress_tasks.spawner();
                 loop {
                     trace!("CommandExecutor main loop >>");
-                    let mut break_main_loop = false;
-                    block_on(async {
-                        trace!("CommandExecutor async block");
-                        select! {
-                            cmd = receiver.next() => {
-                                trace!("CommandExecutor::select new command");
-                                let in_progress_task = _exec_cmd(cmd, &metrics_service, &anoncreds_command_executor, &crypto_command_executor, &ledger_command_executor, &pool_command_executor, &did_command_executor, &wallet_command_executor, &pairwise_command_executor, &blob_storage_command_executor, &non_secret_command_executor, &payments_command_executor, &cache_command_executor, &metrics_command_executor);
-                                in_progress_tasks.push(in_progress_task);
-                            }
-                            should_complete_main_loop = in_progress_tasks.next() => {
-                                trace!("CommandExecutor::select in progress task, break loop {:?}", should_complete_main_loop);
-                                break_main_loop = should_complete_main_loop.unwrap_or(false);
-                            }
-                            complete => {
-                                trace!("CommandExecutor::select complete");
-                                break_main_loop = true;
-                            }
-                        }
-                    });
-                    if break_main_loop {
-                        trace!("CommandExecutor main loop break");
-                        break
-                    }
+                    let cmd = in_progress_tasks.run_until(receiver.next());
+                    spawner.spawn_local(_exec_cmd(cmd, &metrics_service, &anoncreds_command_executor, &crypto_command_executor, &ledger_command_executor, &pool_command_executor, &did_command_executor, &wallet_command_executor, &pairwise_command_executor, &blob_storage_command_executor, &non_secret_command_executor, &payments_command_executor, &cache_command_executor, &metrics_command_executor));
                     trace!("CommandExecutor main loop <<");
                 }
 
