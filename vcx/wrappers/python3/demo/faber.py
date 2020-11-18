@@ -1,6 +1,8 @@
 import asyncio
 import json
 import random
+import os
+import time
 from ctypes import cdll
 from time import sleep
 
@@ -10,10 +12,11 @@ from vcx.api.credential_def import CredentialDef
 from vcx.api.issuer_credential import IssuerCredential
 from vcx.api.proof import Proof
 from vcx.api.schema import Schema
-from vcx.api.utils import vcx_agent_provision
+from vcx.api.utils import vcx_agent_provision, vcx_get_ledger_author_agreement, vcx_set_active_txn_author_agreement_meta
 from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State, ProofState
 
+TAA_ACCEPT = bool(os.getenv("TAA_ACCEPT", "0") == "1")
 
 # logging.basicConfig(level=logging.DEBUG) uncomment to get logs
 
@@ -51,6 +54,16 @@ async def main():
 
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
+
+    if TAA_ACCEPT:
+        # To support ledger which transaction author agreement accept needed
+        print("#2.1 Accept transaction author agreement")
+        txn_author_agreement = await vcx_get_ledger_author_agreement()
+        txn_author_agreement_json = json.loads(txn_author_agreement)
+        first_acc_mech_type = list(txn_author_agreement_json['aml'].keys())[0]
+        vcx_set_active_txn_author_agreement_meta(text=txn_author_agreement_json['text'], version=txn_author_agreement_json['version'],
+                                                 hash=None,
+                                                 acc_mech_type=first_acc_mech_type, time_of_acceptance=int(time.time()))
 
     print("#3 Create a new schema on the ledger")
     version = format("%d.%d.%d" % (random.randint(1, 101), random.randint(1, 101), random.randint(1, 101)))

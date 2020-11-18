@@ -191,7 +191,7 @@ impl DidCommandExecutor {
                 self.get_attrib_ack(wallet_handle, result, deferred_cmd_id);
             }
             DidCommand::QualifyDid(wallet_handle, did, method, cb) => {
-                info!("QualifyDid command received");
+                debug!("QualifyDid command received");
                 cb(self.qualify_did(wallet_handle, &did, &method));
             }
         };
@@ -309,7 +309,34 @@ impl DidCommandExecutor {
         let mut did_search =
             self.wallet_service.search_indy_records::<Did>(wallet_handle, "{}", &SearchOptions::id_value())?;
 
+	let mut metadata_search =
+            self.wallet_service.search_indy_records::<DidMetadata>(wallet_handle, "{}", &SearchOptions::id_value())?;
+
+	let mut temporarydid_search =
+            self.wallet_service.search_indy_records::<TemporaryDid>(wallet_handle, "{}", &SearchOptions::id_value())?;
+
         let mut dids: Vec<DidWithMeta> = Vec::new();
+ 
+        let mut metadata_map: HashMap<String, String>= HashMap::new();
+        let mut temporarydid_map: HashMap<String, String>= HashMap::new();
+
+        while let Some(record) = metadata_search.fetch_next_record()? {
+            let did_id = record.get_id();
+            let tup: DidMetadata = record.get_value()
+                .ok_or(err_msg(IndyErrorKind::InvalidState, "No value for DID record"))
+                .and_then(|tags_json| serde_json::from_str(&tags_json)
+                          .to_indy(IndyErrorKind::InvalidState, format!("Cannot deserialize Did: {:?}", did_id)))?;
+            metadata_map.insert(String::from(did_id), tup.value);
+        }
+
+        while let Some(record) = temporarydid_search.fetch_next_record()? {
+            let did_id = record.get_id();
+            let did: TemporaryDid = record.get_value()
+                .ok_or(err_msg(IndyErrorKind::InvalidState, "No value for DID record"))
+                .and_then(|tags_json| serde_json::from_str(&tags_json)
+                          .to_indy(IndyErrorKind::InvalidState, format!("Cannot deserialize Did: {:?}", did_id)))?;
+            temporarydid_map.insert(did.did.0, did.verkey);
+        }
 
         while let Some(did_record) = did_search.fetch_next_record()? {
             let did_id = did_record.get_id();
@@ -319,14 +346,14 @@ impl DidCommandExecutor {
                 .and_then(|tags_json| serde_json::from_str(&tags_json)
                     .to_indy(IndyErrorKind::InvalidState, format!("Cannot deserialize Did: {:?}", did_id)))?;
 
-            let metadata = self.wallet_service.get_indy_opt_object::<DidMetadata>(wallet_handle, &did.did.0, &RecordOptions::id_value())?;
-            let temp_verkey = self.wallet_service.get_indy_opt_object::<TemporaryDid>(wallet_handle, &did.did.0, &RecordOptions::id_value())?;
+            let temp_verkey = temporarydid_map.remove(&did.did.0);
+            let metadata = metadata_map.remove(&did.did.0);
 
             let did_with_meta = DidWithMeta {
                 did: did.did,
                 verkey: did.verkey,
-                temp_verkey: temp_verkey.map(|tv| tv.verkey),
-                metadata: metadata.map(|m| m.value),
+                temp_verkey: temp_verkey,
+                metadata: metadata,
             };
 
             dids.push(did_with_meta);
@@ -378,7 +405,7 @@ impl DidCommandExecutor {
     fn key_for_local_did(&self,
                          wallet_handle: WalletHandle,
                          did: &DidValue) -> IndyResult<String> {
-        info!("key_for_local_did >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
+        debug!("key_for_local_did >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
         self.crypto_service.validate_did(&did)?;
 
@@ -396,7 +423,7 @@ impl DidCommandExecutor {
 
         let res = their_did.verkey;
 
-        info!("key_for_local_did <<< res: {:?}", res);
+        debug!("key_for_local_did <<< res: {:?}", res);
 
         Ok(res)
     }
@@ -482,7 +509,7 @@ impl DidCommandExecutor {
     fn abbreviate_verkey(&self,
                          did: &DidValue,
                          verkey: String) -> IndyResult<String> {
-        info!("abbreviate_verkey >>> did: {:?}, verkey: {:?}", did, verkey);
+        debug!("abbreviate_verkey >>> did: {:?}, verkey: {:?}", did, verkey);
 
         self.crypto_service.validate_did(&did)?;
         self.crypto_service.validate_key(&verkey)?;
@@ -511,7 +538,7 @@ impl DidCommandExecutor {
                    wallet_handle: WalletHandle,
                    did: &DidValue,
                    method: &DidMethod) -> IndyResult<String> {
-        info!("qualify_did >>> wallet_handle: {:?}, curr_did: {:?}, method: {:?}", wallet_handle, did, method);
+        debug!("qualify_did >>> wallet_handle: {:?}, curr_did: {:?}, method: {:?}", wallet_handle, did, method);
 
         self.crypto_service.validate_did(did)?;
 

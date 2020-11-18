@@ -266,11 +266,15 @@ Almost all of them are optional and depend on the way you use Vcx (with agency o
 
 * `threadpool_size` - size of thread pool used for command execution (8 by default). 
 
-* `protocol_version` - message protocol to use for agent to agency and agent to agent communication. 
+* `protocol_type` - message protocol to use for agent to agency and agent to agent communication. 
 Can be one of:
     * "1.0" - use bundled messages, auth/anon cryptography.
     * "2.0" - use aries cross domain message format, pack/unpack functions. 
-    * "3.0" - use aries cross domain message format, pack/unpack functions and aries communication protocols (is alternative to the combination of settings "protocol_version":"2.0" and "communication_method":"aries"). 
+    * "3.0" - use aries cross domain message format, pack/unpack functions and aries communication protocols 
+    (is alternative to the combination of settings "protocol_version":"2.0" and "communication_method":"aries"). 
+    Functions return messages in the `proprietary` format.
+    * "4.0" - use aries cross domain message format, pack/unpack functions and aries communication protocols. 
+    Functions return messages in the `aries` format.
     
 * `author_agreement` - accept and use transaction author agreement data containing the following fields:
     * `acceptanceMechanismType` - (string) mechanism how user has accepted the TAA 

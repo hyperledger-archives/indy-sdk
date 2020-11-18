@@ -265,7 +265,11 @@ export const issuerCredentialCreate = async (_data = dataIssuerCredentialCreate(
 export const dataProofCreate = (): IProofCreateData => ({
   attrs: [
     { name: 'attr1' },
-    { name: 'attr2' }
+    { name: 'attr2' },
+    { names: ['attr3', 'attr4'] }
+  ],
+  preds: [
+    { name: 'pred1', p_type: 'GE', p_value: 123},
   ],
   name: 'Proof',
   revocationInterval: {
@@ -282,6 +286,7 @@ export const proofCreate = async (data = dataProofCreate()) => {
   assert.equal(proof.name, data.name)
   assert.equal(proof.proofState, null)
   assert.deepEqual(proof.requestedAttributes, data.attrs)
+  assert.deepEqual(proof.requestedPredicates, data.preds)
   return proof
 }
 
