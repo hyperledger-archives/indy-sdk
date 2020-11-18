@@ -8,8 +8,6 @@ RUN apt-get update -y && apt-get install -y \
 	python3.5 \
 	python3-pip \
 	python-setuptools \
-	ipython \
-	ipython-notebook \
 	apt-transport-https \
 	ca-certificates \
 	software-properties-common
@@ -18,6 +16,8 @@ WORKDIR /home/indy
 
 RUN pip3 install -U \
 	pip \
+	ipython-notebook \
+      ipython==7.9 \
 	setuptools \
 	jupyter \
 	python3-indy==1.11.0

@@ -9,7 +9,7 @@ use error::prelude::*;
 use indy_sys::CommandHandle;
 
 /*
-    The API represents an Verifier side in credential presentation process.
+    APIs in this module are called by a verifier throughout the request-proof-and-verify process.
     Assumes that pairwise connection between Verifier and Prover is already established.
 
     # State
@@ -81,14 +81,7 @@ use indy_sys::CommandHandle;
 ///         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
 ///                                              // NOTE: should either be "name" or "names", not both and not none of them.
 ///                                              // Use "names" to specify several attributes that have to match a single credential.
-///         "restrictions":  (filter_json) {
-///            "schema_id": string, (Optional)
-///            "schema_issuer_did": string, (Optional)
-///            "schema_name": string, (Optional)
-///            "schema_version": string, (Optional)
-///            "issuer_did": string, (Optional)
-///            "cred_def_id": string, (Optional)
-///        },
+///         "restrictions":  Optional<wql query> - set of restrictions applying to requested credentials. (see below)
 ///         "non_revoked": {
 ///             "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
 ///             "to": Optional<(u64)>
@@ -103,7 +96,7 @@ use indy_sys::CommandHandle;
 ///             "name": attribute name, (case insensitive and ignore spaces)
 ///             "p_type": predicate type (Currently ">=" only)
 ///             "p_value": int predicate value
-///             "restrictions": Optional<filter_json>, // see above
+///             "restrictions":  Optional<wql query> -  set of restrictions applying to requested credentials. (see below)
 ///             "non_revoked": Optional<{
 ///                 "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
 ///                 "to": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
@@ -121,8 +114,18 @@ use indy_sys::CommandHandle;
 ///         // Requested time represented as a total number of seconds from Unix Epoch, Optional
 /// # Examples config ->  "{}" | "{"to": 123} | "{"from": 100, "to": 123}"
 ///
-///
-///
+/// wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
+///     The list of allowed keys that can be combine into complex queries.
+///         "schema_id": <credential schema id>,
+///         "schema_issuer_did": <credential schema issuer did>,
+///         "schema_name": <credential schema name>,
+///         "schema_version": <credential schema version>,
+///         "issuer_did": <credential issuer did>,
+///         "cred_def_id": <credential definition id>,
+///         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
+///         // the following keys can be used for every `attribute name` in credential.
+///         "attr::<attribute name>::marker": "1", - to filter based on existence of a specific attribute
+///         "attr::<attribute name>::value": <attribute raw value>, - to filter based on value of a specific attribute
 ///
 /// cb: Callback that provides proof handle and error status of request.
 ///
@@ -554,11 +557,6 @@ pub extern fn vcx_proof_get_request_msg(command_handle: CommandHandle,
 }
 
 
-/// Todo: This api should remove the connection_handle!! It is not being used within the code. I assume
-/// the only reason it still has it as an input was to not break it for existing users. vcx_get_proof_msg
-/// is the updated api that we should use.
-/// Get Proof message
-///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
@@ -570,10 +568,14 @@ pub extern fn vcx_proof_get_request_msg(command_handle: CommandHandle,
 ///
 /// #Returns
 /// Error code as a u32
+#[deprecated(
+    since = "1.15.0",
+    note = "Use vcx_get_proof_msg() instead. This api is similar, but requires an extra parameter (connection_handle) which is unnecessary and unused in the internals."
+)]
 #[no_mangle]
 pub extern fn vcx_get_proof(command_handle: CommandHandle,
                             proof_handle: u32,
-                            _connection_handle: u32,
+                            _unused_connection_handle: u32,
                             cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, proof_state:u32, response_data: *const c_char)>) -> u32 {
     info!("vcx_get_proof >>>");
 

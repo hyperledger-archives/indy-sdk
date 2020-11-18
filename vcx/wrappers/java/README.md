@@ -24,7 +24,7 @@ In your maven project add to pom.xml file next content:
     <dependency>
         <groupId>com.evernym</groupId>
         <artifactId>vcx</artifactId>
-        <version>0.2.2-dev-985</version>
+        <version>0.6.2</version>
     </dependency>
      
 **Note** that before you can use java wrapper you must install  c-callable SDK and Vcx.  

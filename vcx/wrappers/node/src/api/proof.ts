@@ -74,6 +74,8 @@ export interface IProofCreateData {
   sourceId: string,
   //  Describes requested attribute
   attrs: IProofAttr[],
+  // Describres requested predicates
+  preds: IProofPredicate[],
   // Name of the proof request
   name: string,
   // Revocation interval
@@ -81,8 +83,10 @@ export interface IProofCreateData {
 }
 
 export interface IProofConstructorData {
-  //  Describes requested attribute
+  //  Describes requested attributes
   attrs: IProofAttr[],
+  //  Describes requested predicates
+  preds: IProofPredicate[],
   // Name of the proof request
   name: string,
 }
@@ -96,6 +100,7 @@ export interface IProofData {
   source_id: string
   handle: number
   requested_attrs: string
+  requested_predicates: string
   prover_did: string
   state: StateType
   name: string
@@ -130,18 +135,38 @@ export enum PredicateTypes {
  */
 export interface IProofAttr {
   // Requested attribute restrictions
-  restrictions?: IFilter[],
+  restrictions?: IFilter[] | IFilter,
   // Requested attribute name
-  name: string,
+  name?: string,
+  // Requested attribute names. Can be used to specify several attributes that have to match a single credential.
+  // NOTE: should either be "name" or "names", not both and not none of them.
+  names?: string[],
 }
 
+/**
+* @description This represents the set of restrictions applying to credentials.
+*     The list of allowed fields:
+*         "schema_id": <credential schema id>,
+*         "schema_issuer_did": <credential schema issuer did>,
+*         "schema_name": <credential schema name>,
+*         "schema_version": <credential schema version>,
+*         "issuer_did": <credential issuer did>,
+*         "cred_def_id": <credential definition id>,
+*         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
+*         // the following tags can be used for every attribute in credential.
+*         "attr::<attribute name>::marker": "1", - to filter based on existence of a specific attribute
+*         "attr::<attribute name>::value": <attribute raw value>, - to filter based on value of a specific attribute
+* Furthermore they can be combine into complex queries using Indy wql: indy-sdk/docs/design/011-wallet-query-language/README.md
+*
+* @interface
+*/
 export interface IFilter {
-  schemaId?: string,
-  schemaIssuerDid?: string,
-  schemaName: string,
-  schemaVersion: string,
-  issuerDid?: string,
-  credDefId?: string,
+  schema_id?: string,
+  schema_issuer_did?: string,
+  schema_name?: string,
+  schema_version?: string,
+  issuer_did?: string,
+  cred_def_id?: string,
 }
 
 export enum ProofState {
@@ -151,9 +176,9 @@ export enum ProofState {
 }
 
 export interface IProofPredicate {
-  attr_name: string,
+  name: string,
   p_type: string,
-  value: number,
+  p_value: number,
   restrictions?: IFilter[],
 }
 
@@ -167,14 +192,85 @@ export interface IRevocationInterval {
  */
 export class Proof extends VCXBaseWithState<IProofData> {
   /**
+   * Get the state of the proof
+   *
+   * Example
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof = await Proof.create(data)
+   * await proof.requestProof(connection)
+   * assert.equal(await proof.getState(), StateType.OfferSent)
+   * ```
+   */
+  get proofState (): ProofState | null {
+    return this._proofState
+  }
+  /**
+   * Get the attributes of the proof
+   *
+   * Example
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof = await Proof.create(data)
+   * await proof.requestProof(connection)
+   * assert.equal(await proof.getState(), StateType.OfferSent)
+   * proofData = await proof.getProof(connection)
+   * await proof.updateState()
+   * assert.equal(await proof.requestedAttributes(), data.attrs)
+   * ```
+   */
+  get requestedAttributes () {
+    return this._requestedAttributes
+  }
+
+  get requestedPredicates () {
+    return this._requestedPredicates
+  }
+
+  /**
+   * Get the name of the proof
+   *
+   * Example
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof = await Proof.create(data)
+   * await proof.requestProof(connection)
+   * assert.equal(await proof.getState(), StateType.OfferSent)
+   * proofData = await proof.getProof(connection)
+   * await proof.updateState()
+   * assert.equal(await proof.name(), data.name)
+   * ```
+   */
+  get name () {
+    return this._name
+  }
+  /**
    * Builds a generic proof object
    *
    * Example:
    * ```
    * data = {
    *   attrs: [
-   *     { name: 'attr1' },
-   *     { name: 'attr2' },
+   *     { name: 'attr1', restrictions: [{ 'issuer_did': 'NcYxiDXkpYi6ov5FcYDi1i' }] },
+   *     { name: 'attr2', restrictions: { 'schema_id': 'id' } },
    *     { names: ['attr3', 'attr4'] }],
    *   name: 'Proof',
    *   sourceId: 'testProofSourceId',
@@ -183,6 +279,7 @@ export class Proof extends VCXBaseWithState<IProofData> {
    * proof1 = await Proof.create(data)
    * ```
    */
+
   public static async create ({ sourceId, ...createDataRest }: IProofCreateData): Promise<Proof> {
     try {
       const proof = new Proof(sourceId, createDataRest)
@@ -191,7 +288,7 @@ export class Proof extends VCXBaseWithState<IProofData> {
         commandHandle,
         proof.sourceId,
         JSON.stringify(createDataRest.attrs),
-        JSON.stringify([]),
+        JSON.stringify(createDataRest.preds),
         JSON.stringify(createDataRest.revocationInterval),
         createDataRest.name,
         cb
@@ -200,12 +297,6 @@ export class Proof extends VCXBaseWithState<IProofData> {
     } catch (err) {
       throw new VCXInternalError(err)
     }
-  }
-
-  static getParams (proofData: ISerializedData<IProofData>): IProofConstructorData {
-    const { data: { requested_attrs, name } } = proofData
-    const attrs = JSON.parse(requested_attrs)
-    return { attrs, name }
   }
 
 /**
@@ -227,26 +318,33 @@ export class Proof extends VCXBaseWithState<IProofData> {
  */
   public static async deserialize (proofData: ISerializedData<IProofData>): Promise<Proof> {
     try {
-      const params: IProofConstructorData = (function () {
+      const params: IProofConstructorData = (() => {
         switch (proofData.version) {
-          case "1.0":
+          case '1.0':
             return Proof.getParams(proofData)
-          case "2.0":
-            return { attrs: [{ name: "" }], name: "" }
-          case "3.0":
+          case '2.0':
+            return { attrs: [{ name: '' }], preds: [], name: '' }
+          case '3.0':
             return Proof.getParams(proofData)
           default:
             throw Error(`Unsupported version provided in serialized proof data: ${JSON.stringify(proofData.version)}`)
         }
       })()
-     return await super._deserialize<Proof, IProofConstructorData>(
-        Proof,
-        proofData,
-        params
-      )
+      return await super._deserialize<Proof, IProofConstructorData>(
+         Proof,
+         proofData,
+         params
+       )
     } catch (err) {
       throw new VCXInternalError(err)
     }
+  }
+
+  private static getParams (proofData: ISerializedData<IProofData>): IProofConstructorData {
+    const { data: { requested_attrs, requested_predicates, name } } = proofData
+    const attrs = JSON.parse(requested_attrs)
+    const preds = JSON.parse(requested_predicates)
+    return { attrs, name, preds }
   }
 
   protected _releaseFn = rustAPI().vcx_proof_release
@@ -256,12 +354,14 @@ export class Proof extends VCXBaseWithState<IProofData> {
   protected _serializeFn = rustAPI().vcx_proof_serialize
   protected _deserializeFn = rustAPI().vcx_proof_deserialize
   private _requestedAttributes: IProofAttr[]
+  private _requestedPredicates: IProofPredicate[]
   private _name: string
   private _proofState: ProofState | null = null
 
-  constructor (sourceId: string, { attrs, name }: IProofConstructorData) {
+  constructor (sourceId: string, { attrs, preds, name }: IProofConstructorData) {
     super(sourceId)
     this._requestedAttributes = attrs
+    this._requestedPredicates = preds
     this._name = name
   }
 
@@ -277,26 +377,26 @@ export class Proof extends VCXBaseWithState<IProofData> {
    */
   public async updateStateWithMessage (message: string): Promise<void> {
     try {
-  	const commandHandle = 0
-  	await createFFICallbackPromise<number>(
-  	  (resolve, reject, cb) => {
-  		const rc = rustAPI().vcx_proof_update_state_with_message(commandHandle, this.handle, message, cb)
-  		if (rc) {
-  		  resolve(StateType.None)
-  		}
-  	  },
-  	  (resolve, reject) => ffi.Callback(
-  		'void',
-  		['uint32', 'uint32', 'uint32'],
-  		(handle: number, err: any, state: StateType) => {
-  		  if (err) {
-  			reject(err)
-  		  }
-  		  resolve(state)
-  		})
-  	)
+      const commandHandle = 0
+      await createFFICallbackPromise<number>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_proof_update_state_with_message(commandHandle, this.handle, message, cb)
+          if (rc) {
+            resolve(StateType.None)
+          }
+        },
+      (resolve, reject) => ffi.Callback(
+        'void',
+        ['uint32', 'uint32', 'uint32'],
+        (handle: number, err: any, state: StateType) => {
+          if (err) {
+            reject(err)
+          }
+          resolve(state)
+        })
+      )
     } catch (err) {
-  	throw new VCXInternalError(err)
+      throw new VCXInternalError(err)
     }
   }
 
@@ -427,72 +527,5 @@ export class Proof extends VCXBaseWithState<IProofData> {
     } catch (err) {
       throw new VCXInternalError(err)
     }
-  }
-  /**
-   * Get the state of the proof
-   *
-   * Example
-   * ```
-   * data = {
-   *   attrs: [
-   *     { name: 'attr1' },
-   *     { name: 'attr2' }],
-   *   name: 'Proof',
-   *   sourceId: 'testProofSourceId'
-   * }
-   * proof = await Proof.create(data)
-   * await proof.requestProof(connection)
-   * assert.equal(await proof.getState(), StateType.OfferSent)
-   * ```
-   */
-  get proofState (): ProofState | null {
-    return this._proofState
-  }
-  /**
-   * Get the attributes of the proof
-   *
-   * Example
-   * ```
-   * data = {
-   *   attrs: [
-   *     { name: 'attr1' },
-   *     { name: 'attr2' }],
-   *   name: 'Proof',
-   *   sourceId: 'testProofSourceId'
-   * }
-   * proof = await Proof.create(data)
-   * await proof.requestProof(connection)
-   * assert.equal(await proof.getState(), StateType.OfferSent)
-   * proofData = await proof.getProof(connection)
-   * await proof.updateState()
-   * assert.equal(await proof.requestedAttributes(), data.attrs)
-   * ```
-   */
-  get requestedAttributes () {
-    return this._requestedAttributes
-  }
-
-  /**
-   * Get the name of the proof
-   *
-   * Example
-   * ```
-   * data = {
-   *   attrs: [
-   *     { name: 'attr1' },
-   *     { name: 'attr2' }],
-   *   name: 'Proof',
-   *   sourceId: 'testProofSourceId'
-   * }
-   * proof = await Proof.create(data)
-   * await proof.requestProof(connection)
-   * assert.equal(await proof.getState(), StateType.OfferSent)
-   * proofData = await proof.getProof(connection)
-   * await proof.updateState()
-   * assert.equal(await proof.name(), data.name)
-   * ```
-   */
-  get name () {
-    return this._name
   }
 }

@@ -51,7 +51,7 @@ impl Requester {
         *req.uri_mut() = endpoint.parse()?;
         req.headers_mut().insert(
             header::CONTENT_TYPE,
-            header::HeaderValue::from_static("application/octet-stream")
+            header::HeaderValue::from_static("application/octet-stream"),
         );
         Ok(req)
     }
