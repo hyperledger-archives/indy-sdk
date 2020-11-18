@@ -21,7 +21,6 @@ use crate::commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 use crate::commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
 use crate::commands::pool::{PoolCommand, PoolCommandExecutor};
 use crate::commands::wallet::{WalletCommand, WalletCommandExecutor};
-use crate::commands::cache::{CacheCommand, CacheCommandExecutor};
 use crate::commands::metrics::{MetricsCommand, MetricsCommandExecutor};
 use crate::domain::IndyConfig;
 use indy_api_types::errors::prelude::*;
@@ -153,7 +152,8 @@ impl CommandExecutor {
                 let cache_command_executor = CacheCommandExecutor::new(crypto_service.clone(), ledger_service.clone(), pool_service.clone(), wallet_service.clone());
                 let metrics_command_executor = MetricsCommandExecutor::new(wallet_service.clone(), metrics_service.clone());
 
-                async fn _exec_cmd(cmd: Option<Command>,
+                async fn _exec_cmd(cmd: Option<InstrumentedCommand>,
+                                   metrics_service: &Rc<MetricsService>,
                                    anoncreds_command_executor: &AnoncredsCommandExecutor,
                                    crypto_command_executor: &CryptoCommandExecutor,
                                    ledger_command_executor: &LedgerCommandExecutor,
@@ -165,14 +165,15 @@ impl CommandExecutor {
                                    non_secret_command_executor: &NonSecretsCommandExecutor,
                                    payments_command_executor: &PaymentsCommandExecutor,
                                    cache_command_executor: &CacheCommandExecutor,
+                                   metrics_command_executor: &MetricsCommandExecutor,
                 ) -> bool {
-                    let instrumented_cmd = match receiver.recv() {
-                        Ok(cmd) => {
+                    let instrumented_cmd = match cmd {
+                        Some(cmd) => {
                             cmd
                         }
-                        Err(err) => {
-                            error!("Failed to get command!");
-                            panic!("Failed to get command! {:?}", err)
+                        None => {
+                            warn!("No command to execute");
+                            return false;
                         }
                     };
                     let cmd_index: CommandIndex = (&instrumented_cmd.command).into();
@@ -233,11 +234,11 @@ impl CommandExecutor {
                             debug!("Exit command received");
                             return true
                         }
-                        None => {
-                            warn!("No command to execute");
-                        }
+
                     }
 
+                    metrics_service.cmd_executed(cmd_index,
+                                                 get_cur_time() - start_execution_ts);
                     false
                 };
 
@@ -250,7 +251,7 @@ impl CommandExecutor {
                         select! {
                             cmd = receiver.next() => {
                                 trace!("CommandExecutor::select new command");
-                                let in_progress_task = _exec_cmd(cmd, &anoncreds_command_executor, &crypto_command_executor, &ledger_command_executor, &pool_command_executor, &did_command_executor, &wallet_command_executor, &pairwise_command_executor, &blob_storage_command_executor, &non_secret_command_executor, &payments_command_executor, &cache_command_executor);
+                                let in_progress_task = _exec_cmd(cmd, &metrics_service, &anoncreds_command_executor, &crypto_command_executor, &ledger_command_executor, &pool_command_executor, &did_command_executor, &wallet_command_executor, &pairwise_command_executor, &blob_storage_command_executor, &non_secret_command_executor, &payments_command_executor, &cache_command_executor, &metrics_command_executor);
                                 in_progress_tasks.push(in_progress_task);
                             }
                             should_complete_main_loop = in_progress_tasks.next() => {
@@ -268,10 +269,8 @@ impl CommandExecutor {
                         break
                     }
                     trace!("CommandExecutor main loop <<");
-                    }
-                    metrics_service.cmd_executed(cmd_index,
-                                                 get_cur_time() - start_execution_ts);
                 }
+
                 trace!("CommandExecutor main loop finished");
             }).unwrap())
         }
