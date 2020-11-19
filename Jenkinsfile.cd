@@ -766,7 +766,7 @@ def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
 def iosTesting() {
 
     def setupRustIOS = {
-        sh "rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios i386-apple-ios x86_64-apple-ios"
+        sh "rustup target add aarch64-apple-ios x86_64-apple-ios"
     }
 
     def cleanSimulators = {
@@ -835,16 +835,16 @@ def iosTesting() {
 
                     stash includes: 'libindy/out_pod/libindy.tar.gz', name: "LibindyUniversalIOSPod"
 
-                    echo "iOS Test: Building Libindy iOS Pod for aarch64-apple-ios and armv7-apple-ios"
-                    buildIOSPod("libindy", "aarch64-apple-ios armv7-apple-ios")
+                    echo "iOS Test: Building Libindy iOS Pod for aarch64-apple-ios"
+                    buildIOSPod("libindy", "aarch64-apple-ios")
                     stash includes: 'libindy/out_pod/libindy.tar.gz', name: "LibindyMiniIOSPod"
 
                     echo "iOS Test: Building Libnullpay Universal iOS Pod"
                     buildIOSPod("libnullpay", "")
                     stash includes: 'libnullpay/out_pod/libnullpay.tar.gz', name: "LibnullpayUniversalIOSPod"
 
-                    echo "iOS Test: Building Libnullpay iOS Pod for aarch64-apple-ios and armv7-apple-ios"
-                    buildIOSPod("libnullpay", "aarch64-apple-ios armv7-apple-ios")
+                    echo "iOS Test: Building Libnullpay iOS Pod for aarch64-apple-ios"
+                    buildIOSPod("libnullpay", "aarch64-apple-ios")
                     stash includes: 'libnullpay/out_pod/libnullpay.tar.gz', name: "LibnullpayMiniIOSPod"
                 }
 
