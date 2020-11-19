@@ -140,43 +140,34 @@ impl CommandExecutor {
                 let wallet_service = Rc::new(WalletService::new());
                 let metrics_service = Rc::new(MetricsService::new());
 
-                let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), blob_storage_service.clone(), pool_service.clone(), wallet_service.clone(), crypto_service.clone());
-                let crypto_command_executor = CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone());
-                let ledger_command_executor = LedgerCommandExecutor::new(pool_service.clone(), crypto_service.clone(), wallet_service.clone(), ledger_service.clone());
-                let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
-                let did_command_executor = DidCommandExecutor::new(wallet_service.clone(), crypto_service.clone(), ledger_service.clone(), pool_service.clone());
-                let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone(), crypto_service.clone());
-                let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
-                let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
-                let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
-                let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
-                let cache_command_executor = CacheCommandExecutor::new(crypto_service.clone(), ledger_service.clone(), pool_service.clone(), wallet_service.clone());
-                let metrics_command_executor = MetricsCommandExecutor::new(wallet_service.clone(), metrics_service.clone());
+                let anoncreds_command_executor = Rc::new(AnoncredsCommandExecutor::new(anoncreds_service.clone(), blob_storage_service.clone(), pool_service.clone(), wallet_service.clone(), crypto_service.clone()));
+                let crypto_command_executor = Rc::new(CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone()));
+                let ledger_command_executor = Rc::new(LedgerCommandExecutor::new(pool_service.clone(), crypto_service.clone(), wallet_service.clone(), ledger_service.clone()));
+                let pool_command_executor = Rc::new(PoolCommandExecutor::new(pool_service.clone()));
+                let did_command_executor = Rc::new(DidCommandExecutor::new(wallet_service.clone(), crypto_service.clone(), ledger_service.clone(), pool_service.clone()));
+                let wallet_command_executor = Rc::new(WalletCommandExecutor::new(wallet_service.clone(), crypto_service.clone()));
+                let pairwise_command_executor = Rc::new(PairwiseCommandExecutor::new(wallet_service.clone()));
+                let blob_storage_command_executor = Rc::new(BlobStorageCommandExecutor::new(blob_storage_service.clone()));
+                let non_secret_command_executor = Rc::new(NonSecretsCommandExecutor::new(wallet_service.clone()));
+                let payments_command_executor = Rc::new(PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone()));
+                let cache_command_executor = Rc::new(CacheCommandExecutor::new(crypto_service.clone(), ledger_service.clone(), pool_service.clone(), wallet_service.clone()));
+                let metrics_command_executor = Rc::new(MetricsCommandExecutor::new(wallet_service.clone(), metrics_service.clone()));
 
-                async fn _exec_cmd(cmd: Option<InstrumentedCommand>,
-                                   metrics_service: &Rc<MetricsService>,
-                                   anoncreds_command_executor: &AnoncredsCommandExecutor,
-                                   crypto_command_executor: &CryptoCommandExecutor,
-                                   ledger_command_executor: &LedgerCommandExecutor,
-                                   pool_command_executor: &PoolCommandExecutor,
-                                   did_command_executor: &DidCommandExecutor,
-                                   wallet_command_executor: &WalletCommandExecutor,
-                                   pairwise_command_executor: &PairwiseCommandExecutor,
-                                   blob_storage_command_executor: &BlobStorageCommandExecutor,
-                                   non_secret_command_executor: &NonSecretsCommandExecutor,
-                                   payments_command_executor: &PaymentsCommandExecutor,
-                                   cache_command_executor: &CacheCommandExecutor,
-                                   metrics_command_executor: &MetricsCommandExecutor,
+                async fn _exec_cmd(instrumented_cmd: InstrumentedCommand,
+                                   metrics_service: Rc<MetricsService>,
+                                   anoncreds_command_executor: Rc<AnoncredsCommandExecutor>,
+                                   crypto_command_executor: Rc<CryptoCommandExecutor>,
+                                   ledger_command_executor: Rc<LedgerCommandExecutor>,
+                                   pool_command_executor: Rc<PoolCommandExecutor>,
+                                   did_command_executor: Rc<DidCommandExecutor>,
+                                   wallet_command_executor: Rc<WalletCommandExecutor>,
+                                   pairwise_command_executor: Rc<PairwiseCommandExecutor>,
+                                   blob_storage_command_executor: Rc<BlobStorageCommandExecutor>,
+                                   non_secret_command_executor: Rc<NonSecretsCommandExecutor>,
+                                   payments_command_executor: Rc<PaymentsCommandExecutor>,
+                                   cache_command_executor: Rc<CacheCommandExecutor>,
+                                   metrics_command_executor: Rc<MetricsCommandExecutor>,
                 ) {
-                    let instrumented_cmd = match cmd {
-                        Some(cmd) => {
-                            cmd
-                        }
-                        None => {
-                            warn!("No command to execute");
-                            return ();
-                        }
-                    };
                     let cmd_index: CommandIndex = (&instrumented_cmd.command).into();
                     let start_execution_ts = get_cur_time();
                     metrics_service.cmd_left_queue(cmd_index,
@@ -246,7 +237,19 @@ impl CommandExecutor {
                 loop {
                     trace!("CommandExecutor main loop >>");
                     let cmd = in_progress_tasks.run_until(receiver.next());
-                    spawner.spawn_local(_exec_cmd(cmd, &metrics_service, &anoncreds_command_executor, &crypto_command_executor, &ledger_command_executor, &pool_command_executor, &did_command_executor, &wallet_command_executor, &pairwise_command_executor, &blob_storage_command_executor, &non_secret_command_executor, &payments_command_executor, &cache_command_executor, &metrics_command_executor));
+                    
+                    let cmd = if let Some(cmd) = cmd {
+                        cmd
+                    } else {
+                        warn!("No command to execute");
+                        continue
+                    };
+
+                    if let Command::Exit = cmd.command {
+                        break
+                    }
+
+                    spawner.spawn_local(_exec_cmd(cmd, metrics_service.clone(), anoncreds_command_executor.clone(), crypto_command_executor.clone(), ledger_command_executor.clone(), pool_command_executor.clone(), did_command_executor.clone(), wallet_command_executor.clone(), pairwise_command_executor.clone(), blob_storage_command_executor.clone(), non_secret_command_executor.clone(), payments_command_executor.clone(), cache_command_executor.clone(), metrics_command_executor.clone()));
                     trace!("CommandExecutor main loop <<");
                 }
 
