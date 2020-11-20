@@ -1,7 +1,15 @@
 # Changelog
 
 ## 1.16.0 - 2020-11-17
-* TODO change summary
+* Removed 32-bit iOS targets
+* Update Rust version to 1.46.0
+* Various documentation updates, including release acceptance testing
+* Add support for metrics to libindy and wrappers
+* Add support for attribute value resrictions to presentation predicate restrictions
+* Add support for custom loggers to libindy
+* Performance improvements when ssearching wallets with large number of DIDs
+* Added test_zmq tool
+* LibVCX: TODO sumary of changes
 * Bugfixes
 
 ## 1.15.0 - 2020-03-25
