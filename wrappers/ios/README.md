@@ -8,7 +8,7 @@ Cocoapod will search for spec files in the root Specs folder.
 # Binaries
 
 * There are 2 types of automatically built archives containing libindy core library which can be used for your iOS application.
-    * library built for aarch64-apple-ios and armv7-apple-ios targets.
+    * library built for aarch64-apple-ios target.
     * universal libindy built for all architectures.
     
     Add pod to target:
@@ -34,7 +34,7 @@ Cocoapod will search for spec files in the root Specs folder.
 1. Install toolchains using command:
 
    ```
-   rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios i386-apple-ios x86_64-apple-ios
+   rustup target add aarch64-apple-ios x86_64-apple-ios
    ```
 1. Install cargo-lipo:
    
@@ -68,7 +68,7 @@ Cocoapod will search for spec files in the root Specs folder.
         * libindy
         * libnullpay
    * targets - target architectures.
-        * one of aarch64-apple-ios armv7-apple-ios armv7s-apple-ios i386-apple-ios x86_64-apple-ios
+        * one of aarch64-apple-ios x86_64-apple-ios
         * leave empty to build for all architectures.
 1. Go to `Specs/libindy` dir.
 1. Create directory with name defined in LIBINDY_POD_VERSION:
