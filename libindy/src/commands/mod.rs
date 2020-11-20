@@ -8,7 +8,6 @@ use std::thread;
 
 use futures::StreamExt;
 use futures::channel::mpsc::{unbounded, UnboundedSender};
-use futures::executor::block_on;
 
 use crate::commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use crate::commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
@@ -35,7 +34,6 @@ use crate::services::metrics::command_index::CommandIndex;
 use indy_wallet::WalletService;
 
 use self::threadpool::ThreadPool;
-use futures::stream::FuturesUnordered;
 use std::time::{SystemTime, UNIX_EPOCH};
 use futures::task::LocalSpawnExt;
 
