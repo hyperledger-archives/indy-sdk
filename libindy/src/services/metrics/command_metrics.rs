@@ -145,7 +145,6 @@ impl From<&Command> for CommandMetric {
                 match cmd {
                     LedgerCommand::SignAndSubmitRequest(_, _, _, _, _) => { CommandMetric::LedgerCommandSignAndSubmitRequest }
                     LedgerCommand::SubmitRequest(_, _, _) => { CommandMetric::LedgerCommandSubmitRequest }
-                    LedgerCommand::SubmitAck(_, _) => { CommandMetric::LedgerCommandSubmitAck }
                     LedgerCommand::SubmitAction(_, _, _, _, _) => { CommandMetric::LedgerCommandSubmitAction }
                     LedgerCommand::SignRequest(_, _, _, _) => { CommandMetric::LedgerCommandSignRequest }
                     LedgerCommand::MultiSignRequest(_, _, _, _) => { CommandMetric::LedgerCommandMultiSignRequest }
@@ -180,10 +179,6 @@ impl From<&Command> for CommandMetric {
                     LedgerCommand::BuildAuthRuleRequest(_, _, _, _, _, _, _, _) => { CommandMetric::LedgerCommandBuildAuthRuleRequest }
                     LedgerCommand::BuildAuthRulesRequest(_, _, _) => { CommandMetric::LedgerCommandBuildAuthRulesRequest }
                     LedgerCommand::BuildGetAuthRuleRequest(_, _, _, _, _, _, _) => { CommandMetric::LedgerCommandBuildGetAuthRuleRequest }
-                    LedgerCommand::GetSchema(_, _, _, _) => { CommandMetric::LedgerCommandGetSchema }
-                    LedgerCommand::GetSchemaContinue(_, _, _) => { CommandMetric::LedgerCommandGetSchemaContinue }
-                    LedgerCommand::GetCredDef(_, _, _, _) => { CommandMetric::LedgerCommandGetCredDef }
-                    LedgerCommand::GetCredDefContinue(_, _, _) => { CommandMetric::LedgerCommandGetCredDefContinue }
                     LedgerCommand::BuildTxnAuthorAgreementRequest(_, _, _, _, _, _) => { CommandMetric::LedgerCommandBuildTxnAuthorAgreementRequest }
                     LedgerCommand::BuildDisableAllTxnAuthorAgreementsRequest(_, _) => { CommandMetric::LedgerCommandBuildDisableAllTxnAuthorAgreementsRequest }
                     LedgerCommand::BuildGetTxnAuthorAgreementRequest(_, _, _) => { CommandMetric::LedgerCommandBuildGetTxnAuthorAgreementRequest }
@@ -198,12 +193,9 @@ impl From<&Command> for CommandMetric {
                     PoolCommand::Create(_, _, _) => { CommandMetric::PoolCommandCreate }
                     PoolCommand::Delete(_, _) => { CommandMetric::PoolCommandDelete }
                     PoolCommand::Open(_, _, _) => { CommandMetric::PoolCommandOpen }
-                    PoolCommand::OpenAck(_, _, _) => { CommandMetric::PoolCommandOpenAck }
                     PoolCommand::List(_) => { CommandMetric::PoolCommandList }
                     PoolCommand::Close(_, _) => { CommandMetric::PoolCommandClose }
-                    PoolCommand::CloseAck(_, _) => { CommandMetric::PoolCommandCloseAck }
                     PoolCommand::Refresh(_, _) => { CommandMetric::PoolCommandRefresh }
-                    PoolCommand::RefreshAck(_, _) => { CommandMetric::PoolCommandRefreshAck }
                     PoolCommand::SetProtocolVersion(_, _) => { CommandMetric::PoolCommandSetProtocolVersion }
                 }
             }
@@ -222,8 +214,6 @@ impl From<&Command> for CommandMetric {
                     DidCommand::SetDidMetadata(_, _, _, _) => { CommandMetric::DidCommandSetDidMetadata }
                     DidCommand::GetDidMetadata(_, _, _) => { CommandMetric::DidCommandGetDidMetadata }
                     DidCommand::AbbreviateVerkey(_, _, _) => { CommandMetric::DidCommandAbbreviateVerkey }
-                    DidCommand::GetNymAck(_, _, _, _) => { CommandMetric::DidCommandGetNymAck }
-                    DidCommand::GetAttribAck(_, _, _) => { CommandMetric::DidCommandGetAttribAck }
                     DidCommand::QualifyDid(_, _, _, _) => { CommandMetric::DidCommandQualifyDid }
                 }
             }
@@ -231,18 +221,12 @@ impl From<&Command> for CommandMetric {
                 match cmd {
                     WalletCommand::RegisterWalletType(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) => { CommandMetric::WalletCommandRegisterWalletType }
                     WalletCommand::Create(_, _, _) => { CommandMetric::WalletCommandCreate }
-                    WalletCommand::CreateContinue(_, _, _, _, _) => { CommandMetric::WalletCommandCreateContinue }
                     WalletCommand::Open(_, _, _) => { CommandMetric::WalletCommandOpen }
-                    WalletCommand::OpenContinue(_, _) => { CommandMetric::WalletCommandOpenContinue }
                     WalletCommand::Close(_, _) => { CommandMetric::WalletCommandClose }
                     WalletCommand::Delete(_, _, _) => { CommandMetric::WalletCommandDelete }
-                    WalletCommand::DeleteContinue(_, _, _, _, _) => { CommandMetric::WalletCommandDeleteContinue }
                     WalletCommand::Export(_, _, _) => { CommandMetric::WalletCommandExport }
-                    WalletCommand::ExportContinue(_, _, _, _, _) => { CommandMetric::WalletCommandExportContinue }
                     WalletCommand::Import(_, _, _, _) => { CommandMetric::WalletCommandImport }
-                    WalletCommand::ImportContinue(_, _, _, _, _) => { CommandMetric::WalletCommandImportContinue }
                     WalletCommand::GenerateKey(_, _) => { CommandMetric::WalletCommandGenerateKey }
-                    WalletCommand::DeriveKey(_, _) => { CommandMetric::WalletCommandDeriveKey }
                 }
             }
             Command::Pairwise(cmd) => {
@@ -272,46 +256,29 @@ impl From<&Command> for CommandMetric {
                 match cmd {
                     PaymentsCommand::RegisterMethod(_, _, _) => { CommandMetric::PaymentsCommandRegisterMethod }
                     PaymentsCommand::CreateAddress(_, _, _, _) => { CommandMetric::PaymentsCommandCreateAddress }
-                    PaymentsCommand::CreateAddressAck(_, _, _) => { CommandMetric::PaymentsCommandCreateAddressAck }
                     PaymentsCommand::ListAddresses(_, _) => { CommandMetric::PaymentsCommandListAddresses }
                     PaymentsCommand::AddRequestFees(_, _, _, _, _, _, _) => { CommandMetric::PaymentsCommandAddRequestFees }
-                    PaymentsCommand::AddRequestFeesAck(_, _) => { CommandMetric::PaymentsCommandAddRequestFeesAck }
                     PaymentsCommand::ParseResponseWithFees(_, _, _) => { CommandMetric::PaymentsCommandParseResponseWithFees }
-                    PaymentsCommand::ParseResponseWithFeesAck(_, _) => { CommandMetric::PaymentsCommandParseResponseWithFeesAck }
                     PaymentsCommand::BuildGetPaymentSourcesRequest(_, _, _, _, _) => { CommandMetric::PaymentsCommandBuildGetPaymentSourcesRequest }
-                    PaymentsCommand::BuildGetPaymentSourcesRequestAck(_, _) => { CommandMetric::PaymentsCommandBuildGetPaymentSourcesRequestAck }
                     PaymentsCommand::ParseGetPaymentSourcesResponse(_, _, _) => { CommandMetric::PaymentsCommandParseGetPaymentSourcesResponse }
-                    PaymentsCommand::ParseGetPaymentSourcesResponseAck(_, _) => { CommandMetric::PaymentsCommandParseGetPaymentSourcesResponseAck }
                     PaymentsCommand::BuildPaymentReq(_, _, _, _, _, _) => { CommandMetric::PaymentsCommandBuildPaymentReq }
-                    PaymentsCommand::BuildPaymentReqAck(_, _) => { CommandMetric::PaymentsCommandBuildPaymentReqAck }
                     PaymentsCommand::ParsePaymentResponse(_, _, _) => { CommandMetric::PaymentsCommandParsePaymentResponse }
-                    PaymentsCommand::ParsePaymentResponseAck(_, _) => { CommandMetric::PaymentsCommandParsePaymentResponseAck }
                     PaymentsCommand::AppendTxnAuthorAgreementAcceptanceToExtra(_, _, _, _, _, _, _) => { CommandMetric::PaymentsCommandAppendTxnAuthorAgreementAcceptanceToExtra }
                     PaymentsCommand::BuildMintReq(_, _, _, _, _) => { CommandMetric::PaymentsCommandBuildMintReq }
-                    PaymentsCommand::BuildMintReqAck(_, _) => { CommandMetric::PaymentsCommandBuildMintReqAck }
                     PaymentsCommand::BuildSetTxnFeesReq(_, _, _, _, _) => { CommandMetric::PaymentsCommandBuildSetTxnFeesReq }
-                    PaymentsCommand::BuildSetTxnFeesReqAck(_, _) => { CommandMetric::PaymentsCommandBuildSetTxnFeesReqAck }
                     PaymentsCommand::BuildGetTxnFeesReq(_, _, _, _) => { CommandMetric::PaymentsCommandBuildGetTxnFeesReq }
-                    PaymentsCommand::BuildGetTxnFeesReqAck(_, _) => { CommandMetric::PaymentsCommandBuildGetTxnFeesReqAck }
                     PaymentsCommand::ParseGetTxnFeesResponse(_, _, _) => { CommandMetric::PaymentsCommandParseGetTxnFeesResponse }
-                    PaymentsCommand::ParseGetTxnFeesResponseAck(_, _) => { CommandMetric::PaymentsCommandParseGetTxnFeesResponseAck }
                     PaymentsCommand::BuildVerifyPaymentReq(_, _, _, _) => { CommandMetric::PaymentsCommandBuildVerifyPaymentReq }
-                    PaymentsCommand::BuildVerifyPaymentReqAck(_, _) => { CommandMetric::PaymentsCommandBuildVerifyPaymentReqAck }
                     PaymentsCommand::ParseVerifyPaymentResponse(_, _, _) => { CommandMetric::PaymentsCommandParseVerifyPaymentResponse }
-                    PaymentsCommand::ParseVerifyPaymentResponseAck(_, _) => { CommandMetric::PaymentsCommandParseVerifyPaymentResponseAck }
                     PaymentsCommand::GetRequestInfo(_, _, _, _) => { CommandMetric::PaymentsCommandGetRequestInfo }
                     PaymentsCommand::SignWithAddressReq(_, _, _, _) => { CommandMetric::PaymentsCommandSignWithAddressReq }
-                    PaymentsCommand::SignWithAddressAck(_, _) => { CommandMetric::PaymentsCommandSignWithAddressAck }
                     PaymentsCommand::VerifyWithAddressReq(_, _, _, _) => { CommandMetric::PaymentsCommandVerifyWithAddressReq }
-                    PaymentsCommand::VerifyWithAddressAck(_, _) => { CommandMetric::PaymentsCommandVerifyWithAddressAck }
                 }
             }
             Command::Cache(cmd) => {
                 match cmd {
                     CacheCommand::GetSchema(_, _, _, _, _, _) => { CommandMetric::CacheCommandGetSchema }
-                    CacheCommand::GetSchemaContinue(_, _, _, _) => { CommandMetric::CacheCommandGetSchemaContinue }
                     CacheCommand::GetCredDef(_, _, _, _, _, _) => { CommandMetric::CacheCommandGetCredDef }
-                    CacheCommand::GetCredDefContinue(_, _, _, _) => { CommandMetric::CacheCommandGetCredDefContinue }
                     CacheCommand::PurgeSchemaCache(_, _, _) => { CommandMetric::CacheCommandPurgeSchemaCache }
                     CacheCommand::PurgeCredDefCache(_, _, _) => { CommandMetric::CacheCommandPurgeCredDefCache }
                 }
