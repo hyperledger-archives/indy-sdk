@@ -246,7 +246,7 @@ impl CommandExecutor {
                         break
                     }
 
-                    spawner.spawn_local(_exec_cmd(cmd, metrics_service.clone(), anoncreds_command_executor.clone(), crypto_command_executor.clone(), ledger_command_executor.clone(), pool_command_executor.clone(), did_command_executor.clone(), wallet_command_executor.clone(), pairwise_command_executor.clone(), blob_storage_command_executor.clone(), non_secret_command_executor.clone(), payments_command_executor.clone(), cache_command_executor.clone(), metrics_command_executor.clone()));
+                    spawner.spawn_local(_exec_cmd(cmd, metrics_service.clone(), anoncreds_command_executor.clone(), crypto_command_executor.clone(), ledger_command_executor.clone(), pool_command_executor.clone(), did_command_executor.clone(), wallet_command_executor.clone(), pairwise_command_executor.clone(), blob_storage_command_executor.clone(), non_secret_command_executor.clone(), payments_command_executor.clone(), cache_command_executor.clone(), metrics_command_executor.clone())).unwrap();
                     trace!("CommandExecutor main loop <<");
                 }
 
