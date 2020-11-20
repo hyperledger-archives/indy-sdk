@@ -3,7 +3,13 @@ libindy (1.16.0) unstable; urgency=medium
 [ Hyperledger ]
 
 ## 1.16.0
-* TODO
+* Update Rust version to 1.46.0
+* Various documentation updates, including release acceptance testing
+* Add support for metrics to libindy and wrappers
+* Add support for attribute value resrictions to presentation predicate restrictions
+* Add support for custom loggers to libindy
+* Performance improvements when ssearching wallets with large number of DIDs
+* Added test_zmq tool
 * Bugfixes
 
 ## 1.15.0

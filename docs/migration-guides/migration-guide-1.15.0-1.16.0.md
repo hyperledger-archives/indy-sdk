@@ -26,4 +26,4 @@ version you can check migration guides history:
 
 ## Libindy 1.15 to 1.16 migration
 
-TODO
+The Libindy 1.16 release contains bug fixes that don't affect API functions. 
