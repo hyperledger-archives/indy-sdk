@@ -1,5 +1,4 @@
 #![cfg_attr(feature = "fatal_warnings", deny(warnings))]
-#[macro_use]
 extern crate futures;
 
 extern crate byteorder;
