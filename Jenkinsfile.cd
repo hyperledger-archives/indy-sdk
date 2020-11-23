@@ -790,7 +790,10 @@ def iosTesting() {
                 checkout scm
 
                 echo "iOS Test: setup rust, brew and simulators"
-                setupRust()
+
+                //FIXME restore `setupRust()`
+                sh "rustup default 1.45.0" //FIXME downgrade rust for iOS build as 1.46.0 detecting potential linkage issue and terminating the build
+
                 setupRustIOS()
                 setupBrewPackages()
                 cleanSimulators()
