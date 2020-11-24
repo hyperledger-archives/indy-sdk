@@ -3,8 +3,10 @@ libvcx (0.9.0) unstable; urgency=medium
 [ Hyperledger ]
 
 ## 0.9.0
-* Bugfixes
-* TODO
+    * Added `protocol_type:4.0` implying that all inputs and outputs are expected to be in the Aries message format.
+    * Added a new function `vcx_delete_credential` to delete credential from the wallet.
+    * Changed behavior of `vcx_*_update_state_with_message` functions to not update the status of messages on the Agency. Instead, the application using VCX should care about changing of message status.
+    * Bugfixes
 
 ## 0.8.0
 * Bugfixes
