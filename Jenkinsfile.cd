@@ -792,7 +792,10 @@ def iosTesting() {
                 echo "iOS Test: setup rust, brew and simulators"
 
                 //FIXME restore `setupRust()`
-                sh "rustup default 1.45.0" //FIXME downgrade rust for iOS build as 1.46.0 detecting potential linkage issue and terminating the build
+                //FIXME We downgrade rust for iOS build as 1.46.0 forces building cdylib crate that causes linking errors.
+                //FIXME See https://github.com/rust-lang/rust/issues/79373 for details.
+                //FIXME It is fixed in nightly already and we need switch to 1.49 after it is released.
+                sh "rustup default 1.45.0"
 
                 setupRustIOS()
                 setupBrewPackages()
