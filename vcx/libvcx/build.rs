@@ -64,8 +64,7 @@ fn main() {
     }else if target.contains("aarch64-linux-android") || target.contains("armv7-linux-androideabi") ||
         target.contains("arm-linux-androideabi") || target.contains("i686-linux-android") ||
         target.contains("x86_64-linux-android") || target.contains("aarch64-apple-ios") ||
-        target.contains("armv7-apple-ios") || target.contains("armv7s-apple-ios") ||
-        target.contains("i386-apple-ios") || target.contains("x86_64-apple-ios") {
+        target.contains("x86_64-apple-ios") {
 
         let libindy_lib_path = match env::var("LIBINDY_DIR"){
             Ok(val) => val,

@@ -26,7 +26,7 @@ if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
 fi
 
 if [ -z "${IOS_TARGETS}" ]; then
-    echo "please provide the targets e.g aarch64-apple-ios,armv7-apple-ios,i386-apple-ios,x86_64-apple-ios"
+    echo "please provide the targets e.g aarch64-apple-ios,x86_64-apple-ios"
     exit 1
 fi
 
@@ -56,12 +56,6 @@ for target in ${targets[*]}
 do
     if [ "${target}" = "aarch64-apple-ios" ]; then
         target_arch="arm64"
-    elif [ "${target}" = "armv7-apple-ios" ]; then
-        target_arch="armv7"
-    elif [ "${target}" = "armv7s-apple-ios" ]; then
-        target_arch="armv7s"
-    elif [ "${target}" = "i386-apple-ios" ]; then
-        target_arch="i386"
     elif [ "${target}" = "x86_64-apple-ios" ]; then
         target_arch="x86_64"
     fi
