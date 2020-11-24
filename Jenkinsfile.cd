@@ -1079,6 +1079,8 @@ def rustWrapperPublishing(testEnv, isRelease) {
 
     echo 'Publish Indy to Cargo'
 
+    def indy_sys_approved = input("Approve if indy-sys is available on crates.io") //TODO replace with auto-check and repeat logic
+
     dir('wrappers/rust') {
         if (testReleaseVersion) {
             sh "sed -i -E -- 's/indy-sys = \\{ path =\"indy-sys\", version = \"=([0-9,.]+)\" \\}/indy-sys = \\{ path =\"indy-sys\", version = \"=${testReleaseVersion}${suffix}\" \\}/g' Cargo.toml"
