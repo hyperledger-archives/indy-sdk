@@ -9,7 +9,11 @@
 * Add support for custom loggers to libindy
 * Performance improvements when ssearching wallets with large number of DIDs
 * Added test_zmq tool
-* LibVCX: TODO sumary of changes
+* LibVCX: 
+    * Added `protocol_type:4.0` implying that all inputs and outputs are expected to be in the Aries message format.
+    * Added a new function `vcx_delete_credential` to delete credential from the wallet.
+    * Changed behavior of `vcx_*_update_state_with_message` functions to not update the status of messages on the Agency. Instead, the application using VCX should care about changing of message status.
+    * Bugfixes
 * Bugfixes
 
 ## 1.15.0 - 2020-03-25
