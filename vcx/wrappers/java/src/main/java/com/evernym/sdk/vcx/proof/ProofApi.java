@@ -183,6 +183,8 @@ public class ProofApi extends VcxJava.API {
             String message
     ) throws VcxException {
         ParamGuard.notNull(proofHandle, "proofHandle");
+        ParamGuard.notNull(message, "message");
+
         logger.debug("proofUpdateStateWithMessage() called with: proofHandle = [" + proofHandle + "]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
