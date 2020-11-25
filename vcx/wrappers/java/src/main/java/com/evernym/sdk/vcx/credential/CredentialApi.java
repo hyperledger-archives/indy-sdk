@@ -239,7 +239,9 @@ public class CredentialApi extends VcxJava.API {
             String message
     ) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
-        logger.debug("credentialUpdateState() called with: credentialHandle = [" + credentialHandle + "]");
+        ParamGuard.notNull(message, "message");
+
+        logger.debug("credentialUpdateStateWithMessage() called with: credentialHandle = [" + credentialHandle + "]");
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
