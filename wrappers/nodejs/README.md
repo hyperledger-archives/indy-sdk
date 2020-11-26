@@ -31,7 +31,7 @@ This module has a native compile step. It compiles C++ code and dynamically link
 
 You will need:
 
-* C++ build tools and Python 2. See [this](https://github.com/nodejs/node-gyp#installation) for platform recommendations.
+* C++ build tools and Python 2/3. See [this](https://github.com/nodejs/node-gyp#installation) for platform recommendations.
 * `libindy` v1.6+ in your system library path. (i.e. `/usr/lib/libindy.so` for linux)
 
 Then you can install via npm:
@@ -47,7 +47,7 @@ Use environment variable `RUST_LOG={info|debug|trace}` to output logs of Libindy
 
 i.e. `ld: library not found for -llibindy`
 
-First, make sure you have the latest libindy for your platform. Also make sure you have any other libraries it depends on. See [indy-sdk/doc](https://github.com/hyperledger/indy-sdk/tree/master/doc)
+First, make sure you have the latest libindy for your platform. Also make sure you have any other libraries it depends on. See [Installing the SDK](https://github.com/hyperledger/indy-sdk#installing-the-sdk)
 
 Second, make sure it's in the linker search path. The easiest way is to use the system library path.
 * ubuntu `/usr/lib/libindy.so`
@@ -3408,9 +3408,9 @@ indy.capi.abbreviateVerkey(did, fullVerkey, function(err, verkey){
 
 Setup an Indy SDK environment, and start a local pool.
 
- * [ubuntu](https://github.com/hyperledger/indy-sdk/blob/master/docs/ubuntu-build.md)
- * [osx](https://github.com/hyperledger/indy-sdk/blob/master/docs/mac-build.md)
- * [windows](https://github.com/hyperledger/indy-sdk/blob/master/docs/windows-build.md)
+ * [ubuntu](https://github.com/hyperledger/indy-sdk/blob/master/docs/build-guides/ubuntu-build.md)
+ * [osx](https://github.com/hyperledger/indy-sdk/blob/master/docs/build-guides/mac-build.md)
+ * [windows](https://github.com/hyperledger/indy-sdk/blob/master/docs/build-guides/windows-build.md)
 
 ```sh
 # You will need libindy in your system library path. (i.e. /usr/lib/libindy.so for linux)
