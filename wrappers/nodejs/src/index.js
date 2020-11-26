@@ -1,9 +1,9 @@
-var capi = require('./indyBinding')
-var wrapIndyCallback = require('./wrapIndyCallback')
-var IndyError = require('./IndyError')
+const capi = require('./indyBinding')
+const wrapIndyCallback = require('./wrapIndyCallback')
+const IndyError = require('./IndyError')
 
 function toJson (val) {
-  if (val === null || val === void 0) {
+  if (val === null || val === undefined) {
     return null
   }
   if (typeof val === 'string') {
@@ -22,26 +22,26 @@ function fromJson (val) {
   return val
 }
 
-var indy = {}
+const indy = {}
 
 indy.capi = capi // if you want to skip the json dance, IndyError, and promise support
 
 indy.setRuntimeConfig = function setRuntimeConfig (config) {
-  var err = capi.setRuntimeConfig(toJson(config))
+  const err = capi.setRuntimeConfig(toJson(config))
   if (err !== 0) {
     throw new IndyError(err)
   }
 }
 
 indy.setDefaultLogger = function setDefaultLogger (pattern) {
-  var err = capi.setDefaultLogger(pattern)
+  const err = capi.setDefaultLogger(pattern)
   if (err !== 0) {
     throw new IndyError(err)
   }
 }
 
 indy.setLogger = function setLogger (logFn) {
-  var err = capi.setLogger(logFn)
+  const err = capi.setLogger(logFn)
   if (err !== 0) {
     throw new IndyError(err)
   }

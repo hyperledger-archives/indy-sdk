@@ -1,7 +1,7 @@
-var util = require('util')
-var capi = require('./indyBinding')
+const util = require('util')
+const capi = require('./indyBinding')
 
-var errors = {
+const errors = {
   100: 'CommonInvalidParam1',
   101: 'CommonInvalidParam2',
   102: 'CommonInvalidParam3',
@@ -65,13 +65,13 @@ function IndyError (err) {
   Error.call(this)
   Error.captureStackTrace(this, this.constructor)
   this.name = this.constructor.name
-  if (errors.hasOwnProperty(err)) {
+  if (Object.prototype.hasOwnProperty.call(errors, err)) {
     this.message = errors[err]
     this.indyCode = err
     this.indyName = errors[err]
     try {
       this.indyCurrentErrorJson = capi.getCurrentError()
-      var details = JSON.parse(this.indyCurrentErrorJson)
+      const details = JSON.parse(this.indyCurrentErrorJson)
       if (typeof details.message === 'string') {
         this.indyMessage = details.message
       }

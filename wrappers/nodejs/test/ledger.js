@@ -1,8 +1,8 @@
-var test = require('ava')
-var indy = require('../')
-var cuid = require('cuid')
-var initTestPool = require('./helpers/initTestPool')
-var tempy = require('tempy')
+const test = require('ava')
+const indy = require('../')
+const cuid = require('cuid')
+const initTestPool = require('./helpers/initTestPool')
+const tempy = require('tempy')
 
 function sleep (ms) {
   return new Promise(function (resolve) {
@@ -12,7 +12,7 @@ function sleep (ms) {
 
 async function waitUntilApplied (ph, req, cond) {
   for (let i = 0; i < 3; i++) {
-    let res = await indy.submitRequest(ph, req)
+    const res = await indy.submitRequest(ph, req)
 
     if (cond(res)) {
       return res
@@ -23,32 +23,32 @@ async function waitUntilApplied (ph, req, cond) {
 }
 
 test('ledger', async function (t) {
-  var pool = await initTestPool()
-  var walletConfig = { 'id': 'wallet-' + cuid() }
-  var walletCredentials = { 'key': 'key' }
+  const pool = await initTestPool()
+  const walletConfig = { id: 'wallet-' + cuid() }
+  const walletCredentials = { key: 'key' }
   await indy.createWallet(walletConfig, walletCredentials)
-  var wh = await indy.openWallet(walletConfig, walletCredentials)
-  var [trusteeDid] = await indy.createAndStoreMyDid(wh, { seed: '000000000000000000000000Trustee1' })
-  var [myDid, myVerkey] = await indy.createAndStoreMyDid(wh, { })
-  var schemaName = 'schema-' + cuid()
-  var [schemaId, schema] = await indy.issuerCreateSchema(myDid, schemaName, '1.0', ['name', 'age'])
+  const wh = await indy.openWallet(walletConfig, walletCredentials)
+  const [trusteeDid] = await indy.createAndStoreMyDid(wh, { seed: '000000000000000000000000Trustee1' })
+  const [myDid, myVerkey] = await indy.createAndStoreMyDid(wh, { })
+  const schemaName = 'schema-' + cuid()
+  let [schemaId, schema] = await indy.issuerCreateSchema(myDid, schemaName, '1.0', ['name', 'age'])
 
   // Nym
-  var req = await indy.buildNymRequest(trusteeDid, myDid, myVerkey, null, 'TRUSTEE')
-  var res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
+  let req = await indy.buildNymRequest(trusteeDid, myDid, myVerkey, null, 'TRUSTEE')
+  let res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
   t.is(res.result.txn.data.verkey, myVerkey)
 
-  var resMetadata = await indy.getResponseMetadata(res)
-  t.true(resMetadata.hasOwnProperty('seqNo'))
-  t.true(resMetadata.hasOwnProperty('txnTime'))
-  t.false(resMetadata.hasOwnProperty('lastTxnTime'))
-  t.false(resMetadata.hasOwnProperty('lastSeqNo'))
+  const resMetadata = await indy.getResponseMetadata(res)
+  t.true(Object.prototype.hasOwnProperty.call(resMetadata, 'seqNo'))
+  t.true(Object.prototype.hasOwnProperty.call(resMetadata, 'txnTime'))
+  t.false(Object.prototype.hasOwnProperty.call(resMetadata, 'lastTxnTime'))
+  t.false(Object.prototype.hasOwnProperty.call(resMetadata, 'lastSeqNo'))
 
   req = await indy.buildGetNymRequest(trusteeDid, myDid)
-  res = await waitUntilApplied(pool.handle, req, res => res['result']['seqNo'] != null)
-  var data = await indy.parseGetNymResponse(res)
-  t.is(myDid, data['did'])
-  t.is(myVerkey, data['verkey'])
+  res = await waitUntilApplied(pool.handle, req, res => res.result.seqNo != null)
+  let data = await indy.parseGetNymResponse(res)
+  t.is(myDid, data.did)
+  t.is(myVerkey, data.verkey)
 
   // Schema
   req = await indy.buildSchemaRequest(myDid, schema)
@@ -56,12 +56,12 @@ test('ledger', async function (t) {
   res = await indy.submitRequest(pool.handle, req)
 
   req = await indy.buildGetSchemaRequest(myDid, schemaId)
-  res = await waitUntilApplied(pool.handle, req, res => res['result']['seqNo'] != null)
+  res = await waitUntilApplied(pool.handle, req, res => res.result.seqNo != null)
   data = await indy.parseGetSchemaResponse(res)
   t.is(data[0], schemaId)
   t.is(data[1].name, schema.name)
   req = await indy.buildGetTxnRequest(myDid, null, data[1].seqNo)
-  res = await waitUntilApplied(pool.handle, req, res => res['result']['data']['txnMetadata']['seqNo'] != null)
+  res = await waitUntilApplied(pool.handle, req, res => res.result.data.txnMetadata.seqNo != null)
   t.is(res.result.data.txn.data.data.name, schema.name)
   schema = data[1]
 
@@ -83,7 +83,7 @@ test('ledger', async function (t) {
   res = await indy.signAndSubmitRequest(pool.handle, wh, myDid, req)
 
   req = await indy.buildGetAttribRequest(myDid, myDid, 'endpoint', null, null)
-  res = await waitUntilApplied(pool.handle, req, data => data['result']['data'] != null)
+  res = await waitUntilApplied(pool.handle, req, data => data.result.data != null)
   t.deepEqual(JSON.parse(res.result.data), { endpoint: { ha: '127.0.0.1:5555' } })
 
   // Pool
@@ -101,29 +101,29 @@ test('ledger', async function (t) {
   t.is(req.operation.dest, trusteeDid)
 
   // Cred Def
-  var [credDefId, credDef] = await indy.issuerCreateAndStoreCredentialDef(wh, myDid, schema, 'TAG', 'CL', { support_revocation: true })
+  const [credDefId, credDef] = await indy.issuerCreateAndStoreCredentialDef(wh, myDid, schema, 'TAG', 'CL', { support_revocation: true })
   req = await indy.buildCredDefRequest(myDid, credDef)
   res = await indy.signAndSubmitRequest(pool.handle, wh, myDid, req)
 
   req = await indy.buildGetCredDefRequest(myDid, credDefId)
-  res = await waitUntilApplied(pool.handle, req, res => res['result']['seqNo'] != null)
+  res = await waitUntilApplied(pool.handle, req, res => res.result.seqNo != null)
   res = await indy.parseGetCredDefResponse(res)
   t.is(res[0], credDefId)
   t.is(res[1].id, credDef.id)
 
   // Revoc Reg Def
-  var writerH = await indy.openBlobStorageWriter('default', {
-    'base_dir': tempy.directory(),
-    'uri_pattern': ''
+  const writerH = await indy.openBlobStorageWriter('default', {
+    base_dir: tempy.directory(),
+    uri_pattern: ''
   })
-  var [revRegDefId, revRegDef, revRegEntry] = await indy.issuerCreateAndStoreRevocReg(wh, myDid, null, 'tag1', credDefId, { max_cred_num: 5 }, writerH)
+  const [revRegDefId, revRegDef, revRegEntry] = await indy.issuerCreateAndStoreRevocReg(wh, myDid, null, 'tag1', credDefId, { max_cred_num: 5 }, writerH)
 
   req = await indy.buildRevocRegDefRequest(myDid, revRegDef)
   res = await indy.signAndSubmitRequest(pool.handle, wh, myDid, req)
   t.is(res.result.txn.data.id, revRegDefId)
 
   req = await indy.buildGetRevocRegDefRequest(myDid, revRegDefId)
-  res = await waitUntilApplied(pool.handle, req, res => res['result']['seqNo'] != null)
+  res = await waitUntilApplied(pool.handle, req, res => res.result.seqNo != null)
   res = await indy.parseGetRevocRegDefResponse(res)
   t.is(res[0], revRegDefId)
   t.is(res[1].id, revRegDef.id)
@@ -132,9 +132,9 @@ test('ledger', async function (t) {
   req = await indy.buildRevocRegEntryRequest(myDid, revRegDefId, 'CL_ACCUM', revRegEntry)
   res = await indy.signAndSubmitRequest(pool.handle, wh, myDid, req)
 
-  var nowSeconds = Math.floor(Date.now() / 1000)
+  const nowSeconds = Math.floor(Date.now() / 1000)
   req = await indy.buildGetRevocRegRequest(myDid, revRegDefId, nowSeconds + 100)
-  res = await waitUntilApplied(pool.handle, req, res => res['result']['seqNo'] != null)
+  res = await waitUntilApplied(pool.handle, req, res => res.result.seqNo != null)
   res = await indy.parseGetRevocRegResponse(res)
   t.is(res[0], revRegDefId)
   t.is(typeof res[1], 'object')
@@ -142,7 +142,7 @@ test('ledger', async function (t) {
 
   // RevocRegDelta
   req = await indy.buildGetRevocRegDeltaRequest(myDid, revRegDefId, nowSeconds, nowSeconds + 100)
-  res = await waitUntilApplied(pool.handle, req, res => res['result']['seqNo'] != null)
+  res = await waitUntilApplied(pool.handle, req, res => res.result.seqNo != null)
   res = await indy.parseGetRevocRegDeltaResponse(res)
   t.is(res[0], revRegDefId)
   t.is(typeof res[1], 'object')
@@ -156,14 +156,14 @@ test('ledger', async function (t) {
   // Auth Rule
   req = await indy.buildGetAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101')
   res = await indy.submitRequest(pool.handle, req)
-  var defaultConstraint = res['result']['data'][0]['constraint']
+  const defaultConstraint = res.result.data[0].constraint
 
-  var constraint = {
-    'sig_count': 1,
-    'metadata': {},
-    'role': '0',
-    'constraint_id': 'ROLE',
-    'need_to_be_owner': false
+  const constraint = {
+    sig_count: 1,
+    metadata: {},
+    role: '0',
+    constraint_id: 'ROLE',
+    need_to_be_owner: false
   }
   req = await indy.buildAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101', constraint)
   res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
@@ -173,47 +173,47 @@ test('ledger', async function (t) {
 
   req = await indy.buildGetAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101')
   res = await indy.submitRequest(pool.handle, req)
-  t.deepEqual(res['result']['data'][0]['constraint'], constraint)
+  t.deepEqual(res.result.data[0].constraint, constraint)
 
-  var expectedAuthRule = {
-    'auth_type': '1',
-    'auth_action': 'ADD',
-    'field': 'role',
-    'new_value': '101',
-    'constraint': constraint
+  const expectedAuthRule = {
+    auth_type: '1',
+    auth_action: 'ADD',
+    field: 'role',
+    new_value: '101',
+    constraint: constraint
   }
 
-  var authRulesData = [expectedAuthRule]
+  const authRulesData = [expectedAuthRule]
   req = await indy.buildAuthRulesRequest(trusteeDid, authRulesData)
   res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
   t.is(res.op, 'REPLY')
 
   // author agreement
   req = await indy.buildTxnAuthorAgreementRequest(trusteeDid, 'indy agreement', '1.0.0', 12345, 54321)
-  t.deepEqual(req['operation'], { 'type': '4', 'text': 'indy agreement', 'version': '1.0.0', 'ratification_ts': 12345, 'retirement_ts': 54321 })
+  t.deepEqual(req.operation, { type: '4', text: 'indy agreement', version: '1.0.0', ratification_ts: 12345, retirement_ts: 54321 })
 
-  req = await indy.buildGetTxnAuthorAgreementRequest(null, { 'version': '1.0.0' })
-  t.deepEqual(req['operation'], { 'type': '6', 'version': '1.0.0' })
+  req = await indy.buildGetTxnAuthorAgreementRequest(null, { version: '1.0.0' })
+  t.deepEqual(req.operation, { type: '6', version: '1.0.0' })
 
   req = await indy.buildDisableAllTxnAuthorAgreementsRequest(trusteeDid)
-  t.deepEqual(req['operation'], { 'type': '8' })
+  t.deepEqual(req.operation, { type: '8' })
 
   // acceptance mechanism
-  var aml = { 'acceptance mechanism label 1': 'some acceptance mechanism description 1' }
+  const aml = { 'acceptance mechanism label 1': 'some acceptance mechanism description 1' }
   req = await indy.buildAcceptanceMechanismsRequest(trusteeDid, aml, '1.0.0', null)
-  t.deepEqual(req['operation'], { 'type': '5', 'aml': aml, 'version': '1.0.0' })
+  t.deepEqual(req.operation, { type: '5', aml: aml, version: '1.0.0' })
 
   req = await indy.buildGetAcceptanceMechanismsRequest(null, 123379200, null)
-  t.deepEqual(req['operation'], { 'type': '7', 'timestamp': 123379200 })
+  t.deepEqual(req.operation, { type: '7', timestamp: 123379200 })
 
   // author agreement acceptance data
   req = await indy.appendTxnAuthorAgreementAcceptanceToRequest(req, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123379200)
-  var expectedMeta = {
-    'mechanism': 'acceptance mechanism label 1',
-    'taaDigest': '7213b9aabf8677edf6b17d20a9fbfaddb059ea4cb122d163bdf658ea67196120',
-    'time': 123379200
+  const expectedMeta = {
+    mechanism: 'acceptance mechanism label 1',
+    taaDigest: '7213b9aabf8677edf6b17d20a9fbfaddb059ea4cb122d163bdf658ea67196120',
+    time: 123379200
   }
-  t.deepEqual(req['taaAcceptance'], expectedMeta)
+  t.deepEqual(req.taaAcceptance, expectedMeta)
 
   // set back
   req = await indy.buildAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101', defaultConstraint)
@@ -223,7 +223,7 @@ test('ledger', async function (t) {
   // endorser
   req = await indy.buildSchemaRequest(myDid, schema)
   req = await indy.appendRequestEndorser(req, trusteeDid)
-  t.is(req['endorser'], trusteeDid)
+  t.is(req.endorser, trusteeDid)
 
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)
