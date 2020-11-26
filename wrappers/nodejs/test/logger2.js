@@ -25,6 +25,6 @@ test('setLogger', async function (t) {
 
   const err = t.throws(function () {
     indy.setLogger(function () {})
-  }, IndyError)
+  }, { instanceOf: IndyError })
   t.is(err.indyName, 'CommonInvalidState')
 })

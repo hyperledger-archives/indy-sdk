@@ -38,5 +38,8 @@
     "home-dir": "^1.0.0",
     "standard": "^16.0.3",
     "tempy": "^1.0.0"
+  },
+  "ava": {
+    "timeout": "2m"
   }
 }
