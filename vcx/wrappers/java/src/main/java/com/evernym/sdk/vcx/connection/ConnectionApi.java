@@ -79,7 +79,10 @@ public class ConnectionApi extends VcxJava.API {
 	}
 
 	public static CompletableFuture<Integer> vcxConnectionUpdateStateWithMessage(int connectionHandle, String message) throws VcxException {
-		logger.debug("vcxConnectionUpdateState() called with: connectionHandle = [" + connectionHandle + "]");
+		ParamGuard.notNull(connectionHandle, "connectionHandle");
+		ParamGuard.notNull(message, "message");
+
+		logger.debug("vcxConnectionUpdateStateWithMessage() called with: connectionHandle = [" + connectionHandle + "]");
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
