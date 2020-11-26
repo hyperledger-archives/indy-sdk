@@ -11,6 +11,6 @@ test('setDefaultLogger', function (t) {
 
   const err = t.throws(function () {
     indy.setDefaultLogger('foo')
-  }, IndyError)
+  }, { instanceOf: IndyError })
   t.is(err.indyName, 'CommonInvalidState')
 })

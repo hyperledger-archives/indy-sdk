@@ -24,12 +24,12 @@ test('wrapper essentials', async function (t) {
 
   err = t.throws(function () {
     indy.abbreviateVerkey(1, verkey)
-  }, Error)
+  }, { instanceOf: Error })
   t.is(err.message, 'abbreviateVerkey expects String or null for did')
 
   err = t.throws(function () {
     indy.abbreviateVerkey(did, [1, 2, 3])
-  }, Error)
+  }, { instanceOf: Error })
   t.is(err.message, 'abbreviateVerkey expects String or null for fullVerkey')
 
   err = await t.throwsAsync(indy.abbreviateVerkey(null, verkey))
