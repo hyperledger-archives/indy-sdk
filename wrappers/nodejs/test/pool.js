@@ -1,22 +1,22 @@
-var test = require('ava')
-var indy = require('../')
-var makeTestPool = require('./helpers/makeTestPool')
+const test = require('ava')
+const indy = require('../')
+const makeTestPool = require('./helpers/makeTestPool')
 
 test('pool', async function (t) {
-  var err = await t.throwsAsync(indy.createPoolLedgerConfig('', ''))
+  let err = await t.throwsAsync(indy.createPoolLedgerConfig('', ''))
   t.is(err.indyName, 'CommonInvalidParam2')
 
   err = await t.throwsAsync(indy.createPoolLedgerConfig('not_a_real_pool', {
-    'genesis_txn': '/not/a/real/file.txn'
+    genesis_txn: '/not/a/real/file.txn'
   }))
   t.is(err.indyName, 'CommonIOError')
 
-  var pool = await makeTestPool()
+  const pool = await makeTestPool()
 
   t.is((await indy.listPools()).map(p => p.pool).indexOf(pool.name), -1)
 
   t.is(await indy.createPoolLedgerConfig(pool.name, {
-    'genesis_txn': pool.file
+    genesis_txn: pool.file
   }), null)
 
   await indy.setProtocolVersion(1)
@@ -26,7 +26,7 @@ test('pool', async function (t) {
 
   await indy.setProtocolVersion(2)
 
-  var poolH = await indy.openPoolLedger(pool.name, null)
+  const poolH = await indy.openPoolLedger(pool.name, null)
   t.truthy(poolH >= 0)
 
   err = await t.throwsAsync(indy.refreshPoolLedger(-1))

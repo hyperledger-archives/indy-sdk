@@ -1,17 +1,17 @@
-var test = require('ava')
-var indy = require('../')
-var cuid = require('cuid')
-var initTestPool = require('./helpers/initTestPool')
+const test = require('ava')
+const indy = require('../')
+const cuid = require('cuid')
+const initTestPool = require('./helpers/initTestPool')
 
 test('pairwise', async function (t) {
-  var pool = await initTestPool()
-  var walletConfig = { 'id': 'wallet-' + cuid() }
-  var walletCredentials = { 'key': 'key' }
+  const pool = await initTestPool()
+  const walletConfig = { id: 'wallet-' + cuid() }
+  const walletCredentials = { key: 'key' }
   await indy.createWallet(walletConfig, walletCredentials)
-  var wh = await indy.openWallet(walletConfig, walletCredentials)
+  const wh = await indy.openWallet(walletConfig, walletCredentials)
 
-  var [theirDid, theirVerkey] = await indy.createAndStoreMyDid(wh, {})
-  var [myDid] = await indy.createAndStoreMyDid(wh, {})
+  const [theirDid, theirVerkey] = await indy.createAndStoreMyDid(wh, {})
+  const [myDid] = await indy.createAndStoreMyDid(wh, {})
   await indy.storeTheirDid(wh, { did: theirDid, verkey: theirVerkey })
 
   t.deepEqual(await indy.listPairwise(wh), [])

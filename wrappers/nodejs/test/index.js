@@ -1,9 +1,9 @@
-var test = require('ava')
-var indy = require('../')
+const test = require('ava')
+const indy = require('../')
 
-var did = 'VsKV7grR1BUE29mG2Fm2kX'
-var verkey = 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa'
-var abbrVerkey = '~HYwqs2vrTc8Tn4uBV7NBTe'
+const did = 'VsKV7grR1BUE29mG2Fm2kX'
+const verkey = 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa'
+const abbrVerkey = '~HYwqs2vrTc8Tn4uBV7NBTe'
 
 test.before('test getCurrentError before any errors', function (t) {
   t.is(indy.capi.getCurrentError(), null)
@@ -12,7 +12,7 @@ test.before('test getCurrentError before any errors', function (t) {
 test('wrapper essentials', async function (t) {
   t.is(await indy.abbreviateVerkey(did, verkey), abbrVerkey)
 
-  var err = await t.throwsAsync(indy.abbreviateVerkey())
+  let err = await t.throwsAsync(indy.abbreviateVerkey())
   t.is(err.message, 'CommonInvalidParam3')
   t.is(err.indyCode, 102)
   t.is(err.indyName, 'CommonInvalidParam3')
@@ -34,7 +34,7 @@ test('wrapper essentials', async function (t) {
 
   err = await t.throwsAsync(indy.abbreviateVerkey(null, verkey))
   t.is(err.indyName, 'CommonInvalidParam3')
-  err = await t.throwsAsync(indy.abbreviateVerkey(void 0, verkey))
+  err = await t.throwsAsync(indy.abbreviateVerkey(undefined, verkey))
   t.is(err.indyName, 'CommonInvalidParam3')
 
   err = await t.throwsAsync(indy.abbreviateVerkey(did, null))
