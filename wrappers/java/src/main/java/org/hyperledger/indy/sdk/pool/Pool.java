@@ -278,7 +278,9 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 	/**
 	 * Lists names of created pool ledgers
 	 *
-	 * @return A future that does not resolve a value.
+	 * @return A future resolving to a list of pools: [{
+	 *     "pool": string - Name of pool ledger stored in the wallet.
+	 *   }]
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> listPools() throws IndyException {
