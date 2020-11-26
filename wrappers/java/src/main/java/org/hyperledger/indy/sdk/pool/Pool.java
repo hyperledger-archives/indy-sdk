@@ -73,6 +73,22 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 			future.complete(result);
 		}
 	};
+
+	/**
+	 * Callback used when listPools completes.
+	 */
+	private static Callback listPoolsCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String metadata) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkResult(future, err)) return;
+
+			String result = metadata;
+			future.complete(result);
+		}
+	};
 	
 	/*
 	 * STATIC METHODS
@@ -253,6 +269,26 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 				commandHandle,
 				protocolVersion,
 				voidCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Lists names of created pool ledgers
+	 *
+	 * @return A future that does not resolve a value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> listPools() throws IndyException {
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_list_pools(
+				commandHandle,
+				listPoolsCb);
 
 		checkResult(future, result);
 
