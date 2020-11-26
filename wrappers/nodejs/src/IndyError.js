@@ -1,4 +1,3 @@
-const util = require('util')
 const capi = require('./indyBinding')
 
 const errors = {
@@ -61,29 +60,31 @@ const errors = {
   706: 'TransactionNotAllowedError'
 }
 
-function IndyError (err) {
-  Error.call(this)
-  Error.captureStackTrace(this, this.constructor)
-  this.name = this.constructor.name
-  if (Object.prototype.hasOwnProperty.call(errors, err)) {
-    this.message = errors[err]
-    this.indyCode = err
-    this.indyName = errors[err]
-    try {
-      this.indyCurrentErrorJson = capi.getCurrentError()
-      const details = JSON.parse(this.indyCurrentErrorJson)
-      if (typeof details.message === 'string') {
-        this.indyMessage = details.message
-      }
-      if (typeof details.backtrace === 'string') {
-        this.indyBacktrace = details.backtrace
-      }
-    } catch (e) {
+class IndyError extends Error {
+  constructor (err) {
+    super()
+
+    this.name = this.constructor.name
+    Error.captureStackTrace(this, IndyError)
+
+    if (Object.prototype.hasOwnProperty.call(errors, err)) {
+      this.message = errors[err]
+      this.indyCode = err
+      this.indyName = errors[err]
+      try {
+        this.indyCurrentErrorJson = capi.getCurrentError()
+        const details = JSON.parse(this.indyCurrentErrorJson)
+        if (typeof details.message === 'string') {
+          this.indyMessage = details.message
+        }
+        if (typeof details.backtrace === 'string') {
+          this.indyBacktrace = details.backtrace
+        }
+      } catch (e) {}
+    } else {
+      this.message = err + ''
     }
-  } else {
-    this.message = (err + '')
   }
 }
-util.inherits(IndyError, Error)
 
 module.exports = IndyError
