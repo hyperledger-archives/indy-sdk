@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use serde_json;
 
@@ -85,17 +85,17 @@ pub enum DidCommand {
 }
 
 pub struct DidCommandExecutor {
-    wallet_service: Rc<WalletService>,
-    crypto_service: Rc<CryptoService>,
-    ledger_service: Rc<LedgerService>,
-    pool_service: Rc<PoolService>,
+    wallet_service: Arc<WalletService>,
+    crypto_service: Arc<CryptoService>,
+    ledger_service: Arc<LedgerService>,
+    pool_service: Arc<PoolService>,
 }
 
 impl DidCommandExecutor {
-    pub fn new(wallet_service: Rc<WalletService>,
-               crypto_service: Rc<CryptoService>,
-               ledger_service: Rc<LedgerService>,
-               pool_service: Rc<PoolService>) -> DidCommandExecutor {
+    pub fn new(wallet_service: Arc<WalletService>,
+               crypto_service: Arc<CryptoService>,
+               ledger_service: Arc<LedgerService>,
+               pool_service: Arc<PoolService>) -> DidCommandExecutor {
         DidCommandExecutor {
             wallet_service,
             crypto_service,
@@ -108,27 +108,33 @@ impl DidCommandExecutor {
         match command {
             DidCommand::CreateAndStoreMyDid(wallet_handle, my_did_info, cb) => {
                 debug!("CreateAndStoreMyDid command received");
-                cb(self.create_and_store_my_did(wallet_handle, &my_did_info));
+                let result = self.create_and_store_my_did(wallet_handle, &my_did_info).await;
+                cb(result);
             }
             DidCommand::ReplaceKeysStart(wallet_handle, key_info, did, cb) => {
                 debug!("ReplaceKeysStart command received");
-                cb(self.replace_keys_start(wallet_handle, &key_info, &did));
+                let result1 = self.replace_keys_start(wallet_handle, &key_info, &did).await;
+                cb(result1);
             }
             DidCommand::ReplaceKeysApply(wallet_handle, did, cb) => {
                 debug!("ReplaceKeysApply command received");
-                cb(self.replace_keys_apply(wallet_handle, &did));
+                let result2 = self.replace_keys_apply(wallet_handle, &did).await;
+                cb(result2);
             }
             DidCommand::StoreTheirDid(wallet_handle, their_did_info, cb) => {
                 debug!("StoreTheirDid command received");
-                cb(self.store_their_did(wallet_handle, &their_did_info));
+                let result3 = self.store_their_did(wallet_handle, &their_did_info).await;
+                cb(result3);
             }
             DidCommand::GetMyDidWithMeta(wallet_handle, my_did, cb) => {
                 debug!("GetMyDidWithMeta command received");
-                cb(self.get_my_did_with_meta(wallet_handle, &my_did))
+                let result4 = self.get_my_did_with_meta(wallet_handle, &my_did).await;
+                cb(result4)
             }
             DidCommand::ListMyDidsWithMeta(wallet_handle, cb) => {
                 debug!("ListMyDidsWithMeta command received");
-                cb(self.list_my_dids_with_meta(wallet_handle));
+                let result5 = self.list_my_dids_with_meta(wallet_handle).await;
+                cb(result5);
             }
             DidCommand::KeyForDid(pool_handle, wallet_handle, did, cb) => {
                 debug!("KeyForDid command received");
@@ -136,11 +142,13 @@ impl DidCommandExecutor {
             }
             DidCommand::KeyForLocalDid(wallet_handle, did, cb) => {
                 debug!("KeyForLocalDid command received");
-                cb(self.key_for_local_did(wallet_handle, &did));
+                let result6 = self.key_for_local_did(wallet_handle, &did).await;
+                cb(result6);
             }
             DidCommand::SetEndpointForDid(wallet_handle, did, endpoint, cb) => {
                 debug!("SetEndpointForDid command received");
-                cb(self.set_endpoint_for_did(wallet_handle, &did, &endpoint));
+                let result7 = self.set_endpoint_for_did(wallet_handle, &did, &endpoint).await;
+                cb(result7);
             }
             DidCommand::GetEndpointForDid(wallet_handle, pool_handle, did, cb) => {
                 debug!("GetEndpointForDid command received");
@@ -148,11 +156,13 @@ impl DidCommandExecutor {
             }
             DidCommand::SetDidMetadata(wallet_handle, did, metadata, cb) => {
                 debug!("SetDidMetadata command received");
-                cb(self.set_did_metadata(wallet_handle, &did, metadata));
+                let result8 = self.set_did_metadata(wallet_handle, &did, metadata).await;
+                cb(result8);
             }
             DidCommand::GetDidMetadata(wallet_handle, did, cb) => {
                 debug!("GetDidMetadata command received");
-                cb(self.get_did_metadata(wallet_handle, &did));
+                let result9 = self.get_did_metadata(wallet_handle, &did).await;
+                cb(result9);
             }
             DidCommand::AbbreviateVerkey(did, verkey, cb) => {
                 debug!("AbbreviateVerkey command received");
@@ -160,19 +170,20 @@ impl DidCommandExecutor {
             }
             DidCommand::QualifyDid(wallet_handle, did, method, cb) => {
                 debug!("QualifyDid command received");
-                cb(self.qualify_did(wallet_handle, &did, &method));
+                let result10 = self.qualify_did(wallet_handle, &did, &method).await;
+                cb(result10);
             }
         };
     }
 
-    fn create_and_store_my_did(&self,
+    async fn create_and_store_my_did(&self,
                                wallet_handle: WalletHandle,
                                my_did_info: &MyDidInfo) -> IndyResult<(String, String)> {
         debug!("create_and_store_my_did >>> wallet_handle: {:?}, my_did_info_json: {:?}", wallet_handle, secret!(my_did_info));
 
         let (did, key) = self.crypto_service.create_my_did(&my_did_info)?;
 
-        if let Ok(current_did) = self._wallet_get_my_did(wallet_handle, &did.did) {
+        if let Ok(current_did) = self._wallet_get_my_did(wallet_handle, &did.did).await {
             if did.verkey == current_did.verkey {
                 return Ok((did.did.0, did.verkey));
             } else {
@@ -181,8 +192,8 @@ impl DidCommandExecutor {
             }
         }
 
-        self.wallet_service.add_indy_object(wallet_handle, &did.did.0, &did, &HashMap::new())?;
-        let _ = self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new()).ok();
+        self.wallet_service.add_indy_object(wallet_handle, &did.did.0, &did, &HashMap::new()).await?;
+        let _ = self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new()).await.ok();
 
         let res = (did.did.0, did.verkey);
 
@@ -191,7 +202,7 @@ impl DidCommandExecutor {
         Ok(res)
     }
 
-    fn replace_keys_start(&self,
+    async fn replace_keys_start(&self,
                           wallet_handle: WalletHandle,
                           key_info: &KeyInfo,
                           my_did: &DidValue) -> IndyResult<String> {
@@ -199,13 +210,13 @@ impl DidCommandExecutor {
 
         self.crypto_service.validate_did(my_did)?;
 
-        let my_did = self._wallet_get_my_did(wallet_handle, my_did)?;
+        let my_did = self._wallet_get_my_did(wallet_handle, my_did).await?;
 
         let temporary_key = self.crypto_service.create_key(&key_info)?;
         let my_temporary_did = TemporaryDid { did: my_did.did, verkey: temporary_key.verkey.clone() };
 
-        self.wallet_service.add_indy_object(wallet_handle, &temporary_key.verkey, &temporary_key, &HashMap::new())?;
-        self.wallet_service.add_indy_object(wallet_handle, &my_temporary_did.did.0, &my_temporary_did, &HashMap::new())?;
+        self.wallet_service.add_indy_object(wallet_handle, &temporary_key.verkey, &temporary_key, &HashMap::new()).await?;
+        self.wallet_service.add_indy_object(wallet_handle, &my_temporary_did.did.0, &my_temporary_did, &HashMap::new()).await?;
 
         let res = my_temporary_did.verkey;
 
@@ -214,47 +225,47 @@ impl DidCommandExecutor {
         Ok(res)
     }
 
-    fn replace_keys_apply(&self,
+    async fn replace_keys_apply(&self,
                           wallet_handle: WalletHandle,
                           my_did: &DidValue) -> IndyResult<()> {
         debug!("replace_keys_apply >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
 
         self.crypto_service.validate_did(my_did)?;
 
-        let my_did = self._wallet_get_my_did(wallet_handle, my_did)?;
+        let my_did = self._wallet_get_my_did(wallet_handle, my_did).await?;
         let my_temporary_did: TemporaryDid =
-            self.wallet_service.get_indy_object(wallet_handle, &my_did.did.0, &RecordOptions::id_value())?;
+            self.wallet_service.get_indy_object(wallet_handle, &my_did.did.0, &RecordOptions::id_value()).await?;
 
         let my_did = Did::from(my_temporary_did);
 
-        self.wallet_service.update_indy_object(wallet_handle, &my_did.did.0, &my_did)?;
-        self.wallet_service.delete_indy_record::<TemporaryDid>(wallet_handle, &my_did.did.0)?;
+        self.wallet_service.update_indy_object(wallet_handle, &my_did.did.0, &my_did).await?;
+        self.wallet_service.delete_indy_record::<TemporaryDid>(wallet_handle, &my_did.did.0).await?;
 
         debug!("replace_keys_apply <<<");
 
         Ok(())
     }
 
-    fn store_their_did(&self,
+    async fn store_their_did(&self,
                        wallet_handle: WalletHandle,
                        their_did_info: &TheirDidInfo) -> IndyResult<()> {
         debug!("store_their_did >>> wallet_handle: {:?}, their_did_info: {:?}", wallet_handle, their_did_info);
 
         let their_did = self.crypto_service.create_their_did(their_did_info)?;
 
-        self.wallet_service.upsert_indy_object(wallet_handle, &their_did.did.0, &their_did)?;
+        self.wallet_service.upsert_indy_object(wallet_handle, &their_did.did.0, &their_did).await?;
 
         debug!("store_their_did <<<");
 
         Ok(())
     }
 
-    fn get_my_did_with_meta(&self, wallet_handle: WalletHandle, my_did: &DidValue) -> IndyResult<String> {
+    async fn get_my_did_with_meta(&self, wallet_handle: WalletHandle, my_did: &DidValue) -> IndyResult<String> {
         debug!("get_my_did_with_meta >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
 
-        let did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &my_did.0, &RecordOptions::id_value())?;
-        let metadata = self.wallet_service.get_indy_opt_object::<DidMetadata>(wallet_handle, &did.did.0, &RecordOptions::id_value())?;
-        let temp_verkey = self.wallet_service.get_indy_opt_object::<TemporaryDid>(wallet_handle, &did.did.0, &RecordOptions::id_value())?;
+        let did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &my_did.0, &RecordOptions::id_value()).await?;
+        let metadata = self.wallet_service.get_indy_opt_object::<DidMetadata>(wallet_handle, &did.did.0, &RecordOptions::id_value()).await?;
+        let temp_verkey = self.wallet_service.get_indy_opt_object::<TemporaryDid>(wallet_handle, &did.did.0, &RecordOptions::id_value()).await?;
 
         let did_with_meta = DidWithMeta {
             did: did.did,
@@ -271,17 +282,17 @@ impl DidCommandExecutor {
         Ok(res)
     }
 
-    fn list_my_dids_with_meta(&self, wallet_handle: WalletHandle) -> IndyResult<String> {
+    async fn list_my_dids_with_meta(&self, wallet_handle: WalletHandle) -> IndyResult<String> {
         debug!("list_my_dids_with_meta >>> wallet_handle: {:?}", wallet_handle);
 
         let mut did_search =
-            self.wallet_service.search_indy_records::<Did>(wallet_handle, "{}", &SearchOptions::id_value())?;
+            self.wallet_service.search_indy_records::<Did>(wallet_handle, "{}", &SearchOptions::id_value()).await?;
 
 	let mut metadata_search =
-            self.wallet_service.search_indy_records::<DidMetadata>(wallet_handle, "{}", &SearchOptions::id_value())?;
+            self.wallet_service.search_indy_records::<DidMetadata>(wallet_handle, "{}", &SearchOptions::id_value()).await?;
 
 	let mut temporarydid_search =
-            self.wallet_service.search_indy_records::<TemporaryDid>(wallet_handle, "{}", &SearchOptions::id_value())?;
+            self.wallet_service.search_indy_records::<TemporaryDid>(wallet_handle, "{}", &SearchOptions::id_value()).await?;
 
         let mut dids: Vec<DidWithMeta> = Vec::new();
  
@@ -345,14 +356,14 @@ impl DidCommandExecutor {
         try_cb!(self.crypto_service.validate_did(&did), cb);
 
         // Look to my did
-        match self._wallet_get_my_did(wallet_handle, &did) {
+        match self._wallet_get_my_did(wallet_handle, &did).await {
             Ok(my_did) => return cb(Ok(my_did.verkey)),
             Err(ref err) if err.kind() == IndyErrorKind::WalletItemNotFound => {}
             Err(err) => return cb(Err(err))
         };
 
         // look to their did
-        let their_did = match self._wallet_get_their_did(wallet_handle, &did) {
+        let their_did = match self._wallet_get_their_did(wallet_handle, &did).await {
             Ok(val) => val,
             // No their their_did present in the wallet. Defer this command until it is fetched from ledger.
             Err(ref err) if err.kind() == IndyErrorKind::WalletItemNotFound => {
@@ -371,7 +382,7 @@ impl DidCommandExecutor {
         cb(Ok(res))
     }
 
-    fn key_for_local_did(&self,
+    async fn key_for_local_did(&self,
                          wallet_handle: WalletHandle,
                          did: &DidValue) -> IndyResult<String> {
         debug!("key_for_local_did >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
@@ -379,7 +390,7 @@ impl DidCommandExecutor {
         self.crypto_service.validate_did(&did)?;
 
         // Look to my did
-        match self._wallet_get_my_did(wallet_handle, did) {
+        match self._wallet_get_my_did(wallet_handle, did).await {
             Ok(my_did) => return Ok(my_did.verkey),
             Err(err) => match err.kind() {
                 IndyErrorKind::WalletItemNotFound => {}
@@ -388,7 +399,7 @@ impl DidCommandExecutor {
         };
 
         // look to their did
-        let their_did = self._wallet_get_their_did(wallet_handle, did)?;
+        let their_did = self._wallet_get_their_did(wallet_handle, did).await?;
 
         let res = their_did.verkey;
 
@@ -397,7 +408,7 @@ impl DidCommandExecutor {
         Ok(res)
     }
 
-    fn set_endpoint_for_did(&self,
+    async fn set_endpoint_for_did(&self,
                             wallet_handle: WalletHandle,
                             did: &DidValue,
                             endpoint: &Endpoint) -> IndyResult<()> {
@@ -410,7 +421,7 @@ impl DidCommandExecutor {
             self.crypto_service.validate_key(transport_key)?;
         }
 
-        self.wallet_service.upsert_indy_object(wallet_handle, &did.0, endpoint)?;
+        self.wallet_service.upsert_indy_object(wallet_handle, &did.0, endpoint).await?;
 
         debug!("set_endpoint_for_did <<<");
         Ok(())
@@ -426,7 +437,7 @@ impl DidCommandExecutor {
         try_cb!(self.crypto_service.validate_did(&did), cb);
 
         let endpoint =
-            self.wallet_service.get_indy_object::<Endpoint>(wallet_handle, &did.0, &RecordOptions::id_value());
+            self.wallet_service.get_indy_object::<Endpoint>(wallet_handle, &did.0, &RecordOptions::id_value()).await;
 
         let res = match endpoint {
             Ok(endpoint) => Ok(endpoint),
@@ -438,7 +449,7 @@ impl DidCommandExecutor {
         cb(res.map(|endpoint| (endpoint.ha, endpoint.verkey)))
     }
 
-    fn set_did_metadata(&self,
+    async fn set_did_metadata(&self,
                         wallet_handle: WalletHandle,
                         did: &DidValue,
                         metadata: String) -> IndyResult<()> {
@@ -448,21 +459,21 @@ impl DidCommandExecutor {
 
         let metadata = DidMetadata { value: metadata };
 
-        self.wallet_service.upsert_indy_object(wallet_handle, &did.0, &metadata)?;
+        self.wallet_service.upsert_indy_object(wallet_handle, &did.0, &metadata).await?;
 
         debug!("set_did_metadata >>>");
 
         Ok(())
     }
 
-    fn get_did_metadata(&self,
+    async fn get_did_metadata(&self,
                         wallet_handle: WalletHandle,
                         did: &DidValue) -> IndyResult<String> {
         debug!("get_did_metadata >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
         self.crypto_service.validate_did(did)?;
 
-        let metadata = self.wallet_service.get_indy_object::<DidMetadata>(wallet_handle, &did.0, &RecordOptions::id_value())?;
+        let metadata = self.wallet_service.get_indy_object::<DidMetadata>(wallet_handle, &did.0, &RecordOptions::id_value()).await?;
 
         let res = metadata.value;
 
@@ -499,7 +510,7 @@ impl DidCommandExecutor {
         Ok(res)
     }
 
-    fn qualify_did(&self,
+    async fn qualify_did(&self,
                    wallet_handle: WalletHandle,
                    did: &DidValue,
                    method: &DidMethod) -> IndyResult<String> {
@@ -507,29 +518,29 @@ impl DidCommandExecutor {
 
         self.crypto_service.validate_did(did)?;
 
-        let mut curr_did: Did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &did.0, &RecordOptions::id_value())?;
+        let mut curr_did: Did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &did.0, &RecordOptions::id_value()).await?;
 
         curr_did.did = DidValue::new(&did.to_short().0, Some(&method.0));
 
-        self.wallet_service.delete_indy_record::<Did>(wallet_handle, &did.0)?;
-        self.wallet_service.add_indy_object(wallet_handle, &curr_did.did.0, &curr_did, &HashMap::new())?;
+        self.wallet_service.delete_indy_record::<Did>(wallet_handle, &did.0).await?;
+        self.wallet_service.add_indy_object(wallet_handle, &curr_did.did.0, &curr_did, &HashMap::new()).await?;
 
         // move temporary Did
-        if let Ok(mut temp_did) = self.wallet_service.get_indy_object::<TemporaryDid>(wallet_handle, &did.0, &RecordOptions::id_value()) {
+        if let Ok(mut temp_did) = self.wallet_service.get_indy_object::<TemporaryDid>(wallet_handle, &did.0, &RecordOptions::id_value()).await {
             temp_did.did = curr_did.did.clone();
-            self.wallet_service.delete_indy_record::<TemporaryDid>(wallet_handle, &did.0)?;
-            self.wallet_service.add_indy_object(wallet_handle, &curr_did.did.0, &temp_did, &HashMap::new())?;
+            self.wallet_service.delete_indy_record::<TemporaryDid>(wallet_handle, &did.0).await?;
+            self.wallet_service.add_indy_object(wallet_handle, &curr_did.did.0, &temp_did, &HashMap::new()).await?;
         }
 
         // move metadata
-        self.update_dependent_entity_reference::<DidMetadata>(wallet_handle, &did.0, &curr_did.did.0)?;
+        self.update_dependent_entity_reference::<DidMetadata>(wallet_handle, &did.0, &curr_did.did.0).await?;
 
         // move endpoint
-        self.update_dependent_entity_reference::<Endpoint>(wallet_handle, &did.0, &curr_did.did.0)?;
+        self.update_dependent_entity_reference::<Endpoint>(wallet_handle, &did.0, &curr_did.did.0).await?;
 
         // move all pairwise
         let mut pairwise_search =
-            self.wallet_service.search_indy_records::<Pairwise>(wallet_handle, "{}", &RecordOptions::id_value())?;
+            self.wallet_service.search_indy_records::<Pairwise>(wallet_handle, "{}", &RecordOptions::id_value()).await?;
 
         while let Some(pairwise_record) = pairwise_search.fetch_next_record()? {
             let mut pairwise: Pairwise = pairwise_record.get_value()
@@ -539,7 +550,7 @@ impl DidCommandExecutor {
 
             if pairwise.my_did.eq(did) {
                 pairwise.my_did = curr_did.did.clone();
-                self.wallet_service.update_indy_object(wallet_handle, &pairwise.their_did.0, &pairwise)?;
+                self.wallet_service.update_indy_object(wallet_handle, &pairwise.their_did.0, &pairwise).await?;
             }
         }
 
@@ -548,16 +559,16 @@ impl DidCommandExecutor {
         Ok(curr_did.did.0)
     }
 
-    fn update_dependent_entity_reference<T>(&self, wallet_handle: WalletHandle, id: &str, new_id: &str) -> IndyResult<()>
+    async fn update_dependent_entity_reference<T>(&self, wallet_handle: WalletHandle, id: &str, new_id: &str) -> IndyResult<()>
         where T: ::serde::Serialize + ::serde::de::DeserializeOwned + Sized {
-        if let Ok(record) = self.wallet_service.get_indy_record_value::<T>(wallet_handle, id, "{}") {
-            self.wallet_service.delete_indy_record::<T>(wallet_handle, id)?;
-            self.wallet_service.add_indy_record::<T>(wallet_handle, new_id, &record, &HashMap::new())?;
+        if let Ok(record) = self.wallet_service.get_indy_record_value::<T>(wallet_handle, id, "{}").await {
+            self.wallet_service.delete_indy_record::<T>(wallet_handle, id).await?;
+            self.wallet_service.add_indy_record::<T>(wallet_handle, new_id, &record, &HashMap::new()).await?;
         }
         Ok(())
     }
 
-    fn get_nym_ack_process_and_store_their_did(&self,
+    async fn get_nym_ack_process_and_store_their_did(&self,
                    wallet_handle: WalletHandle,
                    did: DidValue,
                    get_nym_reply_result: IndyResult<String>) -> IndyResult<TheirDid> {
@@ -584,14 +595,14 @@ impl DidCommandExecutor {
 
         let their_did = self.crypto_service.create_their_did(&their_did_info)?;
 
-        self.wallet_service.add_indy_object(wallet_handle, &their_did.did.0, &their_did, &HashMap::new())?;
+        self.wallet_service.add_indy_object(wallet_handle, &their_did.did.0, &their_did, &HashMap::new()).await?;
 
         trace!("get_nym_ack_process_and_store_their_did <<<");
 
         Ok(their_did)
     }
 
-    fn _get_attrib_ack_process_store_endpoint_to_wallet(&self, wallet_handle: WalletHandle, get_attrib_reply_result: IndyResult<String>) -> IndyResult<Endpoint> {
+    async fn _get_attrib_ack_process_store_endpoint_to_wallet(&self, wallet_handle: WalletHandle, get_attrib_reply_result: IndyResult<String>) -> IndyResult<Endpoint> {
         trace!("_get_attrib_ack_process_store_endpoint_to_wallet >>> wallet_handle: {:?}, get_attrib_reply_result: {:?}", wallet_handle, get_attrib_reply_result);
 
         let get_attrib_reply = get_attrib_reply_result?;
@@ -609,7 +620,7 @@ impl DidCommandExecutor {
 
         let endpoint = Endpoint::new(attrib_data.endpoint.ha, attrib_data.endpoint.verkey);
 
-        self.wallet_service.add_indy_object(wallet_handle, &did.0, &endpoint, &HashMap::new())?;
+        self.wallet_service.add_indy_object(wallet_handle, &did.0, &endpoint, &HashMap::new()).await?;
 
         trace!("_get_attrib_ack_process_store_endpoint_to_wallet <<<");
 
@@ -626,7 +637,7 @@ impl DidCommandExecutor {
 
         let get_nym_reply_result = self.pool_service.send_tx(pool_handle, &get_nym_request).await;
 
-        self.get_nym_ack_process_and_store_their_did(wallet_handle, did, get_nym_reply_result)
+        self.get_nym_ack_process_and_store_their_did(wallet_handle, did, get_nym_reply_result).await
     }
 
     async fn _fetch_attrib_from_ledger(&self,
@@ -638,14 +649,14 @@ impl DidCommandExecutor {
 
         let get_attrib_reply_result = self.pool_service.send_tx(pool_handle, &get_attrib_request).await;
 
-        self._get_attrib_ack_process_store_endpoint_to_wallet(wallet_handle, get_attrib_reply_result)
+        self._get_attrib_ack_process_store_endpoint_to_wallet(wallet_handle, get_attrib_reply_result).await
     }
 
-    fn _wallet_get_my_did(&self, wallet_handle: WalletHandle, my_did: &DidValue) -> IndyResult<Did> {
-        self.wallet_service.get_indy_object(wallet_handle, &my_did.0, &RecordOptions::id_value())
+    async fn _wallet_get_my_did(&self, wallet_handle: WalletHandle, my_did: &DidValue) -> IndyResult<Did> {
+        self.wallet_service.get_indy_object(wallet_handle, &my_did.0, &RecordOptions::id_value()).await
     }
 
-    fn _wallet_get_their_did(&self, wallet_handle: WalletHandle, their_did: &DidValue) -> IndyResult<TheirDid> {
-        self.wallet_service.get_indy_object(wallet_handle, &their_did.0, &RecordOptions::id_value())
+    async fn _wallet_get_their_did(&self, wallet_handle: WalletHandle, their_did: &DidValue) -> IndyResult<TheirDid> {
+        self.wallet_service.get_indy_object(wallet_handle, &their_did.0, &RecordOptions::id_value()).await
     }
 }

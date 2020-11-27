@@ -1,6 +1,6 @@
 use indy_api_types::errors::prelude::*;
 use indy_wallet::WalletService;
-use std::rc::Rc;
+use std::sync::Arc;
 use crate::services::metrics::MetricsService;
 use serde_json::{Map, Value};
 
@@ -18,13 +18,13 @@ pub enum MetricsCommand {
 }
 
 pub struct MetricsCommandExecutor {
-    wallet_service: Rc<WalletService>,
-    metrics_service: Rc<MetricsService>
+    wallet_service: Arc<WalletService>,
+    metrics_service: Arc<MetricsService>
 }
 
 impl MetricsCommandExecutor {
-    pub fn new(wallet_service: Rc<WalletService>,
-               metrics_service: Rc<MetricsService>) -> MetricsCommandExecutor {
+    pub fn new(wallet_service: Arc<WalletService>,
+               metrics_service: Arc<MetricsService>) -> MetricsCommandExecutor {
         MetricsCommandExecutor {
             wallet_service,
             metrics_service
@@ -66,15 +66,15 @@ impl MetricsCommandExecutor {
                            Value::from(tp_instance.panic_count()));
     }
 
-    fn append_wallet_metrics(&self, metrics_map: &mut Map<String, Value>) {
+    async fn append_wallet_metrics(&self, metrics_map: &mut Map<String, Value>) {
         metrics_map.insert(String::from(OPENED_WALLETS_COUNT),
-                           Value::from(self.wallet_service.get_wallets_count()));
+                           Value::from(self.wallet_service.get_wallets_count().await));
         metrics_map.insert(String::from(OPENED_WALLET_IDS_COUNT),
-                           Value::from(self.wallet_service.get_wallet_ids_count()));
+                           Value::from(self.wallet_service.get_wallet_ids_count().await));
         metrics_map.insert(String::from(PENDING_FOR_IMPORT_WALLETS_COUNT),
-                           Value::from(self.wallet_service.get_pending_for_import_count()));
+                           Value::from(self.wallet_service.get_pending_for_import_count().await));
         metrics_map.insert(String::from(PENDING_FOR_OPEN_WALLETS_COUNT),
-                           Value::from(self.wallet_service.get_pending_for_open_count()));
+                           Value::from(self.wallet_service.get_pending_for_open_count().await));
     }
 
 }

@@ -200,7 +200,7 @@ impl RequestEvent {
 }
 
 impl Into<Option<RequestEvent>> for PoolEvent {
-    fn into(self) -> Option<RequestEvent> {
+    async fn into(self) -> Option<RequestEvent> {
         match self {
             PoolEvent::NodeReply(msg, node_alias) => {
                 _parse_msg(&msg).map(|parsed|
@@ -245,7 +245,7 @@ impl Into<Option<RequestEvent>> for PoolEvent {
                         let key = super::state_proof::parse_key_from_request_for_builtin_sp(&req);
                         let timestamps = _parse_timestamp_from_req_for_builtin_sp(req, &op);
                         Some(RequestEvent::CustomSingleRequest(msg, req_id.clone(), key, timestamps))
-                    } else if PoolService::get_sp_parser(&op.as_str()).is_some() {
+                    } else if PoolService::get_sp_parser(&op.as_str()).await.is_some() {
                         Some(RequestEvent::CustomSingleRequest(msg, req_id.clone(), None, (None, None)))
                     } else {
                         Some(RequestEvent::CustomConsensusRequest(msg, req_id.clone()))

@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::domain::ledger::request::ProtocolVersion;
 use crate::domain::pool::{PoolConfig, PoolOpenConfig};
@@ -31,11 +31,11 @@ pub enum PoolCommand {
 }
 
 pub struct PoolCommandExecutor {
-    pool_service: Rc<PoolService>,
+    pool_service: Arc<PoolService>,
 }
 
 impl PoolCommandExecutor {
-    pub fn new(pool_service: Rc<PoolService>) -> PoolCommandExecutor {
+    pub fn new(pool_service: Arc<PoolService>) -> PoolCommandExecutor {
         PoolCommandExecutor {
             pool_service,
         }
@@ -49,7 +49,8 @@ impl PoolCommandExecutor {
             }
             PoolCommand::Delete(name, cb) => {
                 debug!(target: "pool_command_executor", "Delete command received");
-                cb(self.delete(&name));
+                let result = self.delete(&name).await;
+                cb(result);
             }
             PoolCommand::Open(name, config, cb) => {
                 debug!(target: "pool_command_executor", "Open command received");
@@ -84,10 +85,10 @@ impl PoolCommandExecutor {
         Ok(())
     }
 
-    fn delete(&self, name: &str) -> IndyResult<()> {
+    async fn delete(&self, name: &str) -> IndyResult<()> {
         debug!("delete >>> name: {:?}", name);
 
-        self.pool_service.delete(name)?;
+        self.pool_service.delete(name).await?;
 
         debug!("delete << res: ()");
 

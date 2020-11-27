@@ -6,7 +6,7 @@ use indy_api_types::errors::prelude::*;
 use crate::services::crypto::CryptoService;
 use indy_wallet::{RecordOptions, WalletService};
 
-use std::rc::Rc;
+use std::sync::Arc;
 use std::str;
 use indy_utils::crypto::base64;
 use indy_utils::crypto::chacha20poly1305_ietf;
@@ -86,14 +86,14 @@ pub enum CryptoCommand {
 }
 
 pub struct CryptoCommandExecutor {
-    wallet_service: Rc<WalletService>,
-    crypto_service: Rc<CryptoService>,
+    wallet_service: Arc<WalletService>,
+    crypto_service: Arc<CryptoService>,
 }
 
 impl CryptoCommandExecutor {
     pub fn new(
-        wallet_service: Rc<WalletService>,
-        crypto_service: Rc<CryptoService>,
+        wallet_service: Arc<WalletService>,
+        crypto_service: Arc<CryptoService>,
     ) -> CryptoCommandExecutor {
         CryptoCommandExecutor {
             wallet_service,
@@ -101,23 +101,23 @@ impl CryptoCommandExecutor {
         }
     }
 
-    pub fn execute(&self, command: CryptoCommand) {
+    pub async fn execute(&self, command: CryptoCommand) {
         match command {
             CryptoCommand::CreateKey(wallet_handle, key_info, cb) => {
                 debug!("CreateKey command received");
-                cb(self.create_key(wallet_handle, &key_info));
+                cb(self.create_key(wallet_handle, &key_info).await);
             }
             CryptoCommand::SetKeyMetadata(wallet_handle, verkey, metadata, cb) => {
                 debug!("SetKeyMetadata command received");
-                cb(self.set_key_metadata(wallet_handle, &verkey, &metadata));
+                cb(self.set_key_metadata(wallet_handle, &verkey, &metadata).await);
             }
             CryptoCommand::GetKeyMetadata(wallet_handle, verkey, cb) => {
                 debug!("GetKeyMetadata command received");
-                cb(self.get_key_metadata(wallet_handle, &verkey));
+                cb(self.get_key_metadata(wallet_handle, &verkey).await);
             }
             CryptoCommand::CryptoSign(wallet_handle, my_vk, msg, cb) => {
                 debug!("CryptoSign command received");
-                cb(self.crypto_sign(wallet_handle, &my_vk, &msg));
+                cb(self.crypto_sign(wallet_handle, &my_vk, &msg).await);
             }
             CryptoCommand::CryptoVerify(their_vk, msg, signature, cb) => {
                 debug!("CryptoVerify command received");
@@ -125,11 +125,11 @@ impl CryptoCommandExecutor {
             }
             CryptoCommand::AuthenticatedEncrypt(wallet_handle, my_vk, their_vk, msg, cb) => {
                 debug!("AuthenticatedEncrypt command received");
-                cb(self.authenticated_encrypt(wallet_handle, &my_vk, &their_vk, &msg));
+                cb(self.authenticated_encrypt(wallet_handle, &my_vk, &their_vk, &msg).await);
             }
             CryptoCommand::AuthenticatedDecrypt(wallet_handle, my_vk, encrypted_msg, cb) => {
                 debug!("AuthenticatedDecrypt command received");
-                cb(self.authenticated_decrypt(wallet_handle, &my_vk, &encrypted_msg));
+                cb(self.authenticated_decrypt(wallet_handle, &my_vk, &encrypted_msg).await);
             }
             CryptoCommand::AnonymousEncrypt(their_vk, msg, cb) => {
                 debug!("AnonymousEncrypt command received");
@@ -137,20 +137,20 @@ impl CryptoCommandExecutor {
             }
             CryptoCommand::AnonymousDecrypt(wallet_handle, my_vk, encrypted_msg, cb) => {
                 debug!("AnonymousDecrypt command received");
-                cb(self.anonymous_decrypt(wallet_handle, &my_vk, &encrypted_msg));
+                cb(self.anonymous_decrypt(wallet_handle, &my_vk, &encrypted_msg).await);
             }
             CryptoCommand::PackMessage(message, receivers, sender_vk, wallet_handle, cb) => {
                 debug!("PackMessage command received");
-                cb(self.pack_msg(message, receivers, sender_vk, wallet_handle));
+                cb(self.pack_msg(message, receivers, sender_vk, wallet_handle).await);
             }
             CryptoCommand::UnpackMessage(jwe_json, wallet_handle, cb) => {
                 debug!("UnpackMessage command received");
-                cb(self.unpack_msg(jwe_json, wallet_handle));
+                cb(self.unpack_msg(jwe_json, wallet_handle).await);
             }
         };
     }
 
-    fn create_key(&self, wallet_handle: WalletHandle, key_info: &KeyInfo) -> IndyResult<String> {
+    async fn create_key(&self, wallet_handle: WalletHandle, key_info: &KeyInfo) -> IndyResult<String> {
         debug!(
             "create_key >>> wallet_handle: {:?}, key_info: {:?}",
             wallet_handle,
@@ -159,14 +159,14 @@ impl CryptoCommandExecutor {
 
         let key = self.crypto_service.create_key(key_info)?;
         self.wallet_service
-            .add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new())?;
+            .add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new()).await?;
 
         let res = key.verkey.to_string();
         debug!("create_key <<< res: {:?}", res);
         Ok(res)
     }
 
-    fn crypto_sign(&self, wallet_handle: WalletHandle, my_vk: &str, msg: &[u8]) -> IndyResult<Vec<u8>> {
+    async fn crypto_sign(&self, wallet_handle: WalletHandle, my_vk: &str, msg: &[u8]) -> IndyResult<Vec<u8>> {
         trace!(
             "crypto_sign >>> wallet_handle: {:?}, sender_vk: {:?}, msg: {:?}",
             wallet_handle, my_vk, msg
@@ -178,7 +178,7 @@ impl CryptoCommandExecutor {
             wallet_handle,
             &my_vk,
             &RecordOptions::id_value(),
-        )?;
+        ).await?;
 
         let res = self.crypto_service.sign(&key, msg)?;
 
@@ -206,7 +206,7 @@ impl CryptoCommandExecutor {
     }
 
     //TODO begin deprecation process this function. It will be replaced by pack
-    fn authenticated_encrypt(
+    async fn authenticated_encrypt(
         &self,
         wallet_handle: WalletHandle,
         my_vk: &str,
@@ -222,7 +222,7 @@ impl CryptoCommandExecutor {
             wallet_handle,
             my_vk,
             &RecordOptions::id_value(),
-        )?;
+        ).await?;
 
         let msg = self.crypto_service.create_combo_box(&my_key, &their_vk, msg)?;
 
@@ -237,7 +237,7 @@ impl CryptoCommandExecutor {
     }
 
     //TODO begin deprecation process this function. It will be replaced by unpack
-    fn authenticated_decrypt(
+    async fn authenticated_decrypt(
         &self,
         wallet_handle: WalletHandle,
         my_vk: &str,
@@ -251,7 +251,7 @@ impl CryptoCommandExecutor {
             wallet_handle,
             my_vk,
             &RecordOptions::id_value(),
-        )?;
+        ).await?;
 
         let decrypted_msg = self.crypto_service.crypto_box_seal_open(&my_key, &msg)?;
 
@@ -290,7 +290,7 @@ impl CryptoCommandExecutor {
         Ok(res)
     }
 
-    fn anonymous_decrypt(&self,
+    async fn anonymous_decrypt(&self,
                          wallet_handle: WalletHandle,
                          my_vk: &str,
                          encrypted_msg: &[u8]) -> IndyResult<Vec<u8>> {
@@ -305,7 +305,7 @@ impl CryptoCommandExecutor {
             wallet_handle,
             &my_vk,
             &RecordOptions::id_value(),
-        )?;
+        ).await?;
 
         let res = self
             .crypto_service
@@ -316,7 +316,7 @@ impl CryptoCommandExecutor {
         Ok(res)
     }
 
-    fn set_key_metadata(&self, wallet_handle: WalletHandle, verkey: &str, metadata: &str) -> IndyResult<()> {
+    async fn set_key_metadata(&self, wallet_handle: WalletHandle, verkey: &str, metadata: &str) -> IndyResult<()> {
         debug!(
             "set_key_metadata >>> wallet_handle: {:?}, verkey: {:?}, metadata: {:?}",
             wallet_handle, verkey, metadata
@@ -329,14 +329,14 @@ impl CryptoCommandExecutor {
         };
 
         self.wallet_service
-            .upsert_indy_object(wallet_handle, &verkey, &metadata)?;
+            .upsert_indy_object(wallet_handle, &verkey, &metadata).await?;
 
         debug!("set_key_metadata <<<");
 
         Ok(())
     }
 
-    fn get_key_metadata(&self, wallet_handle: WalletHandle, verkey: &str) -> IndyResult<String> {
+    async fn get_key_metadata(&self, wallet_handle: WalletHandle, verkey: &str) -> IndyResult<String> {
         debug!(
             "get_key_metadata >>> wallet_handle: {:?}, verkey: {:?}",
             wallet_handle, verkey
@@ -348,7 +348,7 @@ impl CryptoCommandExecutor {
             wallet_handle,
             &verkey,
             &RecordOptions::id_value(),
-        )?;
+        ).await?;
 
         let res = metadata.value;
 
@@ -359,7 +359,7 @@ impl CryptoCommandExecutor {
 
     //TODO: Refactor pack to be more modular to version changes or crypto_scheme changes
     //this match statement is super messy, but the easiest way to comply with current architecture
-    pub fn pack_msg(
+    pub async fn pack_msg(
         &self,
         message: Vec<u8>,
         receiver_list: Vec<String>,
@@ -379,7 +379,7 @@ impl CryptoCommandExecutor {
             self.crypto_service.validate_key(&sender_vk)?;
 
             //returns authcrypted pack_message format. See Wire message format HIPE for details
-            self._prepare_protected_authcrypt(&cek, receiver_list, &sender_vk, wallet_handle)?
+            self._prepare_protected_authcrypt(&cek, receiver_list, &sender_vk, wallet_handle).await?
         } else {
             //returns anoncrypted pack_message format. See Wire message format HIPE for details
             self._prepare_protected_anoncrypt(&cek, receiver_list)?
@@ -416,7 +416,7 @@ impl CryptoCommandExecutor {
         Ok(self._base64_encode_protected(encrypted_recipients_struct, false)?)
     }
 
-    fn _prepare_protected_authcrypt(&self,
+    async fn _prepare_protected_authcrypt(&self,
                                     cek: &chacha20poly1305_ietf::Key,
                                     receiver_list: Vec<String>, sender_vk: &str,
                                     wallet_handle: WalletHandle,
@@ -428,7 +428,7 @@ impl CryptoCommandExecutor {
             wallet_handle,
             sender_vk,
             &RecordOptions::id_value()
-        )?;
+        ).await?;
 
         //encrypt cek for recipient
         for their_vk in receiver_list {
@@ -494,7 +494,7 @@ impl CryptoCommandExecutor {
         })
     }
 
-    pub fn unpack_msg(&self, jwe_struct: JWE, wallet_handle: WalletHandle) -> IndyResult<Vec<u8>> {
+    pub async fn unpack_msg(&self, jwe_struct: JWE, wallet_handle: WalletHandle) -> IndyResult<Vec<u8>> {
         //decode protected data
         let protected_decoded_vec = base64::decode_urlsafe(&jwe_struct.protected)?;
         let protected_decoded_str = String::from_utf8(protected_decoded_vec).map_err(|err| {
@@ -512,13 +512,13 @@ impl CryptoCommandExecutor {
         })?;
 
         //extract recipient that matches a key in the wallet
-        let (recipient, is_auth_recipient) = self._find_correct_recipient(protected_struct, wallet_handle)?;
+        let (recipient, is_auth_recipient) = self._find_correct_recipient(protected_struct, wallet_handle).await?;
 
         //get cek and sender data
         let (sender_verkey_option, cek) = if is_auth_recipient {
-            self._unpack_cek_authcrypt(recipient.clone(), wallet_handle)
+            self._unpack_cek_authcrypt(recipient.clone(), wallet_handle).await
         } else {
-            self._unpack_cek_anoncrypt(recipient.clone(), wallet_handle)
+            self._unpack_cek_anoncrypt(recipient.clone(), wallet_handle).await
         }?; //close cek and sender_data match statement
 
         //decrypt message
@@ -545,13 +545,13 @@ impl CryptoCommandExecutor {
         })
     }
 
-    fn _find_correct_recipient(&self, protected_struct: Protected, wallet_handle: WalletHandle) -> IndyResult<(Recipient, bool)>{
+    async fn _find_correct_recipient(&self, protected_struct: Protected, wallet_handle: WalletHandle) -> IndyResult<(Recipient, bool)>{
         for recipient in protected_struct.recipients {
             let my_key_res = self.wallet_service.get_indy_object::<Key>(
                 wallet_handle,
                 &recipient.header.kid,
                 &RecordOptions::id_value()
-            );
+            ).await;
 
 
             if my_key_res.is_ok() {
@@ -561,7 +561,7 @@ impl CryptoCommandExecutor {
         Err(IndyError::from(IndyErrorKind::WalletItemNotFound))
     }
 
-    fn _unpack_cek_authcrypt(&self, recipient: Recipient, wallet_handle: WalletHandle) -> IndyResult<(Option<String>, chacha20poly1305_ietf::Key)> {
+    async fn _unpack_cek_authcrypt(&self, recipient: Recipient, wallet_handle: WalletHandle) -> IndyResult<(Option<String>, chacha20poly1305_ietf::Key)> {
         let encrypted_key_vec = base64::decode_urlsafe(&recipient.encrypted_key)?;
         let iv = base64::decode_urlsafe(&recipient.header.iv.unwrap())?;
         let enc_sender_vk = base64::decode_urlsafe(&recipient.header.sender.unwrap())?;
@@ -571,7 +571,7 @@ impl CryptoCommandExecutor {
             wallet_handle,
             &recipient.header.kid,
             &RecordOptions::id_value(),
-        )?;
+        ).await?;
 
         //decrypt sender_vk
         let sender_vk_vec = self.crypto_service.crypto_box_seal_open(&my_key, enc_sender_vk.as_slice())?;
@@ -596,7 +596,7 @@ impl CryptoCommandExecutor {
         Ok((Some(sender_vk), cek))
     }
 
-    fn _unpack_cek_anoncrypt(&self, recipient: Recipient, wallet_handle: WalletHandle) -> IndyResult<(Option<String>, chacha20poly1305_ietf::Key)> {
+    async fn _unpack_cek_anoncrypt(&self, recipient: Recipient, wallet_handle: WalletHandle) -> IndyResult<(Option<String>, chacha20poly1305_ietf::Key)> {
         let encrypted_key_vec = base64::decode_urlsafe(&recipient.encrypted_key)?;
 
         //get my private key
@@ -604,7 +604,7 @@ impl CryptoCommandExecutor {
             wallet_handle,
             &recipient.header.kid,
             &RecordOptions::id_value(),
-        )?;
+        ).await?;
 
         //decrypt cek
         let cek_as_vec = self.crypto_service

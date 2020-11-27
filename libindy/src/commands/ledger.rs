@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 use std::string::ToString;
 
 use indy_api_types::{PoolHandle, WalletHandle};
@@ -250,18 +250,18 @@ pub enum LedgerCommand {
 }
 
 pub struct LedgerCommandExecutor {
-    pool_service: Rc<PoolService>,
-    crypto_service: Rc<CryptoService>,
-    wallet_service: Rc<WalletService>,
-    ledger_service: Rc<LedgerService>,
+    pool_service: Arc<PoolService>,
+    crypto_service: Arc<CryptoService>,
+    wallet_service: Arc<WalletService>,
+    ledger_service: Arc<LedgerService>,
 
 }
 
 impl LedgerCommandExecutor {
-    pub fn new(pool_service: Rc<PoolService>,
-               crypto_service: Rc<CryptoService>,
-               wallet_service: Rc<WalletService>,
-               ledger_service: Rc<LedgerService>) -> LedgerCommandExecutor {
+    pub fn new(pool_service: Arc<PoolService>,
+               crypto_service: Arc<CryptoService>,
+               wallet_service: Arc<WalletService>,
+               ledger_service: Arc<LedgerService>) -> LedgerCommandExecutor {
         LedgerCommandExecutor {
             pool_service,
             crypto_service,
@@ -274,27 +274,33 @@ impl LedgerCommandExecutor {
         match command {
             LedgerCommand::SignAndSubmitRequest(pool_handle, wallet_handle, submitter_did, request_json, cb) => {
                 debug!(target: "ledger_command_executor", "SignAndSubmitRequest command received");
-                cb(self.sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request_json).await);
+                let result = self.sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request_json).await;
+                cb(result);
             }
             LedgerCommand::SubmitRequest(handle, request_json, cb) => {
                 debug!(target: "ledger_command_executor", "SubmitRequest command received");
-                cb(self.submit_request(handle, &request_json).await);
+                let result1 = self.submit_request(handle, &request_json).await;
+                cb(result1);
             }
             LedgerCommand::SubmitAction(handle, request_json, nodes, timeout, cb) => {
                 debug!(target: "ledger_command_executor", "SubmitRequest command received");
-                cb(self.submit_action(handle, &request_json, nodes.as_ref().map(String::as_str), timeout).await);
+                let result = self.submit_action(handle, &request_json, nodes.as_ref().map(String::as_str), timeout).await;
+                cb(result);
             }
             LedgerCommand::RegisterSPParser(txn_type, parser, free, cb) => {
                 debug!(target: "ledger_command_executor", "RegisterSPParser command received");
-                cb(self.register_sp_parser(&txn_type, parser, free));
+                let result = self.register_sp_parser(&txn_type, parser, free).await;
+                cb(result);
             }
             LedgerCommand::SignRequest(wallet_handle, submitter_did, request_json, cb) => {
                 debug!(target: "ledger_command_executor", "SignRequest command received");
-                cb(self.sign_request(wallet_handle, &submitter_did, &request_json));
+                let result = self.sign_request(wallet_handle, &submitter_did, &request_json).await;
+                cb(result);
             }
             LedgerCommand::MultiSignRequest(wallet_handle, submitter_did, request_json, cb) => {
                 debug!(target: "ledger_command_executor", "MultiSignRequest command received");
-                cb(self.multi_sign_request(wallet_handle, &submitter_did, &request_json));
+                let result = self.multi_sign_request(wallet_handle, &submitter_did, &request_json).await;
+                cb(result);
             }
             LedgerCommand::BuildGetDdoRequest(submitter_did, target_did, cb) => {
                 debug!(target: "ledger_command_executor", "BuildGetDdoRequest command received");
@@ -472,12 +478,12 @@ impl LedgerCommandExecutor {
         };
     }
 
-    fn register_sp_parser(&self, txn_type: &str,
+    async fn register_sp_parser(&self, txn_type: &str,
                           parser: CustomTransactionParser, free: CustomFree) -> IndyResult<()> {
         debug!("register_sp_parser >>> txn_type: {:?}, parser: {:?}, free: {:?}",
                txn_type, parser, free);
 
-        PoolService::register_sp_parser(txn_type, parser, free)
+        PoolService::register_sp_parser(txn_type, parser, free).await
             .map_err(IndyError::from)
     }
 
@@ -489,21 +495,21 @@ impl LedgerCommandExecutor {
         debug!("sign_and_submit_request >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}",
                pool_handle, wallet_handle, submitter_did, request_json);
 
-        let signed_request = self._sign_request(wallet_handle, submitter_did, request_json, SignatureType::Single)?;
+        let signed_request = self._sign_request(wallet_handle, submitter_did, request_json, SignatureType::Single).await?;
 
         self.submit_request(pool_handle, signed_request.as_str()).await
     }
 
-    fn _sign_request(&self,
+    async fn _sign_request(&self,
                      wallet_handle: WalletHandle,
                      submitter_did: &DidValue,
                      request_json: &str,
                      signature_type: SignatureType) -> IndyResult<String> {
         debug!("_sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
 
-        let my_did: Did = self.wallet_service.get_indy_object(wallet_handle, &submitter_did.0, &RecordOptions::id_value())?;
+        let my_did: Did = self.wallet_service.get_indy_object(wallet_handle, &submitter_did.0, &RecordOptions::id_value()).await?;
 
-        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_did.verkey, &RecordOptions::id_value())?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_did.verkey, &RecordOptions::id_value()).await?;
 
         let mut request: Value = serde_json::from_str(request_json)
             .to_indy(IndyErrorKind::InvalidStructure, "Message is invalid json")?;
@@ -567,26 +573,26 @@ impl LedgerCommandExecutor {
         self.pool_service.send_action(handle, request_json, nodes, timeout).await
     }
 
-    fn sign_request(&self,
+    async fn sign_request(&self,
                     wallet_handle: WalletHandle,
                     submitter_did: &DidValue,
                     request_json: &str) -> IndyResult<String> {
         debug!("sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
 
-        let res = self._sign_request(wallet_handle, submitter_did, request_json, SignatureType::Single)?;
+        let res = self._sign_request(wallet_handle, submitter_did, request_json, SignatureType::Single).await?;
 
         debug!("sign_request <<< res: {:?}", res);
 
         Ok(res)
     }
 
-    fn multi_sign_request(&self,
+    async fn multi_sign_request(&self,
                           wallet_handle: WalletHandle,
                           submitter_did: &DidValue,
                           request_json: &str) -> IndyResult<String> {
         debug!("multi_sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
 
-        let res = self._sign_request(wallet_handle, submitter_did, request_json, SignatureType::Multi)?;
+        let res = self._sign_request(wallet_handle, submitter_did, request_json, SignatureType::Multi).await?;
 
         debug!("multi_sign_request <<< res: {:?}", res);
 

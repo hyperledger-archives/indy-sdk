@@ -247,7 +247,7 @@ impl Hash for NodeResponse {
 }
 
 impl<T: Networker> RequestSM<T> {
-    fn handle_event(self, re: RequestEvent) -> (Self, Option<PoolEvent>) {
+    async fn handle_event(self, re: RequestEvent) -> (Self, Option<PoolEvent>) {
         let RequestSM { state, f, cmd_ids, nodes, generator, pool_name, timeout, extended_timeout, number_read_nodes } = self;
         let (state, event) = match state {
             RequestState::Start(state) => {
@@ -404,7 +404,7 @@ impl<T: Networker> RequestSM<T> {
                             };
 
                             if cnt > f
-                                || _check_state_proof(&result, f, &generator, &nodes, &raw_msg, state.sp_key.as_ref().map(Vec::as_slice), state.timestamps, last_write_time) {
+                                || _check_state_proof(&result, f, &generator, &nodes, &raw_msg, state.sp_key.as_ref().map(Vec::as_slice), state.timestamps, last_write_time).await {
                                 state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                                 _send_ok_replies(&cmd_ids, if cnt > f { &soonest } else { &raw_msg });
                                 (RequestState::finish(), None)
@@ -628,7 +628,7 @@ impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
     fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent> {
         match ore {
             Some(re) => {
-                if let Some((rw, res)) = self.request_wrapper.take().map(|w| w.handle_event(re)) {
+                if let Some((rw, res)) = self.request_wrapper.take().map(async move |w| w.handle_event(re).await) {
                     self.request_wrapper = Some(rw);
                     res
                 } else {
@@ -734,10 +734,10 @@ fn _get_msg_result_without_state_proof(msg: &str) -> IndyResult<(SJsonValue, SJs
     Ok((msg_result, msg_result_without_proof))
 }
 
-fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_keys: &Nodes, raw_msg: &str, sp_key: Option<&[u8]>, requested_timestamps: (Option<u64>, Option<u64>), last_write_time: u64) -> bool {
+async fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_keys: &Nodes, raw_msg: &str, sp_key: Option<&[u8]>, requested_timestamps: (Option<u64>, Option<u64>), last_write_time: u64) -> bool {
     debug!("TransactionHandler::process_reply: Try to verify proof and signature >>");
 
-    let proof_checking_res = match state_proof::parse_generic_reply_for_proof_checking(&msg_result, raw_msg, sp_key) {
+    let proof_checking_res = match state_proof::parse_generic_reply_for_proof_checking(&msg_result, raw_msg, sp_key).await {
         Some(parsed_sps) => {
             debug!("TransactionHandler::process_reply: Proof and signature are present");
             state_proof::verify_parsed_sp(parsed_sps, bls_keys, f, gen)
@@ -745,13 +745,13 @@ fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_ke
         None => false
     };
 
-    let res = proof_checking_res && _check_freshness(msg_result, requested_timestamps, last_write_time);
+    let res = proof_checking_res && _check_freshness(msg_result, requested_timestamps, last_write_time).await;
 
     debug!("TransactionHandler::process_reply: Try to verify proof and signature << {}", res);
     res
 }
 
-fn _check_freshness(msg_result: &SJsonValue, requested_timestamps: (Option<u64>, Option<u64>), last_write_time: u64) -> bool {
+async fn _check_freshness(msg_result: &SJsonValue, requested_timestamps: (Option<u64>, Option<u64>), last_write_time: u64) -> bool {
     debug!("TransactionHandler::_check_freshness: requested_timestamps: {:?} >>", requested_timestamps);
 
     let res = match requested_timestamps {
@@ -766,8 +766,8 @@ fn _check_freshness(msg_result: &SJsonValue, requested_timestamps: (Option<u64>,
             trace!("Left time for freshness check: {}", left_time_for_freshness_check);
             trace!("Right time for freshness check: {}", right_time_for_freshness_check);
 
-            left_time_for_freshness_check <= _get_freshness_threshold() + left_last_write_time &&
-                right_time_for_freshness_check <= _get_freshness_threshold() + last_write_time
+            left_time_for_freshness_check <= _get_freshness_threshold().await + left_last_write_time &&
+                right_time_for_freshness_check <= _get_freshness_threshold().await + last_write_time
         }
         (None, Some(to)) => {
             let time_for_freshness_check = to;
@@ -775,7 +775,7 @@ fn _check_freshness(msg_result: &SJsonValue, requested_timestamps: (Option<u64>,
             trace!("Last signed time: {}", last_write_time);
             trace!("Time for freshness check: {}", time_for_freshness_check);
 
-            time_for_freshness_check <= _get_freshness_threshold() + last_write_time
+            time_for_freshness_check <= _get_freshness_threshold().await + last_write_time
         }
         (Some(from), None) => {
             let left_last_write_time = _extract_left_last_write_time(msg_result).unwrap_or(0);
@@ -789,8 +789,8 @@ fn _check_freshness(msg_result: &SJsonValue, requested_timestamps: (Option<u64>,
             trace!("Left time for freshness check: {}", left_time_for_freshness_check);
             trace!("Time for freshness check: {}", time_for_freshness_check);
 
-            left_time_for_freshness_check <= _get_freshness_threshold() + left_last_write_time &&
-                time_for_freshness_check <= _get_freshness_threshold() + last_write_time
+            left_time_for_freshness_check <= _get_freshness_threshold().await + left_last_write_time &&
+                time_for_freshness_check <= _get_freshness_threshold().await + last_write_time
         }
         (None, None) => {
             let time_for_freshness_check = _get_cur_time();
@@ -798,7 +798,7 @@ fn _check_freshness(msg_result: &SJsonValue, requested_timestamps: (Option<u64>,
             trace!("Last signed time: {}", last_write_time);
             trace!("Time for freshness check: {}", time_for_freshness_check);
 
-            time_for_freshness_check <= _get_freshness_threshold() + last_write_time
+            time_for_freshness_check <= _get_freshness_threshold().await + last_write_time
         }
     };
 
@@ -819,8 +819,8 @@ fn _extract_left_last_write_time(msg_result: &SJsonValue) -> Option<u64> {
     }
 }
 
-fn _get_freshness_threshold() -> u64 {
-    *THRESHOLD.lock().unwrap()
+async fn _get_freshness_threshold() -> u64 {
+    *THRESHOLD.lock().await
 }
 
 fn _get_cur_time() -> u64 {

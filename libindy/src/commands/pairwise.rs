@@ -3,7 +3,7 @@ use crate::domain::pairwise::{Pairwise, PairwiseInfo};
 use indy_api_types::errors::prelude::*;
 use indy_wallet::{RecordOptions, WalletService};
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::str;
 use indy_api_types::WalletHandle;
 use crate::domain::crypto::did::DidValue;
@@ -35,62 +35,62 @@ pub enum PairwiseCommand {
 }
 
 pub struct PairwiseCommandExecutor {
-    wallet_service: Rc<WalletService>
+    wallet_service: Arc<WalletService>
 }
 
 impl PairwiseCommandExecutor {
-    pub fn new(wallet_service: Rc<WalletService>) -> PairwiseCommandExecutor {
+    pub fn new(wallet_service: Arc<WalletService>) -> PairwiseCommandExecutor {
         PairwiseCommandExecutor {
             wallet_service
         }
     }
 
-    pub fn execute(&self, command: PairwiseCommand) {
+    pub async fn execute(&self, command: PairwiseCommand) {
         match command {
             PairwiseCommand::PairwiseExists(wallet_handle, their_did, cb) => {
                 debug!(target: "pairwise_command_executor", "PairwiseExists command received");
-                cb(self.pairwise_exists(wallet_handle, &their_did));
+                cb(self.pairwise_exists(wallet_handle, &their_did).await);
             }
             PairwiseCommand::CreatePairwise(wallet_handle, their_did, my_did, metadata, cb) => {
                 debug!(target: "pairwise_command_executor", "CreatePairwise command received");
-                cb(self.create_pairwise(wallet_handle, &their_did, &my_did, metadata.as_ref().map(String::as_str)));
+                cb(self.create_pairwise(wallet_handle, &their_did, &my_did, metadata.as_ref().map(String::as_str)).await);
             }
             PairwiseCommand::ListPairwise(wallet_handle, cb) => {
                 debug!(target: "pairwise_command_executor", "ListPairwise command received");
-                cb(self.list_pairwise(wallet_handle));
+                cb(self.list_pairwise(wallet_handle).await);
             }
             PairwiseCommand::GetPairwise(wallet_handle, their_did, cb) => {
                 debug!(target: "pairwise_command_executor", "GetPairwise command received");
-                cb(self.get_pairwise(wallet_handle, &their_did));
+                cb(self.get_pairwise(wallet_handle, &their_did).await);
             }
             PairwiseCommand::SetPairwiseMetadata(wallet_handle, their_did, metadata, cb) => {
                 debug!(target: "pairwise_command_executor", "SetPairwiseMetadata command received");
-                cb(self.set_pairwise_metadata(wallet_handle, &their_did, metadata.as_ref().map(String::as_str)));
+                cb(self.set_pairwise_metadata(wallet_handle, &their_did, metadata.as_ref().map(String::as_str)).await);
             }
         };
     }
 
-    fn pairwise_exists(&self,
+    async fn pairwise_exists(&self,
                        wallet_handle: WalletHandle,
                        their_did: &DidValue) -> IndyResult<bool> {
         debug!("pairwise_exists >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
 
-        let res = self.wallet_service.record_exists::<Pairwise>(wallet_handle, &their_did.0)?;
+        let res = self.wallet_service.record_exists::<Pairwise>(wallet_handle, &their_did.0).await?;
 
         debug!("pairwise_exists <<< res: {:?}", res);
 
         Ok(res)
     }
 
-    fn create_pairwise(&self,
+    async fn create_pairwise(&self,
                        wallet_handle: WalletHandle,
                        their_did: &DidValue,
                        my_did: &DidValue,
                        metadata: Option<&str>) -> IndyResult<()> {
         debug!("create_pairwise >>> wallet_handle: {:?}, their_did: {:?}, my_did: {:?}, metadata: {:?}", wallet_handle, their_did, my_did, metadata);
 
-        self.wallet_service.get_indy_record::<Did>(wallet_handle, &my_did.0, &RecordOptions::id())?;
-        self.wallet_service.get_indy_record::<TheirDid>(wallet_handle, &their_did.0, &RecordOptions::id())?;
+        self.wallet_service.get_indy_record::<Did>(wallet_handle, &my_did.0, &RecordOptions::id()).await?;
+        self.wallet_service.get_indy_record::<TheirDid>(wallet_handle, &their_did.0, &RecordOptions::id()).await?;
 
         let pairwise = Pairwise {
             my_did: my_did.clone(),
@@ -98,19 +98,19 @@ impl PairwiseCommandExecutor {
             metadata: metadata.map(str::to_string)
         };
 
-        self.wallet_service.add_indy_object(wallet_handle, &their_did.0, &pairwise, &HashMap::new())?;
+        self.wallet_service.add_indy_object(wallet_handle, &their_did.0, &pairwise, &HashMap::new()).await?;
 
         debug!("create_pairwise <<<");
 
         Ok(())
     }
 
-    fn list_pairwise(&self,
+    async fn list_pairwise(&self,
                      wallet_handle: WalletHandle) -> IndyResult<String> {
         debug!("list_pairwise >>> wallet_handle: {:?}", wallet_handle);
 
         let mut pairwise_search =
-            self.wallet_service.search_indy_records::<Pairwise>(wallet_handle, "{}", &RecordOptions::id_value())?;
+            self.wallet_service.search_indy_records::<Pairwise>(wallet_handle, "{}", &RecordOptions::id_value()).await?;
 
         let mut list_pairwise: Vec<String> = Vec::new();
 
@@ -131,14 +131,14 @@ impl PairwiseCommandExecutor {
         Ok(res)
     }
 
-    fn get_pairwise(&self,
+    async fn get_pairwise(&self,
                     wallet_handle: WalletHandle,
                     their_did: &DidValue) -> IndyResult<String> {
         debug!("get_pairwise >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
 
         let pairwise_info =
             PairwiseInfo::from(
-                self.wallet_service.get_indy_object::<Pairwise>(wallet_handle, &their_did.0, &RecordOptions::id_value())?);
+                self.wallet_service.get_indy_object::<Pairwise>(wallet_handle, &their_did.0, &RecordOptions::id_value()).await?);
 
         let res = serde_json::to_string(&pairwise_info)
             .to_indy(IndyErrorKind::InvalidState, "Can't serialize PairwiseInfo")?;
@@ -149,18 +149,18 @@ impl PairwiseCommandExecutor {
     }
 
 
-    fn set_pairwise_metadata(&self,
+    async fn set_pairwise_metadata(&self,
                              wallet_handle: WalletHandle,
                              their_did: &DidValue,
                              metadata: Option<&str>) -> IndyResult<()> {
         debug!("set_pairwise_metadata >>> wallet_handle: {:?}, their_did: {:?}, metadata: {:?}", wallet_handle, their_did, metadata);
 
         let mut pairwise: Pairwise =
-            self.wallet_service.get_indy_object(wallet_handle, &their_did.0, &RecordOptions::id_value())?;
+            self.wallet_service.get_indy_object(wallet_handle, &their_did.0, &RecordOptions::id_value()).await?;
 
         pairwise.metadata = metadata.map(str::to_string);
 
-        self.wallet_service.update_indy_object(wallet_handle, &their_did.0, &pairwise)?;
+        self.wallet_service.update_indy_object(wallet_handle, &their_did.0, &pairwise).await?;
 
         debug!("set_pairwise_metadata <<<");
 

@@ -20,6 +20,7 @@ serde = "1.0.99"
 serde_json = "1.0.40"
 serde_derive = "1.0.99"
 zeroize = "*"
+futures = "0.3.1"
 
 [dev-dependencies]
 rand = "0.7.0"

@@ -1,3 +1,5 @@
+#![feature(async_closure)]
+
 #![cfg_attr(feature = "fatal_warnings", deny(warnings))]
 extern crate futures;
 

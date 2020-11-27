@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinitionV1, CredentialDefinitionId, CredentialDefinitions};
 use crate::domain::anoncreds::proof::Proof;
@@ -24,11 +24,11 @@ pub enum VerifierCommand {
 }
 
 pub struct VerifierCommandExecutor {
-    anoncreds_service: Rc<AnoncredsService>,
+    anoncreds_service: Arc<AnoncredsService>,
 }
 
 impl VerifierCommandExecutor {
-    pub fn new(anoncreds_service: Rc<AnoncredsService>) -> VerifierCommandExecutor {
+    pub fn new(anoncreds_service: Arc<AnoncredsService>) -> VerifierCommandExecutor {
         VerifierCommandExecutor {
             anoncreds_service,
         }

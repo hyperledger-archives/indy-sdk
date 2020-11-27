@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::string::String;
 use std::vec::Vec;
 
@@ -17,6 +17,7 @@ use crate::domain::ledger::auth_rule::AuthRule;
 use crate::domain::crypto::did::DidValue;
 
 use crate::commands::BoxedCallbackStringStringSend;
+use futures::TryFutureExt;
 
 pub enum PaymentsCommand {
     RegisterMethod(
@@ -120,14 +121,14 @@ pub enum PaymentsCommand {
 }
 
 pub struct PaymentsCommandExecutor {
-    payments_service: Rc<PaymentsService>,
-    wallet_service: Rc<WalletService>,
-    crypto_service: Rc<CryptoService>,
-    ledger_service: Rc<LedgerService>,
+    payments_service: Arc<PaymentsService>,
+    wallet_service: Arc<WalletService>,
+    crypto_service: Arc<CryptoService>,
+    ledger_service: Arc<LedgerService>,
 }
 
 impl PaymentsCommandExecutor {
-    pub fn new(payments_service: Rc<PaymentsService>, wallet_service: Rc<WalletService>, crypto_service: Rc<CryptoService>, ledger_service: Rc<LedgerService>) -> PaymentsCommandExecutor {
+    pub fn new(payments_service: Arc<PaymentsService>, wallet_service: Arc<WalletService>, crypto_service: Arc<CryptoService>, ledger_service: Arc<LedgerService>) -> PaymentsCommandExecutor {
         PaymentsCommandExecutor {
             payments_service,
             wallet_service,
@@ -144,35 +145,43 @@ impl PaymentsCommandExecutor {
             }
             PaymentsCommand::CreateAddress(wallet_handle, type_, config, cb) => {
                 debug!(target: "payments_command_executor", "CreateAddress command received");
-                cb(self.create_address(wallet_handle, &type_, &config).await);
+                let result12 = self.create_address(wallet_handle, &type_, &config).await;
+                cb(result12);
             }
             PaymentsCommand::ListAddresses(wallet_handle, cb) => {
                 debug!(target: "payments_command_executor", "ListAddresses command received");
-                cb(self.list_addresses(wallet_handle));
+                let result13 = self.list_addresses(wallet_handle).await;
+                cb(result13);
             }
             PaymentsCommand::AddRequestFees(wallet_handle, submitter_did, req, inputs, outputs, extra, cb) => {
                 debug!(target: "payments_command_executor", "AddRequestFees command received");
-                cb(self.add_request_fees(wallet_handle, submitter_did.as_ref(), &req, &inputs, &outputs, extra.as_ref().map(String::as_str)).await);
+                let result14 = self.add_request_fees(wallet_handle, submitter_did.as_ref(), &req, &inputs, &outputs, extra.as_ref().map(String::as_str)).await;
+                cb(result14);
             }
             PaymentsCommand::ParseResponseWithFees(type_, response, cb) => {
                 debug!(target: "payments_command_executor", "ParseResponseWithFees command received");
-                cb(self.parse_response_with_fees(&type_, &response).await);
+                let result15 = self.parse_response_with_fees(&type_, &response).await;
+                cb(result15);
             }
             PaymentsCommand::BuildGetPaymentSourcesRequest(wallet_handle, submitter_did, payment_address, from, cb) => {
                 debug!(target: "payments_command_executor", "BuildGetPaymentSourcesRequest command received");
-                cb(self.build_get_payment_sources_request(wallet_handle, submitter_did.as_ref(), &payment_address, from).await);
+                let result1 = self.build_get_payment_sources_request(wallet_handle, submitter_did.as_ref(), &payment_address, from).await;
+                cb(result1);
             }
             PaymentsCommand::ParseGetPaymentSourcesResponse(type_, response, cb) => {
                 debug!(target: "payments_command_executor", "ParseGetPaymentSourcesResponse command received");
-                cb(self.parse_get_payment_sources_response(&type_, &response).await);
+                let result = self.parse_get_payment_sources_response(&type_, &response).await;
+                cb(result);
             }
             PaymentsCommand::BuildPaymentReq(wallet_handle, submitter_did, inputs, outputs, extra, cb) => {
                 debug!(target: "payments_command_executor", "BuildPaymentReq command received");
-                cb(self.build_payment_req(wallet_handle, submitter_did.as_ref(), &inputs, &outputs, extra.as_ref().map(String::as_str)).await);
+                let result2 = self.build_payment_req(wallet_handle, submitter_did.as_ref(), &inputs, &outputs, extra.as_ref().map(String::as_str)).await;
+                cb(result2);
             }
             PaymentsCommand::ParsePaymentResponse(payment_method, response, cb) => {
                 debug!(target: "payments_command_executor", "ParsePaymentResponse command received");
-                cb(self.parse_payment_response(&payment_method, &response).await);
+                let result4 = self.parse_payment_response(&payment_method, &response).await;
+                cb(result4);
             }
             PaymentsCommand::AppendTxnAuthorAgreementAcceptanceToExtra(extra, text, version, taa_digest, mechanism, time, cb) => {
                 debug!(target: "payments_command_executor", "AppendTxnAuthorAgreementAcceptanceToExtra command received");
@@ -185,27 +194,33 @@ impl PaymentsCommandExecutor {
             }
             PaymentsCommand::BuildMintReq(wallet_handle, submitter_did, outputs, extra, cb) => {
                 debug!(target: "payments_command_executor", "BuildMintReq command received");
-                cb(self.build_mint_req(wallet_handle, submitter_did.as_ref(), &outputs, extra.as_ref().map(String::as_str)).await);
+                let result3 = self.build_mint_req(wallet_handle, submitter_did.as_ref(), &outputs, extra.as_ref().map(String::as_str)).await;
+                cb(result3);
             }
             PaymentsCommand::BuildSetTxnFeesReq(wallet_handle, submitter_did, type_, fees, cb) => {
                 debug!(target: "payments_command_executor", "BuildSetTxnFeesReq command received");
-                cb(self.build_set_txn_fees_req(wallet_handle, submitter_did.as_ref(), &type_, &fees).await);
+                let result5 = self.build_set_txn_fees_req(wallet_handle, submitter_did.as_ref(), &type_, &fees).await;
+                cb(result5);
             }
             PaymentsCommand::BuildGetTxnFeesReq(wallet_handle, submitter_did, type_, cb) => {
                 debug!(target: "payments_command_executor", "BuildGetTxnFeesReq command received");
-                cb(self.build_get_txn_fees_req(wallet_handle, submitter_did.as_ref(), &type_).await);
+                let result6 = self.build_get_txn_fees_req(wallet_handle, submitter_did.as_ref(), &type_).await;
+                cb(result6);
             }
             PaymentsCommand::ParseGetTxnFeesResponse(type_, response, cb) => {
                 debug!(target: "payments_command_executor", "ParseGetTxnFeesResponse command received");
-                cb(self.parse_get_txn_fees_response(&type_, &response).await);
+                let result7 = self.parse_get_txn_fees_response(&type_, &response).await;
+                cb(result7);
             }
             PaymentsCommand::BuildVerifyPaymentReq(wallet_handle, submitter_did, receipt, cb) => {
                 debug!(target: "payments_command_executor", "BuildVerifyPaymentReq command received");
-                cb(self.build_verify_payment_request(wallet_handle, submitter_did.as_ref(), &receipt).await);
+                let result8 = self.build_verify_payment_request(wallet_handle, submitter_did.as_ref(), &receipt).await;
+                cb(result8);
             }
             PaymentsCommand::ParseVerifyPaymentResponse(payment_method, resp_json, cb) => {
                 debug!(target: "payments_command_executor", "ParseVerifyPaymentResponse command received");
-                cb(self.parse_verify_payment_response(&payment_method, &resp_json).await);
+                let result9 = self.parse_verify_payment_response(&payment_method, &resp_json).await;
+                cb(result9);
             }
             PaymentsCommand::GetRequestInfo(get_auth_rule_response_json, requester_info, fees_json, cb) => {
                 debug!(target: "payments_command_executor", "GetRequestInfo command received");
@@ -213,11 +228,13 @@ impl PaymentsCommandExecutor {
 	        },
             PaymentsCommand::SignWithAddressReq(wallet_handle, address, message, cb) => {
                 debug!(target: "payments_command_executor", "SignWithAddressReq command received");
-                cb(self.sign_with_address(wallet_handle, &address, message.as_slice()).await);
+                let result10 = self.sign_with_address(wallet_handle, &address, message.as_slice()).await;
+                cb(result10);
             },
             PaymentsCommand::VerifyWithAddressReq(address, message, signature, cb) => {
                 debug!(target: "payments_command_executor", "VerifyWithAddressReq command received");
-                cb(self.verify_with_address(&address, message.as_slice(), signature.as_slice()).await);
+                let result11 = self.verify_with_address(&address, message.as_slice(), signature.as_slice()).await;
+                cb(result11);
             },
         }
     }
@@ -236,21 +253,21 @@ impl PaymentsCommandExecutor {
     async fn create_address<'a>(&'a self, wallet_handle: WalletHandle, type_: &'a str, config: &'a str) -> IndyResult<String> {
         trace!("create_address >>> wallet_handle: {:?}, type_: {:?}, config: {:?}", wallet_handle, type_, config);
 
-        self.wallet_service.check(wallet_handle).map_err(map_err_err!())?;
+        self.wallet_service.check(wallet_handle).map_err(map_err_err!()).await?;
 
         let res = self.payments_service.create_address(wallet_handle, type_, config).await?;
 
         //TODO: think about deleting payment_address on wallet save failure
-        self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), &res, &res, &HashMap::new())?;
+        self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), &res, &res, &HashMap::new()).await?;
 
         trace!("create_address <<< {}", res);
         Ok(res)
     }
 
-    fn list_addresses(&self, wallet_handle: WalletHandle) -> IndyResult<String> {
+    async fn list_addresses(&self, wallet_handle: WalletHandle) -> IndyResult<String> {
         trace!("list_addresses >>> wallet_handle: {:?}", wallet_handle);
 
-        let mut search = self.wallet_service.search_records(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), "{}", &RecordOptions::id_value())?;
+        let mut search = self.wallet_service.search_records(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), "{}", &RecordOptions::id_value()).await?;
 
         let mut list_addresses: Vec<String> = Vec::new();
 
