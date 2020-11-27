@@ -14,13 +14,13 @@ import static org.junit.Assert.assertEquals;
 public class ListPoolsTest extends IndyIntegrationTest {
 
     @Test
-    public void testCreatePoolWorksForNullConfig() throws Exception {
-        File file = new File("testCreatePoolWorks.txn");
+    public void testListPoolsWorks() throws Exception {
+        File file = new File("testListPoolsWorks.txn");
         file.deleteOnExit();
         assertTrue(file.createNewFile());
         PoolUtils.writeTransactions(file);
 
-        String testPoolName = "testCreatePoolWorks";
+        String testPoolName = "testListPoolsWorks";
 
         Pool.createPoolLedgerConfig(testPoolName, null).get();
         String listPoolsJson = Pool.listPools().get();
