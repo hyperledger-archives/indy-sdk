@@ -30,6 +30,8 @@ Cocoapod will search for spec files in the root Specs folder.
 
 ## Core library
 
+*Note: Rust 1.46 forces building cdylib crate that causes linking errors. See https://github.com/rust-lang/rust/issues/79373 for details. It will be fixed in 1.49, but until it is out we recommed to use 1.45*
+
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
 1. Install toolchains using command:
 
