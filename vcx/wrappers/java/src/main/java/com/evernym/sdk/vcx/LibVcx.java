@@ -12,6 +12,8 @@ public abstract class LibVcx {
      * Native library interface
      */
 
+    private static final String LIBVCX_LOGGER_PREFIX = String.format("%s.native", LibVcx.class.getName());
+
 
     /**
      * JNA method signatures for calling SDK function.
@@ -628,6 +630,13 @@ public abstract class LibVcx {
 
         /** Set custom logger implementation. */
         int vcx_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
+
+        /** Set custom logger implementation with max lvl. */
+        int vcx_set_logger_with_max_lvl(Pointer context, Callback enabled, Callback log, Callback flush, int max_lvl);
+
+        /** Set max lvl for current logger implementation. */
+        int vcx_set_log_max_lvl(int max_lvl);
+
         /** Set stdout logger implementation. */
         int vcx_set_default_logger(String log_level);
 
@@ -741,9 +750,8 @@ public abstract class LibVcx {
                     // if message is more than 100K then log only 10K of the message
                     message = message.substring(0, 10240);
                 }
-                String loggerName = String.format("%s.native.%s", LibVcx.class.getName(), target.replace("::", "."));
                 String msg = String.format("%s:%d | %s", file, line, message);
-                logMessage(loggerName, level, msg);
+                logMessage(LIBVCX_LOGGER_PREFIX + target.replace("::", "."), level, msg);
             }
         };
 
@@ -751,6 +759,21 @@ public abstract class LibVcx {
     }
 
     private static void initLogger() {
-        api.vcx_set_logger(null, Logger.enabled, Logger.log, Logger.flush);
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(LIBVCX_LOGGER_PREFIX);
+        int logLevel;
+        if (logger.isTraceEnabled()) {
+            logLevel = 5;
+        } else if (logger.isDebugEnabled()) {
+            logLevel = 4;
+        } else if (logger.isInfoEnabled()) {
+            logLevel = 3;
+        } else if (logger.isWarnEnabled()) {
+            logLevel = 2;
+        } else if (logger.isErrorEnabled()) {
+            logLevel = 1;
+        } else { // Off
+            logLevel = 0;
+        }
+        api.vcx_set_logger_with_max_lvl(null, Logger.enabled, Logger.log, Logger.flush, logLevel);
     }
 }
