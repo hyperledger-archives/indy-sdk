@@ -1,6 +1,6 @@
 [package]
 name = "indy-cli"
-version = "1.15.0"
+version = "1.16.0"
 authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 license = "MIT/Apache-2.0"
 description = """\
@@ -34,10 +34,10 @@ serde_json = "1.0.40"
 serde_derive = "1.0.97"
 term = "0.4.6"
 rpassword = "1.0.0"
-indy = { version = "1.15.0", path = "../wrappers/rust/" }
+indy = { version = "1.16.0", path = "../wrappers/rust/" }
 
 [package.metadata.deb]
-depends = "libindy (= 1.15.0), libncursesw5-dev"
+depends = "libindy (= 1.16.0), libncursesw5-dev"
 section = "devel"
 priority = "optional"
 assets = [
@@ -48,8 +48,8 @@ changelog = "./debian/changelog"
 
 [package.metadata.deb.variants.indy-cli-xenial]
 name = "indy-cli"
-provides = "indy-cli (= 1.15.0)"
+provides = "indy-cli (= 1.16.0)"
 
 [package.metadata.deb.variants.indy-cli-bionic]
 name = "indy-cli"
-provides = "indy-cli (= 1.15.0)"
+provides = "indy-cli (= 1.16.0)"
