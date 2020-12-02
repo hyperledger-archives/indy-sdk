@@ -3,6 +3,7 @@ use indy_wallet::WalletService;
 use std::rc::Rc;
 use crate::services::metrics::MetricsService;
 use serde_json::{Map, Value};
+use crate::services::metrics::models::MetricsValue;
 
 const THREADPOOL_ACTIVE_COUNT: &str = "threadpool_active_count";
 const THREADPOOL_QUEUED_COUNT: &str = "threadpool_queued_count";
@@ -55,26 +56,47 @@ impl MetricsCommandExecutor {
     }
 
     fn append_threapool_metrics(&self, metrics_map: &mut Map<String, Value>) {
+        struct MetricsTags {
+            stage: String,
+        }
         let tp_instance = crate::commands::THREADPOOL.lock().unwrap();
-        metrics_map.insert(String::from(THREADPOOL_ACTIVE_COUNT),
-                           Value::from(tp_instance.active_count()));
-        metrics_map.insert(String::from(THREADPOOL_QUEUED_COUNT),
-                           Value::from(tp_instance.queued_count()));
-        metrics_map.insert(String::from(THREADPOOL_MAX_COUNT),
-                           Value::from(tp_instance.max_count()));
-        metrics_map.insert(String::from(THREADPOOL_PANIC_COUNT),
-                           Value::from(tp_instance.panic_count()));
+        let metrics_map = checkMetricsStructure(metrics_map);
+        let mut threadpool_threads_count = Vec::new();
+
+        threadpool_threads_count.push(Value::from("value", tp_instance.active_count()));
+        threadpool_threads_count.push(Value::from("tags", MetricsTags{stage: "active".to_string()}));
+
+        threadpool_threads_count.push(Value::from("value", tp_instance.queued_count()));
+        threadpool_threads_count.push(Value::from("tags", MetricsTags{stage: "queued".to_string()}));
+
+        threadpool_threads_count.push(Value::from("value", tp_instance.max_count()));
+        threadpool_threads_count.push(Value::from("tags", MetricsTags{stage: "max".to_string()}));
+
+        threadpool_threads_count.push(Value::from("value", tp_instance.panic_count()));
+        threadpool_threads_count.push(Value::from("tags", MetricsTags{stage: "panic".to_string()}));
+
+        metrics_map.insert(String::from("threadpool_threads_count"), Value::from(threadpool_threads_count));
     }
 
     fn append_wallet_metrics(&self, metrics_map: &mut Map<String, Value>) {
-        metrics_map.insert(String::from(OPENED_WALLETS_COUNT),
-                           Value::from(self.wallet_service.get_wallets_count()));
-        metrics_map.insert(String::from(OPENED_WALLET_IDS_COUNT),
-                           Value::from(self.wallet_service.get_wallet_ids_count()));
-        metrics_map.insert(String::from(PENDING_FOR_IMPORT_WALLETS_COUNT),
-                           Value::from(self.wallet_service.get_pending_for_import_count()));
-        metrics_map.insert(String::from(PENDING_FOR_OPEN_WALLETS_COUNT),
-                           Value::from(self.wallet_service.get_pending_for_open_count()));
+        struct MetricsTags {
+            stage: String,
+        }
+        let mut wallet_count = Vec::new();
+
+        wallet_count.push(Value::from( "value", self.wallet_service.get_wallets_count()));
+        wallet_count.push(Value::from("tags", MetricsTags{stage: "wallets".to_string()}));
+
+        wallet_count.push(Value::from("value", self.wallet_service.get_wallet_ids_count()));
+        wallet_count.push(Value::from("tags", MetricsTags{stage: "ids".to_string()}));
+
+        wallet_count.push(Value::from("value", self.wallet_service.get_pending_for_import_count()));
+        wallet_count.push(Value::from("tags", MetricsTags{stage: "pending_import".to_string()}));
+
+        wallet_count.push(Value::from("value", self.wallet_service.get_pending_for_open_count()));
+        wallet_count.push(Value::from("tags", MetricsTags{stage: "pending_open".to_string()}));
+
+        metrics_map.insert(String::from("wallet_count"),Value::from(wallet_count));
     }
 
 }
