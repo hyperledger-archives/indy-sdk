@@ -7,7 +7,6 @@ pub struct MetricsValue {
     tags: HashMap<String, String>,
 }
 
-
 impl MetricsValue {
     pub fn new(value: usize, tags: HashMap<String, String>) -> Self {
         MetricsValue { value, tags }

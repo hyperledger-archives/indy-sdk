@@ -9,11 +9,6 @@ use std::collections::HashMap;
 pub mod command_index;
 pub mod models;
 
-const QUEUED_COMMANDS_COUNT: &str = "queued_commands_count";
-const QUEUED_COMMANDS_DURATION_MS: &str = "queued_commands_duration_ms";
-const EXECUTED_COMMANDS_COUNT: &str = "executed_commands_count";
-const EXECUTED_COMMANDS_DURATION_MS: &str = "executed_commands_duration_ms";
-
 const COMMANDS_COUNT: usize = MetricsService::commands_count();
 
 pub struct MetricsService {
@@ -87,12 +82,12 @@ impl MetricsService {
 
         for index in (0..MetricsService::commands_count()).rev() {
             let (command, subcommand) = MetricsService::cmd_name(index);
-            let mut tags_executed = MetricsService::get_command_tags(
+            let tags_executed = MetricsService::get_command_tags(
                 command.clone(),
                 subcommand.clone(),
                 String::from("executed"),
             );
-            let mut tags_queued = MetricsService::get_command_tags(
+            let tags_queued = MetricsService::get_command_tags(
                 command.clone(),
                 subcommand.clone(),
                 String::from("queued"),
