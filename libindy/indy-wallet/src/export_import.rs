@@ -69,7 +69,7 @@ pub struct Header {
 //   "version": ..,
 // }
 
-pub(super) fn export_continue(wallet: &Wallet, writer: &mut dyn Write, version: u32, key: chacha20poly1305_ietf::Key, key_data: &KeyDerivationData) -> IndyResult<()> {
+pub(super) async fn export_continue(wallet: &Wallet, writer: &mut dyn Write, version: u32, key: chacha20poly1305_ietf::Key, key_data: &KeyDerivationData) -> IndyResult<()> {
     let nonce = chacha20poly1305_ietf::gen_nonce();
     let chunk_size = CHUNK_SIZE;
 
@@ -112,7 +112,7 @@ pub(super) fn export_continue(wallet: &Wallet, writer: &mut dyn Write, version: 
 
     writer.write_all(&hash(&header)?)?;
 
-    let mut records = wallet.get_all()?;
+    let mut records = wallet.get_all().await?;
 
     while let Some(WalletRecord { type_, id, value, tags }) = records.next()? {
         let record = Record {
@@ -135,10 +135,10 @@ pub(super) fn export_continue(wallet: &Wallet, writer: &mut dyn Write, version: 
 }
 
 #[cfg(test)]
-fn import<T>(wallet: &Wallet, reader: T, passphrase: &str) -> IndyResult<()> where T: Read {
+async fn import<T>(wallet: &Wallet, reader: T, passphrase: &str) -> IndyResult<()> where T: Read {
     let (reader, import_key_derivation_data, nonce, chunk_size, header_bytes) = preparse_file_to_import(reader, passphrase)?;
     let import_key = import_key_derivation_data.calc_master_key()?;
-    finish_import(wallet, reader, import_key, nonce, chunk_size, header_bytes)
+    finish_import(wallet, reader, import_key, nonce, chunk_size, header_bytes).await
 }
 
 pub(super) fn preparse_file_to_import<T>(reader: T, passphrase: &str) -> IndyResult<(BufReader<T>, KeyDerivationData, chacha20poly1305_ietf::Nonce, usize, Vec<u8>)> where T: Read {
@@ -200,7 +200,7 @@ pub(super) fn preparse_file_to_import<T>(reader: T, passphrase: &str) -> IndyRes
     Ok((reader, import_key_derivation_data, nonce, chunk_size, header_bytes))
 }
 
-pub(super) fn finish_import<T>(wallet: &Wallet, reader: BufReader<T>, key: chacha20poly1305_ietf::Key, nonce: chacha20poly1305_ietf::Nonce, chunk_size: usize, header_bytes: Vec<u8>) -> IndyResult<()> where T: Read {
+pub(super) async fn finish_import<T>(wallet: &Wallet, reader: BufReader<T>, key: chacha20poly1305_ietf::Key, nonce: chacha20poly1305_ietf::Nonce, chunk_size: usize, header_bytes: Vec<u8>) -> IndyResult<()> where T: Read {
     // Reads encrypted
     let mut reader = chacha20poly1305_ietf::Reader::new(reader, key, nonce, chunk_size);
 
@@ -224,7 +224,7 @@ pub(super) fn finish_import<T>(wallet: &Wallet, reader: BufReader<T>, key: chach
         let record: Record = rmp_serde::from_slice(&record)
             .to_indy(IndyErrorKind::InvalidStructure, "Record is malformed msgpack")?;
 
-        wallet.add(&record.type_, &record.id, &record.value, &record.tags)?;
+        wallet.add(&record.type_, &record.id, &record.value, &record.tags).await?;
     }
 
     Ok(())
@@ -255,7 +255,7 @@ mod tests {
 
     use super::*;
 
-    fn export(wallet: &Wallet, writer: &mut dyn Write, passphrase: &str, version: u32, key_derivation_method: &KeyDerivationMethod) -> IndyResult<()> {
+    async fn export(wallet: &Wallet, writer: &mut dyn Write, passphrase: &str, version: u32, key_derivation_method: &KeyDerivationMethod) -> IndyResult<()> {
         if version != 0 {
             Err(err_msg(IndyErrorKind::InvalidState, "Unsupported version"))?;
         }
@@ -263,10 +263,10 @@ mod tests {
         let key_data = KeyDerivationData::from_passphrase_with_new_salt(passphrase, key_derivation_method);
         let key = key_data.calc_master_key()?;
 
-        export_continue(wallet, writer, version, key, &key_data)
+        export_continue(wallet, writer, version, key, &key_data).await
     }
 
-    #[test]
+    #[async_std::test]
     fn export_import_works_for_empty_wallet() {
         _cleanup("export_import_works_for_empty_wallet1");
         _cleanup("export_import_works_for_empty_wallet2");

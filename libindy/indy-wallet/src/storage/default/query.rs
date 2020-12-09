@@ -1,13 +1,22 @@
 use indy_api_types::errors::prelude::*;
-use rusqlite::types::ToSql;
+use sqlx::prelude::Encode;
+ 
 use crate::language::{Operator, TagName, TargetValue};
 
+type ToSQL = sqlx::sqlite::SqliteValue;
 
 // Translates Wallet Query Language to SQL
 // WQL input is provided as a reference to a top level Operator
 // Result is a tuple of query string and query arguments
-pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, _options: Option<&str>) -> Result<(String, Vec<&'a dyn ToSql>), IndyError> {
-    let mut arguments: Vec<&dyn ToSql> = Vec::new();
+pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, _options: Option<&str>) -> Result<(String, Vec<&'a dyn Encode>), IndyError> {
+    
+    let clause_string = operator_to_sql(op, &mut arguments)?;
+
+    let query = if 
+    
+    sqlx::query_as("SELECT i.id, i.name, i.value, i.key, i.type FROM items as i WHERE i.type = ?")
+    
+    let mut arguments: Vec<dyn sqlx::prelude::Encode> = Vec::new();
     arguments.push(class);
     let clause_string = operator_to_sql(op, &mut arguments)?;
     const BASE: &str = "SELECT i.id, i.name, i.value, i.key, i.type FROM items as i WHERE i.type = ?";
