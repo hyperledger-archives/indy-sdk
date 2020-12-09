@@ -82,17 +82,17 @@ mod collect {
             .unwrap();
 
         let expected_commands_count = [
-            json!({"tags":{"command":"payments","stage":"executed","subcommand":"build_set_txn_fees_req_ack"},"value":0}),
-            json!({"tags":{"command":"pairwise","stage":"queued","subcommand":"pairwise_exists"},"value":0}),
-            json!({"tags":{"command":"cache","stage":"executed","subcommand":"purge_cred_def_cache"},"value":0}),
-            json!({"tags":{"command":"non_secrets","stage":"queued","subcommand":"fetch_search_next_records"},"value":0}),
+            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"pairwise_command_pairwise_exists","stage":"queued"},"value":0}),
+            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
         ];
 
         let expected_commands_duration_ms = [
-            json!({"tags":{"command":"payments","stage":"executed","subcommand":"build_set_txn_fees_req_ack"},"value":0}),
-            json!({"tags":{"command":"pairwise","stage":"queued","subcommand":"pairwise_exists"},"value":0}),
-            json!({"tags":{"command":"cache","stage":"executed","subcommand":"purge_cred_def_cache"},"value":0}),
-            json!({"tags":{"command":"non_secrets","stage":"queued","subcommand":"fetch_search_next_records"},"value":0}),
+            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"pairwise_command_pairwise_exists","stage":"queued"},"value":0}),
+            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
         ];
 
         for command in &expected_commands_count {

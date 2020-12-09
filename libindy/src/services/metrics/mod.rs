@@ -1,66 +1,107 @@
-use crate::services::metrics::command_metrics::{CommandMetrics, CommandMetric, CommandAware, Counters};
+use crate::services::metrics::command_metrics::CommandMetric;
+use convert_case::{Case, Casing};
 use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
 use models::MetricsValue;
 use serde_json::{Map, Value};
 use std::cell::RefCell;
 use std::collections::HashMap;
-use crate::commands::Command;
-use crate::commands::anoncreds::verifier::VerifierCommand;
-use crate::commands::anoncreds::prover::ProverCommand;
-use crate::commands::anoncreds::issuer::IssuerCommand;
 
 pub mod command_metrics;
 pub mod models;
 
+const COMMANDS_COUNT: usize = MetricsService::commands_count();
+
 pub struct MetricsService {
-     metrics: RefCell<CommandMetrics>,
+    queued_commands_count: RefCell<[u128; COMMANDS_COUNT]>,
+    queued_commands_duration_ms: RefCell<[u128; COMMANDS_COUNT]>,
+
+    executed_commands_count: RefCell<[u128; COMMANDS_COUNT]>,
+    executed_commands_duration_ms: RefCell<[u128; COMMANDS_COUNT]>,
 }
 
 impl MetricsService {
     pub fn new() -> Self {
         MetricsService {
-            metrics: RefCell::new(CommandMetrics::new()),
+            queued_commands_count: RefCell::new([u128::MIN; COMMANDS_COUNT]),
+            queued_commands_duration_ms: RefCell::new([u128::MIN; COMMANDS_COUNT]),
+
+            executed_commands_count: RefCell::new([u128::MIN; COMMANDS_COUNT]),
+            executed_commands_duration_ms: RefCell::new([u128::MIN; COMMANDS_COUNT]),
         }
+    }
+
+    pub fn cmd_left_queue(&self, command_index: CommandMetric, duration: u128) {
+        self.queued_commands_count.borrow_mut()[command_index as usize] += 1;
+        self.queued_commands_duration_ms.borrow_mut()[command_index as usize] += duration;
+    }
+
+    pub fn cmd_executed(&self, command_index: CommandMetric, duration: u128) {
+        self.executed_commands_count.borrow_mut()[command_index as usize] += 1;
+        self.executed_commands_duration_ms.borrow_mut()[command_index as usize] += duration;
+    }
+
+    pub fn cmd_name(index: usize) -> String {
+        CommandMetric::from(index).to_string().to_case(Case::Snake)
+    }
+
+    const fn commands_count() -> usize {
+        CommandMetric::VARIANT_COUNT
     }
 
     pub fn get_command_tags(
         command: String,
-        subcommand: String,
         stage: String,
     ) -> HashMap<String, String> {
         let mut tags = HashMap::<String, String>::new();
         tags.insert("command".to_owned(), command.clone());
-        tags.insert("subcommand".to_owned(), subcommand.clone());
         tags.insert("stage".to_owned(), stage.to_owned());
         tags
-    }
-
-    fn get_metric_structure(command: &str, subcommand: &str, value: Value) -> (MetricsValue, MetricsValue, MetricsValue, MetricsValue) {
-        let counters: Counters = serde_json::from_value(value.clone()).unwrap();
-
-        let executed_tag = MetricsService::get_command_tags(String::from(command), String::from(subcommand), String::from("executed"));
-        let queued_tag = MetricsService::get_command_tags(String::from(command), String::from(subcommand), String::from("queued"));
-        let executed_count = MetricsValue::new(counters.count, executed_tag.clone());
-        let queued_count = MetricsValue::new(counters.count, queued_tag.clone());
-        let executed_duration = MetricsValue::new(counters.sum,executed_tag);
-        let queued_duration = MetricsValue::new(counters.sum,queued_tag);
-
-        return (executed_count, queued_count, executed_duration, queued_duration)
     }
 
     pub fn append_command_metrics(&self, metrics_map: &mut Map<String, Value>) -> IndyResult<()> {
         let mut commands_count = Vec::new();
         let mut commands_duration_ms = Vec::new();
-        let root = serde_json::to_value(self.metrics.borrow().clone()).unwrap();
 
-        for command in root.as_object().unwrap().iter() {
-            for subcommand in command.1.as_object().unwrap().iter() {
-                let (executed_count, queued_count, executed_duration, queued_duration) = MetricsService::get_metric_structure(command.0, subcommand.0, subcommand.1.clone());
-                commands_count.push(executed_count);
-                commands_count.push(queued_count);
-                commands_duration_ms.push(executed_duration);
-                commands_duration_ms.push(queued_duration);
-            }
+        for index in (0..MetricsService::commands_count()).rev() {
+            let command = MetricsService::cmd_name(index);
+            let tags_executed = MetricsService::get_command_tags(
+                command.clone(),
+                String::from("executed"),
+            );
+            let tags_queued = MetricsService::get_command_tags(
+                command.clone(),
+                String::from("queued"),
+            );
+
+            commands_count.push(
+                serde_json::to_value(MetricsValue::new(
+                    self.executed_commands_count.borrow()[index] as usize,
+                    tags_executed.clone(),
+                ))
+                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
+            );
+            commands_count.push(
+                serde_json::to_value(MetricsValue::new(
+                    self.queued_commands_count.borrow()[index] as usize,
+                    tags_queued.clone(),
+                ))
+                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
+            );
+
+            commands_duration_ms.push(
+                serde_json::to_value(MetricsValue::new(
+                    self.executed_commands_duration_ms.borrow()[index] as usize,
+                    tags_executed,
+                ))
+                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
+            );
+            commands_duration_ms.push(
+                serde_json::to_value(MetricsValue::new(
+                    self.queued_commands_duration_ms.borrow()[index] as usize,
+                    tags_queued,
+                ))
+                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
+            );
         }
 
         metrics_map.insert(
@@ -75,69 +116,6 @@ impl MetricsService {
         );
 
         Ok(())
-    }
-}
-
-pub trait CommandAware2<T> {
-    fn cmd_left_queue(&self, command: T, duration: u128);
-    fn cmd_executed(&self, command: T, duration: u128);
-    fn borrow_metric_mut(&self, command: T) -> &mut CommandMetric;
-}
-
-impl CommandAware2<&Command> for MetricsService {
-    fn cmd_left_queue(&self, command: &Command, duration: u128) {
-        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_left_queue(duration);
-    }
-
-    fn cmd_executed(&self, command: &Command, duration: u128) {
-        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_executed(duration);
-    }
-
-    fn borrow_metric_mut(&self, command: &Command) -> &mut CommandMetric {
-        let mut some = self.metrics.borrow_mut();
-        some.borrow_metrics_mut(command)
-    }
-}
-
-impl CommandAware2<&VerifierCommand> for MetricsService {
-    fn cmd_left_queue(&self, command: &VerifierCommand, duration: u128) {
-        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_left_queue(duration);
-    }
-
-    fn cmd_executed(&self, command: &VerifierCommand, duration: u128) {
-        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_executed(duration);
-    }
-
-    fn borrow_metric_mut(&self, command: &VerifierCommand) -> &mut CommandMetric {
-        self.metrics.borrow_mut().borrow_metrics_mut(command)
-    }
-}
-
-impl CommandAware2<&ProverCommand> for MetricsService {
-    fn cmd_left_queue(&self, command: &ProverCommand, duration: u128) {
-        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_left_queue(duration);
-    }
-
-    fn cmd_executed(&self, command: &ProverCommand, duration: u128) {
-        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_executed(duration);
-    }
-
-    fn borrow_metric_mut(&self, command: &ProverCommand) -> &mut CommandMetric {
-        self.metrics.borrow_mut().borrow_metrics_mut(command)
-    }
-}
-
-impl CommandAware2<&IssuerCommand> for MetricsService {
-    fn cmd_left_queue(&self, command: &IssuerCommand, duration: u128) {
-        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_left_queue(duration);
-    }
-
-    fn cmd_executed(&self, command: &IssuerCommand, duration: u128) {
-        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_executed(duration);
-    }
-
-    fn borrow_metric_mut(&self, command: &IssuerCommand) -> &mut CommandMetric {
-        self.metrics.borrow_mut().borrow_metrics_mut(command)
     }
 }
 
@@ -159,7 +137,7 @@ mod test {
     #[test]
     fn test_cmd_left_queue_increments_relevant_queued_counters() {
         let metrics_service = MetricsService::new();
-        let index = CommandIndex::IssuerCommandCreateSchema;
+        let index = CommandMetric::IssuerCommandCreateSchema;
         let duration1 = 5u128;
         let duration2 = 2u128;
 
@@ -180,7 +158,7 @@ mod test {
     #[test]
     fn test_cmd_executed_increments_relevant_executed_counters() {
         let metrics_service = MetricsService::new();
-        let index = CommandIndex::IssuerCommandCreateSchema;
+        let index = CommandMetric::IssuerCommandCreateSchema;
         let duration1 = 5u128;
         let duration2 = 2u128;
 
@@ -236,18 +214,18 @@ mod test {
             .as_array()
             .unwrap();
 
-        let mut expected_commands_count = [
-            json!({"tags":{"command":"payments","stage":"executed","subcommand":"build_set_txn_fees_req_ack"},"value":0}),
-            json!({"tags":{"command":"pairwise","stage":"queued","subcommand":"pairwise_exists"},"value":0}),
-            json!({"tags":{"command":"cache","stage":"executed","subcommand":"purge_cred_def_cache"},"value":0}),
-            json!({"tags":{"command":"non_secrets","stage":"queued","subcommand":"fetch_search_next_records"},"value":0}),
+        let expected_commands_count = [
+            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"queued"},"value":0}),
+            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
+            json!({"tags":{"command": "non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
         ];
 
-        let mut expected_commands_duration_ms = [
-            json!({"tags":{"command":"payments","stage":"executed","subcommand":"build_set_txn_fees_req_ack"},"value":0}),
-            json!({"tags":{"command":"pairwise","stage":"queued","subcommand":"pairwise_exists"},"value":0}),
-            json!({"tags":{"command":"cache","stage":"executed","subcommand":"purge_cred_def_cache"},"value":0}),
-            json!({"tags":{"command":"non_secrets","stage":"queued","subcommand":"fetch_search_next_records"},"value":0}),
+        let expected_commands_duration_ms = [
+            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"queued"},"value":0}),
+            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
         ];
 
         for command in &expected_commands_count {

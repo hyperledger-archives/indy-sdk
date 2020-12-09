@@ -27,7 +27,8 @@ use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
 use crate::services::payments::PaymentsService;
 use crate::services::pool::{PoolService, set_freshness_threshold};
-use crate::services::metrics::{MetricsService, CommandAware2};
+use crate::services::metrics::MetricsService;
+use crate::services::metrics::command_metrics::CommandMetric;
 use indy_wallet::WalletService;
 
 use self::threadpool::ThreadPool;
@@ -157,8 +158,10 @@ impl CommandExecutor {
                             panic!("Failed to get command! {:?}", err)
                         }
                     };
+                    let cmd_index: CommandMetric = (&instrumented_cmd.command).into();
                     let start_execution_ts = get_cur_time();
-                    metrics_service.cmd_left_queue(&instrumented_cmd.command, start_execution_ts - instrumented_cmd.enqueue_ts);
+                    metrics_service.cmd_left_queue(cmd_index,
+                                                   start_execution_ts - instrumented_cmd.enqueue_ts);
 
                     match instrumented_cmd.command {
                         Command::Anoncreds(cmd) => {
@@ -214,7 +217,8 @@ impl CommandExecutor {
                             break
                         }
                     }
-                    metrics_service.cmd_executed(&instrumented_cmd.command, get_cur_time() - start_execution_ts);
+                    metrics_service.cmd_executed(cmd_index,
+                                                 get_cur_time() - start_execution_ts);
                 }
             }))
         }
