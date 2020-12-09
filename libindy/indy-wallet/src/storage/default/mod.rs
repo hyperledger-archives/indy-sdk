@@ -1,217 +1,118 @@
-extern crate owning_ref;
+use std::{fs, pin::Pin};
 
-use std;
-use std::fs;
-use std::rc::Rc;
-
-use rusqlite;
-use serde_json;
-
+use async_trait::async_trait;
+use futures::{Stream, TryStreamExt};
 use indy_api_types::errors::prelude::*;
-use crate::language;
 use indy_utils::environment;
+use sqlx::{
+    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteRow},
+    ConnectOptions, Done, Row, SqlitePool,
+};
 
-use super::{EncryptedValue, StorageIterator, StorageRecord, Tag, TagName, WalletStorage, WalletStorageType};
-use super::super::{RecordOptions, SearchOptions};
+use crate::{
+    language,
+    storage::{StorageIterator, StorageRecord, Tag, TagName, WalletStorage, WalletStorageType},
+    wallet::EncryptedValue,
+    RecordOptions, SearchOptions,
+};
 
-use self::owning_ref::OwningHandle;
-
-mod query;
-mod transaction;
+//mod query;
+//mod transaction;
 
 const _SQLITE_DB: &str = "sqlite.db";
-const _PLAIN_TAGS_QUERY: &str = "SELECT name, value from tags_plaintext where item_id = ?";
-const _ENCRYPTED_TAGS_QUERY: &str = "SELECT name, value from tags_encrypted where item_id = ?";
-const _CREATE_SCHEMA: &str = "
-    PRAGMA locking_mode=EXCLUSIVE;
-    PRAGMA foreign_keys=ON;
 
-    BEGIN EXCLUSIVE TRANSACTION;
-
-    /*** Keys Table ***/
-
-    CREATE TABLE metadata (
-        id INTEGER NOT NULL,
-        value NOT NULL,
-        PRIMARY KEY(id)
-    );
-
-    /*** Items Table ***/
-
-    CREATE TABLE items(
-        id INTEGER NOT NULL,
-        type NOT NULL,
-        name NOT NULL,
-        value NOT NULL,
-        key NOT NULL,
-        PRIMARY KEY(id)
-    );
-
-    CREATE UNIQUE INDEX ux_items_type_name ON items(type, name);
-
-    /*** Encrypted Tags Table ***/
-
-    CREATE TABLE tags_encrypted(
-        name NOT NULL,
-        value NOT NULL,
-        item_id INTEGER NOT NULL,
-        PRIMARY KEY(name, item_id),
-        FOREIGN KEY(item_id)
-            REFERENCES items(id)
-            ON DELETE CASCADE
-            ON UPDATE CASCADE
-    );
-
-    CREATE INDEX ix_tags_encrypted_name ON tags_encrypted(name);
-    CREATE INDEX ix_tags_encrypted_value ON tags_encrypted(value);
-    CREATE INDEX ix_tags_encrypted_item_id ON tags_encrypted(item_id);
-
-    /*** PlainText Tags Table ***/
-
-    CREATE TABLE tags_plaintext(
-        name NOT NULL,
-        value NOT NULL,
-        item_id INTEGER NOT NULL,
-        PRIMARY KEY(name, item_id),
-        FOREIGN KEY(item_id)
-            REFERENCES items(id)
-            ON DELETE CASCADE
-            ON UPDATE CASCADE
-    );
-
-    CREATE INDEX ix_tags_plaintext_name ON tags_plaintext(name);
-    CREATE INDEX ix_tags_plaintext_value ON tags_plaintext(value);
-    CREATE INDEX ix_tags_plaintext_item_id ON tags_plaintext(item_id);
-
-    END TRANSACTION;
-";
-
-
-#[derive(Debug)]
-struct TagRetriever<'a> {
-    plain_tags_stmt: rusqlite::Statement<'a>,
-    encrypted_tags_stmt: rusqlite::Statement<'a>,
-}
-
-type TagRetrieverOwned = OwningHandle<Rc<rusqlite::Connection>, Box<TagRetriever<'static>>>;
-
-impl<'a> TagRetriever<'a> {
-    fn new_owned(conn: Rc<rusqlite::Connection>) -> IndyResult<TagRetrieverOwned> {
-        OwningHandle::try_new(conn.clone(), |conn| -> Result<_, rusqlite::Error> {
-            let (plain_tags_stmt, encrypted_tags_stmt) = unsafe {
-                ((*conn).prepare(_PLAIN_TAGS_QUERY)?,
-                 (*conn).prepare(_ENCRYPTED_TAGS_QUERY)?)
-            };
-
-            let tr = TagRetriever {
-                plain_tags_stmt,
-                encrypted_tags_stmt,
-            };
-
-            Ok(Box::new(tr))
-        }).map_err(IndyError::from)
-    }
-
-    fn retrieve(&mut self, id: i64) -> IndyResult<Vec<Tag>> {
-        let mut tags = Vec::new();
-        let mut plain_results = self.plain_tags_stmt.query(&[&id])?;
-
-        while let Some(row) = plain_results.next()? {
-            tags.push(Tag::PlainText(row.get(0)?, row.get(1)?));
-        }
-
-        let mut encrypted_results = self.encrypted_tags_stmt.query(&[&id])?;
-
-        while let Some(row) = encrypted_results.next()? {
-            tags.push(Tag::Encrypted(row.get(0)?, row.get(1)?));
-        }
-
-        Ok(tags)
-    }
-}
-
+type Cursor =
+    Pin<Box<dyn Stream<Item = std::result::Result<SqliteRow, sqlx::Error>> + std::marker::Send>>;
 
 struct SQLiteStorageIterator {
-    rows: Option<
-        OwningHandle<
-            OwningHandle<
-                Rc<rusqlite::Connection>,
-                Box<rusqlite::Statement<'static>>>,
-            Box<rusqlite::Rows<'static>>>>,
-    tag_retriever: Option<TagRetrieverOwned>,
+    pool: SqlitePool,
+    cursor: Cursor,
     options: RecordOptions,
     total_count: Option<usize>,
 }
 
-
 impl SQLiteStorageIterator {
-    fn new(stmt: Option<OwningHandle<Rc<rusqlite::Connection>, Box<rusqlite::Statement<'static>>>>,
-           args: &[&dyn rusqlite::types::ToSql],
-           options: RecordOptions,
-           tag_retriever: Option<TagRetrieverOwned>,
-           total_count: Option<usize>) -> IndyResult<SQLiteStorageIterator> {
-        let mut iter = SQLiteStorageIterator {
-            rows: None,
-            tag_retriever,
+    fn new(
+        pool: SqlitePool,
+        cursor: Cursor,
+        options: RecordOptions,
+        total_count: Option<usize>,
+    ) -> IndyResult<SQLiteStorageIterator> {
+        Ok(SQLiteStorageIterator {
+            pool,
+            cursor,
             options,
             total_count,
-        };
-
-        if let Some(stmt) = stmt {
-            iter.rows = Some(OwningHandle::try_new(
-                stmt, |stmt|
-                    unsafe {
-                        (*(stmt as *mut rusqlite::Statement)).query(args).map(Box::new)
-                    },
-            )?);
-        }
-
-        Ok(iter)
+        })
     }
 }
 
-
+#[async_trait]
 impl StorageIterator for SQLiteStorageIterator {
-    fn next(&mut self) -> IndyResult<Option<StorageRecord>> {
-        // if records are not requested.
-        if self.rows.is_none() {
+    async fn next(&mut self) -> IndyResult<Option<StorageRecord>> {
+        // Cursor query is "SELECT id, name, value, key, type FROM items"
+
+        let row = self.cursor.as_mut().try_next().await?;
+
+        let row = if let Some(row) = row {
+            row
+        } else {
             return Ok(None);
-        }
+        };
 
-        match self.rows.as_mut().unwrap().next() {
-            Ok(None) => Ok(None),
-            Ok(Some(row)) => {
-                let name = row.get(1)?;
+        let item_id: i64 = row.try_get("id")?;
+        let id: Vec<u8> = row.try_get("name")?;
+        let value: Vec<u8> = row.try_get("value")?;
+        let key: Vec<u8> = row.try_get("key")?;
+        let type_: Vec<u8> = row.try_get("type")?;
 
-                let value = if self.options.retrieve_value {
-                    Some(EncryptedValue::new(row.get(2)?, row.get(3)?))
-                } else {
-                    None
-                };
+        let value = if self.options.retrieve_value {
+            Some(EncryptedValue::new(value, key))
+        } else {
+            None
+        };
 
-                let tags = if self.options.retrieve_tags {
-                    match self.tag_retriever {
-                        Some(ref mut tag_retriever) => Some(tag_retriever.retrieve(row.get(0)?)?),
-                        None => return Err(err_msg(IndyErrorKind::InvalidState, "Fetch tags option set and tag retriever is None"))
-                    }
-                } else {
-                    None
-                };
+        let type_ = if self.options.retrieve_type {
+            Some(type_)
+        } else {
+            None
+        };
 
-                let type_ = if self.options.retrieve_type {
-                    Some(row.get(4)?)
-                } else {
-                    None
-                };
+        let tags = if self.options.retrieve_tags {
+            let mut tags: Vec<Tag> = Vec::new();
 
-                Ok(Some(StorageRecord::new(name, value, type_, tags)))
-            }
-            Err(err) => Err(err.into()),
-        }
+            tags.extend(
+                sqlx::query_as::<_, (Vec<u8>, String)>(
+                    "SELECT name, value from tags_plaintext where item_id = ?",
+                )
+                .bind(item_id)
+                .fetch_all(&self.pool)
+                .await?
+                .drain(..)
+                .map(|r| Tag::PlainText(r.0, r.1)),
+            );
+
+            tags.extend(
+                sqlx::query_as::<_, (Vec<u8>, Vec<u8>)>(
+                    "SELECT name, value from tags_encrypted where item_id = ?",
+                )
+                .bind(item_id)
+                .fetch_all(&self.pool)
+                .await?
+                .drain(..)
+                .map(|r| Tag::Encrypted(r.0, r.1)),
+            );
+
+            Some(tags)
+        } else {
+            None
+        };
+
+        Ok(Some(StorageRecord::new(id, value, type_, tags)))
     }
 
     fn get_total_count(&self) -> IndyResult<Option<usize>> {
-        Ok(self.total_count)
+        Ok(self.total_count.to_owned())
     }
 }
 
@@ -222,11 +123,10 @@ struct Config {
 
 #[derive(Debug)]
 struct SQLiteStorage {
-    conn: Rc<rusqlite::Connection>,
+    pool: SqlitePool,
 }
 
 pub struct SQLiteStorageType {}
-
 
 impl SQLiteStorageType {
     pub fn new() -> SQLiteStorageType {
@@ -235,8 +135,10 @@ impl SQLiteStorageType {
 
     fn _db_path(id: &str, config: Option<&Config>) -> std::path::PathBuf {
         let mut path = match config {
-            Some(Config { path: Some(ref path) }) => std::path::PathBuf::from(path),
-            _ => environment::wallet_home_path()
+            Some(Config {
+                path: Some(ref path),
+            }) => std::path::PathBuf::from(path),
+            _ => environment::wallet_home_path(),
         };
 
         path.push(id);
@@ -245,6 +147,7 @@ impl SQLiteStorageType {
     }
 }
 
+#[async_trait]
 impl WalletStorage for SQLiteStorage {
     ///
     /// Tries to fetch values and/or tags from the storage.
@@ -274,48 +177,64 @@ impl WalletStorage for SQLiteStorage {
     ///  * `IndyError::ItemNotFound` - Item is not found in database
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
-    fn get(&self, type_: &[u8], id: &[u8], options: &str) -> IndyResult<StorageRecord> {
-        let options: RecordOptions = if options == "{}" { // FIXME:
-            RecordOptions::default()
-        } else {
-            serde_json::from_str(options)
-                .to_indy(IndyErrorKind::InvalidStructure, "RecordOptions is malformed json")?
-        };
-
-
-        let item: (i64, Vec<u8>, Vec<u8>) = self.conn.query_row(
-            "SELECT id, value, key FROM items where type = ?1 AND name = ?2",
-            &[&type_.to_vec(), &id.to_vec()],
-            |row| {
-                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
-            },
+    async fn get(&self, type_: &[u8], id: &[u8], options: &str) -> IndyResult<StorageRecord> {
+        let options: RecordOptions = serde_json::from_str(options).to_indy(
+            IndyErrorKind::InvalidStructure,
+            "RecordOptions is malformed json",
         )?;
 
-        let value = if options.retrieve_value
-            { Some(EncryptedValue::new(item.1, item.2)) } else { None };
-        let type_ = if options.retrieve_type { Some(type_.to_vec()) } else { None };
+        let name = id; // FIXME: looks uggly
+
+        let (id, value, key): (i64, Vec<u8>, Vec<u8>) =
+            sqlx::query_as("SELECT id, value, key FROM items where type = ?1 AND name = ?2")
+                .bind(type_)
+                .bind(id)
+                .fetch_one(&self.pool)
+                .await?;
+
+        let value = if options.retrieve_value {
+            Some(EncryptedValue::new(value, key))
+        } else {
+            None
+        };
+
+        let type_ = if options.retrieve_type {
+            Some(type_.to_vec())
+        } else {
+            None
+        };
+
         let tags = if options.retrieve_tags {
             let mut tags = Vec::new();
 
-            // get all encrypted.
-            let mut stmt = self.conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = ?1")?;
-            let mut rows = stmt.query(&[&item.0])?;
+            tags.extend(
+                sqlx::query_as::<_, (Vec<u8>, String)>(
+                    "SELECT name, value from tags_plaintext where item_id = ?",
+                )
+                .bind(&id)
+                .fetch_all(&self.pool)
+                .await?
+                .drain(..)
+                .map(|r| Tag::PlainText(r.0, r.1)),
+            );
 
-            while let Some(row) = rows.next()? {
-                tags.push(Tag::Encrypted(row.get(0)?, row.get(1)?));
-            }
+            tags.extend(
+                sqlx::query_as::<_, (Vec<u8>, Vec<u8>)>(
+                    "SELECT name, value from tags_encrypted where item_id = ?",
+                )
+                .bind(&id)
+                .fetch_all(&self.pool)
+                .await?
+                .drain(..)
+                .map(|r| Tag::Encrypted(r.0, r.1)),
+            );
 
-            // get all plain
-            let mut stmt = self.conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = ?1")?;
-            let mut rows = stmt.query(&[&item.0])?;
-
-            while let Some(row) = rows.next()? {
-                tags.push(Tag::PlainText(row.get(0)?, row.get(1)?));
-            }
             Some(tags)
-        } else { None };
+        } else {
+            None
+        };
 
-        Ok(StorageRecord::new(id.to_vec(), value, type_, tags))
+        Ok(StorageRecord::new(name.to_vec(), value, type_, tags))
     }
 
     ///
@@ -347,109 +266,196 @@ impl WalletStorage for SQLiteStorage {
     ///  * `IndyError::ItemAlreadyExists` - Item is already present in database
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
-    fn add(&self, type_: &[u8], id: &[u8], value: &EncryptedValue, tags: &[Tag]) -> IndyResult<()> {
-        let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
-        let res = tx.prepare_cached("INSERT INTO items (type, name, value, key) VALUES (?1, ?2, ?3, ?4)")?
-            .insert(&[&type_.to_vec(), &id.to_vec(), &value.data, &value.key]);
+    async fn add(
+        &self,
+        type_: &[u8],
+        id: &[u8],
+        value: &EncryptedValue,
+        tags: &[Tag],
+    ) -> IndyResult<()> {
+        let mut tx = self.pool.begin().await?;
 
-        let id = match res {
-            Ok(entity) => entity,
-            Err(err) => return Err(IndyError::from(err))
-        };
+        let id = sqlx::query("INSERT INTO items (type, name, value, key) VALUES (?1, ?2, ?3, ?4)")
+            .bind(type_)
+            .bind(id)
+            .bind(&value.data)
+            .bind(&value.key)
+            .execute(&mut tx)
+            .await?
+            .last_insert_rowid();
 
-        if !tags.is_empty() {
-            let mut stmt_e = tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)")?;
-            let mut stmt_p = tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)")?;
-
-            for tag in tags {
-                match *tag {
-                    Tag::Encrypted(ref tag_name, ref tag_data) => stmt_e.execute(rusqlite::params![&id, tag_name, tag_data])?,
-                    Tag::PlainText(ref tag_name, ref tag_data) => stmt_p.execute(rusqlite::params![&id, tag_name, tag_data])?
-                };
-            }
+        for tag in tags {
+            match *tag {
+                Tag::Encrypted(ref tag_name, ref tag_data) => {
+                    sqlx::query(
+                        "INSERT INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)",
+                    )
+                    .bind(id)
+                    .bind(tag_name)
+                    .bind(tag_data)
+                    .execute(&mut tx)
+                    .await?
+                }
+                Tag::PlainText(ref tag_name, ref tag_data) => {
+                    sqlx::query(
+                        "INSERT INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)",
+                    )
+                    .bind(id)
+                    .bind(tag_name)
+                    .bind(tag_data)
+                    .execute(&mut tx)
+                    .await?
+                }
+            };
         }
 
-        tx.commit()?;
+        tx.commit().await?;
         Ok(())
     }
 
-    fn update(&self, type_: &[u8], id: &[u8], value: &EncryptedValue) -> IndyResult<()> {
-        let res = self.conn.prepare_cached("UPDATE items SET value = ?1, key = ?2 WHERE type = ?3 AND name = ?4")?
-            .execute(rusqlite::params![&value.data, &value.key, &type_.to_vec(), &id.to_vec()]);
+    async fn update(&self, type_: &[u8], id: &[u8], value: &EncryptedValue) -> IndyResult<()> {
+        let row_updated =
+            sqlx::query("UPDATE items SET value = ?1, key = ?2 WHERE type = ?3 AND name = ?4")
+                .bind(&value.data)
+                .bind(&value.key)
+                .bind(&type_)
+                .bind(&id)
+                .execute(&self.pool)
+                .await?
+                .rows_affected();
 
-        match res {
-            Ok(1) => Ok(()),
-            Ok(0) => Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
-            Ok(_) => Err(err_msg(IndyErrorKind::InvalidState, "More than one row update. Seems wallet structure is inconsistent")),
-            Err(err) => Err(err.into()),
+        match row_updated {
+            1 => Ok(()),
+            0 => Err(err_msg(
+                IndyErrorKind::WalletItemNotFound,
+                "Item to update not found",
+            )),
+            _ => Err(err_msg(
+                IndyErrorKind::InvalidState,
+                "More than one row update. Seems wallet structure is inconsistent",
+            )),
         }
     }
 
-    fn add_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> IndyResult<()> {
-        let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
+    async fn add_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> IndyResult<()> {
+        let mut tx = self.pool.begin().await?;
 
-        let item_id: i64 = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
-            .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0))?;
+        let (item_id,): (i64,) =
+            sqlx::query_as("SELECT id FROM items WHERE type = ?1 AND name = ?2")
+                .bind(type_)
+                .bind(id)
+                .fetch_one(&mut tx)
+                .await?;
 
-        if !tags.is_empty() {
-            let mut enc_tag_insert_stmt = tx.prepare_cached("INSERT OR REPLACE INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)")?;
-            let mut plain_tag_insert_stmt = tx.prepare_cached("INSERT OR REPLACE INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)")?;
-
-            for tag in tags {
-                match *tag {
-                    Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(rusqlite::params![&item_id, tag_name, tag_data])?,
-                    Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(rusqlite::params![&item_id, tag_name, tag_data])?
-                };
-            }
+        for tag in tags {
+            match *tag {
+                Tag::Encrypted(ref tag_name, ref tag_data) => {
+                    sqlx::query(
+                        "INSERT INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)",
+                    )
+                    .bind(item_id)
+                    .bind(tag_name)
+                    .bind(tag_data)
+                    .execute(&mut tx)
+                    .await?
+                }
+                Tag::PlainText(ref tag_name, ref tag_data) => {
+                    sqlx::query(
+                        "INSERT INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)",
+                    )
+                    .bind(item_id)
+                    .bind(tag_name)
+                    .bind(tag_data)
+                    .execute(&mut tx)
+                    .await?
+                }
+            };
         }
-        tx.commit()?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn update_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> IndyResult<()> {
+        let mut tx = self.pool.begin().await?;
+
+        let (item_id,): (i64,) =
+            sqlx::query_as("SELECT id FROM items WHERE type = ?1 AND name = ?2")
+                .bind(type_)
+                .bind(&id)
+                .fetch_one(&mut tx)
+                .await?;
+
+        sqlx::query("DELETE FROM tags_encrypted WHERE item_id = ?1")
+            .bind(item_id)
+            .execute(&mut tx)
+            .await?;
+
+        sqlx::query("DELETE FROM tags_plaintext WHERE item_id = ?1")
+            .bind(item_id)
+            .execute(&mut tx)
+            .await?;
+
+        for tag in tags {
+            match *tag {
+                Tag::Encrypted(ref tag_name, ref tag_data) => {
+                    sqlx::query(
+                        "INSERT INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)",
+                    )
+                    .bind(item_id)
+                    .bind(tag_name)
+                    .bind(tag_data)
+                    .execute(&mut tx)
+                    .await?
+                }
+                Tag::PlainText(ref tag_name, ref tag_data) => {
+                    sqlx::query(
+                        "INSERT INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)",
+                    )
+                    .bind(item_id)
+                    .bind(tag_name)
+                    .bind(tag_data)
+                    .execute(&mut tx)
+                    .await?
+                }
+            };
+        }
+
+        tx.commit().await?;
 
         Ok(())
     }
 
-    fn update_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> IndyResult<()> {
-        let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
+    async fn delete_tags(&self, type_: &[u8], id: &[u8], tag_names: &[TagName]) -> IndyResult<()> {
+        let mut tx = self.pool.begin().await?;
 
-        let item_id: i64 = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
-            .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0))?;
+        let (item_id,): (i64,) =
+            sqlx::query_as("SELECT id FROM items WHERE type = ?1 AND name = ?2")
+                .bind(type_)
+                .bind(id)
+                .fetch_one(&mut tx)
+                .await?;
 
-        tx.execute("DELETE FROM tags_encrypted WHERE item_id = ?1", &[&item_id])?;
-        tx.execute("DELETE FROM tags_plaintext WHERE item_id = ?1", &[&item_id])?;
-
-        if !tags.is_empty() {
-            let mut enc_tag_insert_stmt = tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)")?;
-            let mut plain_tag_insert_stmt = tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)")?;
-
-            for tag in tags {
-                match *tag {
-                    Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(rusqlite::params![&item_id, tag_name, tag_data])?,
-                    Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(rusqlite::params![&item_id, tag_name, tag_data])?
-                };
-            }
-        }
-        tx.commit()?;
-
-        Ok(())
-    }
-
-    fn delete_tags(&self, type_: &[u8], id: &[u8], tag_names: &[TagName]) -> IndyResult<()> {
-        let item_id: i64 = self.conn.prepare_cached("SELECT id FROM items WHERE type =?1 AND name = ?2")?
-            .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0))?;
-
-        let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
-        {
-            let mut enc_tag_delete_stmt = tx.prepare_cached("DELETE FROM tags_encrypted WHERE item_id = ?1 AND name = ?2")?;
-            let mut plain_tag_delete_stmt = tx.prepare_cached("DELETE FROM tags_plaintext WHERE item_id = ?1 AND name = ?2")?;
-
-            for tag_name in tag_names {
-                match *tag_name {
-                    TagName::OfEncrypted(ref tag_name) => enc_tag_delete_stmt.execute(rusqlite::params![&item_id, tag_name])?,
-                    TagName::OfPlain(ref tag_name) => plain_tag_delete_stmt.execute(rusqlite::params![&item_id, tag_name])?,
-                };
-            }
+        for tag_name in tag_names {
+            match *tag_name {
+                TagName::OfEncrypted(ref tag_name) => {
+                    sqlx::query("DELETE FROM tags_encrypted WHERE item_id = ?1 AND name = ?2")
+                        .bind(item_id)
+                        .bind(tag_name)
+                        .execute(&mut tx)
+                        .await?
+                }
+                TagName::OfPlain(ref tag_name) => {
+                    sqlx::query("DELETE FROM tags_plaintext WHERE item_id = ?1 AND name = ?2")
+                        .bind(item_id)
+                        .bind(tag_name)
+                        .execute(&mut tx)
+                        .await?
+                }
+            };
         }
 
-        tx.commit()?;
+        tx.commit().await?;
         Ok(())
     }
 
@@ -479,108 +485,128 @@ impl WalletStorage for SQLiteStorage {
     ///  * `IndyError::ItemNotFound` - Item is not found in database
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
-    fn delete(&self, type_: &[u8], id: &[u8]) -> IndyResult<()> {
-        let row_count = self.conn.execute(
-            "DELETE FROM items where type = ?1 AND name = ?2",
-            &[&type_.to_vec(), &id.to_vec()],
-        )?;
+    async fn delete(&self, type_: &[u8], id: &[u8]) -> IndyResult<()> {
+        let rows_affected = sqlx::query("DELETE FROM items where type = ?1 AND name = ?2")
+            .bind(type_)
+            .bind(id)
+            .execute(&self.pool)
+            .await?
+            .rows_affected();
 
-        if row_count == 1 {
-            Ok(())
-        } else {
-            Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to delete not found"))
+        match rows_affected {
+            1 => Ok(()),
+            0 => Err(err_msg(
+                IndyErrorKind::WalletItemNotFound,
+                "Item to delete not found",
+            )),
+            _ => Err(err_msg(
+                IndyErrorKind::InvalidState,
+                "More than one row deleted. Seems wallet structure is inconsistent",
+            )),
         }
     }
 
-    fn get_storage_metadata(&self) -> IndyResult<Vec<u8>> {
-        self.conn.query_row(
-            "SELECT value FROM metadata",
-            rusqlite::NO_PARAMS,
-            |row| { row.get(0) },
-        ).map_err(IndyError::from)
+    async fn get_storage_metadata(&self) -> IndyResult<Vec<u8>> {
+        let (metadata,): (Vec<u8>,) = sqlx::query_as::<_, (Vec<u8>,)>("SELECT value FROM metadata")
+            .fetch_one(&self.pool)
+            .await?;
+
+        Ok(metadata)
     }
 
-    fn set_storage_metadata(&self, metadata: &[u8]) -> IndyResult<()> {
-        self.conn.execute("UPDATE metadata SET value = ?1", &[&metadata.to_vec()])?;
+    async fn set_storage_metadata(&self, metadata: &[u8]) -> IndyResult<()> {
+        sqlx::query("UPDATE metadata SET value = ?1")
+            .bind(metadata)
+            .execute(&self.pool)
+            .await?;
+
         Ok(())
     }
 
-    fn get_all(&self) -> IndyResult<Box<dyn StorageIterator>> {
-        let statement = self._prepare_statement("SELECT id, name, value, key, type FROM items;")?;
+    async fn get_all(&self) -> IndyResult<Box<dyn StorageIterator>> {
+        let cursor = sqlx::query("SELECT id, name, value, key, type FROM items").fetch(&self.pool);
 
-        let fetch_options = RecordOptions {
-            retrieve_type: true,
-            retrieve_value: true,
-            retrieve_tags: true,
-        };
-
-        let tag_retriever = Some(TagRetriever::new_owned(self.conn.clone())?);
-        let storage_iterator = SQLiteStorageIterator::new(Some(statement), &[], fetch_options, tag_retriever, None)?;
-
-        Ok(Box::new(storage_iterator))
+        Ok(Box::new(SQLiteStorageIterator::new(
+            self.pool.clone(),
+            cursor,
+            RecordOptions {
+                retrieve_type: true,
+                retrieve_value: true,
+                retrieve_tags: true,
+            },
+            None,
+        )?))
     }
 
-    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> IndyResult<Box<dyn StorageIterator>> {
-        let type_ = type_.to_vec(); // FIXME
+    async fn search(
+        &self,
+        type_: &[u8],
+        query: &language::Operator,
+        options: Option<&str>,
+    ) -> IndyResult<Box<dyn StorageIterator>> {
+        unimplemented!();
 
-        let search_options = match options {
-            None => SearchOptions::default(),
-            Some(option_str) => serde_json::from_str(option_str)
-                .to_indy(IndyErrorKind::InvalidStructure, "Search options is malformed json")?
-        };
+        // let search_options = if let Some(options) = options {
+        //     serde_json::from_str(options).to_indy(
+        //         IndyErrorKind::InvalidStructure,
+        //         "Search options is malformed json",
+        //     )?
+        // } else {
+        //     SearchOptions::default()
+        // };
 
-        let total_count: Option<usize> = if search_options.retrieve_total_count {
-            let (query_string, query_arguments) = query::wql_to_sql_count(&type_, query)?;
+        // let total_count: Option<usize> = if search_options.retrieve_total_count {
+        //     let (query_string, query_arguments) = query::wql_to_sql_count(&type_, query)?;
 
-            let res: Option<usize> = Option::from(self.conn.query_row(
-                &query_string,
-                &query_arguments,
-                |row| {
-                    let x: i64 = row.get(0)?;
-                    Ok(x as usize)
-                },
-            )?);
-            res
-        } else { None };
+        //     let res: Option<usize> = Option::from(self.conn.query_row(
+        //         &query_string,
+        //         &query_arguments,
+        //         |row| {
+        //             let x: i64 = row.get(0)?;
+        //             Ok(x as usize)
+        //         },
+        //     )?);
+        //     res
+        // } else {
+        //     None
+        // };
 
+        // if search_options.retrieve_records {
+        //     let fetch_options = RecordOptions {
+        //         retrieve_value: search_options.retrieve_value,
+        //         retrieve_tags: search_options.retrieve_tags,
+        //         retrieve_type: search_options.retrieve_type,
+        //     };
 
-        if search_options.retrieve_records {
-            let fetch_options = RecordOptions {
-                retrieve_value: search_options.retrieve_value,
-                retrieve_tags: search_options.retrieve_tags,
-                retrieve_type: search_options.retrieve_type,
-            };
+        //     let (query_string, query_arguments) = query::wql_to_sql(&type_, query, options)?;
 
-            let (query_string, query_arguments) = query::wql_to_sql(&type_, query, options)?;
-
-            let statement = self._prepare_statement(&query_string)?;
-            let tag_retriever = if fetch_options.retrieve_tags {
-                Some(TagRetriever::new_owned(self.conn.clone())?)
-            } else {
-                None
-            };
-            let storage_iterator = SQLiteStorageIterator::new(Some(statement), &query_arguments, fetch_options, tag_retriever, total_count)?;
-            Ok(Box::new(storage_iterator))
-        } else {
-            let storage_iterator = SQLiteStorageIterator::new(None, &[], RecordOptions::default(), None, total_count)?;
-            Ok(Box::new(storage_iterator))
-        }
+        //     let statement = self._prepare_statement(&query_string)?;
+        //     let tag_retriever = if fetch_options.retrieve_tags {
+        //         Some(TagRetriever::new_owned(self.conn.clone())?)
+        //     } else {
+        //         None
+        //     };
+        //     let storage_iterator = SQLiteStorageIterator::new(
+        //         Some(statement),
+        //         &query_arguments,
+        //         fetch_options,
+        //         tag_retriever,
+        //         total_count,
+        //     )?;
+        //     Ok(Box::new(storage_iterator))
+        // } else {
+        //     let storage_iterator =
+        //         SQLiteStorageIterator::new(None, &[], RecordOptions::default(), None, total_count)?;
+        //     Ok(Box::new(storage_iterator))
+        // }
     }
 
-    fn close(&mut self) -> IndyResult<()> {
+    async fn close(&mut self) -> IndyResult<()> {
         Ok(())
     }
 }
 
-impl SQLiteStorage {
-    fn _prepare_statement(&self, sql: &str) -> IndyResult<OwningHandle<Rc<rusqlite::Connection>, Box<rusqlite::Statement<'static>>>> {
-        OwningHandle::try_new(self.conn.clone(), |conn| {
-            unsafe { (*conn).prepare(sql) }.map(Box::new).map_err(IndyError::from)
-        })
-    }
-}
-
-
+#[async_trait]
 impl WalletStorageType for SQLiteStorageType {
     ///
     /// Deletes the SQLite database file with the provided id from the path specified in the
@@ -606,7 +632,12 @@ impl WalletStorageType for SQLiteStorageType {
     ///  * `IndyError::NotFound` - File with the provided id not found
     ///  * `IOError(..)` - Deletion of the file form the file-system failed
     ///
-    fn delete_storage(&self, id: &str, config: Option<&str>, _credentials: Option<&str>) -> IndyResult<()> {
+    async fn delete_storage(
+        &self,
+        id: &str,
+        config: Option<&str>,
+        _credentials: Option<&str>,
+    ) -> IndyResult<()> {
         let config = config
             .map(serde_json::from_str::<Config>)
             .map_or(Ok(None), |v| v.map(Some))
@@ -615,7 +646,10 @@ impl WalletStorageType for SQLiteStorageType {
         let db_file_path = SQLiteStorageType::_db_path(id, config.as_ref());
 
         if !db_file_path.exists() {
-            return Err(err_msg(IndyErrorKind::WalletNotFound, format!("Wallet storage file isn't found: {:?}", db_file_path)));
+            return Err(err_msg(
+                IndyErrorKind::WalletNotFound,
+                format!("Wallet storage file isn't found: {:?}", db_file_path),
+            ));
         }
 
         std::fs::remove_dir_all(db_file_path.parent().unwrap())?;
@@ -650,7 +684,13 @@ impl WalletStorageType for SQLiteStorageType {
     ///  * `IOError("Error occurred while inserting the keys...")` - Insertion of keys failed
     ///  * `IOError(..)` - Deletion of the file form the file-system failed
     ///
-    fn create_storage(&self, id: &str, config: Option<&str>, _credentials: Option<&str>, metadata: &[u8]) -> IndyResult<()> {
+    async fn create_storage(
+        &self,
+        id: &str,
+        config: Option<&str>,
+        _credentials: Option<&str>,
+        metadata: &[u8],
+    ) -> IndyResult<()> {
         let config = config
             .map(serde_json::from_str::<Config>)
             .map_or(Ok(None), |v| v.map(Some))
@@ -659,28 +699,102 @@ impl WalletStorageType for SQLiteStorageType {
         let db_path = SQLiteStorageType::_db_path(id, config.as_ref());
 
         if db_path.exists() {
-            return Err(err_msg(IndyErrorKind::WalletAlreadyExists, format!("Wallet database file already exists: {:?}", db_path)));
+            return Err(err_msg(
+                IndyErrorKind::WalletAlreadyExists,
+                format!("Wallet database file already exists: {:?}", db_path),
+            ));
         }
 
         fs::DirBuilder::new()
             .recursive(true)
             .create(db_path.parent().unwrap())?;
 
-        let conn = rusqlite::Connection::open(db_path.as_path())?;
+        let mut conn = SqliteConnectOptions::default()
+            .filename(db_path.as_path())
+            .create_if_missing(true)
+            .connect()
+            .await?;
 
-        match conn.execute_batch(_CREATE_SCHEMA) {
-            Ok(_) => match conn.execute("INSERT OR REPLACE INTO metadata(value) VALUES(?1)", &[&metadata.to_vec()]) {
-                Ok(_) => Ok(()),
-                Err(error) => {
-                    std::fs::remove_file(db_path)?;
-                    Err(error.into())
-                }
-            },
-            Err(error) => {
-                std::fs::remove_file(db_path)?;
-                Err(error.into())
-            }
+        let res = sqlx::query(
+            r#"
+            PRAGMA locking_mode=EXCLUSIVE;
+            PRAGMA foreign_keys=ON;
+
+            BEGIN EXCLUSIVE TRANSACTION;
+
+            /*** Keys Table ***/
+
+            CREATE TABLE metadata (
+                id INTEGER NOT NULL,
+                value NOT NULL,
+                PRIMARY KEY(id)
+            );
+
+            /*** Items Table ***/
+
+            CREATE TABLE items(
+                id INTEGER NOT NULL,
+                type NOT NULL,
+                name NOT NULL,
+                value NOT NULL,
+                key NOT NULL,
+                PRIMARY KEY(id)
+            );
+
+            CREATE UNIQUE INDEX ux_items_type_name ON items(type, name);
+
+            /*** Encrypted Tags Table ***/
+
+            CREATE TABLE tags_encrypted(
+                name NOT NULL,
+                value NOT NULL,
+                item_id INTEGER NOT NULL,
+                PRIMARY KEY(name, item_id),
+                FOREIGN KEY(item_id)
+                    REFERENCES items(id)
+                    ON DELETE CASCADE
+                    ON UPDATE CASCADE
+            );
+
+            CREATE INDEX ix_tags_encrypted_name ON tags_encrypted(name);
+            CREATE INDEX ix_tags_encrypted_value ON tags_encrypted(value);
+            CREATE INDEX ix_tags_encrypted_item_id ON tags_encrypted(item_id);
+
+            /*** PlainText Tags Table ***/
+
+            CREATE TABLE tags_plaintext(
+                name NOT NULL,
+                value NOT NULL,
+                item_id INTEGER NOT NULL,
+                PRIMARY KEY(name, item_id),
+                FOREIGN KEY(item_id)
+                    REFERENCES items(id)
+                    ON DELETE CASCADE
+                    ON UPDATE CASCADE
+            );
+
+            CREATE INDEX ix_tags_plaintext_name ON tags_plaintext(name);
+            CREATE INDEX ix_tags_plaintext_value ON tags_plaintext(value);
+            CREATE INDEX ix_tags_plaintext_item_id ON tags_plaintext(item_id);
+            
+            /*** Insert metadata ***/
+            INSERT INTO metadata(value) VALUES (?1);
+
+            COMMIT;
+        "#,
+        )
+        .persistent(false)
+        .bind(metadata)
+        .execute(&mut conn)
+        .await;
+
+        // TODO: I am not sure force cleanup here is a good idea.
+        if let Err(err) = res {
+            std::fs::remove_file(db_path)?;
+            Err(err)?;
         }
+
+        Ok(())
     }
 
     ///
@@ -710,68 +824,91 @@ impl WalletStorageType for SQLiteStorageType {
     ///  * `IndyError::NotFound` - File with the provided id not found
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
-    fn open_storage(&self, id: &str, config: Option<&str>, _credentials: Option<&str>) -> IndyResult<Box<dyn WalletStorage>> {
-        let config = config
-            .map(serde_json::from_str::<Config>)
+    async fn open_storage(
+        &self,
+        id: &str,
+        config: Option<&str>,
+        _credentials: Option<&str>,
+    ) -> IndyResult<Box<dyn WalletStorage>> {
+        let config: Option<Config> = config
+            .map(serde_json::from_str)
             .map_or(Ok(None), |v| v.map(Some))
             .to_indy(IndyErrorKind::InvalidStructure, "Malformed config json")?;
 
-        let db_file_path = SQLiteStorageType::_db_path(id, config.as_ref());
+        let db_path = SQLiteStorageType::_db_path(id, config.as_ref());
 
-        if !db_file_path.exists() {
-            return Err(err_msg(IndyErrorKind::WalletNotFound, "No wallet database exists"));
+        if !db_path.exists() {
+            return Err(err_msg(
+                IndyErrorKind::WalletNotFound,
+                "No wallet database exists",
+            ));
         }
 
-        let conn = rusqlite::Connection::open(db_file_path.as_path())?;
-
-        // set journal mode to WAL, because it provides better performance.
-        let journal_mode: String = conn.query_row(
-            "PRAGMA journal_mode = WAL",
-            rusqlite::NO_PARAMS,
-            |row| { row.get(0) },
-        )?;
-
-        // if journal mode is set to WAL, set synchronous to FULL for safety reasons.
-        // (synchronous = NORMAL with journal_mode = WAL does not guaranties durability).
-        if journal_mode.to_lowercase() == "wal" {
-            conn.execute("PRAGMA synchronous = FULL", rusqlite::NO_PARAMS)?;
-        }
-
-        Ok(Box::new(SQLiteStorage { conn: Rc::new(conn) }))
+        Ok(Box::new(SQLiteStorage {
+            pool: SqlitePoolOptions::default()
+                .min_connections(1)
+                .connect_lazy_with(
+                    SqliteConnectOptions::new()
+                        .filename(db_path.as_path())
+                        .journal_mode(SqliteJournalMode::Wal),
+                ),
+        }))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use indy_utils::test;
+    use indy_utils::{assert_kind, test};
+    use serde_json::json;
 
-    use super::*;
     use super::super::Tag;
+    use super::*;
     use std::path::Path;
 
-    #[test]
-    fn sqlite_storage_type_create_works() {
+    #[async_std::test]
+    async fn sqlite_storage_type_create_works() {
         _cleanup("sqlite_storage_type_create_works");
 
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage("sqlite_storage_type_create_works", None, None, &_metadata()).unwrap();
+
+        storage_type
+            .create_storage("sqlite_storage_type_create_works", None, None, &_metadata())
+            .await
+            .unwrap();
 
         _cleanup("sqlite_storage_type_create_works");
     }
 
-    #[test]
-    fn sqlite_storage_type_create_works_for_custom_path() {
+    #[async_std::test]
+    async fn sqlite_storage_type_create_works_for_custom_path() {
         _cleanup("sqlite_storage_type_create_works_for_custom_path");
 
         let config = json!({
             "path": _custom_path("sqlite_storage_type_create_works_for_custom_path")
-        }).to_string();
+        })
+        .to_string();
 
         _cleanup_custom_path("sqlite_storage_type_create_works_for_custom_path");
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage("sqlite_storage_type_create_works_for_custom_path", Some(&config), None, &_metadata()).unwrap();
 
-        storage_type.delete_storage("sqlite_storage_type_create_works_for_custom_path", Some(&config), None).unwrap();
+        storage_type
+            .create_storage(
+                "sqlite_storage_type_create_works_for_custom_path",
+                Some(&config),
+                None,
+                &_metadata(),
+            )
+            .await
+            .unwrap();
+
+        storage_type
+            .delete_storage(
+                "sqlite_storage_type_create_works_for_custom_path",
+                Some(&config),
+                None,
+            )
+            .await
+            .unwrap();
 
         _cleanup_custom_path("sqlite_storage_type_create_works_for_custom_path");
         _cleanup("sqlite_storage_type_create_works_for_custom_path");
@@ -785,324 +922,553 @@ mod tests {
         }
     }
 
-    #[test]
-    fn sqlite_storage_type_create_works_for_twice() {
+    #[async_std::test]
+    async fn sqlite_storage_type_create_works_for_twice() {
         _cleanup("sqlite_storage_type_create_works_for_twice");
 
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage("sqlite_storage_type_create_works_for_twice", None, None, &_metadata()).unwrap();
+        storage_type
+            .create_storage(
+                "sqlite_storage_type_create_works_for_twice",
+                None,
+                None,
+                &_metadata(),
+            )
+            .await
+            .unwrap();
 
-        let res = storage_type.create_storage("sqlite_storage_type_create_works_for_twice", None, None, &_metadata());
+        let res = storage_type
+            .create_storage(
+                "sqlite_storage_type_create_works_for_twice",
+                None,
+                None,
+                &_metadata(),
+            )
+            .await;
+
         assert_kind!(IndyErrorKind::WalletAlreadyExists, res);
 
-        storage_type.delete_storage("sqlite_storage_type_create_works_for_twice", None, None).unwrap();
+        storage_type
+            .delete_storage("sqlite_storage_type_create_works_for_twice", None, None)
+            .await
+            .unwrap();
     }
 
-    #[test]
-    fn sqlite_storage_get_storage_metadata_works() {
+    #[async_std::test]
+    async fn sqlite_storage_get_storage_metadata_works() {
         _cleanup("sqlite_storage_get_storage_metadata_works");
+
         {
-            let storage = _storage("sqlite_storage_get_storage_metadata_works");
-            let metadata = storage.get_storage_metadata().unwrap();
+            let storage = _storage("sqlite_storage_get_storage_metadata_works").await;
+            let metadata = storage.get_storage_metadata().await.unwrap();
 
             assert_eq!(metadata, _metadata());
         }
+
         _cleanup("sqlite_storage_get_storage_metadata_works");
     }
 
-    #[test]
-    fn sqlite_storage_type_delete_works() {
+    #[async_std::test]
+    async fn sqlite_storage_type_delete_works() {
         _cleanup("sqlite_storage_type_delete_works");
 
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage("sqlite_storage_type_delete_works", None, None, &_metadata()).unwrap();
+        storage_type
+            .create_storage("sqlite_storage_type_delete_works", None, None, &_metadata())
+            .await
+            .unwrap();
 
-        storage_type.delete_storage("sqlite_storage_type_delete_works", None, None).unwrap();
+        storage_type
+            .delete_storage("sqlite_storage_type_delete_works", None, None)
+            .await
+            .unwrap();
     }
 
-
-    #[test]
-    fn sqlite_storage_type_delete_works_for_non_existing() {
+    #[async_std::test]
+    async fn sqlite_storage_type_delete_works_for_non_existing() {
         _cleanup("sqlite_storage_type_delete_works_for_non_existing");
 
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage("sqlite_storage_type_delete_works_for_non_existing", None, None, &_metadata()).unwrap();
 
-        let res = storage_type.delete_storage("unknown", None, None);
+        storage_type
+            .create_storage(
+                "sqlite_storage_type_delete_works_for_non_existing",
+                None,
+                None,
+                &_metadata(),
+            )
+            .await
+            .unwrap();
+
+        let res = storage_type.delete_storage("unknown", None, None).await;
         assert_kind!(IndyErrorKind::WalletNotFound, res);
 
-        storage_type.delete_storage("sqlite_storage_type_delete_works_for_non_existing", None, None).unwrap();
+        storage_type
+            .delete_storage(
+                "sqlite_storage_type_delete_works_for_non_existing",
+                None,
+                None,
+            )
+            .await
+            .unwrap();
     }
 
-    #[test]
-    fn sqlite_storage_type_open_works() {
+    #[async_std::test]
+    async fn sqlite_storage_type_open_works() {
         _cleanup("sqlite_storage_type_open_works");
-        _storage("sqlite_storage_type_open_works");
+        _storage("sqlite_storage_type_open_works").await;
         _cleanup("sqlite_storage_type_open_works");
     }
 
-    #[test]
-    fn sqlite_storage_type_open_works_for_custom() {
+    #[async_std::test]
+    async fn sqlite_storage_type_open_works_for_custom() {
         _cleanup("sqlite_storage_type_open_works_for_custom");
 
         let my_path = _custom_path("sqlite_storage_type_open_works_for_custom");
         let path = Path::new(&my_path);
+
         if path.exists() && path.is_dir() {
             fs::remove_dir_all(path).unwrap();
         }
 
-        _storage_custom("sqlite_storage_type_open_works_for_custom");
+        _storage_custom("sqlite_storage_type_open_works_for_custom").await;
 
         fs::remove_dir_all(path).unwrap();
     }
 
-    #[test]
-    fn sqlite_storage_type_open_works_for_not_created() {
+    #[async_std::test]
+    async fn sqlite_storage_type_open_works_for_not_created() {
         _cleanup("sqlite_storage_type_open_works_for_not_created");
 
         let storage_type = SQLiteStorageType::new();
 
-        let res = storage_type.open_storage("unknown", Some("{}"), Some("{}"));
+        let res = storage_type
+            .open_storage("unknown", Some("{}"), Some("{}"))
+            .await;
+
         assert_kind!(IndyErrorKind::WalletNotFound, res);
     }
 
-    #[test]
-    fn sqlite_storage_add_works_for_is_802() {
+    #[async_std::test]
+    async fn sqlite_storage_add_works_for_is_802() {
         _cleanup("sqlite_storage_add_works_for_is_802");
+
         {
-            let storage = _storage("sqlite_storage_add_works_for_is_802");
+            let storage = _storage("sqlite_storage_add_works_for_is_802").await;
 
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
 
-            let res = storage.add(&_type1(), &_id1(), &_value1(), &_tags());
+            let res = storage.add(&_type1(), &_id1(), &_value1(), &_tags()).await;
             assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
 
-            let res = storage.add(&_type1(), &_id1(), &_value1(), &_tags());
+            let res = storage.add(&_type1(), &_id1(), &_value1(), &_tags()).await;
             assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
         }
+
         _cleanup("sqlite_storage_add_works_for_is_802");
     }
 
-    #[test]
-    fn sqlite_storage_set_get_works() {
+    #[async_std::test]
+    async fn sqlite_storage_set_get_works() {
         _cleanup("sqlite_storage_set_get_works");
-        {
-            let storage = _storage("sqlite_storage_set_get_works");
 
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        {
+            let storage = _storage("sqlite_storage_set_get_works").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
+
+            let record = storage
+                .get(
+                    &_type1(),
+                    &_id1(),
+                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+                )
+                .await
+                .unwrap();
 
             assert_eq!(record.value.unwrap(), _value1());
             assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
         }
+
         _cleanup("sqlite_storage_set_get_works");
     }
 
-    #[test]
-    fn sqlite_storage_set_get_works_for_custom() {
+    #[async_std::test]
+    async fn sqlite_storage_set_get_works_for_custom() {
         _cleanup("sqlite_storage_set_get_works_for_custom");
+
         let path = _custom_path("sqlite_storage_set_get_works_for_custom");
         let path = Path::new(&path);
-        {
-            let storage = _storage_custom("sqlite_storage_set_get_works_for_custom");
 
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        {
+            let storage = _storage_custom("sqlite_storage_set_get_works_for_custom").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
+
+            let record = storage
+                .get(
+                    &_type1(),
+                    &_id1(),
+                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+                )
+                .await
+                .unwrap();
 
             assert_eq!(record.id, _id1());
             assert_eq!(record.value.unwrap(), _value1());
             assert_eq!(record.type_, None);
             assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
         }
+
         fs::remove_dir_all(path).unwrap();
     }
 
-    #[test]
-    fn sqlite_storage_set_get_works_for_twice() {
+    #[async_std::test]
+    async fn sqlite_storage_set_get_works_for_twice() {
         _cleanup("sqlite_storage_set_get_works_for_twice");
-        {
-            let storage = _storage("sqlite_storage_set_get_works_for_twice");
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-            let res = storage.add(&_type1(), &_id1(), &_value2(), &_tags());
+        {
+            let storage = _storage("sqlite_storage_set_get_works_for_twice").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
+
+            let res = storage.add(&_type1(), &_id1(), &_value2(), &_tags()).await;
             assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
         }
+
         _cleanup("sqlite_storage_set_get_works_for_twice");
     }
 
-    #[test]
-    fn sqlite_storage_set_get_works_for_reopen() {
+    #[async_std::test]
+    async fn sqlite_storage_set_get_works_for_reopen() {
         _cleanup("sqlite_storage_set_get_works_for_reopen");
-        {
-            {
-                _storage("sqlite_storage_set_get_works_for_reopen").add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-            }
 
-            let storage_type = SQLiteStorageType::new();
-            let storage = storage_type.open_storage("sqlite_storage_set_get_works_for_reopen", Some("{}"), Some("{}")).unwrap();
-            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        _storage("sqlite_storage_set_get_works_for_reopen")
+            .await
+            .add(&_type1(), &_id1(), &_value1(), &_tags())
+            .await
+            .unwrap();
+
+        let record = SQLiteStorageType::new()
+            .open_storage(
+                "sqlite_storage_set_get_works_for_reopen",
+                Some("{}"),
+                Some("{}"),
+            )
+            .await
+            .unwrap()
+            .get(
+                &_type1(),
+                &_id1(),
+                r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(record.value.unwrap(), _value1());
+        assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
+
+        _cleanup("sqlite_storage_set_get_works_for_reopen");
+    }
+
+    #[async_std::test]
+    async fn sqlite_storage_get_works_for_wrong_key() {
+        _cleanup("sqlite_storage_get_works_for_wrong_key");
+
+        {
+            let storage = _storage("sqlite_storage_get_works_for_wrong_key").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
+
+            let res = storage
+                .get(
+                    &_type1(),
+                    &_id2(),
+                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+                )
+                .await;
+
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        }
+
+        _cleanup("sqlite_storage_get_works_for_wrong_key");
+    }
+
+    #[async_std::test]
+    async fn sqlite_storage_delete_works() {
+        _cleanup("sqlite_storage_delete_works");
+
+        {
+            let storage = _storage("sqlite_storage_delete_works").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
+
+            let record = storage
+                .get(
+                    &_type1(),
+                    &_id1(),
+                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+                )
+                .await
+                .unwrap();
 
             assert_eq!(record.value.unwrap(), _value1());
             assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
-        }
-        _cleanup("sqlite_storage_set_get_works_for_reopen");
-    }
 
-    #[test]
-    fn sqlite_storage_get_works_for_wrong_key() {
-        _cleanup("sqlite_storage_get_works_for_wrong_key");
-        {
-            let storage = _storage("sqlite_storage_get_works_for_wrong_key");
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            storage.delete(&_type1(), &_id1()).await.unwrap();
 
-            let res = storage.get(&_type1(), &_id2(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
+            let res = storage
+                .get(
+                    &_type1(),
+                    &_id1(),
+                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+                )
+                .await;
+
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
-        _cleanup("sqlite_storage_get_works_for_wrong_key");
-    }
 
-    #[test]
-    fn sqlite_storage_delete_works() {
-        _cleanup("sqlite_storage_delete_works");
-        {
-            let storage = _storage("sqlite_storage_delete_works");
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-
-            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-            assert_eq!(record.value.unwrap(), _value1());
-            assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
-
-            storage.delete(&_type1(), &_id1()).unwrap();
-            let res = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
-            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-        }
         _cleanup("sqlite_storage_delete_works");
     }
 
-    #[test]
-    fn sqlite_storage_delete_works_for_non_existing() {
+    #[async_std::test]
+    async fn sqlite_storage_delete_works_for_non_existing() {
         _cleanup("sqlite_storage_delete_works_for_non_existing");
-        {
-            let storage = _storage("sqlite_storage_delete_works_for_non_existing");
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-            let res = storage.delete(&_type1(), &_id2());
+        {
+            let storage = _storage("sqlite_storage_delete_works_for_non_existing").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
+
+            let res = storage.delete(&_type1(), &_id2()).await;
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
+
         _cleanup("sqlite_storage_delete_works_for_non_existing");
     }
 
-    #[test]
-    fn sqlite_storage_delete_returns_error_item_not_found_if_no_such_type() {
+    #[async_std::test]
+    async fn sqlite_storage_delete_returns_error_item_not_found_if_no_such_type() {
         _cleanup("sqlite_storage_delete_returns_error_item_not_found_if_no_such_type");
-        {
-            let storage = _storage("sqlite_storage_delete_returns_error_item_not_found_if_no_such_type");
 
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-            let res = storage.delete(&_type2(), &_id2());
+        {
+            let storage =
+                _storage("sqlite_storage_delete_returns_error_item_not_found_if_no_such_type")
+                    .await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
+
+            let res = storage.delete(&_type2(), &_id2()).await;
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
+
         _cleanup("sqlite_storage_delete_returns_error_item_not_found_if_no_such_type");
     }
 
-    #[test]
-    fn sqlite_storage_get_all_works() {
+    #[async_std::test]
+    async fn sqlite_storage_get_all_works() {
         _cleanup("sqlite_storage_get_all_works");
+
         {
-            let storage = _storage("sqlite_storage_get_all_works");
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-            storage.add(&_type2(), &_id2(), &_value2(), &_tags()).unwrap();
+            let storage = _storage("sqlite_storage_get_all_works").await;
 
-            let mut storage_iterator = storage.get_all().unwrap();
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
 
-            let record = storage_iterator.next().unwrap().unwrap();
+            storage
+                .add(&_type2(), &_id2(), &_value2(), &_tags())
+                .await
+                .unwrap();
+
+            let mut storage_iterator = storage.get_all().await.unwrap();
+
+            let record = storage_iterator.next().await.unwrap().unwrap();
             assert_eq!(record.type_.unwrap(), _type1());
             assert_eq!(record.value.unwrap(), _value1());
             assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
 
-            let record = storage_iterator.next().unwrap().unwrap();
+            let record = storage_iterator.next().await.unwrap().unwrap();
             assert_eq!(record.type_.unwrap(), _type2());
             assert_eq!(record.value.unwrap(), _value2());
             assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
 
-            let record = storage_iterator.next().unwrap();
+            let record = storage_iterator.next().await.unwrap();
             assert!(record.is_none());
         }
+
         _cleanup("sqlite_storage_get_all_works");
     }
 
-    #[test]
-    fn sqlite_storage_get_all_works_for_empty() {
+    #[async_std::test]
+    async fn sqlite_storage_get_all_works_for_empty() {
         _cleanup("sqlite_storage_get_all_works_for_empty");
-        {
-            let storage = _storage("sqlite_storage_get_all_works_for_empty");
-            let mut storage_iterator = storage.get_all().unwrap();
 
-            let record = storage_iterator.next().unwrap();
+        {
+            let storage = _storage("sqlite_storage_get_all_works_for_empty").await;
+            let mut storage_iterator = storage.get_all().await.unwrap();
+
+            let record = storage_iterator.next().await.unwrap();
             assert!(record.is_none());
         }
+
         _cleanup("sqlite_storage_get_all_works_for_empty");
     }
 
-    #[test]
-    fn sqlite_storage_update_works() {
+    #[async_std::test]
+    async fn sqlite_storage_update_works() {
         _cleanup("sqlite_storage_update_works");
-        {
-            let storage = _storage("sqlite_storage_update_works");
 
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        {
+            let storage = _storage("sqlite_storage_update_works").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
+
+            let record = storage
+                .get(
+                    &_type1(),
+                    &_id1(),
+                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+                )
+                .await
+                .unwrap();
+
             assert_eq!(record.value.unwrap(), _value1());
 
-            storage.update(&_type1(), &_id1(), &_value2()).unwrap();
-            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            storage
+                .update(&_type1(), &_id1(), &_value2())
+                .await
+                .unwrap();
+
+            let record = storage
+                .get(
+                    &_type1(),
+                    &_id1(),
+                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+                )
+                .await
+                .unwrap();
+
             assert_eq!(record.value.unwrap(), _value2());
         }
+
         _cleanup("sqlite_storage_update_works");
     }
 
-    #[test]
-    fn sqlite_storage_update_works_for_non_existing_id() {
+    #[async_std::test]
+    async fn sqlite_storage_update_works_for_non_existing_id() {
         _cleanup("sqlite_storage_update_works_for_non_existing_id");
-        {
-            let storage = _storage("sqlite_storage_update_works_for_non_existing_id");
 
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        {
+            let storage = _storage("sqlite_storage_update_works_for_non_existing_id").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
+
+            let record = storage
+                .get(
+                    &_type1(),
+                    &_id1(),
+                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+                )
+                .await
+                .unwrap();
+
             assert_eq!(record.value.unwrap(), _value1());
 
-            let res = storage.update(&_type1(), &_id2(), &_value2());
+            let res = storage.update(&_type1(), &_id2(), &_value2()).await;
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
+
         _cleanup("sqlite_storage_update_works_for_non_existing_id");
     }
 
-    #[test]
-    fn sqlite_storage_update_works_for_non_existing_type() {
+    #[async_std::test]
+    async fn sqlite_storage_update_works_for_non_existing_type() {
         _cleanup("sqlite_storage_update_works_for_non_existing_type");
-        {
-            let storage = _storage("sqlite_storage_update_works_for_non_existing_type");
 
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        {
+            let storage = _storage("sqlite_storage_update_works_for_non_existing_type").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
+
+            let record = storage
+                .get(
+                    &_type1(),
+                    &_id1(),
+                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+                )
+                .await
+                .unwrap();
+
             assert_eq!(record.value.unwrap(), _value1());
 
-            let res = storage.update(&_type2(), &_id1(), &_value2());
+            let res = storage.update(&_type2(), &_id1(), &_value2()).await;
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
+
         _cleanup("sqlite_storage_update_works_for_non_existing_type");
     }
 
-    #[test]
-    fn sqlite_storage_add_tags_works() {
+    #[async_std::test]
+    async fn sqlite_storage_add_tags_works() {
         _cleanup("sqlite_storage_add_tags_works");
+
         {
-            let storage = _storage("sqlite_storage_add_tags_works");
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            let storage = _storage("sqlite_storage_add_tags_works").await;
 
-            storage.add_tags(&_type1(), &_id1(), &_new_tags()).unwrap();
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
 
-            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            storage
+                .add_tags(&_type1(), &_id1(), &_new_tags())
+                .await
+                .unwrap();
+
+            let record = storage
+                .get(
+                    &_type1(),
+                    &_id1(),
+                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+                )
+                .await
+                .unwrap();
+
             assert_eq!(record.value.unwrap(), _value1());
 
             let expected_tags = {
@@ -1113,41 +1479,59 @@ mod tests {
 
             assert_eq!(_sort(record.tags.unwrap()), expected_tags);
         }
+
         _cleanup("sqlite_storage_add_tags_works");
     }
 
-    #[test]
-    fn sqlite_storage_add_tags_works_for_non_existing_id() {
+    #[async_std::test]
+    async fn sqlite_storage_add_tags_works_for_non_existing_id() {
         _cleanup("sqlite_storage_add_tags_works_for_non_existing_id");
-        {
-            let storage = _storage("sqlite_storage_add_tags_works_for_non_existing_id");
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-            let res = storage.add_tags(&_type1(), &_id2(), &_new_tags());
+        {
+            let storage = _storage("sqlite_storage_add_tags_works_for_non_existing_id").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
+
+            let res = storage.add_tags(&_type1(), &_id2(), &_new_tags()).await;
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
+
         _cleanup("sqlite_storage_add_tags_works_for_non_existing_id");
     }
 
-    #[test]
-    fn sqlite_storage_add_tags_works_for_non_existing_type() {
+    #[async_std::test]
+    async fn sqlite_storage_add_tags_works_for_non_existing_type() {
         _cleanup("sqlite_storage_add_tags_works_for_non_existing_type");
-        {
-            let storage = _storage("sqlite_storage_add_tags_works_for_non_existing_type");
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-            let res = storage.add_tags(&_type2(), &_id1(), &_new_tags());
+        {
+            let storage = _storage("sqlite_storage_add_tags_works_for_non_existing_type").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
+
+            let res = storage.add_tags(&_type2(), &_id1(), &_new_tags()).await;
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
+
         _cleanup("sqlite_storage_add_tags_works_for_non_existing_type");
     }
 
-    #[test]
-    fn sqlite_storage_add_tags_works_for_already_existing() {
+    #[async_std::test]
+    async fn sqlite_storage_add_tags_works_for_already_existing() {
         _cleanup("sqlite_storage_add_tags_works_for_already_existing");
+
         {
-            let storage = _storage("sqlite_storage_add_tags_works_for_already_existing");
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            let storage = _storage("sqlite_storage_add_tags_works_for_already_existing").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
 
             let tags_with_existing = {
                 let mut tags = _tags();
@@ -1155,9 +1539,20 @@ mod tests {
                 tags
             };
 
-            storage.add_tags(&_type1(), &_id1(), &tags_with_existing).unwrap();
+            storage
+                .add_tags(&_type1(), &_id1(), &tags_with_existing)
+                .await
+                .unwrap();
 
-            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            let record = storage
+                .get(
+                    &_type1(),
+                    &_id1(),
+                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+                )
+                .await
+                .unwrap();
+
             assert_eq!(record.value.unwrap(), _value1());
 
             let expected_tags = {
@@ -1168,57 +1563,91 @@ mod tests {
 
             assert_eq!(_sort(record.tags.unwrap()), expected_tags);
         }
+
         _cleanup("sqlite_storage_add_tags_works_for_already_existing");
     }
 
-    #[test]
-    fn sqlite_storage_update_tags_works() {
+    #[async_std::test]
+    async fn sqlite_storage_update_tags_works() {
         _cleanup("sqlite_storage_update_tags_works");
+
         {
-            let storage = _storage("sqlite_storage_update_tags_works");
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            let storage = _storage("sqlite_storage_update_tags_works").await;
 
-            storage.update_tags(&_type1(), &_id1(), &_new_tags()).unwrap();
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
 
-            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            storage
+                .update_tags(&_type1(), &_id1(), &_new_tags())
+                .await
+                .unwrap();
+
+            let record = storage
+                .get(
+                    &_type1(),
+                    &_id1(),
+                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+                )
+                .await
+                .unwrap();
+
             assert_eq!(record.value.unwrap(), _value1());
             assert_eq!(_sort(record.tags.unwrap()), _sort(_new_tags()));
         }
+
         _cleanup("sqlite_storage_update_tags_works");
     }
 
-    #[test]
-    fn sqlite_storage_update_tags_works_for_non_existing_id() {
+    #[async_std::test]
+    async fn sqlite_storage_update_tags_works_for_non_existing_id() {
         _cleanup("sqlite_storage_update_tags_works_for_non_existing_id");
-        {
-            let storage = _storage("sqlite_storage_update_tags_works_for_non_existing_id");
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-            let res = storage.update_tags(&_type1(), &_id2(), &_new_tags());
+        {
+            let storage = _storage("sqlite_storage_update_tags_works_for_non_existing_id").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
+
+            let res = storage.update_tags(&_type1(), &_id2(), &_new_tags()).await;
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
+
         _cleanup("sqlite_storage_update_tags_works_for_non_existing_id");
     }
 
-    #[test]
-    fn sqlite_storage_update_tags_works_for_non_existing_type() {
+    #[async_std::test]
+    async fn sqlite_storage_update_tags_works_for_non_existing_type() {
         _cleanup("sqlite_storage_update_tags_works_for_non_existing_type");
-        {
-            let storage = _storage("sqlite_storage_update_tags_works_for_non_existing_type");
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-            let res = storage.update_tags(&_type1(), &_id2(), &_new_tags());
+        {
+            let storage = _storage("sqlite_storage_update_tags_works_for_non_existing_type").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
+
+            let res = storage.update_tags(&_type1(), &_id2(), &_new_tags()).await;
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
+
         _cleanup("sqlite_storage_update_tags_works_for_non_existing_type");
     }
 
-    #[test]
-    fn sqlite_storage_update_tags_works_for_already_existing() {
+    #[async_std::test]
+    async fn sqlite_storage_update_tags_works_for_already_existing() {
         _cleanup("sqlite_storage_update_tags_works_for_already_existing");
         {
-            let storage = _storage("sqlite_storage_update_tags_works_for_already_existing");
-            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            let storage = _storage("sqlite_storage_update_tags_works_for_already_existing").await;
+
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &_tags())
+                .await
+                .unwrap();
 
             let tags_with_existing = {
                 let mut tags = _tags();
@@ -1226,9 +1655,20 @@ mod tests {
                 tags
             };
 
-            storage.update_tags(&_type1(), &_id1(), &tags_with_existing).unwrap();
+            storage
+                .update_tags(&_type1(), &_id1(), &tags_with_existing)
+                .await
+                .unwrap();
 
-            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            let record = storage
+                .get(
+                    &_type1(),
+                    &_id1(),
+                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+                )
+                .await
+                .unwrap();
+
             assert_eq!(record.value.unwrap(), _value1());
 
             let expected_tags = {
@@ -1242,11 +1682,12 @@ mod tests {
         _cleanup("sqlite_storage_update_tags_works_for_already_existing");
     }
 
-    #[test]
-    fn sqlite_storage_delete_tags_works() {
+    #[async_std::test]
+    async fn sqlite_storage_delete_tags_works() {
         _cleanup("sqlite_storage_delete_tags_works");
+
         {
-            let storage = _storage("sqlite_storage_delete_tags_works");
+            let storage = _storage("sqlite_storage_delete_tags_works").await;
 
             let tag_name1 = vec![0, 0, 0];
             let tag_name2 = vec![1, 1, 1];
@@ -1256,22 +1697,42 @@ mod tests {
             let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
             let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
 
-            storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &tags)
+                .await
+                .unwrap();
 
-            let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
-            storage.delete_tags(&_type1(), &_id1(), &tag_names).unwrap();
+            let tag_names = vec![
+                TagName::OfEncrypted(tag_name1.clone()),
+                TagName::OfPlain(tag_name2.clone()),
+            ];
 
-            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            storage
+                .delete_tags(&_type1(), &_id1(), &tag_names)
+                .await
+                .unwrap();
+
+            let record = storage
+                .get(
+                    &_type1(),
+                    &_id1(),
+                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
+                )
+                .await
+                .unwrap();
+
             assert_eq!(record.tags.unwrap(), vec![tag3]);
         }
+
         _cleanup("sqlite_storage_delete_tags_works");
     }
 
-    #[test]
-    fn sqlite_storage_delete_tags_works_for_non_existing_type() {
+    #[async_std::test]
+    async fn sqlite_storage_delete_tags_works_for_non_existing_type() {
         _cleanup("sqlite_storage_delete_tags_works_for_non_existing_type");
+
         {
-            let storage = _storage("sqlite_storage_delete_tags_works_for_non_existing_type");
+            let storage = _storage("sqlite_storage_delete_tags_works_for_non_existing_type").await;
 
             let tag_name1 = vec![0, 0, 0];
             let tag_name2 = vec![1, 1, 1];
@@ -1281,20 +1742,29 @@ mod tests {
             let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
             let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
 
-            storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &tags)
+                .await
+                .unwrap();
 
-            let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
-            let res = storage.delete_tags(&_type2(), &_id1(), &tag_names);
+            let tag_names = vec![
+                TagName::OfEncrypted(tag_name1.clone()),
+                TagName::OfPlain(tag_name2.clone()),
+            ];
+
+            let res = storage.delete_tags(&_type2(), &_id1(), &tag_names).await;
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
+
         _cleanup("sqlite_storage_delete_tags_works_for_non_existing_type");
     }
 
-    #[test]
-    fn sqlite_storage_delete_tags_works_for_non_existing_id() {
+    #[async_std::test]
+    async fn sqlite_storage_delete_tags_works_for_non_existing_id() {
         _cleanup("sqlite_storage_delete_tags_works_for_non_existing_id");
+
         {
-            let storage = _storage("sqlite_storage_delete_tags_works_for_non_existing_id");
+            let storage = _storage("sqlite_storage_delete_tags_works_for_non_existing_id").await;
 
             let tag_name1 = vec![0, 0, 0];
             let tag_name2 = vec![1, 1, 1];
@@ -1304,12 +1774,20 @@ mod tests {
             let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
             let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
 
-            storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
+            storage
+                .add(&_type1(), &_id1(), &_value1(), &tags)
+                .await
+                .unwrap();
 
-            let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
-            let res = storage.delete_tags(&_type1(), &_id2(), &tag_names);
+            let tag_names = vec![
+                TagName::OfEncrypted(tag_name1.clone()),
+                TagName::OfPlain(tag_name2.clone()),
+            ];
+
+            let res = storage.delete_tags(&_type1(), &_id2(), &tag_names).await;
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
+
         _cleanup("sqlite_storage_delete_tags_works_for_non_existing_id");
     }
 
@@ -1317,33 +1795,38 @@ mod tests {
         test::cleanup_storage(name)
     }
 
-    fn _storage(name: &str) -> Box<dyn WalletStorage> {
+    async fn _storage(name: &str) -> Box<dyn WalletStorage> {
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage(name, None, None, &_metadata()).unwrap();
-        storage_type.open_storage(name, None, None).unwrap()
+
+        storage_type
+            .create_storage(name, None, None, &_metadata())
+            .await
+            .unwrap();
+
+        storage_type.open_storage(name, None, None).await.unwrap()
     }
 
-    fn _storage_custom(name: &str) -> Box<dyn WalletStorage> {
+    async fn _storage_custom(name: &str) -> Box<dyn WalletStorage> {
         let storage_type = SQLiteStorageType::new();
 
-        let config = json!({
-            "path": _custom_path(name)
-        }).to_string();
+        let config = json!({ "path": _custom_path(name) }).to_string();
 
-        storage_type.create_storage(name, Some(&config), None, &_metadata()).unwrap();
-        storage_type.open_storage(name, Some(&config), None).unwrap()
+        storage_type
+            .create_storage(name, Some(&config), None, &_metadata())
+            .await
+            .unwrap();
+
+        storage_type
+            .open_storage(name, Some(&config), None)
+            .await
+            .unwrap()
     }
 
     fn _metadata() -> Vec<u8> {
         return vec![
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8
+            1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5,
+            6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2,
+            3, 4, 5, 6, 7, 8,
         ];
     }
 
@@ -1372,7 +1855,10 @@ mod tests {
     }
 
     fn _value(i: u8) -> EncryptedValue {
-        EncryptedValue { data: vec![6 + i, 7 + i, 8 + i], key: vec![9 + i, 10 + i, 11 + i] }
+        EncryptedValue {
+            data: vec![6 + i, 7 + i, 8 + i],
+            key: vec![9 + i, 10 + i, 11 + i],
+        }
     }
 
     fn _value1() -> EncryptedValue {
@@ -1393,7 +1879,7 @@ mod tests {
     fn _new_tags() -> Vec<Tag> {
         vec![
             Tag::Encrypted(vec![1, 1, 1], vec![2, 2, 2]),
-            Tag::PlainText(vec![1, 1, 1], String::from("tag_value_3"))
+            Tag::PlainText(vec![1, 1, 1], String::from("tag_value_3")),
         ]
     }
 

@@ -207,224 +207,224 @@ pub(super) fn decrypt_storage_record(record: &StorageRecord, keys: &Keys) -> Ind
 }
 
 
-#[cfg(test)]
-mod tests {
-    use crate::wallet::EncryptedValue;
-    use crate::wallet::Keys;
-    use indy_utils::crypto::hmacsha256;
+// #[cfg(test)]
+// mod tests {
+//     use crate::wallet::EncryptedValue;
+//     use crate::wallet::Keys;
+//     use indy_utils::crypto::hmacsha256;
 
-    use super::*;
+//     use super::*;
 
-    #[test]
-    fn test_encrypt_decrypt_searchable() {
-        let key = chacha20poly1305_ietf::gen_key();
-        let hmac_key = hmacsha256::gen_key();
-        let data = "test_data";
+//     #[test]
+//     fn test_encrypt_decrypt_searchable() {
+//         let key = chacha20poly1305_ietf::gen_key();
+//         let hmac_key = hmacsha256::gen_key();
+//         let data = "test_data";
 
-        let encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
-        let decrypted_data = decrypt_merged(&encrypted_data, &key).unwrap();
+//         let encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
+//         let decrypted_data = decrypt_merged(&encrypted_data, &key).unwrap();
 
-        assert_eq!(&decrypted_data[..], data.as_bytes());
-    }
+//         assert_eq!(&decrypted_data[..], data.as_bytes());
+//     }
 
-    #[test]
-    fn test_encrypt_decrypt_searchable_returns_error_if_wrong_key() {
-        let key = chacha20poly1305_ietf::gen_key();
-        let key2 = chacha20poly1305_ietf::gen_key();
-        let hmac_key = hmacsha256::gen_key();
-        let data = "test_data";
+//     #[test]
+//     fn test_encrypt_decrypt_searchable_returns_error_if_wrong_key() {
+//         let key = chacha20poly1305_ietf::gen_key();
+//         let key2 = chacha20poly1305_ietf::gen_key();
+//         let hmac_key = hmacsha256::gen_key();
+//         let data = "test_data";
 
-        let encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
-        let res = decrypt_merged(&encrypted_data, &key2);
+//         let encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
+//         let res = decrypt_merged(&encrypted_data, &key2);
 
-        assert_kind!(IndyErrorKind::InvalidStructure, res);
-    }
+//         assert_kind!(IndyErrorKind::InvalidStructure, res);
+//     }
 
-    #[test]
-    fn test_encrypt_decrypt_searchable_returns_error_if_nonce_modified() {
-        let key = chacha20poly1305_ietf::gen_key();
-        let hmac_key = hmacsha256::gen_key();
-        let data = "test_data";
+//     #[test]
+//     fn test_encrypt_decrypt_searchable_returns_error_if_nonce_modified() {
+//         let key = chacha20poly1305_ietf::gen_key();
+//         let hmac_key = hmacsha256::gen_key();
+//         let data = "test_data";
 
-        let mut encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
-        let byte_value = encrypted_data[3];
-        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
-        encrypted_data[3] = new_byte_value;
-        let res = decrypt_merged(&encrypted_data, &key);
+//         let mut encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
+//         let byte_value = encrypted_data[3];
+//         let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+//         encrypted_data[3] = new_byte_value;
+//         let res = decrypt_merged(&encrypted_data, &key);
 
-        assert_kind!(IndyErrorKind::InvalidStructure, res);
-    }
+//         assert_kind!(IndyErrorKind::InvalidStructure, res);
+//     }
 
-    #[test]
-    fn test_encrypt_decrypt_searchable_returns_error_if_data_modified() {
-        let key = chacha20poly1305_ietf::gen_key();
-        let hmac_key = hmacsha256::gen_key();
-        let data = "12345678901234567890123456789012345678901234567890";
+//     #[test]
+//     fn test_encrypt_decrypt_searchable_returns_error_if_data_modified() {
+//         let key = chacha20poly1305_ietf::gen_key();
+//         let hmac_key = hmacsha256::gen_key();
+//         let data = "12345678901234567890123456789012345678901234567890";
 
-        let mut encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
-        let index = encrypted_data.len() - 1;
-        let byte_value = encrypted_data[index];
-        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
-        encrypted_data[index] = new_byte_value;
-        let res = decrypt_merged(&encrypted_data, &key);
+//         let mut encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
+//         let index = encrypted_data.len() - 1;
+//         let byte_value = encrypted_data[index];
+//         let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+//         encrypted_data[index] = new_byte_value;
+//         let res = decrypt_merged(&encrypted_data, &key);
 
-        assert_kind!(IndyErrorKind::InvalidStructure, res);
-    }
+//         assert_kind!(IndyErrorKind::InvalidStructure, res);
+//     }
 
-    #[test]
-    fn test_encrypt_decrypt_searchable_returns_error_if_tag_modified() {
-        let key = chacha20poly1305_ietf::gen_key();
-        let hmac_key = hmacsha256::gen_key();
-        let data = "12345678901234567890123456789012345678901234567890";
+//     #[test]
+//     fn test_encrypt_decrypt_searchable_returns_error_if_tag_modified() {
+//         let key = chacha20poly1305_ietf::gen_key();
+//         let hmac_key = hmacsha256::gen_key();
+//         let data = "12345678901234567890123456789012345678901234567890";
 
-        let mut encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
-        let byte_value = encrypted_data[chacha20poly1305_ietf::NONCEBYTES + 1];
-        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
-        encrypted_data[chacha20poly1305_ietf::NONCEBYTES + 1] = new_byte_value;
-        let res = decrypt_merged(&encrypted_data, &key);
+//         let mut encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
+//         let byte_value = encrypted_data[chacha20poly1305_ietf::NONCEBYTES + 1];
+//         let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+//         encrypted_data[chacha20poly1305_ietf::NONCEBYTES + 1] = new_byte_value;
+//         let res = decrypt_merged(&encrypted_data, &key);
 
-        assert_kind!(IndyErrorKind::InvalidStructure, res);
-    }
+//         assert_kind!(IndyErrorKind::InvalidStructure, res);
+//     }
 
-    #[test]
-    fn test_encrypt_decrypt_not_searchable() {
-        let key = chacha20poly1305_ietf::gen_key();
-        let data = "test_data";
+//     #[test]
+//     fn test_encrypt_decrypt_not_searchable() {
+//         let key = chacha20poly1305_ietf::gen_key();
+//         let data = "test_data";
 
-        let encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
-        let decrypted_data = decrypt_merged(&encrypted_data, &key).unwrap();
+//         let encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
+//         let decrypted_data = decrypt_merged(&encrypted_data, &key).unwrap();
 
-        assert_eq!(&decrypted_data[..], data.as_bytes());
-    }
+//         assert_eq!(&decrypted_data[..], data.as_bytes());
+//     }
 
-    #[test]
-    fn test_encrypt_decrypt_not_searchable_returns_error_if_wrong_key() {
-        let key = chacha20poly1305_ietf::gen_key();
-        let key2 = chacha20poly1305_ietf::gen_key();
-        let data = "test_data";
+//     #[test]
+//     fn test_encrypt_decrypt_not_searchable_returns_error_if_wrong_key() {
+//         let key = chacha20poly1305_ietf::gen_key();
+//         let key2 = chacha20poly1305_ietf::gen_key();
+//         let data = "test_data";
 
-        let encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
-        let res = decrypt_merged(&encrypted_data, &key2);
+//         let encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
+//         let res = decrypt_merged(&encrypted_data, &key2);
 
-        assert_kind!(IndyErrorKind::InvalidStructure, res);
-    }
+//         assert_kind!(IndyErrorKind::InvalidStructure, res);
+//     }
 
-    #[test]
-    fn test_encrypt_decrypt_not_searchable_returns_error_if_nonce_modified() {
-        let key = chacha20poly1305_ietf::gen_key();
-        let data = "test_data";
+//     #[test]
+//     fn test_encrypt_decrypt_not_searchable_returns_error_if_nonce_modified() {
+//         let key = chacha20poly1305_ietf::gen_key();
+//         let data = "test_data";
 
-        let mut encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
-        let byte_value = encrypted_data[3];
-        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
-        encrypted_data[3] = new_byte_value;
-        let res = decrypt_merged(&encrypted_data, &key);
+//         let mut encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
+//         let byte_value = encrypted_data[3];
+//         let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+//         encrypted_data[3] = new_byte_value;
+//         let res = decrypt_merged(&encrypted_data, &key);
 
-        assert_kind!(IndyErrorKind::InvalidStructure, res);
-    }
+//         assert_kind!(IndyErrorKind::InvalidStructure, res);
+//     }
 
-    #[test]
-    fn test_encrypt_decrypt_not_searchable_returns_error_if_data_modified() {
-        let key = chacha20poly1305_ietf::gen_key();
-        let data = "12345678901234567890123456789012345678901234567890";
+//     #[test]
+//     fn test_encrypt_decrypt_not_searchable_returns_error_if_data_modified() {
+//         let key = chacha20poly1305_ietf::gen_key();
+//         let data = "12345678901234567890123456789012345678901234567890";
 
-        let mut encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
-        let index = encrypted_data.len() - 1;
-        let byte_value = encrypted_data[index];
-        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
-        encrypted_data[index] = new_byte_value;
-        let res = decrypt_merged(&encrypted_data, &key);
+//         let mut encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
+//         let index = encrypted_data.len() - 1;
+//         let byte_value = encrypted_data[index];
+//         let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+//         encrypted_data[index] = new_byte_value;
+//         let res = decrypt_merged(&encrypted_data, &key);
 
-        assert_kind!(IndyErrorKind::InvalidStructure, res);
-    }
+//         assert_kind!(IndyErrorKind::InvalidStructure, res);
+//     }
 
-    #[test]
-    fn test_encrypt_decrypt_not_searchable_returns_error_if_tag_modified() {
-        let key = chacha20poly1305_ietf::gen_key();
-        let data = "12345678901234567890123456789012345678901234567890";
+//     #[test]
+//     fn test_encrypt_decrypt_not_searchable_returns_error_if_tag_modified() {
+//         let key = chacha20poly1305_ietf::gen_key();
+//         let data = "12345678901234567890123456789012345678901234567890";
 
-        let mut encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
-        let byte_value = encrypted_data[chacha20poly1305_ietf::NONCEBYTES + 1];
-        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
-        encrypted_data[chacha20poly1305_ietf::NONCEBYTES + 1] = new_byte_value;
-        let res = decrypt_merged(&encrypted_data, &key);
+//         let mut encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
+//         let byte_value = encrypted_data[chacha20poly1305_ietf::NONCEBYTES + 1];
+//         let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+//         encrypted_data[chacha20poly1305_ietf::NONCEBYTES + 1] = new_byte_value;
+//         let res = decrypt_merged(&encrypted_data, &key);
 
-        assert_kind!(IndyErrorKind::InvalidStructure, res);
-    }
+//         assert_kind!(IndyErrorKind::InvalidStructure, res);
+//     }
 
-    #[test]
-    fn test_encrypt_decrypt_tags() {
-        let tags = serde_json::from_str(r#"{"tag1":"value1", "tag2":"value2", "~tag3":"value3"}"#).unwrap();
+//     #[test]
+//     fn test_encrypt_decrypt_tags() {
+//         let tags = serde_json::from_str(r#"{"tag1":"value1", "tag2":"value2", "~tag3":"value3"}"#).unwrap();
 
-        let tag_name_key = chacha20poly1305_ietf::gen_key();
-        let tag_value_key = chacha20poly1305_ietf::gen_key();
-        let hmac_key = hmacsha256::gen_key();
+//         let tag_name_key = chacha20poly1305_ietf::gen_key();
+//         let tag_value_key = chacha20poly1305_ietf::gen_key();
+//         let hmac_key = hmacsha256::gen_key();
 
-        let c = encrypt_tags(&tags, &tag_name_key, &tag_value_key, &hmac_key);
-        let u = decrypt_tags(&Some(c), &tag_name_key, &tag_value_key).unwrap().unwrap();
-        assert_eq!(tags, u);
-    }
+//         let c = encrypt_tags(&tags, &tag_name_key, &tag_value_key, &hmac_key);
+//         let u = decrypt_tags(&Some(c), &tag_name_key, &tag_value_key).unwrap().unwrap();
+//         assert_eq!(tags, u);
+//     }
 
-    #[test]
-    fn test_decrypt_tags_works_for_none() {
-        let tag_name_key = chacha20poly1305_ietf::gen_key();
-        let tag_value_key = chacha20poly1305_ietf::gen_key();
+//     #[test]
+//     fn test_decrypt_tags_works_for_none() {
+//         let tag_name_key = chacha20poly1305_ietf::gen_key();
+//         let tag_value_key = chacha20poly1305_ietf::gen_key();
 
-        let u = decrypt_tags(&None, &tag_name_key, &tag_value_key).unwrap();
-        assert!(u.is_none());
-    }
+//         let u = decrypt_tags(&None, &tag_name_key, &tag_value_key).unwrap();
+//         assert!(u.is_none());
+//     }
 
-    #[test]
-    fn test_decrypt_storage_record_works() {
-        let keys = Keys::new();
-        let name = "test_name";
-        let value = "test_value";
-        let encrypted_value = EncryptedValue::encrypt(value, &keys.value_key);
-        let type_ = "test_type";
-        let encrypted_name = encrypt_as_searchable(name.as_bytes(), &keys.name_key, &keys.item_hmac_key);
-        let encrypted_type = encrypt_as_searchable(type_.as_bytes(), &keys.type_key, &keys.item_hmac_key);
-        let mut tags = HashMap::new();
-        tags.insert("tag_name_1".to_string(), "tag_value_1".to_string());
-        tags.insert("~tag_name_2".to_string(), "tag_value_2".to_string());
-        let encrypted_tags = encrypt_tags(&tags, &keys.tag_name_key, &keys.tag_value_key, &keys.tags_hmac_key);
+//     #[test]
+//     fn test_decrypt_storage_record_works() {
+//         let keys = Keys::new();
+//         let name = "test_name";
+//         let value = "test_value";
+//         let encrypted_value = EncryptedValue::encrypt(value, &keys.value_key);
+//         let type_ = "test_type";
+//         let encrypted_name = encrypt_as_searchable(name.as_bytes(), &keys.name_key, &keys.item_hmac_key);
+//         let encrypted_type = encrypt_as_searchable(type_.as_bytes(), &keys.type_key, &keys.item_hmac_key);
+//         let mut tags = HashMap::new();
+//         tags.insert("tag_name_1".to_string(), "tag_value_1".to_string());
+//         tags.insert("~tag_name_2".to_string(), "tag_value_2".to_string());
+//         let encrypted_tags = encrypt_tags(&tags, &keys.tag_name_key, &keys.tag_value_key, &keys.tags_hmac_key);
 
-        let storage_record = StorageRecord {
-            id: encrypted_name,
-            value: Some(encrypted_value),
-            type_: Some(encrypted_type),
-            tags: Some(encrypted_tags),
-        };
-        let decrypted_wallet_record = decrypt_storage_record(&storage_record, &keys).unwrap();
+//         let storage_record = StorageRecord {
+//             id: encrypted_name,
+//             value: Some(encrypted_value),
+//             type_: Some(encrypted_type),
+//             tags: Some(encrypted_tags),
+//         };
+//         let decrypted_wallet_record = decrypt_storage_record(&storage_record, &keys).unwrap();
 
-        assert_eq!(&decrypted_wallet_record.id, name);
-        assert_eq!(&decrypted_wallet_record.value.unwrap(), value);
-        assert_eq!(&decrypted_wallet_record.type_.unwrap(), type_);
-        assert_eq!(&decrypted_wallet_record.tags.unwrap(), &tags);
-    }
+//         assert_eq!(&decrypted_wallet_record.id, name);
+//         assert_eq!(&decrypted_wallet_record.value.unwrap(), value);
+//         assert_eq!(&decrypted_wallet_record.type_.unwrap(), type_);
+//         assert_eq!(&decrypted_wallet_record.tags.unwrap(), &tags);
+//     }
 
-    #[test]
-    fn test_decrypt_storage_record_fails_if_wrong_keys() {
-        let keys = Keys::new();
-        let keys2 = Keys::new();
-        let name = "test_name";
-        let value = "test_value";
-        let encrypted_value = EncryptedValue::encrypt(value, &keys.value_key);
-        let type_ = "test_type";
-        let encrypted_name = encrypt_as_searchable(name.as_bytes(), &keys.name_key, &keys.item_hmac_key);
-        let encrypted_type = encrypt_as_searchable(type_.as_bytes(), &keys.type_key, &keys.item_hmac_key);
-        let mut tags = HashMap::new();
-        tags.insert("tag_name_1".to_string(), "tag_value_1".to_string());
-        tags.insert("~tag_name_2".to_string(), "tag_value_2".to_string());
-        let encrypted_tags = encrypt_tags(&tags, &keys.tag_name_key, &keys.tag_value_key, &keys.tags_hmac_key);
+//     #[test]
+//     fn test_decrypt_storage_record_fails_if_wrong_keys() {
+//         let keys = Keys::new();
+//         let keys2 = Keys::new();
+//         let name = "test_name";
+//         let value = "test_value";
+//         let encrypted_value = EncryptedValue::encrypt(value, &keys.value_key);
+//         let type_ = "test_type";
+//         let encrypted_name = encrypt_as_searchable(name.as_bytes(), &keys.name_key, &keys.item_hmac_key);
+//         let encrypted_type = encrypt_as_searchable(type_.as_bytes(), &keys.type_key, &keys.item_hmac_key);
+//         let mut tags = HashMap::new();
+//         tags.insert("tag_name_1".to_string(), "tag_value_1".to_string());
+//         tags.insert("~tag_name_2".to_string(), "tag_value_2".to_string());
+//         let encrypted_tags = encrypt_tags(&tags, &keys.tag_name_key, &keys.tag_value_key, &keys.tags_hmac_key);
 
-        let storage_record = StorageRecord {
-            id: encrypted_name,
-            value: Some(encrypted_value),
-            type_: Some(encrypted_type),
-            tags: Some(encrypted_tags),
-        };
-        let res = decrypt_storage_record(&storage_record, &keys2);
+//         let storage_record = StorageRecord {
+//             id: encrypted_name,
+//             value: Some(encrypted_value),
+//             type_: Some(encrypted_type),
+//             tags: Some(encrypted_tags),
+//         };
+//         let res = decrypt_storage_record(&storage_record, &keys2);
 
-        assert_kind!(IndyErrorKind::InvalidStructure, res);
-    }
-}
+//         assert_kind!(IndyErrorKind::InvalidStructure, res);
+//     }
+// }

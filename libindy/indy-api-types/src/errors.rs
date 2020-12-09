@@ -1,15 +1,16 @@
-use std::cell;
-use std::fmt;
-use std::io;
-use std::sync::Arc;
-use std::ffi::{CString, NulError};
-use std::cell::RefCell;
-use std::ptr;
-
+use std::{
+    cell,
+    cell::RefCell,
+    ffi::{CString, NulError},
+    fmt, io, ptr,
+    sync::Arc,
+};
 
 use failure::{Backtrace, Context, Fail};
-
 use log;
+
+#[cfg(feature = "casting_errors")]
+use sqlx;
 
 #[cfg(feature = "casting_errors")]
 use ursa::errors::{UrsaCryptoError, UrsaCryptoErrorKind};
@@ -19,7 +20,10 @@ use libc::c_char;
 use crate::ErrorCode;
 
 pub mod prelude {
-    pub use super::{err_msg, IndyError, IndyErrorExt, IndyErrorKind, IndyResult, IndyResultExt, set_current_error, get_current_error_c_json};
+    pub use super::{
+        err_msg, get_current_error_c_json, set_current_error, IndyError, IndyErrorExt,
+        IndyErrorKind, IndyResult, IndyResultExt,
+    };
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
@@ -120,7 +124,7 @@ pub enum IndyErrorKind {
 pub struct IndyError {
     // FIXME: We have to use Arc as for now we clone messages in pool service
     // FIXME: In theory we can avoid sync by refactoring of pool service
-    inner: Arc<Context<IndyErrorKind>>
+    inner: Arc<Context<IndyErrorKind>>,
 }
 
 impl Fail for IndyError {
@@ -152,8 +156,12 @@ impl fmt::Display for IndyError {
 
 impl IndyError {
     pub fn from_msg<D>(kind: IndyErrorKind, msg: D) -> IndyError
-        where D: fmt::Display + fmt::Debug + Send + Sync + 'static {
-        IndyError { inner: Arc::new(Context::new(msg).context(kind)) }
+    where
+        D: fmt::Display + fmt::Debug + Send + Sync + 'static,
+    {
+        IndyError {
+            inner: Arc::new(Context::new(msg).context(kind)),
+        }
     }
 
     pub fn kind(&self) -> IndyErrorKind {
@@ -161,33 +169,47 @@ impl IndyError {
     }
 
     pub fn extend<D>(self, msg: D) -> IndyError
-        where D: fmt::Display + fmt::Debug + Send + Sync + 'static {
+    where
+        D: fmt::Display + fmt::Debug + Send + Sync + 'static,
+    {
         let kind = self.kind();
         let inner = Arc::try_unwrap(self.inner).unwrap();
-        IndyError { inner: Arc::new(inner.map(|_| msg).context(kind)) }
+        IndyError {
+            inner: Arc::new(inner.map(|_| msg).context(kind)),
+        }
     }
 
     pub fn map<D>(self, kind: IndyErrorKind, msg: D) -> IndyError
-        where D: fmt::Display + fmt::Debug + Send + Sync + 'static {
+    where
+        D: fmt::Display + fmt::Debug + Send + Sync + 'static,
+    {
         let inner = Arc::try_unwrap(self.inner).unwrap();
-        IndyError { inner: Arc::new(inner.map(|_| msg).context(kind)) }
+        IndyError {
+            inner: Arc::new(inner.map(|_| msg).context(kind)),
+        }
     }
 }
 
 pub fn err_msg<D>(kind: IndyErrorKind, msg: D) -> IndyError
-    where D: fmt::Display + fmt::Debug + Send + Sync + 'static {
+where
+    D: fmt::Display + fmt::Debug + Send + Sync + 'static,
+{
     IndyError::from_msg(kind, msg)
 }
 
 impl From<IndyErrorKind> for IndyError {
     fn from(kind: IndyErrorKind) -> IndyError {
-        IndyError { inner: Arc::new(Context::new(kind)) }
+        IndyError {
+            inner: Arc::new(Context::new(kind)),
+        }
     }
 }
 
 impl From<Context<IndyErrorKind>> for IndyError {
     fn from(inner: Context<IndyErrorKind>) -> IndyError {
-        IndyError { inner: Arc::new(inner) }
+        IndyError {
+            inner: Arc::new(inner),
+        }
     }
 }
 
@@ -231,17 +253,36 @@ impl From<log::SetLoggerError> for IndyError {
 #[cfg(feature = "casting_errors")]
 impl From<UrsaCryptoError> for IndyError {
     fn from(err: UrsaCryptoError) -> Self {
-        let message = format!("UrsaCryptoError: {}", Fail::iter_causes(&err).map(|e| e.to_string()).collect::<String>());
+        let message = format!(
+            "UrsaCryptoError: {}",
+            Fail::iter_causes(&err)
+                .map(|e| e.to_string())
+                .collect::<String>()
+        );
 
         match err.kind() {
-            UrsaCryptoErrorKind::InvalidState => IndyError::from_msg(IndyErrorKind::InvalidState, message),
-            UrsaCryptoErrorKind::InvalidStructure => IndyError::from_msg(IndyErrorKind::InvalidStructure, message),
+            UrsaCryptoErrorKind::InvalidState => {
+                IndyError::from_msg(IndyErrorKind::InvalidState, message)
+            }
+            UrsaCryptoErrorKind::InvalidStructure => {
+                IndyError::from_msg(IndyErrorKind::InvalidStructure, message)
+            }
             UrsaCryptoErrorKind::IOError => IndyError::from_msg(IndyErrorKind::IOError, message),
-            UrsaCryptoErrorKind::InvalidRevocationAccumulatorIndex => IndyError::from_msg(IndyErrorKind::InvalidUserRevocId, message),
-            UrsaCryptoErrorKind::RevocationAccumulatorIsFull => IndyError::from_msg(IndyErrorKind::RevocationRegistryFull, message),
-            UrsaCryptoErrorKind::ProofRejected => IndyError::from_msg(IndyErrorKind::ProofRejected, message),
-            UrsaCryptoErrorKind::CredentialRevoked => IndyError::from_msg(IndyErrorKind::CredentialRevoked, message),
-            UrsaCryptoErrorKind::InvalidParam(_) => IndyError::from_msg(IndyErrorKind::InvalidStructure, message),
+            UrsaCryptoErrorKind::InvalidRevocationAccumulatorIndex => {
+                IndyError::from_msg(IndyErrorKind::InvalidUserRevocId, message)
+            }
+            UrsaCryptoErrorKind::RevocationAccumulatorIsFull => {
+                IndyError::from_msg(IndyErrorKind::RevocationRegistryFull, message)
+            }
+            UrsaCryptoErrorKind::ProofRejected => {
+                IndyError::from_msg(IndyErrorKind::ProofRejected, message)
+            }
+            UrsaCryptoErrorKind::CredentialRevoked => {
+                IndyError::from_msg(IndyErrorKind::CredentialRevoked, message)
+            }
+            UrsaCryptoErrorKind::InvalidParam(_) => {
+                IndyError::from_msg(IndyErrorKind::InvalidStructure, message)
+            }
         }
     }
 }
@@ -249,7 +290,10 @@ impl From<UrsaCryptoError> for IndyError {
 #[cfg(feature = "casting_errors")]
 impl From<rust_base58::base58::FromBase58Error> for IndyError {
     fn from(_err: rust_base58::base58::FromBase58Error) -> Self {
-        IndyError::from_msg(IndyErrorKind::InvalidStructure, "The base58 input contained a character not part of the base58 alphabet")
+        IndyError::from_msg(
+            IndyErrorKind::InvalidStructure,
+            "The base58 input contained a character not part of the base58 alphabet",
+        )
     }
 }
 
@@ -261,24 +305,37 @@ impl From<openssl::error::ErrorStack> for IndyError {
     }
 }
 
-impl From<NulError> for IndyError {
-    fn from(err: NulError) -> IndyError {
-        err.to_indy(IndyErrorKind::InvalidState, "Null symbols in payments strings") // TODO: Review kind
+#[cfg(feature = "casting_errors")]
+impl From<sqlx::Error> for IndyError {
+    fn from(err: sqlx::Error) -> IndyError {
+        match &err {
+            sqlx::Error::RowNotFound => {
+                err.to_indy(IndyErrorKind::WalletItemNotFound, "Item not found")
+            }
+            // FIXME: Analyze downcasted error!!!
+            sqlx::Error::Database(_) => err.to_indy(
+                IndyErrorKind::WalletItemAlreadyExists,
+                "Wallet item already exists",
+            ),
+            sqlx::Error::Io(_) => err.to_indy(
+                IndyErrorKind::IOError,
+                "IO error during access sqlite database",
+            ),
+            sqlx::Error::Tls(_) => err.to_indy(
+                IndyErrorKind::IOError,
+                "IO error during access sqlite database",
+            ),
+            _ => err.to_indy(IndyErrorKind::InvalidState, "Unexpected sqlite error"),
+        }
     }
 }
 
-#[cfg(feature = "casting_errors")]
-impl From<rusqlite::Error> for IndyError {
-    fn from(err: rusqlite::Error) -> IndyError {
-        match err {
-            rusqlite::Error::QueryReturnedNoRows => err.to_indy(IndyErrorKind::WalletItemNotFound, "Item not found"),
-            rusqlite::Error::SqliteFailure(
-                rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::ConstraintViolation, .. }, _) =>
-                err.to_indy(IndyErrorKind::WalletItemAlreadyExists, "Wallet item already exists"),
-            rusqlite::Error::SqliteFailure(rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::SystemIOFailure, .. }, _) =>
-                err.to_indy(IndyErrorKind::IOError, "IO error during access sqlite database"),
-            _ => err.to_indy(IndyErrorKind::InvalidState, "Unexpected sqlite error"),
-        }
+impl From<NulError> for IndyError {
+    fn from(err: NulError) -> IndyError {
+        err.to_indy(
+            IndyErrorKind::InvalidState,
+            "Null symbols in payments strings",
+        ) // TODO: Review kind
     }
 }
 
@@ -303,41 +360,44 @@ impl From<IndyErrorKind> for ErrorCode {
         match code {
             IndyErrorKind::InvalidState => ErrorCode::CommonInvalidState,
             IndyErrorKind::InvalidStructure => ErrorCode::CommonInvalidStructure,
-            IndyErrorKind::InvalidParam(num) =>
-                match num {
-                    1 => ErrorCode::CommonInvalidParam1,
-                    2 => ErrorCode::CommonInvalidParam2,
-                    3 => ErrorCode::CommonInvalidParam3,
-                    4 => ErrorCode::CommonInvalidParam4,
-                    5 => ErrorCode::CommonInvalidParam5,
-                    6 => ErrorCode::CommonInvalidParam6,
-                    7 => ErrorCode::CommonInvalidParam7,
-                    8 => ErrorCode::CommonInvalidParam8,
-                    9 => ErrorCode::CommonInvalidParam9,
-                    10 => ErrorCode::CommonInvalidParam10,
-                    11 => ErrorCode::CommonInvalidParam11,
-                    12 => ErrorCode::CommonInvalidParam12,
-                    13 => ErrorCode::CommonInvalidParam13,
-                    14 => ErrorCode::CommonInvalidParam14,
-                    15 => ErrorCode::CommonInvalidParam15,
-                    16 => ErrorCode::CommonInvalidParam16,
-                    17 => ErrorCode::CommonInvalidParam17,
-                    18 => ErrorCode::CommonInvalidParam18,
-                    19 => ErrorCode::CommonInvalidParam19,
-                    20 => ErrorCode::CommonInvalidParam20,
-                    21 => ErrorCode::CommonInvalidParam21,
-                    22 => ErrorCode::CommonInvalidParam22,
-                    23 => ErrorCode::CommonInvalidParam23,
-                    24 => ErrorCode::CommonInvalidParam24,
-                    25 => ErrorCode::CommonInvalidParam25,
-                    26 => ErrorCode::CommonInvalidParam26,
-                    27 => ErrorCode::CommonInvalidParam27,
-                    _ => ErrorCode::CommonInvalidState
-                },
+            IndyErrorKind::InvalidParam(num) => match num {
+                1 => ErrorCode::CommonInvalidParam1,
+                2 => ErrorCode::CommonInvalidParam2,
+                3 => ErrorCode::CommonInvalidParam3,
+                4 => ErrorCode::CommonInvalidParam4,
+                5 => ErrorCode::CommonInvalidParam5,
+                6 => ErrorCode::CommonInvalidParam6,
+                7 => ErrorCode::CommonInvalidParam7,
+                8 => ErrorCode::CommonInvalidParam8,
+                9 => ErrorCode::CommonInvalidParam9,
+                10 => ErrorCode::CommonInvalidParam10,
+                11 => ErrorCode::CommonInvalidParam11,
+                12 => ErrorCode::CommonInvalidParam12,
+                13 => ErrorCode::CommonInvalidParam13,
+                14 => ErrorCode::CommonInvalidParam14,
+                15 => ErrorCode::CommonInvalidParam15,
+                16 => ErrorCode::CommonInvalidParam16,
+                17 => ErrorCode::CommonInvalidParam17,
+                18 => ErrorCode::CommonInvalidParam18,
+                19 => ErrorCode::CommonInvalidParam19,
+                20 => ErrorCode::CommonInvalidParam20,
+                21 => ErrorCode::CommonInvalidParam21,
+                22 => ErrorCode::CommonInvalidParam22,
+                23 => ErrorCode::CommonInvalidParam23,
+                24 => ErrorCode::CommonInvalidParam24,
+                25 => ErrorCode::CommonInvalidParam25,
+                26 => ErrorCode::CommonInvalidParam26,
+                27 => ErrorCode::CommonInvalidParam27,
+                _ => ErrorCode::CommonInvalidState,
+            },
             IndyErrorKind::IOError => ErrorCode::CommonIOError,
-            IndyErrorKind::MasterSecretDuplicateName => ErrorCode::AnoncredsMasterSecretDuplicateNameError,
+            IndyErrorKind::MasterSecretDuplicateName => {
+                ErrorCode::AnoncredsMasterSecretDuplicateNameError
+            }
             IndyErrorKind::ProofRejected => ErrorCode::AnoncredsProofRejected,
-            IndyErrorKind::RevocationRegistryFull => ErrorCode::AnoncredsRevocationRegistryFullError,
+            IndyErrorKind::RevocationRegistryFull => {
+                ErrorCode::AnoncredsRevocationRegistryFullError
+            }
             IndyErrorKind::InvalidUserRevocId => ErrorCode::AnoncredsInvalidUserRevocId,
             IndyErrorKind::CredentialRevoked => ErrorCode::AnoncredsCredentialRevoked,
             IndyErrorKind::CredDefAlreadyExists => ErrorCode::AnoncredsCredDefAlreadyExistsError,
@@ -349,11 +409,15 @@ impl From<IndyErrorKind> for ErrorCode {
             IndyErrorKind::PoolTerminated => ErrorCode::PoolLedgerTerminated,
             IndyErrorKind::PoolTimeout => ErrorCode::PoolLedgerTimeout,
             IndyErrorKind::PoolConfigAlreadyExists => ErrorCode::PoolLedgerConfigAlreadyExistsError,
-            IndyErrorKind::PoolIncompatibleProtocolVersion => ErrorCode::PoolIncompatibleProtocolVersion,
+            IndyErrorKind::PoolIncompatibleProtocolVersion => {
+                ErrorCode::PoolIncompatibleProtocolVersion
+            }
             IndyErrorKind::UnknownCrypto => ErrorCode::UnknownCryptoTypeError,
             IndyErrorKind::InvalidWalletHandle => ErrorCode::WalletInvalidHandle,
             IndyErrorKind::UnknownWalletStorageType => ErrorCode::WalletUnknownTypeError,
-            IndyErrorKind::WalletStorageTypeAlreadyRegistered => ErrorCode::WalletTypeAlreadyRegisteredError,
+            IndyErrorKind::WalletStorageTypeAlreadyRegistered => {
+                ErrorCode::WalletTypeAlreadyRegisteredError
+            }
             IndyErrorKind::WalletAlreadyExists => ErrorCode::WalletAlreadyExistsError,
             IndyErrorKind::WalletNotFound => ErrorCode::WalletNotFoundError,
             IndyErrorKind::WalletAlreadyOpened => ErrorCode::WalletAlreadyOpenedError,
@@ -369,7 +433,9 @@ impl From<IndyErrorKind> for ErrorCode {
             IndyErrorKind::IncompatiblePaymentMethods => ErrorCode::PaymentIncompatibleMethodsError,
             IndyErrorKind::PaymentInsufficientFunds => ErrorCode::PaymentInsufficientFundsError,
             IndyErrorKind::PaymentSourceDoesNotExist => ErrorCode::PaymentSourceDoesNotExistError,
-            IndyErrorKind::PaymentOperationNotSupported => ErrorCode::PaymentOperationNotSupportedError,
+            IndyErrorKind::PaymentOperationNotSupported => {
+                ErrorCode::PaymentOperationNotSupportedError
+            }
             IndyErrorKind::PaymentExtraFunds => ErrorCode::PaymentExtraFundsError,
             IndyErrorKind::TransactionNotAllowed => ErrorCode::TransactionNotAllowedError,
         }
@@ -425,9 +491,13 @@ impl From<ErrorCode> for IndyErrorKind {
             ErrorCode::CommonInvalidParam26 => IndyErrorKind::InvalidParam(26),
             ErrorCode::CommonInvalidParam27 => IndyErrorKind::InvalidParam(27),
             ErrorCode::CommonIOError => IndyErrorKind::IOError,
-            ErrorCode::AnoncredsMasterSecretDuplicateNameError => IndyErrorKind::MasterSecretDuplicateName,
+            ErrorCode::AnoncredsMasterSecretDuplicateNameError => {
+                IndyErrorKind::MasterSecretDuplicateName
+            }
             ErrorCode::AnoncredsProofRejected => IndyErrorKind::ProofRejected,
-            ErrorCode::AnoncredsRevocationRegistryFullError => IndyErrorKind::RevocationRegistryFull,
+            ErrorCode::AnoncredsRevocationRegistryFullError => {
+                IndyErrorKind::RevocationRegistryFull
+            }
             ErrorCode::AnoncredsInvalidUserRevocId => IndyErrorKind::InvalidUserRevocId,
             ErrorCode::AnoncredsCredentialRevoked => IndyErrorKind::CredentialRevoked,
             ErrorCode::AnoncredsCredDefAlreadyExistsError => IndyErrorKind::CredDefAlreadyExists,
@@ -439,11 +509,15 @@ impl From<ErrorCode> for IndyErrorKind {
             ErrorCode::PoolLedgerTerminated => IndyErrorKind::PoolTerminated,
             ErrorCode::PoolLedgerTimeout => IndyErrorKind::PoolTimeout,
             ErrorCode::PoolLedgerConfigAlreadyExistsError => IndyErrorKind::PoolConfigAlreadyExists,
-            ErrorCode::PoolIncompatibleProtocolVersion => IndyErrorKind::PoolIncompatibleProtocolVersion,
+            ErrorCode::PoolIncompatibleProtocolVersion => {
+                IndyErrorKind::PoolIncompatibleProtocolVersion
+            }
             ErrorCode::UnknownCryptoTypeError => IndyErrorKind::UnknownCrypto,
             ErrorCode::WalletInvalidHandle => IndyErrorKind::InvalidWalletHandle,
             ErrorCode::WalletUnknownTypeError => IndyErrorKind::UnknownWalletStorageType,
-            ErrorCode::WalletTypeAlreadyRegisteredError => IndyErrorKind::WalletStorageTypeAlreadyRegistered,
+            ErrorCode::WalletTypeAlreadyRegisteredError => {
+                IndyErrorKind::WalletStorageTypeAlreadyRegistered
+            }
             ErrorCode::WalletAlreadyExistsError => IndyErrorKind::WalletAlreadyExists,
             ErrorCode::WalletNotFoundError => IndyErrorKind::WalletNotFound,
             ErrorCode::WalletAlreadyOpenedError => IndyErrorKind::WalletAlreadyOpened,
@@ -459,10 +533,12 @@ impl From<ErrorCode> for IndyErrorKind {
             ErrorCode::PaymentIncompatibleMethodsError => IndyErrorKind::IncompatiblePaymentMethods,
             ErrorCode::PaymentInsufficientFundsError => IndyErrorKind::PaymentInsufficientFunds,
             ErrorCode::PaymentSourceDoesNotExistError => IndyErrorKind::PaymentSourceDoesNotExist,
-            ErrorCode::PaymentOperationNotSupportedError => IndyErrorKind::PaymentOperationNotSupported,
+            ErrorCode::PaymentOperationNotSupportedError => {
+                IndyErrorKind::PaymentOperationNotSupported
+            }
             ErrorCode::PaymentExtraFundsError => IndyErrorKind::PaymentExtraFunds,
             ErrorCode::TransactionNotAllowedError => IndyErrorKind::TransactionNotAllowed,
-            _code => IndyErrorKind::InvalidState
+            _code => IndyErrorKind::InvalidState,
         }
     }
 }
@@ -471,24 +547,38 @@ pub type IndyResult<T> = Result<T, IndyError>;
 
 /// Extension methods for `Result`.
 pub trait IndyResultExt<T, E> {
-    fn to_indy<D>(self, kind: IndyErrorKind, msg: D) -> IndyResult<T> where D: fmt::Display + Send + Sync + 'static;
+    fn to_indy<D>(self, kind: IndyErrorKind, msg: D) -> IndyResult<T>
+    where
+        D: fmt::Display + Send + Sync + 'static;
 }
 
-impl<T, E> IndyResultExt<T, E> for Result<T, E> where E: Fail
+impl<T, E> IndyResultExt<T, E> for Result<T, E>
+where
+    E: Fail,
 {
-    fn to_indy<D>(self, kind: IndyErrorKind, msg: D) -> IndyResult<T> where D: fmt::Display + Send + Sync + 'static {
+    fn to_indy<D>(self, kind: IndyErrorKind, msg: D) -> IndyResult<T>
+    where
+        D: fmt::Display + Send + Sync + 'static,
+    {
         self.map_err(|err| err.context(msg).context(kind).into())
     }
 }
 
 /// Extension methods for `Error`.
 pub trait IndyErrorExt {
-    fn to_indy<D>(self, kind: IndyErrorKind, msg: D) -> IndyError where D: fmt::Display + Send + Sync + 'static;
+    fn to_indy<D>(self, kind: IndyErrorKind, msg: D) -> IndyError
+    where
+        D: fmt::Display + Send + Sync + 'static;
 }
 
-impl<E> IndyErrorExt for E where E: Fail
+impl<E> IndyErrorExt for E
+where
+    E: Fail,
 {
-    fn to_indy<D>(self, kind: IndyErrorKind, msg: D) -> IndyError where D: fmt::Display + Send + Sync + 'static {
+    fn to_indy<D>(self, kind: IndyErrorKind, msg: D) -> IndyError
+    where
+        D: fmt::Display + Send + Sync + 'static,
+    {
         self.context(msg).context(kind).into()
     }
 }
@@ -498,23 +588,26 @@ thread_local! {
 }
 
 pub fn set_current_error(err: &IndyError) {
-    CURRENT_ERROR_C_JSON.try_with(|error| {
-        let error_json = json!({
-            "message": err.to_string(),
-            "backtrace": err.backtrace().map(|bt| bt.to_string())
-        }).to_string();
-        error.replace(Some(string_to_cstring(error_json)));
-    })
-        .map_err(|err| error!("Thread local variable access failed with: {:?}", err)).ok();
+    CURRENT_ERROR_C_JSON
+        .try_with(|error| {
+            let error_json = json!({
+                "message": err.to_string(),
+                "backtrace": err.backtrace().map(|bt| bt.to_string())
+            })
+            .to_string();
+            error.replace(Some(string_to_cstring(error_json)));
+        })
+        .map_err(|err| error!("Thread local variable access failed with: {:?}", err))
+        .ok();
 }
 
 pub fn get_current_error_c_json() -> *const c_char {
     let mut value = ptr::null();
 
-    CURRENT_ERROR_C_JSON.try_with(|err|
-        err.borrow().as_ref().map(|err| value = err.as_ptr())
-    )
-        .map_err(|err| error!("Thread local variable access failed with: {:?}", err)).ok();
+    CURRENT_ERROR_C_JSON
+        .try_with(|err| err.borrow().as_ref().map(|err| value = err.as_ptr()))
+        .map_err(|err| error!("Thread local variable access failed with: {:?}", err))
+        .ok();
 
     value
 }
