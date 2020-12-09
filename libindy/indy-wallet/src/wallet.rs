@@ -7,9 +7,10 @@ use indy_utils::{
     wql::Query,
 };
 
+use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
-use super::{
+use crate::{
     encryption::*, iterator::WalletIterator, query_encryption::encrypt_query, storage, WalletRecord,
 };
 
@@ -380,6 +381,8 @@ impl Wallet {
 mod tests {
     use super::*;
 
+    use std::{collections::HashMap, rc::Rc};
+
     use indy_utils::{assert_kind, assert_match, test};
     use serde_json::json;
 
@@ -390,8 +393,6 @@ mod tests {
         wallet::Wallet,
         Metadata, MetadataArgon,
     };
-
-    use std::{collections::HashMap, rc::Rc};
 
     macro_rules! jsonstr {
         ($($x:tt)+) => {
