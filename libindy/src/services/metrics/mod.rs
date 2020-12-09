@@ -1,67 +1,26 @@
-use crate::services::metrics::command_index::CommandIndex;
-use convert_case::{Case, Casing};
+use crate::services::metrics::command_metrics::{CommandMetrics, CommandMetric, CommandAware, Counters};
 use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
 use models::MetricsValue;
 use serde_json::{Map, Value};
 use std::cell::RefCell;
 use std::collections::HashMap;
+use crate::commands::Command;
+use crate::commands::anoncreds::verifier::VerifierCommand;
+use crate::commands::anoncreds::prover::ProverCommand;
+use crate::commands::anoncreds::issuer::IssuerCommand;
 
-pub mod command_index;
+pub mod command_metrics;
 pub mod models;
 
-const COMMANDS_COUNT: usize = MetricsService::commands_count();
-
 pub struct MetricsService {
-    queued_commands_count: RefCell<[u128; COMMANDS_COUNT]>,
-    queued_commands_duration_ms: RefCell<[u128; COMMANDS_COUNT]>,
-
-    executed_commands_count: RefCell<[u128; COMMANDS_COUNT]>,
-    executed_commands_duration_ms: RefCell<[u128; COMMANDS_COUNT]>,
+     metrics: RefCell<CommandMetrics>,
 }
 
 impl MetricsService {
     pub fn new() -> Self {
         MetricsService {
-            queued_commands_count: RefCell::new([u128::MIN; COMMANDS_COUNT]),
-            queued_commands_duration_ms: RefCell::new([u128::MIN; COMMANDS_COUNT]),
-
-            executed_commands_count: RefCell::new([u128::MIN; COMMANDS_COUNT]),
-            executed_commands_duration_ms: RefCell::new([u128::MIN; COMMANDS_COUNT]),
+            metrics: RefCell::new(CommandMetrics::new()),
         }
-    }
-
-    pub fn cmd_left_queue(&self, command_index: CommandIndex, duration: u128) {
-        self.queued_commands_count.borrow_mut()[command_index as usize] += 1;
-        self.queued_commands_duration_ms.borrow_mut()[command_index as usize] += duration;
-    }
-
-    pub fn cmd_executed(&self, command_index: CommandIndex, duration: u128) {
-        self.executed_commands_count.borrow_mut()[command_index as usize] += 1;
-        self.executed_commands_duration_ms.borrow_mut()[command_index as usize] += duration;
-    }
-
-    pub fn cmd_name(index: usize) -> (String, String) {
-        let cmd = CommandIndex::from(index).to_string().find("Command");
-        match cmd {
-            None => (
-                CommandIndex::from(index)
-                    .to_string()
-                    .to_case(Case::Snake)
-                    .to_owned(),
-                String::from(""),
-            ),
-            Some(cmd) => (
-                CommandIndex::from(index).to_string()[0..Some(cmd).unwrap()]
-                    .to_case(Case::Snake)
-                    .to_owned(),
-                CommandIndex::from(index).to_string()[Some(cmd).unwrap() + 7..]
-                    .to_case(Case::Snake)
-                    .to_owned(),
-            ),
-        }
-    }
-    const fn commands_count() -> usize {
-        CommandIndex::VARIANT_COUNT
     }
 
     pub fn get_command_tags(
@@ -76,52 +35,32 @@ impl MetricsService {
         tags
     }
 
+    fn get_metric_structure(command: &str, subcommand: &str, value: Value) -> (MetricsValue, MetricsValue, MetricsValue, MetricsValue) {
+        let counters: Counters = serde_json::from_value(value.clone()).unwrap();
+
+        let executed_tag = MetricsService::get_command_tags(String::from(command), String::from(subcommand), String::from("executed"));
+        let queued_tag = MetricsService::get_command_tags(String::from(command), String::from(subcommand), String::from("queued"));
+        let executed_count = MetricsValue::new(counters.count, executed_tag.clone());
+        let queued_count = MetricsValue::new(counters.count, queued_tag.clone());
+        let executed_duration = MetricsValue::new(counters.sum,executed_tag);
+        let queued_duration = MetricsValue::new(counters.sum,queued_tag);
+
+        return (executed_count, queued_count, executed_duration, queued_duration)
+    }
+
     pub fn append_command_metrics(&self, metrics_map: &mut Map<String, Value>) -> IndyResult<()> {
         let mut commands_count = Vec::new();
         let mut commands_duration_ms = Vec::new();
+        let root = serde_json::to_value(self.metrics.borrow().clone()).unwrap();
 
-        for index in (0..MetricsService::commands_count()).rev() {
-            let (command, subcommand) = MetricsService::cmd_name(index);
-            let tags_executed = MetricsService::get_command_tags(
-                command.clone(),
-                subcommand.clone(),
-                String::from("executed"),
-            );
-            let tags_queued = MetricsService::get_command_tags(
-                command.clone(),
-                subcommand.clone(),
-                String::from("queued"),
-            );
-
-            commands_count.push(
-                serde_json::to_value(MetricsValue::new(
-                    self.executed_commands_count.borrow()[index] as usize,
-                    tags_executed.clone(),
-                ))
-                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-            );
-            commands_count.push(
-                serde_json::to_value(MetricsValue::new(
-                    self.queued_commands_count.borrow()[index] as usize,
-                    tags_queued.clone(),
-                ))
-                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-            );
-
-            commands_duration_ms.push(
-                serde_json::to_value(MetricsValue::new(
-                    self.executed_commands_duration_ms.borrow()[index] as usize,
-                    tags_executed,
-                ))
-                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-            );
-            commands_duration_ms.push(
-                serde_json::to_value(MetricsValue::new(
-                    self.queued_commands_duration_ms.borrow()[index] as usize,
-                    tags_queued,
-                ))
-                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-            );
+        for command in root.as_object().unwrap().iter() {
+            for subcommand in command.1.as_object().unwrap().iter() {
+                let (executed_count, queued_count, executed_duration, queued_duration) = MetricsService::get_metric_structure(command.0, subcommand.0, subcommand.1.clone());
+                commands_count.push(executed_count);
+                commands_count.push(queued_count);
+                commands_duration_ms.push(executed_duration);
+                commands_duration_ms.push(queued_duration);
+            }
         }
 
         metrics_map.insert(
@@ -136,6 +75,69 @@ impl MetricsService {
         );
 
         Ok(())
+    }
+}
+
+pub trait CommandAware2<T> {
+    fn cmd_left_queue(&self, command: T, duration: u128);
+    fn cmd_executed(&self, command: T, duration: u128);
+    fn borrow_metric_mut(&self, command: T) -> &mut CommandMetric;
+}
+
+impl CommandAware2<&Command> for MetricsService {
+    fn cmd_left_queue(&self, command: &Command, duration: u128) {
+        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_left_queue(duration);
+    }
+
+    fn cmd_executed(&self, command: &Command, duration: u128) {
+        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_executed(duration);
+    }
+
+    fn borrow_metric_mut(&self, command: &Command) -> &mut CommandMetric {
+        let mut some = self.metrics.borrow_mut();
+        some.borrow_metrics_mut(command)
+    }
+}
+
+impl CommandAware2<&VerifierCommand> for MetricsService {
+    fn cmd_left_queue(&self, command: &VerifierCommand, duration: u128) {
+        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_left_queue(duration);
+    }
+
+    fn cmd_executed(&self, command: &VerifierCommand, duration: u128) {
+        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_executed(duration);
+    }
+
+    fn borrow_metric_mut(&self, command: &VerifierCommand) -> &mut CommandMetric {
+        self.metrics.borrow_mut().borrow_metrics_mut(command)
+    }
+}
+
+impl CommandAware2<&ProverCommand> for MetricsService {
+    fn cmd_left_queue(&self, command: &ProverCommand, duration: u128) {
+        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_left_queue(duration);
+    }
+
+    fn cmd_executed(&self, command: &ProverCommand, duration: u128) {
+        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_executed(duration);
+    }
+
+    fn borrow_metric_mut(&self, command: &ProverCommand) -> &mut CommandMetric {
+        self.metrics.borrow_mut().borrow_metrics_mut(command)
+    }
+}
+
+impl CommandAware2<&IssuerCommand> for MetricsService {
+    fn cmd_left_queue(&self, command: &IssuerCommand, duration: u128) {
+        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_left_queue(duration);
+    }
+
+    fn cmd_executed(&self, command: &IssuerCommand, duration: u128) {
+        self.metrics.borrow_mut().borrow_metrics_mut(command).cmd_executed(duration);
+    }
+
+    fn borrow_metric_mut(&self, command: &IssuerCommand) -> &mut CommandMetric {
+        self.metrics.borrow_mut().borrow_metrics_mut(command)
     }
 }
 
@@ -236,14 +238,14 @@ mod test {
 
         let mut expected_commands_count = [
             json!({"tags":{"command":"payments","stage":"executed","subcommand":"build_set_txn_fees_req_ack"},"value":0}),
-            json!({"tags":{"command":"metrics","stage":"queued","subcommand":"collect_metrics"},"value":0}),
+            json!({"tags":{"command":"pairwise","stage":"queued","subcommand":"pairwise_exists"},"value":0}),
             json!({"tags":{"command":"cache","stage":"executed","subcommand":"purge_cred_def_cache"},"value":0}),
             json!({"tags":{"command":"non_secrets","stage":"queued","subcommand":"fetch_search_next_records"},"value":0}),
         ];
 
         let mut expected_commands_duration_ms = [
             json!({"tags":{"command":"payments","stage":"executed","subcommand":"build_set_txn_fees_req_ack"},"value":0}),
-            json!({"tags":{"command":"metrics","stage":"queued","subcommand":"collect_metrics"},"value":0}),
+            json!({"tags":{"command":"pairwise","stage":"queued","subcommand":"pairwise_exists"},"value":0}),
             json!({"tags":{"command":"cache","stage":"executed","subcommand":"purge_cred_def_cache"},"value":0}),
             json!({"tags":{"command":"non_secrets","stage":"queued","subcommand":"fetch_search_next_records"},"value":0}),
         ];

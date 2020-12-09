@@ -71,25 +71,25 @@ impl MetricsCommandExecutor {
 
         tag.insert(String::from("label"), String::from(THREADPOOL_ACTIVE_COUNT));
         threadpool_threads_count.push(
-            serde_json::to_value(MetricsValue::new(tp_instance.active_count(), tag.clone()))
+            serde_json::to_value(MetricsValue::new(tp_instance.active_count() as u128, tag.clone()))
                 .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
         );
 
         tag.insert(String::from("label"), String::from(THREADPOOL_QUEUED_COUNT));
         threadpool_threads_count.push(
-            serde_json::to_value(MetricsValue::new(tp_instance.queued_count(), tag.clone()))
+            serde_json::to_value(MetricsValue::new(tp_instance.queued_count() as u128, tag.clone()))
                 .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
         );
 
         tag.insert(String::from("label"), String::from(THREADPOOL_MAX_COUNT));
         threadpool_threads_count.push(
-            serde_json::to_value(MetricsValue::new(tp_instance.max_count(), tag.clone()))
+            serde_json::to_value(MetricsValue::new(tp_instance.max_count() as u128, tag.clone()))
                 .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
         );
 
         tag.insert(String::from("label"), String::from(THREADPOOL_PANIC_COUNT));
         threadpool_threads_count.push(
-            serde_json::to_value(MetricsValue::new(tp_instance.panic_count(), tag.clone()))
+            serde_json::to_value(MetricsValue::new(tp_instance.panic_count() as u128, tag.clone()))
                 .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
         );
 
@@ -113,7 +113,7 @@ impl MetricsCommandExecutor {
         tag.insert(String::from("label"), String::from(OPENED_WALLETS_COUNT));
         wallet_count.push(
             serde_json::to_value(MetricsValue::new(
-                self.wallet_service.get_wallets_count(),
+                self.wallet_service.get_wallets_count() as u128,
                 tag.clone(),
             ))
             .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
@@ -122,7 +122,7 @@ impl MetricsCommandExecutor {
         tag.insert(String::from("label"), String::from(OPENED_WALLET_IDS_COUNT));
         wallet_count.push(
             serde_json::to_value(MetricsValue::new(
-                self.wallet_service.get_wallet_ids_count(),
+                self.wallet_service.get_wallet_ids_count()  as u128,
                 tag.clone(),
             ))
             .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
@@ -131,7 +131,7 @@ impl MetricsCommandExecutor {
         tag.insert(String::from("label"), String::from(PENDING_FOR_IMPORT_WALLETS_COUNT));
         wallet_count.push(
             serde_json::to_value(MetricsValue::new(
-                self.wallet_service.get_pending_for_import_count(),
+                self.wallet_service.get_pending_for_import_count() as u128,
                 tag.clone(),
             ))
             .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
@@ -140,7 +140,7 @@ impl MetricsCommandExecutor {
         tag.insert(String::from("label"), String::from(PENDING_FOR_OPEN_WALLETS_COUNT));
         wallet_count.push(
             serde_json::to_value(MetricsValue::new(
-                self.wallet_service.get_pending_for_open_count(),
+                self.wallet_service.get_pending_for_open_count() as u128,
                 tag.clone(),
             ))
             .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
