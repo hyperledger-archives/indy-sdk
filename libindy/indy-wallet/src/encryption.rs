@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 use std::str;
 
-use indy_api_types::domain::wallet::KeyDerivationMethod;
-use indy_api_types::errors::prelude::*;
+use indy_api_types::{domain::wallet::KeyDerivationMethod, errors::prelude::*};
 use indy_utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
-
-use super::{Keys, WalletRecord, Metadata};
-use super::storage::{StorageRecord, Tag, TagName};
 use rust_base58::FromBase58;
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    storage::{StorageRecord, Tag, TagName},
+    Keys, Metadata, WalletRecord,
+};
 
 #[cfg(test)]
 pub(super) fn gen_master_key_salt() -> IndyResult<pwhash_argon2i13::Salt> {
@@ -30,20 +32,24 @@ pub enum KeyDerivationData {
 }
 
 impl KeyDerivationData {
-    pub fn from_passphrase_with_new_salt(passphrase: &str, derivation_method: &KeyDerivationMethod) -> Self {
+    pub fn from_passphrase_with_new_salt(
+        passphrase: &str,
+        derivation_method: &KeyDerivationMethod,
+    ) -> Self {
         let salt = pwhash_argon2i13::gen_salt();
         let passphrase = passphrase.to_owned();
         match *derivation_method {
-            KeyDerivationMethod::ARGON2I_INT =>
-                KeyDerivationData::Argon2iInt(passphrase, salt),
-            KeyDerivationMethod::ARGON2I_MOD =>
-                KeyDerivationData::Argon2iMod(passphrase, salt),
-            KeyDerivationMethod::RAW =>
-                KeyDerivationData::Raw(passphrase)
+            KeyDerivationMethod::ARGON2I_INT => KeyDerivationData::Argon2iInt(passphrase, salt),
+            KeyDerivationMethod::ARGON2I_MOD => KeyDerivationData::Argon2iMod(passphrase, salt),
+            KeyDerivationMethod::RAW => KeyDerivationData::Raw(passphrase),
         }
     }
 
-    pub(super) fn from_passphrase_and_metadata(passphrase: &str, metadata: &Metadata, derivation_method: &KeyDerivationMethod) -> IndyResult<Self> {
+    pub(super) fn from_passphrase_and_metadata(
+        passphrase: &str,
+        metadata: &Metadata,
+        derivation_method: &KeyDerivationMethod,
+    ) -> IndyResult<Self> {
         let passphrase = passphrase.to_owned();
 
         let data = match (derivation_method, metadata) {
@@ -58,7 +64,12 @@ impl KeyDerivationData {
                 let master_key_salt = master_key_salt_from_slice(&metadata.master_key_salt)?;
                 KeyDerivationData::Argon2iMod(passphrase, master_key_salt)
             }
-            _ => return Err(err_msg(IndyErrorKind::WalletAccessFailed, "Invalid combination of KeyDerivationMethod and Metadata"))
+            _ => {
+                return Err(err_msg(
+                    IndyErrorKind::WalletAccessFailed,
+                    "Invalid combination of KeyDerivationMethod and Metadata",
+                ))
+            }
         };
 
         Ok(data)
@@ -67,13 +78,21 @@ impl KeyDerivationData {
     pub fn calc_master_key(&self) -> IndyResult<chacha20poly1305_ietf::Key> {
         match self {
             KeyDerivationData::Raw(passphrase) => _raw_master_key(passphrase),
-            KeyDerivationData::Argon2iInt(passphrase, salt) => _derive_master_key(passphrase, &salt, &KeyDerivationMethod::ARGON2I_INT),
-            KeyDerivationData::Argon2iMod(passphrase, salt) => _derive_master_key(passphrase, &salt, &KeyDerivationMethod::ARGON2I_MOD),
+            KeyDerivationData::Argon2iInt(passphrase, salt) => {
+                _derive_master_key(passphrase, &salt, &KeyDerivationMethod::ARGON2I_INT)
+            }
+            KeyDerivationData::Argon2iMod(passphrase, salt) => {
+                _derive_master_key(passphrase, &salt, &KeyDerivationMethod::ARGON2I_MOD)
+            }
         }
     }
 }
 
-fn _derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_derivation_method: &KeyDerivationMethod) -> IndyResult<chacha20poly1305_ietf::Key> {
+fn _derive_master_key(
+    passphrase: &str,
+    salt: &pwhash_argon2i13::Salt,
+    key_derivation_method: &KeyDerivationMethod,
+) -> IndyResult<chacha20poly1305_ietf::Key> {
     let key = chacha20poly1305_ietf::derive_key(passphrase, salt, key_derivation_method)?;
     Ok(key)
 }
@@ -81,30 +100,42 @@ fn _derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_deriv
 fn _raw_master_key(passphrase: &str) -> IndyResult<chacha20poly1305_ietf::Key> {
     let bytes = passphrase.from_base58()?;
 
-    chacha20poly1305_ietf::Key::from_slice(&bytes)
-        .map_err(|err| err.extend("Invalid mastery key"))
+    chacha20poly1305_ietf::Key::from_slice(&bytes).map_err(|err| err.extend("Invalid mastery key"))
 }
 
-pub(super) fn encrypt_tag_names(tag_names: &[&str], tag_name_key: &chacha20poly1305_ietf::Key, tags_hmac_key: &hmacsha256::Key) -> Vec<TagName> {
+pub(super) fn encrypt_tag_names(
+    tag_names: &[&str],
+    tag_name_key: &chacha20poly1305_ietf::Key,
+    tags_hmac_key: &hmacsha256::Key,
+) -> Vec<TagName> {
     tag_names
         .iter()
-        .map(|tag_name|
+        .map(|tag_name| {
             if tag_name.starts_with('~') {
                 TagName::OfPlain(encrypt_as_searchable(
-                    &tag_name.as_bytes()[1..], tag_name_key, tags_hmac_key))
+                    &tag_name.as_bytes()[1..],
+                    tag_name_key,
+                    tags_hmac_key,
+                ))
             } else {
-                TagName::OfEncrypted(encrypt_as_searchable(tag_name.as_bytes(), tag_name_key, tags_hmac_key))
-            })
+                TagName::OfEncrypted(encrypt_as_searchable(
+                    tag_name.as_bytes(),
+                    tag_name_key,
+                    tags_hmac_key,
+                ))
+            }
+        })
         .collect::<Vec<TagName>>()
 }
 
-pub(super) fn encrypt_tags(tags: &HashMap<String, String>,
-                           tag_name_key: &chacha20poly1305_ietf::Key,
-                           tag_value_key: &chacha20poly1305_ietf::Key,
-                           tags_hmac_key: &hmacsha256::Key) -> Vec<Tag> {
-    tags
-        .iter()
-        .map(|(tag_name, tag_value)|
+pub(super) fn encrypt_tags(
+    tags: &HashMap<String, String>,
+    tag_name_key: &chacha20poly1305_ietf::Key,
+    tag_value_key: &chacha20poly1305_ietf::Key,
+    tags_hmac_key: &hmacsha256::Key,
+) -> Vec<Tag> {
+    tags.iter()
+        .map(|(tag_name, tag_value)| {
             if tag_name.starts_with('~') {
                 // '~' character on start is skipped.
                 Tag::PlainText(
@@ -116,14 +147,19 @@ pub(super) fn encrypt_tags(tags: &HashMap<String, String>,
                     encrypt_as_searchable(tag_name.as_bytes(), tag_name_key, tags_hmac_key),
                     encrypt_as_searchable(tag_value.as_bytes(), tag_value_key, tags_hmac_key),
                 )
-            })
+            }
+        })
         .collect::<Vec<Tag>>()
 }
 
-
-pub(super) fn encrypt_as_searchable(data: &[u8], key: &chacha20poly1305_ietf::Key, hmac_key: &hmacsha256::Key) -> Vec<u8> {
+pub(super) fn encrypt_as_searchable(
+    data: &[u8],
+    key: &chacha20poly1305_ietf::Key,
+    hmac_key: &hmacsha256::Key,
+) -> Vec<u8> {
     let tag = hmacsha256::authenticate(data, hmac_key);
-    let nonce = chacha20poly1305_ietf::Nonce::from_slice(&tag[..chacha20poly1305_ietf::NONCEBYTES]).unwrap(); // We can safely unwrap here
+    let nonce = chacha20poly1305_ietf::Nonce::from_slice(&tag[..chacha20poly1305_ietf::NONCEBYTES])
+        .unwrap(); // We can safely unwrap here
     let ct = chacha20poly1305_ietf::encrypt(data, key, &nonce);
 
     let mut result: Vec<u8> = Default::default();
@@ -141,19 +177,32 @@ pub(super) fn encrypt_as_not_searchable(data: &[u8], key: &chacha20poly1305_ietf
     result
 }
 
-pub(super) fn decrypt(data: &[u8], key: &chacha20poly1305_ietf::Key, nonce: &chacha20poly1305_ietf::Nonce) -> IndyResult<Vec<u8>> {
+pub(super) fn decrypt(
+    data: &[u8],
+    key: &chacha20poly1305_ietf::Key,
+    nonce: &chacha20poly1305_ietf::Nonce,
+) -> IndyResult<Vec<u8>> {
     let res = chacha20poly1305_ietf::decrypt(data, key, nonce)?;
     Ok(res)
 }
 
-pub(super) fn decrypt_merged(joined_data: &[u8], key: &chacha20poly1305_ietf::Key) -> IndyResult<Vec<u8>> {
-    let nonce = chacha20poly1305_ietf::Nonce::from_slice(&joined_data[..chacha20poly1305_ietf::NONCEBYTES]).unwrap(); // We can safety unwrap here
+pub(super) fn decrypt_merged(
+    joined_data: &[u8],
+    key: &chacha20poly1305_ietf::Key,
+) -> IndyResult<Vec<u8>> {
+    let nonce =
+        chacha20poly1305_ietf::Nonce::from_slice(&joined_data[..chacha20poly1305_ietf::NONCEBYTES])
+            .unwrap(); // We can safety unwrap here
     let data = &joined_data[chacha20poly1305_ietf::NONCEBYTES..];
     let res = decrypt(data, key, &nonce)?;
     Ok(res)
 }
 
-pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &chacha20poly1305_ietf::Key, tag_value_key: &chacha20poly1305_ietf::Key) -> IndyResult<Option<HashMap<String, String>>> {
+pub(super) fn decrypt_tags(
+    etags: &Option<Vec<Tag>>,
+    tag_name_key: &chacha20poly1305_ietf::Key,
+    tag_value_key: &chacha20poly1305_ietf::Key,
+) -> IndyResult<Option<HashMap<String, String>>> {
     match *etags {
         None => Ok(None),
         Some(ref etags) => {
@@ -163,14 +212,33 @@ pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &chacha20poly
                 let (name, value) = match *etag {
                     Tag::PlainText(ref ename, ref value) => {
                         let name = match decrypt_merged(&ename, tag_name_key) {
-                            Err(err) => return Err(err.to_indy(IndyErrorKind::WalletEncryptionError, "Unable to decrypt tag name")),
-                            Ok(tag_name_bytes) => format!("~{}", str::from_utf8(&tag_name_bytes).to_indy(IndyErrorKind::WalletEncryptionError, "Plaintext Tag name is invalid utf8")?)
+                            Err(err) => {
+                                return Err(err.to_indy(
+                                    IndyErrorKind::WalletEncryptionError,
+                                    "Unable to decrypt tag name",
+                                ))
+                            }
+                            Ok(tag_name_bytes) => format!(
+                                "~{}",
+                                str::from_utf8(&tag_name_bytes).to_indy(
+                                    IndyErrorKind::WalletEncryptionError,
+                                    "Plaintext Tag name is invalid utf8"
+                                )?
+                            ),
                         };
                         (name, value.clone())
                     }
                     Tag::Encrypted(ref ename, ref evalue) => {
-                        let name = String::from_utf8(decrypt_merged(&ename, tag_name_key)?).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?;
-                        let value = String::from_utf8(decrypt_merged(&evalue, tag_value_key)?).to_indy(IndyErrorKind::WalletEncryptionError, "Tag value is invalid utf8")?;
+                        let name = String::from_utf8(decrypt_merged(&ename, tag_name_key)?)
+                            .to_indy(
+                                IndyErrorKind::WalletEncryptionError,
+                                "Tag name is invalid utf8",
+                            )?;
+                        let value = String::from_utf8(decrypt_merged(&evalue, tag_value_key)?)
+                            .to_indy(
+                                IndyErrorKind::WalletEncryptionError,
+                                "Tag value is invalid utf8",
+                            )?;
                         (name, value)
                     }
                 };
@@ -182,30 +250,41 @@ pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &chacha20poly
     }
 }
 
-pub(super) fn decrypt_storage_record(record: &StorageRecord, keys: &Keys) -> IndyResult<WalletRecord> {
+pub(super) fn decrypt_storage_record(
+    record: &StorageRecord,
+    keys: &Keys,
+) -> IndyResult<WalletRecord> {
     let decrypted_name = decrypt_merged(&record.id, &keys.name_key)?;
 
-    let decrypted_name = String::from_utf8(decrypted_name)
-        .to_indy(IndyErrorKind::WalletEncryptionError, "Record is invalid utf8")?;
+    let decrypted_name = String::from_utf8(decrypted_name).to_indy(
+        IndyErrorKind::WalletEncryptionError,
+        "Record is invalid utf8",
+    )?;
 
     let decrypted_value = match record.value {
         Some(ref value) => Some(value.decrypt(&keys.value_key)?),
-        None => None
+        None => None,
     };
 
     let decrypted_type = match record.type_ {
         Some(ref type_) => {
             let decrypted_type = decrypt_merged(type_, &keys.type_key)?;
-            Some(String::from_utf8(decrypted_type)
-                .to_indy(IndyErrorKind::WalletEncryptionError, "Record type is invalid utf8")?)
+            Some(String::from_utf8(decrypted_type).to_indy(
+                IndyErrorKind::WalletEncryptionError,
+                "Record type is invalid utf8",
+            )?)
         }
         None => None,
     };
 
     let decrypted_tags = decrypt_tags(&record.tags, &keys.tag_name_key, &keys.tag_value_key)?;
-    Ok(WalletRecord::new(decrypted_name, decrypted_type, decrypted_value, decrypted_tags))
+    Ok(WalletRecord::new(
+        decrypted_name,
+        decrypted_type,
+        decrypted_value,
+        decrypted_tags,
+    ))
 }
-
 
 // #[cfg(test)]
 // mod tests {

@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use futures::{Stream, TryStreamExt};
 use indy_api_types::errors::prelude::*;
 use indy_utils::environment;
+use serde::Deserialize;
 use sqlx::{
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteRow},
     ConnectOptions, Done, Row, SqlitePool,

@@ -2,10 +2,7 @@ use std::rc::Rc;
 
 use indy_api_types::errors::IndyError;
 
-use super::encryption::decrypt_storage_record;
-use super::storage::StorageIterator;
-use super::wallet::Keys;
-use super::WalletRecord;
+use super::{WalletRecord, wallet::Keys, storage::StorageIterator, encryption::decrypt_storage_record};
 
 pub(super) struct WalletIterator {
     storage_iterator: Box<dyn StorageIterator>,
