@@ -1,4 +1,4 @@
-use std::{fs, pin::Pin};
+use std::{collections::{HashMap, VecDeque}, fs, pin::Pin};
 
 use async_trait::async_trait;
 use futures::{Stream, TryStreamExt};
@@ -22,27 +22,18 @@ use crate::{
 
 const _SQLITE_DB: &str = "sqlite.db";
 
-type Cursor =
-    Pin<Box<dyn Stream<Item = std::result::Result<SqliteRow, sqlx::Error>> + std::marker::Send>>;
 
 struct SQLiteStorageIterator {
-    pool: SqlitePool,
-    cursor: Cursor,
-    options: RecordOptions,
+    records: VecDeque<StorageRecord>,
     total_count: Option<usize>,
 }
 
 impl SQLiteStorageIterator {
-    fn new(
-        pool: SqlitePool,
-        cursor: Cursor,
-        options: RecordOptions,
-        total_count: Option<usize>,
-    ) -> IndyResult<SQLiteStorageIterator> {
+    fn new(records: VecDeque<StorageRecord>) -> IndyResult<SQLiteStorageIterator> {
+        let total_count = Some(records.len());
+
         Ok(SQLiteStorageIterator {
-            pool,
-            cursor,
-            options,
+            records,
             total_count,
         })
     }
@@ -51,65 +42,7 @@ impl SQLiteStorageIterator {
 #[async_trait]
 impl StorageIterator for SQLiteStorageIterator {
     async fn next(&mut self) -> IndyResult<Option<StorageRecord>> {
-        // Cursor query is "SELECT id, name, value, key, type FROM items"
-
-        let row = self.cursor.as_mut().try_next().await?;
-
-        let row = if let Some(row) = row {
-            row
-        } else {
-            return Ok(None);
-        };
-
-        let item_id: i64 = row.try_get("id")?;
-        let id: Vec<u8> = row.try_get("name")?;
-        let value: Vec<u8> = row.try_get("value")?;
-        let key: Vec<u8> = row.try_get("key")?;
-        let type_: Vec<u8> = row.try_get("type")?;
-
-        let value = if self.options.retrieve_value {
-            Some(EncryptedValue::new(value, key))
-        } else {
-            None
-        };
-
-        let type_ = if self.options.retrieve_type {
-            Some(type_)
-        } else {
-            None
-        };
-
-        let tags = if self.options.retrieve_tags {
-            let mut tags: Vec<Tag> = Vec::new();
-
-            tags.extend(
-                sqlx::query_as::<_, (Vec<u8>, String)>(
-                    "SELECT name, value from tags_plaintext where item_id = ?",
-                )
-                .bind(item_id)
-                .fetch_all(&self.pool)
-                .await?
-                .drain(..)
-                .map(|r| Tag::PlainText(r.0, r.1)),
-            );
-
-            tags.extend(
-                sqlx::query_as::<_, (Vec<u8>, Vec<u8>)>(
-                    "SELECT name, value from tags_encrypted where item_id = ?",
-                )
-                .bind(item_id)
-                .fetch_all(&self.pool)
-                .await?
-                .drain(..)
-                .map(|r| Tag::Encrypted(r.0, r.1)),
-            );
-
-            Some(tags)
-        } else {
-            None
-        };
-
-        Ok(Some(StorageRecord::new(id, value, type_, tags)))
+        Ok(self.records.pop_front())
     }
 
     fn get_total_count(&self) -> IndyResult<Option<usize>> {
@@ -184,13 +117,13 @@ impl WalletStorage for SQLiteStorage {
             "RecordOptions is malformed json",
         )?;
 
-        let name = id; // FIXME: looks uggly
+        let mut conn = self.pool.acquire().await?;
 
-        let (id, value, key): (i64, Vec<u8>, Vec<u8>) =
+        let (item_id, value, key): (i64, Vec<u8>, Vec<u8>) =
             sqlx::query_as("SELECT id, value, key FROM items where type = ?1 AND name = ?2")
                 .bind(type_)
                 .bind(id)
-                .fetch_one(&self.pool)
+                .fetch_one(&mut conn)
                 .await?;
 
         let value = if options.retrieve_value {
@@ -212,8 +145,8 @@ impl WalletStorage for SQLiteStorage {
                 sqlx::query_as::<_, (Vec<u8>, String)>(
                     "SELECT name, value from tags_plaintext where item_id = ?",
                 )
-                .bind(&id)
-                .fetch_all(&self.pool)
+                .bind(item_id)
+                .fetch_all(&mut conn)
                 .await?
                 .drain(..)
                 .map(|r| Tag::PlainText(r.0, r.1)),
@@ -223,8 +156,8 @@ impl WalletStorage for SQLiteStorage {
                 sqlx::query_as::<_, (Vec<u8>, Vec<u8>)>(
                     "SELECT name, value from tags_encrypted where item_id = ?",
                 )
-                .bind(&id)
-                .fetch_all(&self.pool)
+                .bind(item_id)
+                .fetch_all(&mut conn)
                 .await?
                 .drain(..)
                 .map(|r| Tag::Encrypted(r.0, r.1)),
@@ -235,7 +168,7 @@ impl WalletStorage for SQLiteStorage {
             None
         };
 
-        Ok(StorageRecord::new(name.to_vec(), value, type_, tags))
+        Ok(StorageRecord::new(id.to_vec(), value, type_, tags))
     }
 
     ///
@@ -315,18 +248,23 @@ impl WalletStorage for SQLiteStorage {
     }
 
     async fn update(&self, type_: &[u8], id: &[u8], value: &EncryptedValue) -> IndyResult<()> {
+        let mut tx = self.pool.begin().await?;
+
         let row_updated =
             sqlx::query("UPDATE items SET value = ?1, key = ?2 WHERE type = ?3 AND name = ?4")
                 .bind(&value.data)
                 .bind(&value.key)
                 .bind(&type_)
                 .bind(&id)
-                .execute(&self.pool)
+                .execute(&mut tx)
                 .await?
                 .rows_affected();
 
         match row_updated {
-            1 => Ok(()),
+            1 => {
+                tx.commit().await?;
+                Ok(())
+            }
             0 => Err(err_msg(
                 IndyErrorKind::WalletItemNotFound,
                 "Item to update not found",
@@ -352,7 +290,7 @@ impl WalletStorage for SQLiteStorage {
             match *tag {
                 Tag::Encrypted(ref tag_name, ref tag_data) => {
                     sqlx::query(
-                        "INSERT INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)",
+                        "INSERT OR REPLACE INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)",
                     )
                     .bind(item_id)
                     .bind(tag_name)
@@ -362,7 +300,7 @@ impl WalletStorage for SQLiteStorage {
                 }
                 Tag::PlainText(ref tag_name, ref tag_data) => {
                     sqlx::query(
-                        "INSERT INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)",
+                        "INSERT OR REPLACE INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)",
                     )
                     .bind(item_id)
                     .bind(tag_name)
@@ -487,15 +425,20 @@ impl WalletStorage for SQLiteStorage {
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
     async fn delete(&self, type_: &[u8], id: &[u8]) -> IndyResult<()> {
+        let mut tx = self.pool.begin().await?;
+
         let rows_affected = sqlx::query("DELETE FROM items where type = ?1 AND name = ?2")
             .bind(type_)
             .bind(id)
-            .execute(&self.pool)
+            .execute(&mut tx)
             .await?
             .rows_affected();
 
         match rows_affected {
-            1 => Ok(()),
+            1 => {
+                tx.commit().await?;
+                Ok(())
+            }
             0 => Err(err_msg(
                 IndyErrorKind::WalletItemNotFound,
                 "Item to delete not found",
@@ -508,35 +451,74 @@ impl WalletStorage for SQLiteStorage {
     }
 
     async fn get_storage_metadata(&self) -> IndyResult<Vec<u8>> {
+        let mut conn = self.pool.acquire().await?;
+
         let (metadata,): (Vec<u8>,) = sqlx::query_as::<_, (Vec<u8>,)>("SELECT value FROM metadata")
-            .fetch_one(&self.pool)
+            .fetch_one(&mut conn)
             .await?;
 
         Ok(metadata)
     }
 
     async fn set_storage_metadata(&self, metadata: &[u8]) -> IndyResult<()> {
+        let mut tx = self.pool.begin().await?;
+
         sqlx::query("UPDATE metadata SET value = ?1")
             .bind(metadata)
-            .execute(&self.pool)
+            .execute(&mut tx)
             .await?;
 
+        tx.commit().await?;
         Ok(())
     }
 
     async fn get_all(&self) -> IndyResult<Box<dyn StorageIterator>> {
-        let cursor = sqlx::query("SELECT id, name, value, key, type FROM items").fetch(&self.pool);
+        let mut conn = self.pool.acquire().await?;
+        let mut tags: Vec<(i64, Tag)> = Vec::new();
 
-        Ok(Box::new(SQLiteStorageIterator::new(
-            self.pool.clone(),
-            cursor,
-            RecordOptions {
-                retrieve_type: true,
-                retrieve_value: true,
-                retrieve_tags: true,
-            },
-            None,
-        )?))
+        tags.extend(
+            sqlx::query_as::<_, (i64, Vec<u8>, String)>(
+                "SELECT item_id, name, value from tags_plaintext",
+            )
+            .fetch_all(&mut conn)
+            .await?
+            .drain(..)
+            .map(|r| (r.0, Tag::PlainText(r.1, r.2))),
+        );
+
+        tags.extend(
+            sqlx::query_as::<_, (i64, Vec<u8>, Vec<u8>)>(
+                "SELECT item_id, name, value from tags_encrypted",
+            )
+            .fetch_all(&mut conn)
+            .await?
+            .drain(..)
+            .map(|r| (r.0, Tag::Encrypted(r.1, r.2))),
+        );
+
+        let mut mtags = HashMap::new();
+
+        for (k, v) in tags {
+            mtags.entry(k).or_insert_with(Vec::new).push(v)
+        }
+
+        let records: VecDeque<_> = sqlx::query_as::<_, (i64, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)>(
+            "SELECT id, name, value, key, type FROM items",
+        )
+        .fetch_all(&mut conn)
+        .await?
+        .drain(..)
+        .map(|r| {
+            StorageRecord::new(
+                r.1,
+                Some(EncryptedValue::new(r.2, r.3)),
+                Some(r.4),
+                mtags.remove(&r.0).or_else(|| Some(Vec::new())),
+            )
+        })
+        .collect();
+
+        Ok(Box::new(SQLiteStorageIterator::new(records)?))
     }
 
     async fn search(
@@ -713,6 +695,7 @@ impl WalletStorageType for SQLiteStorageType {
         let mut conn = SqliteConnectOptions::default()
             .filename(db_path.as_path())
             .create_if_missing(true)
+            .journal_mode(SqliteJournalMode::Wal)
             .connect()
             .await?;
 
@@ -848,11 +831,13 @@ impl WalletStorageType for SQLiteStorageType {
         Ok(Box::new(SQLiteStorage {
             pool: SqlitePoolOptions::default()
                 .min_connections(1)
-                .connect_lazy_with(
+                .max_connections(1)
+                .connect_with(
                     SqliteConnectOptions::new()
                         .filename(db_path.as_path())
                         .journal_mode(SqliteJournalMode::Wal),
-                ),
+                )
+                .await?,
         }))
     }
 }
