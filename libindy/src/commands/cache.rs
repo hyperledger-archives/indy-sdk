@@ -1,12 +1,13 @@
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use indy_api_types::{PoolHandle, WalletHandle};
 use indy_api_types::domain::wallet::Tags;
-use crate::domain::anoncreds::schema::SchemaId;
-use crate::domain::anoncreds::credential_definition::CredentialDefinitionId;
 use indy_api_types::errors::prelude::*;
-use indy_wallet::{WalletService, WalletRecord};
-use indy_api_types::{WalletHandle, PoolHandle};
+use indy_wallet::{WalletRecord, WalletService};
+
+use crate::domain::anoncreds::credential_definition::CredentialDefinitionId;
+use crate::domain::anoncreds::schema::SchemaId;
 use crate::domain::cache::{GetCacheOptions, PurgeOptions};
 use crate::domain::crypto::did::DidValue;
 use crate::services::crypto::CryptoService;
@@ -87,11 +88,11 @@ impl CacheCommandExecutor {
             }
             CacheCommand::PurgeSchemaCache(wallet_handle, options, cb) => {
                 debug!(target: "non_secrets_command_executor", "PurgeSchemaCache command received");
-                cb(self.purge_schema_cache(wallet_handle, options));
+                cb(self.purge_schema_cache(wallet_handle, options).await);
             }
             CacheCommand::PurgeCredDefCache(wallet_handle, options, cb) => {
                 debug!(target: "non_secrets_command_executor", "PurgeCredDefCache command received");
-                cb(self.purge_cred_def_cache(wallet_handle, options));
+                cb(self.purge_cred_def_cache(wallet_handle, options).await);
             }
         }
     }
@@ -105,7 +106,7 @@ impl CacheCommandExecutor {
         trace!("get_schema >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, id: {:?}, options: {:?}",
                pool_handle, wallet_handle, submitter_did, id, options);
 
-        let cache = self.get_record_from_cache(wallet_handle, &id.0, &options, SCHEMA_CACHE)?;
+        let cache = self.get_record_from_cache(wallet_handle, &id.0, &options, SCHEMA_CACHE).await?;
 
         check_cache!(cache, options);
 
@@ -126,18 +127,18 @@ impl CacheCommandExecutor {
 
         let (schema_id, schema_json) = ledger_response?;
 
-        self._delete_and_add_record(wallet_handle, options, &schema_id, &schema_json, SCHEMA_CACHE)
+        self._delete_and_add_record(wallet_handle, options, &schema_id, &schema_json, SCHEMA_CACHE).await
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("get_schema_continue failed: {:?}", err)))?;
 
         Ok(schema_json)
     }
 
-    fn _delete_and_add_record(&self,
-                              wallet_handle: WalletHandle,
-                              options: GetCacheOptions,
-                              schema_id: &str,
-                              schema_json: &str,
-                              which_cache: &str) -> IndyResult<()>
+    async fn _delete_and_add_record(&self,
+                                    wallet_handle: WalletHandle,
+                                    options: GetCacheOptions,
+                                    schema_id: &str,
+                                    schema_json: &str,
+                                    which_cache: &str) -> IndyResult<()>
     {
         if !options.no_store.unwrap_or(false) {
             let mut tags = Tags::new();
@@ -149,8 +150,8 @@ impl CacheCommandExecutor {
                 }
             };
             tags.insert("timestamp".to_string(), ts.to_string());
-            let _ignore = self.wallet_service.delete_record(wallet_handle, which_cache, &schema_id);
-            self.wallet_service.add_record(wallet_handle, which_cache, &schema_id, &schema_json, &tags)?
+            let _ignore = self.wallet_service.delete_record(wallet_handle, which_cache, &schema_id).await;
+            self.wallet_service.add_record(wallet_handle, which_cache, &schema_id, &schema_json, &tags).await?
         }
         Ok(())
     }
@@ -164,7 +165,7 @@ impl CacheCommandExecutor {
         trace!("get_cred_def >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, id: {:?}, options: {:?}",
                pool_handle, wallet_handle, submitter_did, id, options);
 
-        let cache = self.get_record_from_cache(wallet_handle, &id.0, &options, CRED_DEF_CACHE)?;
+        let cache = self.get_record_from_cache(wallet_handle, &id.0, &options, CRED_DEF_CACHE).await?;
 
         check_cache!(cache, options);
 
@@ -174,7 +175,7 @@ impl CacheCommandExecutor {
 
         let (cred_def_id, cred_def_json) = self.ledger_get_cred_def_and_parse(pool_handle, Some(submitter_did), id).await?;
 
-        match self._delete_and_add_record(wallet_handle, options, &cred_def_id, &cred_def_json, CRED_DEF_CACHE) {
+        match self._delete_and_add_record(wallet_handle, options, &cred_def_id, &cred_def_json, CRED_DEF_CACHE).await {
             Ok(_) => Ok(cred_def_json),
             Err(err) => Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("get_cred_def_continue failed: {:?}", err)))
         }
@@ -189,14 +190,14 @@ impl CacheCommandExecutor {
         self.ledger_service.parse_get_cred_def_response(&pool_response, id.get_method().as_ref().map(String::as_str))
     }
 
-    fn get_record_from_cache(&self, wallet_handle: WalletHandle, id: &str, options: &GetCacheOptions, which_cache: &str) -> Result<Option<WalletRecord>, IndyError> {
+    async fn get_record_from_cache(&self, wallet_handle: WalletHandle, id: &str, options: &GetCacheOptions, which_cache: &str) -> Result<Option<WalletRecord>, IndyError> {
         if !options.no_cache.unwrap_or(false) {
             let options_json = json!({
                 "retrieveType": false,
                 "retrieveValue": true,
                 "retrieveTags": true,
             }).to_string();
-            match self.wallet_service.get_record(wallet_handle, which_cache, &id, &options_json) {
+            match self.wallet_service.get_record(wallet_handle, which_cache, &id, &options_json).await {
                 Ok(record) => Ok(Some(record)),
                 Err(err) => if err.kind() == IndyErrorKind::WalletItemNotFound { Ok(None) } else { Err(err) }
             }
@@ -222,9 +223,9 @@ impl CacheCommandExecutor {
         }
     }
 
-    fn purge_schema_cache(&self,
-                          wallet_handle: WalletHandle,
-                          options: PurgeOptions) -> IndyResult<()> {
+    async fn purge_schema_cache(&self,
+                                wallet_handle: WalletHandle,
+                                options: PurgeOptions) -> IndyResult<()> {
         trace!("purge_schema_cache >>> wallet_handle: {:?}, options: {:?}", wallet_handle, options);
 
         let max_age = options.max_age.unwrap_or(-1);
@@ -241,10 +242,10 @@ impl CacheCommandExecutor {
             SCHEMA_CACHE,
             &query_json,
             &options_json,
-        )?;
+        ).await?;
 
-        while let Some(record) = search.fetch_next_record()? {
-            self.wallet_service.delete_record(wallet_handle, SCHEMA_CACHE, record.get_id())?;
+        while let Some(record) = search.fetch_next_record().await? {
+            self.wallet_service.delete_record(wallet_handle, SCHEMA_CACHE, record.get_id()).await?;
         }
 
         trace!("purge_schema_cache <<< res: ()");
@@ -252,9 +253,9 @@ impl CacheCommandExecutor {
         Ok(())
     }
 
-    fn purge_cred_def_cache(&self,
-                            wallet_handle: WalletHandle,
-                            options: PurgeOptions) -> IndyResult<()> {
+    async fn purge_cred_def_cache(&self,
+                                  wallet_handle: WalletHandle,
+                                  options: PurgeOptions) -> IndyResult<()> {
         trace!("purge_cred_def_cache >>> wallet_handle: {:?}, options: {:?}", wallet_handle, options);
 
         let max_age = options.max_age.unwrap_or(-1);
@@ -271,10 +272,10 @@ impl CacheCommandExecutor {
             CRED_DEF_CACHE,
             &query_json,
             &options_json,
-        )?;
+        ).await?;
 
-        while let Some(record) = search.fetch_next_record()? {
-            self.wallet_service.delete_record(wallet_handle, CRED_DEF_CACHE, record.get_id())?;
+        while let Some(record) = search.fetch_next_record().await? {
+            self.wallet_service.delete_record(wallet_handle, CRED_DEF_CACHE, record.get_id()).await?;
         }
 
         trace!("purge_cred_def_cache <<< res: ()");

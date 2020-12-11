@@ -1,20 +1,20 @@
-use std::{collections::{HashMap, VecDeque}, fs, pin::Pin};
+use std::{collections::{HashMap, VecDeque}, fs};
 
-use async_trait::async_trait;
-use futures::{Stream, TryStreamExt};
 use indy_api_types::errors::prelude::*;
 use indy_utils::environment;
 use serde::Deserialize;
 use sqlx::{
-    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteRow},
-    ConnectOptions, Done, Row, SqlitePool,
+    ConnectOptions,
+    Done, sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions}, SqlitePool,
 };
+
+use async_trait::async_trait;
 
 use crate::{
     language,
-    storage::{StorageIterator, StorageRecord, Tag, TagName, WalletStorage, WalletStorageType},
-    wallet::EncryptedValue,
-    RecordOptions, SearchOptions,
+    RecordOptions,
+    SearchOptions,
+    storage::{StorageIterator, StorageRecord, Tag, TagName, WalletStorage, WalletStorageType}, wallet::EncryptedValue,
 };
 
 //mod query;
@@ -844,12 +844,13 @@ impl WalletStorageType for SQLiteStorageType {
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
     use indy_utils::{assert_kind, test};
     use serde_json::json;
 
-    use super::super::Tag;
     use super::*;
-    use std::path::Path;
+    use super::super::Tag;
 
     #[async_std::test]
     async fn sqlite_storage_type_create_works() {

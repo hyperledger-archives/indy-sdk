@@ -148,7 +148,7 @@ impl PaymentsCommandExecutor {
             }
             PaymentsCommand::ListAddresses(wallet_handle, cb) => {
                 debug!(target: "payments_command_executor", "ListAddresses command received");
-                cb(self.list_addresses(wallet_handle));
+                cb(self.list_addresses(wallet_handle).await);
             }
             PaymentsCommand::AddRequestFees(wallet_handle, submitter_did, req, inputs, outputs, extra, cb) => {
                 debug!(target: "payments_command_executor", "AddRequestFees command received");
@@ -241,20 +241,20 @@ impl PaymentsCommandExecutor {
         let res = self.payments_service.create_address(wallet_handle, type_, config).await?;
 
         //TODO: think about deleting payment_address on wallet save failure
-        self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), &res, &res, &HashMap::new())?;
+        self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), &res, &res, &HashMap::new()).await?;
 
         trace!("create_address <<< {}", res);
         Ok(res)
     }
 
-    fn list_addresses(&self, wallet_handle: WalletHandle) -> IndyResult<String> {
+    async fn list_addresses(&self, wallet_handle: WalletHandle) -> IndyResult<String> {
         trace!("list_addresses >>> wallet_handle: {:?}", wallet_handle);
 
-        let mut search = self.wallet_service.search_records(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), "{}", &RecordOptions::id_value())?;
+        let mut search = self.wallet_service.search_records(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), "{}", &RecordOptions::id_value()).await?;
 
         let mut list_addresses: Vec<String> = Vec::new();
 
-        while let Ok(Some(payment_address)) = search.fetch_next_record() {
+        while let Ok(Some(payment_address)) = search.fetch_next_record().await {
             let value = payment_address.get_value().ok_or(err_msg(IndyErrorKind::InvalidState, "Record value not found"))?;
             list_addresses.push(value.to_string());
         }

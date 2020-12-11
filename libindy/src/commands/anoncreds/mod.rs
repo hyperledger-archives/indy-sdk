@@ -50,15 +50,15 @@ impl AnoncredsCommandExecutor {
         }
     }
 
-    pub fn execute(&self, command: AnoncredsCommand) {
+    pub async fn execute(&self, command: AnoncredsCommand) {
         match command {
             AnoncredsCommand::Issuer(cmd) => {
                 debug!(target: "anoncreds_command_executor", "Issuer command received");
-                self.issuer_command_cxecutor.execute(cmd);
+                self.issuer_command_cxecutor.execute(cmd).await;
             }
             AnoncredsCommand::Prover(cmd) => {
                 debug!(target: "anoncreds_command_executor", "Prover command received");
-                self.prover_command_cxecutor.execute(cmd);
+                self.prover_command_cxecutor.execute(cmd).await;
             }
             AnoncredsCommand::Verifier(cmd) => {
                 debug!(target: "anoncreds_command_executor", "Verifier command received");

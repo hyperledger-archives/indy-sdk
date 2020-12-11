@@ -98,7 +98,7 @@ impl WalletCommandExecutor {
             }
             WalletCommand::Close(handle, cb) => {
                 debug!(target: "wallet_command_executor", "Close command received");
-                cb(self._close(handle));
+                cb(self._close(handle).await);
             }
             WalletCommand::Delete(config, credentials, cb) => {
                 debug!(target: "wallet_command_executor", "Delete command received");
@@ -169,7 +169,7 @@ impl WalletCommandExecutor {
 
         let key = (self._derive_key(key_data.clone()).await)?;
 
-        let res = self.wallet_service.create_wallet(config, credentials, (&key_data, &key));
+        let res = self.wallet_service.create_wallet(config, credentials, (&key_data, &key)).await;
 
         trace!("_create <<< {:?}", res);
 
@@ -181,7 +181,7 @@ impl WalletCommandExecutor {
                        credentials: &'a Credentials) -> IndyResult<WalletHandle> {
         trace!("_open >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
-        let (wallet_handle, key_derivation_data, rekey_data) = self.wallet_service.open_wallet_prepare(config, credentials)?;
+        let (wallet_handle, key_derivation_data, rekey_data) = self.wallet_service.open_wallet_prepare(config, credentials).await?;
 
         let key = self._derive_key(key_derivation_data).await?;
 
@@ -191,17 +191,17 @@ impl WalletCommandExecutor {
             None
         };
 
-        let res = self.wallet_service.open_wallet_continue(wallet_handle, (&key, rekey.as_ref()));
+        let res = self.wallet_service.open_wallet_continue(wallet_handle, (&key, rekey.as_ref())).await;
 
         trace!("_open <<< res: {:?}", res);
 
         res
     }
 
-    fn _close(&self, wallet_handle: WalletHandle) -> IndyResult<()> {
+    async fn _close(&self, wallet_handle: WalletHandle) -> IndyResult<()> {
         trace!("_close >>> handle: {:?}", wallet_handle);
 
-        self.wallet_service.close_wallet(wallet_handle)?;
+        self.wallet_service.close_wallet(wallet_handle).await?;
 
         trace!("_close <<< res: ()");
         Ok(())
@@ -212,11 +212,11 @@ impl WalletCommandExecutor {
                          credentials: &'a Credentials) -> IndyResult<()> {
         trace!("_delete >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
-        let (metadata, key_derivation_data) = self.wallet_service.delete_wallet_prepare(&config, &credentials)?;
+        let (metadata, key_derivation_data) = self.wallet_service.delete_wallet_prepare(&config, &credentials).await?;
 
         let key = self._derive_key(key_derivation_data).await?;
 
-        let res = self.wallet_service.delete_wallet_continue(config, credentials, &metadata, &key);
+        let res = self.wallet_service.delete_wallet_continue(config, credentials, &metadata, &key).await;
 
         trace!("_delete <<< {:?}", res);
 
@@ -230,7 +230,7 @@ impl WalletCommandExecutor {
 
         let key = self._derive_key(key_data.clone()).await?;
 
-        let res = self.wallet_service.export_wallet(wallet_handle, export_config, 0, (&key_data, &key));
+        let res = self.wallet_service.export_wallet(wallet_handle, export_config, 0, (&key_data, &key)).await;
 
         trace!("_export <<< {:?}", res);
 
@@ -244,12 +244,12 @@ impl WalletCommandExecutor {
         trace!("_import >>> config: {:?}, credentials: {:?}, import_config: {:?}",
                config, secret!(credentials), secret!(import_config));
 
-        let (wallet_handle, key_data, import_key_data) = self.wallet_service.import_wallet_prepare(&config, &credentials, &import_config)?;
+        let (wallet_handle, key_data, import_key_data) = self.wallet_service.import_wallet_prepare(&config, &credentials, &import_config).await?;
 
         let import_key = self._derive_key(import_key_data).await?;
         let key = self._derive_key(key_data).await?;
 
-        let res = self.wallet_service.import_wallet_continue(wallet_handle, config, credentials, (import_key, key));
+        let res = self.wallet_service.import_wallet_continue(wallet_handle, config, credentials, (import_key, key)).await;
 
         trace!("_import <<< {:?}", res);
 

@@ -174,7 +174,7 @@ impl CommandExecutor {
                     match instrumented_cmd.command {
                         Command::Anoncreds(cmd) => {
                             debug!("AnoncredsCommand command received");
-                            anoncreds_command_executor.execute(cmd);
+                            anoncreds_command_executor.execute(cmd).await;
                         }
                         Command::BlobStorage(cmd) => {
                             debug!("BlobStorageCommand command received");
@@ -182,7 +182,7 @@ impl CommandExecutor {
                         }
                         Command::Crypto(cmd) => {
                             debug!("CryptoCommand command received");
-                            crypto_command_executor.execute(cmd);
+                            crypto_command_executor.execute(cmd).await;
                         }
                         Command::Ledger(cmd) => {
                             debug!("LedgerCommand command received");
@@ -202,11 +202,11 @@ impl CommandExecutor {
                         }
                         Command::Pairwise(cmd) => {
                             debug!("PairwiseCommand command received");
-                            pairwise_command_executor.execute(cmd);
+                            pairwise_command_executor.execute(cmd).await;
                         }
                         Command::NonSecrets(cmd) => {
                             debug!("NonSecretCommand command received");
-                            non_secret_command_executor.execute(cmd);
+                            non_secret_command_executor.execute(cmd).await;
                         }
                         Command::Payments(cmd) => {
                             debug!("PaymentsCommand command received");
