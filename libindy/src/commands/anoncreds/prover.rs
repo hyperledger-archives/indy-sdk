@@ -2,13 +2,17 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
+use indy_api_types::{SearchHandle, WalletHandle};
+use indy_api_types::errors::prelude::*;
+use indy_utils::next_search_handle;
+use indy_wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
+use serde_json::Value;
 use ursa::cl::{new_nonce, RevocationRegistry, Witness};
 
-use serde_json::Value;
-
-use crate::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
+use crate::commands::BoxedCallbackStringStringSend;
 use crate::domain::anoncreds::credential::{Credential, CredentialInfo};
-use crate::domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinition, CredentialDefinitionV1, CredentialDefinitionId, CredentialDefinitions};
+use crate::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
+use crate::domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinition, CredentialDefinitionId, CredentialDefinitions, CredentialDefinitionV1};
 use crate::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
 use crate::domain::anoncreds::credential_offer::CredentialOffer;
 use crate::domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
@@ -18,20 +22,15 @@ use crate::domain::anoncreds::requested_credential::RequestedCredentials;
 use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
 use crate::domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
 use crate::domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
-use crate::domain::anoncreds::schema::{schemas_map_to_schemas_v1_map, SchemaV1, SchemaId, Schemas};
+use crate::domain::anoncreds::schema::{SchemaId, Schemas, schemas_map_to_schemas_v1_map, SchemaV1};
 use crate::domain::crypto::did::DidValue;
-use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::AnoncredsService;
-use crate::services::anoncreds::helpers::{parse_cred_rev_id, get_non_revoc_interval};
+use crate::services::anoncreds::helpers::{get_non_revoc_interval, parse_cred_rev_id};
 use crate::services::blob_storage::BlobStorageService;
 use crate::services::crypto::CryptoService;
-use indy_wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
-use indy_utils::{next_search_handle};
 use crate::utils::wql::Query;
 
 use super::tails::SDKTailsAccessor;
-use indy_api_types::{WalletHandle, SearchHandle};
-use crate::commands::BoxedCallbackStringStringSend;
 
 pub enum ProverCommand {
     CreateMasterSecret(
@@ -171,52 +170,52 @@ impl ProverCommandExecutor {
         }
     }
 
-    pub fn execute(&self, command: ProverCommand) {
+    pub async fn execute(&self, command: ProverCommand) {
         match command {
             ProverCommand::CreateMasterSecret(wallet_handle, master_secret_id, cb) => {
                 debug!(target: "prover_command_executor", "CreateMasterSecret command received");
-                cb(self.create_master_secret(wallet_handle, master_secret_id.as_ref().map(String::as_str)));
+                cb(self.create_master_secret(wallet_handle, master_secret_id.as_ref().map(String::as_str)).await);
             }
             ProverCommand::CreateCredentialRequest(wallet_handle, prover_did, credential_offer,
                                                    credential_def, master_secret_name, cb) => {
                 debug!(target: "prover_command_executor", "CreateCredentialRequest command received");
                 cb(self.create_credential_request(wallet_handle, &prover_did, &credential_offer,
-                                                  &CredentialDefinitionV1::from(credential_def), &master_secret_name));
+                                                  &CredentialDefinitionV1::from(credential_def), &master_secret_name).await);
             }
             ProverCommand::SetCredentialAttrTagPolicy(wallet_handle, cred_def_id, catpol, retroactive, cb) => {
                 debug!(target: "prover_command_executor", "SetCredentialAttrTagPolicy command received");
-                cb(self.set_credential_attr_tag_policy(wallet_handle, &cred_def_id, catpol.as_ref(), retroactive));
+                cb(self.set_credential_attr_tag_policy(wallet_handle, &cred_def_id, catpol.as_ref(), retroactive).await);
             }
             ProverCommand::GetCredentialAttrTagPolicy(wallet_handle, cred_def_id, cb) => {
                 debug!(target: "prover_command_executor", "GetCredentialAttrTagPolicy command received");
-                cb(self.get_credential_attr_tag_policy(wallet_handle, &cred_def_id));
+                cb(self.get_credential_attr_tag_policy(wallet_handle, &cred_def_id).await);
             }
             ProverCommand::StoreCredential(wallet_handle, cred_id, cred_req_metadata, mut cred, cred_def, rev_reg_def, cb) => {
                 debug!(target: "prover_command_executor", "StoreCredential command received");
                 cb(self.store_credential(wallet_handle, cred_id.as_ref().map(String::as_str),
                                          &cred_req_metadata, &mut cred,
                                          &CredentialDefinitionV1::from(cred_def),
-                                         rev_reg_def.map(RevocationRegistryDefinitionV1::from).as_ref()));
+                                         rev_reg_def.map(RevocationRegistryDefinitionV1::from).as_ref()).await);
             }
             ProverCommand::GetCredentials(wallet_handle, filter_json, cb) => {
                 debug!(target: "prover_command_executor", "GetCredentials command received");
-                cb(self.get_credentials(wallet_handle, filter_json.as_ref().map(String::as_str)));
+                cb(self.get_credentials(wallet_handle, filter_json.as_ref().map(String::as_str)).await);
             }
             ProverCommand::GetCredential(wallet_handle, cred_id, cb) => {
                 debug!(target: "prover_command_executor", "GetCredential command received");
-                cb(self.get_credential(wallet_handle, &cred_id));
+                cb(self.get_credential(wallet_handle, &cred_id).await);
             }
             ProverCommand::DeleteCredential(wallet_handle, cred_id, cb) => {
                 debug!(target: "prover_command_executor", "DeleteCredential command received");
-                cb(self.delete_credential(wallet_handle, &cred_id));
+                cb(self.delete_credential(wallet_handle, &cred_id).await);
             }
             ProverCommand::SearchCredentials(wallet_handle, query_json, cb) => {
                 debug!(target: "prover_command_executor", "SearchCredentials command received");
-                cb(self.search_credentials(wallet_handle, query_json.as_ref().map(String::as_str)));
+                cb(self.search_credentials(wallet_handle, query_json.as_ref().map(String::as_str)).await);
             }
             ProverCommand::FetchCredentials(search_handle, count, cb) => {
                 debug!(target: "prover_command_executor", "FetchCredentials command received");
-                cb(self.fetch_credentials(search_handle, count));
+                cb(self.fetch_credentials(search_handle, count).await);
             }
             ProverCommand::CloseCredentialsSearch(search_handle, cb) => {
                 debug!(target: "prover_command_executor", "CloseCredentialsSearch command received");
@@ -224,15 +223,15 @@ impl ProverCommandExecutor {
             }
             ProverCommand::GetCredentialsForProofReq(wallet_handle, proof_req, cb) => {
                 debug!(target: "prover_command_executor", "GetCredentialsForProofReq command received");
-                cb(self.get_credentials_for_proof_req(wallet_handle, &proof_req));
+                cb(self.get_credentials_for_proof_req(wallet_handle, &proof_req).await);
             }
             ProverCommand::SearchCredentialsForProofReq(wallet_handle, proof_req, extra_query, cb) => {
                 debug!(target: "prover_command_executor", "SearchCredentialsForProofReq command received");
-                cb(self.search_credentials_for_proof_req(wallet_handle, &proof_req, extra_query.as_ref()));
+                cb(self.search_credentials_for_proof_req(wallet_handle, &proof_req, extra_query.as_ref()).await);
             }
             ProverCommand::FetchCredentialForProofReq(search_handle, item_ref, count, cb) => {
                 debug!(target: "prover_command_executor", "FetchCredentialForProofReq command received");
-                cb(self.fetch_credential_for_proof_request(search_handle, &item_ref, count));
+                cb(self.fetch_credential_for_proof_request(search_handle, &item_ref, count).await);
             }
             ProverCommand::CloseCredentialsSearchForProofReq(search_handle, cb) => {
                 debug!(target: "prover_command_executor", "CloseCredentialsSearchForProofReq command received");
@@ -244,7 +243,7 @@ impl ProverCommandExecutor {
                 cb(self.create_proof(wallet_handle, &proof_req, &requested_credentials, &master_secret_name,
                                      &schemas_map_to_schemas_v1_map(schemas),
                                      &cred_defs_map_to_cred_defs_v1_map(cred_defs),
-                                     &rev_states));
+                                     &rev_states).await);
             }
             ProverCommand::CreateRevocationState(blob_storage_reader_handle, rev_reg_def, rev_reg_delta, timestamp, cred_rev_id, cb) => {
                 debug!(target: "prover_command_executor", "CreateRevocationState command received");
@@ -257,14 +256,14 @@ impl ProverCommandExecutor {
         };
     }
 
-    fn create_master_secret(&self,
-                            wallet_handle: WalletHandle,
-                            master_secret_id: Option<&str>) -> IndyResult<String> {
+    async fn create_master_secret(&self,
+                                  wallet_handle: WalletHandle,
+                                  master_secret_id: Option<&str>) -> IndyResult<String> {
         debug!("create_master_secret >>> wallet_handle: {:?}, master_secret_id: {:?}", wallet_handle, master_secret_id);
 
         let master_secret_id = master_secret_id.map(String::from).unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
 
-        if self.wallet_service.record_exists::<MasterSecret>(wallet_handle, &master_secret_id)? {
+        if self.wallet_service.record_exists::<MasterSecret>(wallet_handle, &master_secret_id).await? {
             return Err(err_msg(IndyErrorKind::MasterSecretDuplicateName, format!("MasterSecret already exists {}", master_secret_id)));
         }
 
@@ -274,25 +273,25 @@ impl ProverCommandExecutor {
             value: master_secret
         };
 
-        self.wallet_service.add_indy_object(wallet_handle, &master_secret_id, &master_secret, &HashMap::new())?;
+        self.wallet_service.add_indy_object(wallet_handle, &master_secret_id, &master_secret, &HashMap::new()).await?;
 
         debug!("create_master_secret <<< master_secret_id: {:?}", master_secret_id);
 
         Ok(master_secret_id)
     }
 
-    fn create_credential_request(&self,
-                                 wallet_handle: WalletHandle,
-                                 prover_did: &DidValue,
-                                 cred_offer: &CredentialOffer,
-                                 cred_def: &CredentialDefinitionV1,
-                                 master_secret_id: &str) -> IndyResult<(String, String)> {
+    async fn create_credential_request(&self,
+                                       wallet_handle: WalletHandle,
+                                       prover_did: &DidValue,
+                                       cred_offer: &CredentialOffer,
+                                       cred_def: &CredentialDefinitionV1,
+                                       master_secret_id: &str) -> IndyResult<(String, String)> {
         debug!("create_credential_request >>> wallet_handle: {:?}, prover_did: {:?}, cred_offer: {:?}, cred_def: {:?}, master_secret_id: {:?}",
                wallet_handle, prover_did, cred_offer, cred_def, master_secret_id);
 
         self.crypto_service.validate_did(&prover_did)?;
 
-        let master_secret: MasterSecret = self._wallet_get_master_secret(wallet_handle, &master_secret_id)?;
+        let master_secret: MasterSecret = self._wallet_get_master_secret(wallet_handle, &master_secret_id).await?;
 
         let (blinded_ms, ms_blinding_data, blinded_ms_correctness_proof) =
             self.anoncreds_service.prover.new_credential_request(cred_def,
@@ -326,20 +325,20 @@ impl ProverCommandExecutor {
         Ok((cred_req_json, cred_req_metadata_json))
     }
 
-    fn set_credential_attr_tag_policy(&self,
-                                      wallet_handle: WalletHandle,
-                                      cred_def_id: &CredentialDefinitionId,
-                                      catpol: Option<&CredentialAttrTagPolicy>,
-                                      retroactive: bool) -> IndyResult<()> {
+    async fn set_credential_attr_tag_policy(&self,
+                                            wallet_handle: WalletHandle,
+                                            cred_def_id: &CredentialDefinitionId,
+                                            catpol: Option<&CredentialAttrTagPolicy>,
+                                            retroactive: bool) -> IndyResult<()> {
         debug!("set_credential_attr_tag_policy >>> wallet_handle: {:?}, cred_def_id: {:?}, catpol: {:?}, retroactive: {:?}", wallet_handle, cred_def_id, catpol, retroactive);
 
         match catpol {
             Some(pol) => {
-                self.wallet_service.upsert_indy_object(wallet_handle, &cred_def_id.0, pol)?;
+                self.wallet_service.upsert_indy_object(wallet_handle, &cred_def_id.0, pol).await?;
             }
             None => {
-                if self.wallet_service.record_exists::<CredentialAttrTagPolicy>(wallet_handle, &cred_def_id.0)? {
-                    self.wallet_service.delete_indy_record::<CredentialAttrTagPolicy>(wallet_handle, &cred_def_id.0)?;
+                if self.wallet_service.record_exists::<CredentialAttrTagPolicy>(wallet_handle, &cred_def_id.0).await? {
+                    self.wallet_service.delete_indy_record::<CredentialAttrTagPolicy>(wallet_handle, &cred_def_id.0).await?;
                 }
             }
         };
@@ -347,12 +346,12 @@ impl ProverCommandExecutor {
         // Cascade whether we updated policy or not: could be a retroactive cred attr tags reset to existing policy
         if retroactive {
             let query_json = format!(r#"{{"cred_def_id": "{}"}}"#, cred_def_id.0);
-            let mut credentials_search = self.wallet_service.search_indy_records::<Credential>(wallet_handle, query_json.as_str(), &SearchOptions::id_value())?;
+            let mut credentials_search = self.wallet_service.search_indy_records::<Credential>(wallet_handle, query_json.as_str(), &SearchOptions::id_value()).await?;
 
-            while let Some(credential_record) = credentials_search.fetch_next_record()? {
+            while let Some(credential_record) = credentials_search.fetch_next_record().await? {
                 let (_, credential) = self._get_credential(&credential_record)?;
                 let cred_tags = self.anoncreds_service.prover.build_credential_tags(&credential, catpol)?;
-                self.wallet_service.update_record_tags(wallet_handle, self.wallet_service.add_prefix("Credential").as_str(), credential_record.get_id(), &cred_tags)?;
+                self.wallet_service.update_record_tags(wallet_handle, self.wallet_service.add_prefix("Credential").as_str(), credential_record.get_id(), &cred_tags).await?;
             }
         }
 
@@ -361,12 +360,12 @@ impl ProverCommandExecutor {
         Ok(())
     }
 
-    fn get_credential_attr_tag_policy(&self,
-                                      wallet_handle: WalletHandle,
-                                      cred_def_id: &CredentialDefinitionId) -> IndyResult<String> {
+    async fn get_credential_attr_tag_policy(&self,
+                                            wallet_handle: WalletHandle,
+                                            cred_def_id: &CredentialDefinitionId) -> IndyResult<String> {
         debug!("get_credential_attr_tag_policy >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
 
-        let catpol_json = match self.wallet_service.get_indy_opt_object::<CredentialAttrTagPolicy>(wallet_handle, &cred_def_id.0, &RecordOptions::id_value())? {
+        let catpol_json = match self.wallet_service.get_indy_opt_object::<CredentialAttrTagPolicy>(wallet_handle, &cred_def_id.0, &RecordOptions::id_value()).await? {
             Some(catpol) => {
                 serde_json::to_string(&catpol).to_indy(IndyErrorKind::InvalidState, "Cannot serialize CredentialAttrTagPolicy")?
             }
@@ -379,17 +378,17 @@ impl ProverCommandExecutor {
         Ok(catpol_json)
     }
 
-    fn store_credential(&self,
-                        wallet_handle: WalletHandle,
-                        cred_id: Option<&str>,
-                        cred_req_metadata: &CredentialRequestMetadata,
-                        credential: &mut Credential,
-                        cred_def: &CredentialDefinitionV1,
-                        rev_reg_def: Option<&RevocationRegistryDefinitionV1>) -> IndyResult<String> {
+    async fn store_credential(&self,
+                              wallet_handle: WalletHandle,
+                              cred_id: Option<&str>,
+                              cred_req_metadata: &CredentialRequestMetadata,
+                              credential: &mut Credential,
+                              cred_def: &CredentialDefinitionV1,
+                              rev_reg_def: Option<&RevocationRegistryDefinitionV1>) -> IndyResult<String> {
         debug!("store_credential >>> wallet_handle: {:?}, cred_id: {:?}, cred_req_metadata: {:?}, credential: {:?}, cred_def: {:?}, \
         rev_reg_def: {:?}", wallet_handle, cred_id, cred_req_metadata, credential, cred_def, rev_reg_def);
 
-        let master_secret: MasterSecret = self._wallet_get_master_secret(wallet_handle, &cred_req_metadata.master_secret_name)?;
+        let master_secret: MasterSecret = self._wallet_get_master_secret(wallet_handle, &cred_req_metadata.master_secret_name).await?;
 
         self.anoncreds_service.prover.process_credential(credential,
                                                          &cred_req_metadata,
@@ -402,7 +401,7 @@ impl ProverCommandExecutor {
 
         let out_cred_id = cred_id.map(String::from).unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
 
-        let catpol_json = self.get_credential_attr_tag_policy(wallet_handle, &credential.cred_def_id)?;
+        let catpol_json = self.get_credential_attr_tag_policy(wallet_handle, &credential.cred_def_id).await?;
         let catpol: Option<CredentialAttrTagPolicy> = if catpol_json.ne("null") {
             Some(serde_json::from_str(catpol_json.as_str()).to_indy(IndyErrorKind::InvalidState, "Cannot deserialize CredentialAttrTagPolicy")?)
         } else {
@@ -410,25 +409,25 @@ impl ProverCommandExecutor {
         };
 
         let cred_tags = self.anoncreds_service.prover.build_credential_tags(&credential, catpol.as_ref())?;
-        self.wallet_service.add_indy_object(wallet_handle, &out_cred_id, credential, &cred_tags)?;
+        self.wallet_service.add_indy_object(wallet_handle, &out_cred_id, credential, &cred_tags).await?;
 
         debug!("store_credential <<< out_cred_id: {:?}", out_cred_id);
 
         Ok(out_cred_id)
     }
 
-    fn get_credentials(&self,
-                       wallet_handle: WalletHandle,
-                       filter_json: Option<&str>) -> IndyResult<String> {
+    async fn get_credentials(&self,
+                             wallet_handle: WalletHandle,
+                             filter_json: Option<&str>) -> IndyResult<String> {
         debug!("get_credentials >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
 
         let filter_json = filter_json.unwrap_or("{}");
         let mut credentials_info: Vec<CredentialInfo> = Vec::new();
 
         let mut credentials_search =
-            self.wallet_service.search_indy_records::<Credential>(wallet_handle, filter_json, &SearchOptions::id_value())?;
+            self.wallet_service.search_indy_records::<Credential>(wallet_handle, filter_json, &SearchOptions::id_value()).await?;
 
-        while let Some(credential_record) = credentials_search.fetch_next_record()? {
+        while let Some(credential_record) = credentials_search.fetch_next_record().await? {
             let (referent, credential) = self._get_credential(&credential_record)?;
             credentials_info.push(self._get_credential_info(&referent, credential))
         }
@@ -441,12 +440,12 @@ impl ProverCommandExecutor {
         Ok(credentials_info_json)
     }
 
-    fn get_credential(&self,
-                      wallet_handle: WalletHandle,
-                      cred_id: &str) -> IndyResult<String> {
+    async fn get_credential(&self,
+                            wallet_handle: WalletHandle,
+                            cred_id: &str) -> IndyResult<String> {
         debug!("get_credentials >>> wallet_handle: {:?}, cred_id: {:?}", wallet_handle, cred_id);
 
-        let credential: Credential = self.wallet_service.get_indy_object(wallet_handle, &cred_id, &RecordOptions::id_value())?;
+        let credential: Credential = self.wallet_service.get_indy_object(wallet_handle, &cred_id, &RecordOptions::id_value()).await?;
 
         let credential_info = self._get_credential_info(&cred_id, credential);
 
@@ -458,13 +457,13 @@ impl ProverCommandExecutor {
         Ok(credential_info_json)
     }
 
-    fn search_credentials(&self,
-                          wallet_handle: WalletHandle,
-                          query_json: Option<&str>) -> IndyResult<(SearchHandle, usize)> {
+    async fn search_credentials(&self,
+                                wallet_handle: WalletHandle,
+                                query_json: Option<&str>) -> IndyResult<(SearchHandle, usize)> {
         debug!("search_credentials >>> wallet_handle: {:?}, query_json: {:?}", wallet_handle, query_json);
 
         let credentials_search =
-            self.wallet_service.search_indy_records::<Credential>(wallet_handle, query_json.unwrap_or("{}"), &SearchOptions::id_value())?;
+            self.wallet_service.search_indy_records::<Credential>(wallet_handle, query_json.unwrap_or("{}"), &SearchOptions::id_value()).await?;
 
         let total_count = credentials_search.get_total_count()?.unwrap_or(0);
 
@@ -479,9 +478,9 @@ impl ProverCommandExecutor {
         Ok(res)
     }
 
-    fn fetch_credentials(&self,
-                         search_handle: SearchHandle,
-                         count: usize, ) -> IndyResult<String> {
+    async fn fetch_credentials(&self,
+                               search_handle: SearchHandle,
+                               count: usize, ) -> IndyResult<String> {
         trace!("fetch_credentials >>> search_handle: {:?}, count: {:?}", search_handle, count);
 
         let mut searches = self.searches.borrow_mut();
@@ -491,7 +490,7 @@ impl ProverCommandExecutor {
         let mut credentials_info: Vec<CredentialInfo> = Vec::new();
 
         for _ in 0..count {
-            match search.fetch_next_record()? {
+            match search.fetch_next_record().await? {
                 Some(credential_record) => {
                     let (referent, credential) = self._get_credential(&credential_record)?;
                     credentials_info.push(self._get_credential_info(&referent, credential))
@@ -521,9 +520,9 @@ impl ProverCommandExecutor {
         Ok(())
     }
 
-    fn get_credentials_for_proof_req(&self,
-                                     wallet_handle: WalletHandle,
-                                     proof_request: &ProofRequest) -> IndyResult<String> {
+    async fn get_credentials_for_proof_req(&self,
+                                           wallet_handle: WalletHandle,
+                                           proof_request: &ProofRequest) -> IndyResult<String> {
         debug!("get_credentials_for_proof_req >>> wallet_handle: {:?}, proof_request: {:?}", wallet_handle, proof_request);
 
         let proof_req = proof_request.value();
@@ -540,7 +539,7 @@ impl ProverCommandExecutor {
                                                                                          &None)?;
             let interval = get_non_revoc_interval(&proof_req.non_revoked, &requested_attr.non_revoked);
 
-            let credentials_for_attribute = self._query_requested_credentials(wallet_handle, &query, None, &interval)?;
+            let credentials_for_attribute = self._query_requested_credentials(wallet_handle, &query, None, &interval).await?;
 
             credentials_for_proof_request.attrs.insert(attr_id.to_string(), credentials_for_attribute);
         }
@@ -556,7 +555,7 @@ impl ProverCommandExecutor {
             let interval = get_non_revoc_interval(&proof_req.non_revoked, &requested_predicate.non_revoked);
 
             let credentials_for_predicate =
-                self._query_requested_credentials(wallet_handle, &query, Some(&requested_predicate), &interval)?;
+                self._query_requested_credentials(wallet_handle, &query, Some(&requested_predicate), &interval).await?;
 
             credentials_for_proof_request.predicates.insert(predicate_id.to_string(), credentials_for_predicate);
         }
@@ -569,10 +568,10 @@ impl ProverCommandExecutor {
         Ok(credentials_for_proof_request_json)
     }
 
-    fn search_credentials_for_proof_req(&self,
-                                        wallet_handle: WalletHandle,
-                                        proof_request: &ProofRequest,
-                                        extra_query: Option<&ProofRequestExtraQuery>) -> IndyResult<SearchHandle> {
+    async fn search_credentials_for_proof_req(&self,
+                                              wallet_handle: WalletHandle,
+                                              proof_request: &ProofRequest,
+                                              extra_query: Option<&ProofRequestExtraQuery>) -> IndyResult<SearchHandle> {
         debug!("search_credentials_for_proof_req >>> wallet_handle: {:?}, proof_request: {:?}, extra_query: {:?}", wallet_handle, proof_request, extra_query);
 
         let proof_req = proof_request.value();
@@ -589,7 +588,7 @@ impl ProverCommandExecutor {
                                                                                          &extra_query)?;
 
             let credentials_search =
-                self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query.to_string(), &SearchOptions::id_value())?;
+                self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query.to_string(), &SearchOptions::id_value()).await?;
 
             let interval = get_non_revoc_interval(&proof_req.non_revoked, &requested_attr.non_revoked);
 
@@ -607,7 +606,7 @@ impl ProverCommandExecutor {
                                                                                          &extra_query)?;
 
             let credentials_search =
-                self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query.to_string(), &SearchOptions::id_value())?;
+                self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query.to_string(), &SearchOptions::id_value()).await?;
 
             let interval = get_non_revoc_interval(&proof_req.non_revoked, &requested_predicate.non_revoked);
 
@@ -624,7 +623,7 @@ impl ProverCommandExecutor {
         Ok(search_handle)
     }
 
-    fn fetch_credential_for_proof_request(&self, search_handle: SearchHandle, item_referent: &str, count: usize) -> IndyResult<String> {
+    async fn fetch_credential_for_proof_request(&self, search_handle: SearchHandle, item_referent: &str, count: usize) -> IndyResult<String> {
         trace!("fetch_credential_for_proof_request >>> search_handle: {:?}, item_referent: {:?}, count: {:?}", search_handle, item_referent, count);
 
         let mut searches = self.searches_for_proof_requests.borrow_mut();
@@ -634,7 +633,7 @@ impl ProverCommandExecutor {
             .ok_or_else(|| err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown item referent {} for CredentialsSearch handle: {:?}", item_referent, search_handle)))?;
 
         let requested_credentials: Vec<RequestedCredential> =
-            self._get_requested_credentials(&mut search.search, search.predicate_info.as_ref(), &search.interval, Some(count))?;
+            self._get_requested_credentials(&mut search.search, search.predicate_info.as_ref(), &search.interval, Some(count)).await?;
 
         let requested_credentials_json = serde_json::to_string(&requested_credentials)
             .to_indy(IndyErrorKind::InvalidState, "Cannot serialize list of RequestedCredential")?;
@@ -657,31 +656,31 @@ impl ProverCommandExecutor {
         Ok(())
     }
 
-    fn delete_credential(&self,
-                         wallet_handle: WalletHandle,
-                         cred_id: &str) -> IndyResult<()> {
+    async fn delete_credential(&self,
+                               wallet_handle: WalletHandle,
+                               cred_id: &str) -> IndyResult<()> {
         trace!("delete_credential >>> wallet_handle: {:?}, cred_id: {:?}", wallet_handle, cred_id);
 
-        if !self.wallet_service.record_exists::<Credential>(wallet_handle, cred_id)? {
+        if !self.wallet_service.record_exists::<Credential>(wallet_handle, cred_id).await? {
             return Err(err_msg(IndyErrorKind::WalletItemNotFound, format!("Credential {} not found", cred_id)));
         }
 
-        self.wallet_service.delete_indy_record::<Credential>(wallet_handle, cred_id)
+        self.wallet_service.delete_indy_record::<Credential>(wallet_handle, cred_id).await
     }
 
-    fn create_proof(&self,
-                    wallet_handle: WalletHandle,
-                    proof_req: &ProofRequest,
-                    requested_credentials: &RequestedCredentials,
-                    master_secret_id: &str,
-                    schemas: &HashMap<SchemaId, SchemaV1>,
-                    cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>,
-                    rev_states: &RevocationStates) -> IndyResult<String> {
+    async fn create_proof(&self,
+                          wallet_handle: WalletHandle,
+                          proof_req: &ProofRequest,
+                          requested_credentials: &RequestedCredentials,
+                          master_secret_id: &str,
+                          schemas: &HashMap<SchemaId, SchemaV1>,
+                          cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>,
+                          rev_states: &RevocationStates) -> IndyResult<String> {
         debug!("create_proof >>> wallet_handle: {:?}, proof_req: {:?}, requested_credentials: {:?}, master_secret_id: {:?}, schemas: {:?}, \
         cred_defs: {:?}, rev_states: {:?}",
                wallet_handle, proof_req, requested_credentials, master_secret_id, schemas, cred_defs, rev_states);
 
-        let master_secret: MasterSecret = self._wallet_get_master_secret(wallet_handle, &master_secret_id)?;
+        let master_secret: MasterSecret = self._wallet_get_master_secret(wallet_handle, &master_secret_id).await?;
 
         let cred_refs_for_attrs =
             requested_credentials.requested_attributes
@@ -700,7 +699,7 @@ impl ProverCommandExecutor {
         let mut credentials: HashMap<String, Credential> = HashMap::with_capacity(cred_referents.len());
 
         for cred_referent in cred_referents.into_iter() {
-            let credential: Credential = self.wallet_service.get_indy_object(wallet_handle, &cred_referent, &RecordOptions::id_value())?;
+            let credential: Credential = self.wallet_service.get_indy_object(wallet_handle, &cred_referent, &RecordOptions::id_value()).await?;
             credentials.insert(cred_referent, credential);
         }
 
@@ -820,36 +819,36 @@ impl ProverCommandExecutor {
         Ok((referent.to_string(), credential))
     }
 
-    fn _query_requested_credentials(&self,
-                                    wallet_handle: WalletHandle,
-                                    query_json: &Query,
-                                    predicate_info: Option<&PredicateInfo>,
-                                    interval: &Option<NonRevocedInterval>) -> IndyResult<Vec<RequestedCredential>> {
+    async fn _query_requested_credentials(&self,
+                                          wallet_handle: WalletHandle,
+                                          query_json: &Query,
+                                          predicate_info: Option<&PredicateInfo>,
+                                          interval: &Option<NonRevocedInterval>) -> IndyResult<Vec<RequestedCredential>> {
         debug!("_query_requested_credentials >>> wallet_handle: {:?}, query_json: {:?}, predicate_info: {:?}",
                wallet_handle, query_json, predicate_info);
 
         let mut credentials_search =
-            self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query_json.to_string(), &SearchOptions::id_value())?;
+            self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query_json.to_string(), &SearchOptions::id_value()).await?;
 
-        let credentials = self._get_requested_credentials(&mut credentials_search, predicate_info, interval, None)?;
+        let credentials = self._get_requested_credentials(&mut credentials_search, predicate_info, interval, None).await?;
 
         debug!("_query_requested_credentials <<< credentials: {:?}", credentials);
 
         Ok(credentials)
     }
 
-    fn _get_requested_credentials(&self,
-                                  credentials_search: &mut WalletSearch,
-                                  predicate_info: Option<&PredicateInfo>,
-                                  interval: &Option<NonRevocedInterval>,
-                                  max_count: Option<usize>) -> IndyResult<Vec<RequestedCredential>> {
+    async fn _get_requested_credentials(&self,
+                                        credentials_search: &mut WalletSearch,
+                                        predicate_info: Option<&PredicateInfo>,
+                                        interval: &Option<NonRevocedInterval>,
+                                        max_count: Option<usize>) -> IndyResult<Vec<RequestedCredential>> {
         let mut credentials: Vec<RequestedCredential> = Vec::new();
 
         if let Some(0) = max_count {
             return Ok(vec![]);
         }
 
-        while let Some(credential_record) = credentials_search.fetch_next_record()? {
+        while let Some(credential_record) = credentials_search.fetch_next_record().await? {
             let (referent, credential) = self._get_credential(&credential_record)?;
 
             if let Some(predicate) = predicate_info {
@@ -878,8 +877,8 @@ impl ProverCommandExecutor {
     }
 
 
-    fn _wallet_get_master_secret(&self, wallet_handle: WalletHandle, key: &str) -> IndyResult<MasterSecret> {
-        self.wallet_service.get_indy_object(wallet_handle, &key, &RecordOptions::id_value())
+    async fn _wallet_get_master_secret(&self, wallet_handle: WalletHandle, key: &str) -> IndyResult<MasterSecret> {
+        self.wallet_service.get_indy_object(wallet_handle, &key, &RecordOptions::id_value()).await
     }
 }
 

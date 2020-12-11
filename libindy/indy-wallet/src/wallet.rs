@@ -71,6 +71,7 @@ pub struct EncryptedValue {
     pub key: Vec<u8>,
 }
 
+#[allow(dead_code)]
 const ENCRYPTED_KEY_LEN: usize = chacha20poly1305_ietf::TAGBYTES
     + chacha20poly1305_ietf::NONCEBYTES
     + chacha20poly1305_ietf::KEYBYTES;
@@ -104,12 +105,14 @@ impl EncryptedValue {
         Ok(res)
     }
 
+    #[allow(dead_code)]
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut result = self.key.clone();
         result.extend_from_slice(self.data.as_slice());
         result
     }
 
+    #[allow(dead_code)]
     pub fn from_bytes(joined_data: &[u8]) -> IndyResult<Self> {
         // value_key is stored as NONCE || CYPHERTEXT. Lenth of CYPHERTHEXT is length of DATA + length of TAG.
         if joined_data.len() < ENCRYPTED_KEY_LEN {
