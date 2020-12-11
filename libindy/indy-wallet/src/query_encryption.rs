@@ -1,8 +1,8 @@
 use indy_api_types::errors::prelude::*;
 
-use super::wallet::Keys;
-use super::language::{Operator, TargetValue, TagName};
 use super::encryption::encrypt_as_searchable;
+use super::language::{Operator, TagName, TargetValue};
+use super::wallet::Keys;
 use indy_utils::wql::Query;
 
 // Performs encryption of WQL query
@@ -45,11 +45,13 @@ fn transform(query: Query, keys: &Keys) -> IndyResult<Operator> {
             let ename = TagName::from(name.clone())?;
             let ename = match ename {
                 TagName::EncryptedTagName(ref name) => {
-                    let encrypted_name = encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
+                    let encrypted_name =
+                        encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
                     TagName::EncryptedTagName(encrypted_name)
                 }
                 TagName::PlainTagName(ref name) => {
-                    let encrypted_name = encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
+                    let encrypted_name =
+                        encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
                     TagName::PlainTagName(encrypted_name)
                 }
             };
@@ -62,7 +64,9 @@ fn transform(query: Query, keys: &Keys) -> IndyResult<Operator> {
         }
         Query::And(operators) => Ok(Operator::And(transform_list_operators(operators, keys)?)),
         Query::Or(operators) => Ok(Operator::Or(transform_list_operators(operators, keys)?)),
-        Query::Not(boxed_operator) => Ok(Operator::Not(Box::new(transform(*boxed_operator, keys)?)))
+        Query::Not(boxed_operator) => {
+            Ok(Operator::Not(Box::new(transform(*boxed_operator, keys)?)))
+        }
     }
 }
 
@@ -80,19 +84,35 @@ fn transform_list_operators(operators: Vec<Query>, keys: &Keys) -> IndyResult<Ve
 // Encrypts a single tag name, tag value pair.
 // If the tag name is EncryptedTagName enum variant, encrypts both the tag name and the tag value
 // If the tag name is PlainTagName enum variant, encrypts only the tag name
-fn encrypt_name_value(name: String, value: String, keys: &Keys) -> IndyResult<(TagName, TargetValue)> {
+fn encrypt_name_value(
+    name: String,
+    value: String,
+    keys: &Keys,
+) -> IndyResult<(TagName, TargetValue)> {
     let name = TagName::from(name)?;
     let value = TargetValue::from(value);
     match (name, value) {
         (TagName::EncryptedTagName(ref name), TargetValue::Unencrypted(ref s)) => {
-            let encrypted_tag_name = encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
-            let encrypted_tag_value = encrypt_as_searchable(s.as_bytes(), &keys.tag_value_key, &keys.tags_hmac_key);
-            Ok((TagName::EncryptedTagName(encrypted_tag_name), TargetValue::Encrypted(encrypted_tag_value)))
+            let encrypted_tag_name =
+                encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
+            let encrypted_tag_value =
+                encrypt_as_searchable(s.as_bytes(), &keys.tag_value_key, &keys.tags_hmac_key);
+            Ok((
+                TagName::EncryptedTagName(encrypted_tag_name),
+                TargetValue::Encrypted(encrypted_tag_value),
+            ))
         }
         (TagName::PlainTagName(ref name), TargetValue::Unencrypted(ref s)) => {
-            let encrypted_tag_name = encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
-            Ok((TagName::PlainTagName(encrypted_tag_name), TargetValue::Unencrypted(s.clone())))
+            let encrypted_tag_name =
+                encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
+            Ok((
+                TagName::PlainTagName(encrypted_tag_name),
+                TargetValue::Unencrypted(s.clone()),
+            ))
         }
-        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Reached invalid combination of tag name and value while encrypting query"))
+        _ => Err(err_msg(
+            IndyErrorKind::WalletQueryError,
+            "Reached invalid combination of tag name and value while encrypting query",
+        )),
     }
 }

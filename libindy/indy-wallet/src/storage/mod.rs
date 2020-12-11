@@ -1,15 +1,15 @@
 pub mod default;
 //pub mod plugged; FIXME:!!!
 
-use async_trait::async_trait;
-use indy_api_types::errors::prelude::*;
 use crate::language;
 use crate::wallet::EncryptedValue;
+use async_trait::async_trait;
+use indy_api_types::errors::prelude::*;
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Tag {
     Encrypted(Vec<u8>, Vec<u8>),
-    PlainText(Vec<u8>, String)
+    PlainText(Vec<u8>, String),
 }
 
 #[derive(Debug)]
@@ -27,7 +27,12 @@ pub struct StorageRecord {
 }
 
 impl StorageRecord {
-    fn new(id: Vec<u8>, value: Option<EncryptedValue>, type_: Option<Vec<u8>>, tags: Option<Vec<Tag>>) -> Self {
+    fn new(
+        id: Vec<u8>,
+        value: Option<EncryptedValue>,
+        type_: Option<Vec<u8>>,
+        tags: Option<Vec<Tag>>,
+    ) -> Self {
         Self {
             id,
             value,
@@ -45,25 +50,63 @@ pub trait StorageIterator {
 
 #[async_trait]
 pub trait WalletStorage {
-    async fn get(&self, type_: &[u8], id: &[u8], options: &str) -> Result<StorageRecord, IndyError>;
-    async fn add(&self, type_: &[u8], id: &[u8], value: &EncryptedValue, tags: &[Tag]) -> Result<(), IndyError>;
-    async fn update(&self, type_: &[u8], id: &[u8], value: &EncryptedValue) -> Result<(), IndyError>;
+    async fn get(&self, type_: &[u8], id: &[u8], options: &str)
+        -> Result<StorageRecord, IndyError>;
+    async fn add(
+        &self,
+        type_: &[u8],
+        id: &[u8],
+        value: &EncryptedValue,
+        tags: &[Tag],
+    ) -> Result<(), IndyError>;
+    async fn update(
+        &self,
+        type_: &[u8],
+        id: &[u8],
+        value: &EncryptedValue,
+    ) -> Result<(), IndyError>;
     async fn add_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), IndyError>;
     async fn update_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), IndyError>;
-    async fn delete_tags(&self, type_: &[u8], id: &[u8], tag_names: &[TagName]) -> Result<(), IndyError>;
+    async fn delete_tags(
+        &self,
+        type_: &[u8],
+        id: &[u8],
+        tag_names: &[TagName],
+    ) -> Result<(), IndyError>;
     async fn delete(&self, type_: &[u8], id: &[u8]) -> Result<(), IndyError>;
     async fn get_storage_metadata(&self) -> Result<Vec<u8>, IndyError>;
     async fn set_storage_metadata(&self, metadata: &[u8]) -> Result<(), IndyError>;
     async fn get_all(&self) -> Result<Box<dyn StorageIterator>, IndyError>;
 
-    // TODO: 
-    async fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<dyn StorageIterator>, IndyError>;
+    // TODO:
+    async fn search(
+        &self,
+        type_: &[u8],
+        query: &language::Operator,
+        options: Option<&str>,
+    ) -> Result<Box<dyn StorageIterator>, IndyError>;
     async fn close(&mut self) -> Result<(), IndyError>;
 }
 
 #[async_trait]
 pub trait WalletStorageType {
-    async fn create_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>, metadata: &[u8]) -> Result<(), IndyError>;
-    async fn open_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<dyn WalletStorage>, IndyError>;
-    async fn delete_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), IndyError>;
+    async fn create_storage(
+        &self,
+        id: &str,
+        config: Option<&str>,
+        credentials: Option<&str>,
+        metadata: &[u8],
+    ) -> Result<(), IndyError>;
+    async fn open_storage(
+        &self,
+        id: &str,
+        config: Option<&str>,
+        credentials: Option<&str>,
+    ) -> Result<Box<dyn WalletStorage>, IndyError>;
+    async fn delete_storage(
+        &self,
+        id: &str,
+        config: Option<&str>,
+        credentials: Option<&str>,
+    ) -> Result<(), IndyError>;
 }
