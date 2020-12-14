@@ -18,4 +18,10 @@ jobs:
         with:
           command: build
           args: --manifest-path libindy/Cargo.toml
+      - run docker build -f ci/indy-pool.dockerfile -t indy_pool .
+      - run docker run -itd -p 9701-9708:9701-9708 indy_pool
+      - uses: actions-rs/cargo@v1
+          with:
+            command: test
+            args: --manifest-path libindy/Cargo.toml -- --test-threads=1
 
