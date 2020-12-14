@@ -7,6 +7,7 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     steps:
+      - run: apt-get install -y libsodium18
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -16,4 +17,5 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check --manifest-path libindy/Cargo.toml
+          args: --manifest-path libindy/Cargo.toml
 
