@@ -22,7 +22,7 @@ mod collect {
     #[test]
     fn collect_metrics() {
         let result_metrics = metrics::collect_metrics().wait().unwrap();
-        let metrics_map = serde_json::from_str::<HashMap<String, Value>>(&result_metrics).unwrap();
+        let metrics_map = serde_json::from_str::<HashMap<String, usize>>(&result_metrics).unwrap();
 
         assert!(metrics_map.contains_key("threadpool_threads_count"));
         assert!(metrics_map.contains_key("wallet_count"));
