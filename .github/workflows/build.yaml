@@ -16,6 +16,6 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          command: check --manifest-path libindy/Cargo.toml
+          command: check
           args: --manifest-path libindy/Cargo.toml
 
