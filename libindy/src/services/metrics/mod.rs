@@ -50,6 +50,10 @@ impl MetricsService {
         tags
     }
 
+    fn append_command_metrics_bucket(&self, index_command: usize, index_bucket: usize) -> u128 {
+        self.executed_counters.borrow()[index_command].duration_ms_bucket[index_bucket]
+    }
+
     pub fn append_command_metrics(&self, metrics_map: &mut Map<String, Value>) -> IndyResult<()> {
         let mut commands_count = Vec::new();
         let mut commands_duration_ms = Vec::new();
