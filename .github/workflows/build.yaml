@@ -14,7 +14,6 @@ jobs:
           toolchain: stable
           override: true
       - uses: actions-rs/cargo@v1
-        working-directory: libindy
         with:
-          command: check
+          command: check --manifest-path libindy/Cargo.toml
 
