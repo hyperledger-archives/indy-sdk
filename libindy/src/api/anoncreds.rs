@@ -25,6 +25,8 @@ use libc::c_char;
 use std::ptr;
 
 use crate::indy_api_types::validation::Validatable;
+use crate::services::metrics::MetricsService;
+use std::rc::Rc;
 
 /*
 These functions wrap the Ursa algorithm as documented in this paper:
@@ -282,7 +284,7 @@ pub extern fn indy_issuer_rotate_credential_def_start(command_handle: CommandHan
                     wallet_handle,
                     cred_def_id,
                     config_json,
-                    Box::new(move |result| {
+                    Box::new(move |result: IndyResult<String>, metrics_service: Rc<MetricsService>| {
                         let (err, cred_def_json) = prepare_result_1!(result, String::new());
                         trace!("indy_issuer_rotate_credential_def_start:cred_def_json: {:?}", cred_def_json);
                         let cred_def_json = ctypes::string_to_cstring(cred_def_json);

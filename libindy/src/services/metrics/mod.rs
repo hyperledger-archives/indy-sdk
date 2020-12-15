@@ -14,6 +14,7 @@ const COMMANDS_COUNT: usize = MetricsService::commands_count();
 pub struct MetricsService {
     queued_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
     executed_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
+    callback_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
 }
 
 impl MetricsService {
@@ -21,6 +22,7 @@ impl MetricsService {
         MetricsService {
             queued_counters: RefCell::new([CommandCounters::new(0,0,[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]); COMMANDS_COUNT]),
             executed_counters: RefCell::new([CommandCounters::new(0,0,[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]); COMMANDS_COUNT]),
+            callback_counters: RefCell::new([CommandCounters::new(0,0,[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]); COMMANDS_COUNT]),
         }
     }
 
@@ -30,6 +32,10 @@ impl MetricsService {
 
     pub fn cmd_executed(&self, command_metric: CommandMetric, duration: u128) {
         self.executed_counters.borrow_mut()[command_metric as usize].add(duration);
+    }
+
+    pub fn cmd_callback(&self, command_index: CommandMetric, duration: u128) {
+        self.callback_counters.borrow_mut()[command_index as usize].add(duration);
     }
 
     pub fn cmd_name(index: usize) -> String {

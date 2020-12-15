@@ -58,6 +58,7 @@ use indy_wallet::{RecordOptions, WalletService};
 use super::tails::{SDKTailsAccessor, store_tails_from_generator};
 use indy_api_types::{WalletHandle, CommandHandle};
 use indy_utils::next_command_handle;
+use crate::services::metrics::MetricsService;
 
 pub enum IssuerCommand {
     CreateSchema(
@@ -89,7 +90,7 @@ pub enum IssuerCommand {
         WalletHandle,
         CredentialDefinitionId, // cred def id
         Option<CredentialDefinitionConfig>, // config
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>, Rc<MetricsService>) + Send>),
     RotateCredentialDefinitionStartComplete(
         WalletHandle,
         SchemaId, // schema id
@@ -149,8 +150,9 @@ pub struct IssuerCommandExecutor {
     pub pool_service: Rc<PoolService>,
     pub wallet_service: Rc<WalletService>,
     pub crypto_service: Rc<CryptoService>,
+    pub metrics_service: Rc<MetricsService>,
     pending_str_str_callbacks: RefCell<HashMap<CommandHandle, BoxedCallbackStringStringSend>>,
-    pending_str_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<String>) + Send>>>,
+    pending_str_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<String>, Rc<MetricsService>) + Send>>>,
 }
 
 impl IssuerCommandExecutor {
@@ -158,13 +160,15 @@ impl IssuerCommandExecutor {
                pool_service: Rc<PoolService>,
                blob_storage_service: Rc<BlobStorageService>,
                wallet_service: Rc<WalletService>,
-               crypto_service: Rc<CryptoService>) -> IssuerCommandExecutor {
+               crypto_service: Rc<CryptoService>,
+               metrics_service: Rc<MetricsService>) -> IssuerCommandExecutor {
         IssuerCommandExecutor {
             anoncreds_service,
             pool_service,
             blob_storage_service,
             wallet_service,
             crypto_service,
+            metrics_service,
             pending_str_str_callbacks: RefCell::new(HashMap::new()),
             pending_str_callbacks: RefCell::new(HashMap::new()),
         }
@@ -413,27 +417,30 @@ impl IssuerCommandExecutor {
                                           wallet_handle: WalletHandle,
                                           cred_def_id: &CredentialDefinitionId,
                                           cred_def_config: Option<&CredentialDefinitionConfig>,
-                                          cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+                                          cb: Box<dyn Fn(IndyResult<String>, Rc<MetricsService>) + Send>) {
         debug!("rotate_credential_definition_start >>> wallet_handle: {:?}, cred_def_id: {:?}, cred_def_config: {:?}",
                wallet_handle, cred_def_id, cred_def_config);
 
         let cred_def: CredentialDefinitionV1 = match self.wallet_service.get_indy_object::<CredentialDefinition>(wallet_handle, &cred_def_id.0, &RecordOptions::id_value()) {
             Ok(cred_def) => CredentialDefinitionV1::from(cred_def),
-            Err(err) => return cb(Err(err))
+            Err(err) => return cb(Err(err), self.metrics_service.clone())
         };
 
         if let Ok(temp_cred_def) = self.wallet_service.get_indy_object::<TemporaryCredentialDefinition>(wallet_handle, &cred_def_id.0, &RecordOptions::id_value()) {
             debug!("Temporary Credential Definition already exists. Return it: {:?}", temp_cred_def.cred_def);
 
-            let cred_def_json = try_cb!(::serde_json::to_string(&temp_cred_def.cred_def)
-                .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot serialize CredentialDefinition: {}", err))), cb);
-
-            return cb(Ok(cred_def_json));
+            let cred_def_json = match ::serde_json::to_string(&temp_cred_def.cred_def)
+                .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot serialize CredentialDefinition: {}", err))) {
+                Ok(val) => val,
+                Err(err) => return cb(Err(::std::convert::From::from(err)), self.metrics_service.clone()),
+            };
+            
+            return cb(Ok(cred_def_json), self.metrics_service.clone());
         }
 
         let schema: SchemaV1 = match self.wallet_service.get_indy_object::<Schema>(wallet_handle, &cred_def.schema_id.0, &RecordOptions::id_value()) {
             Ok(schema) => SchemaV1::from(schema),
-            Err(err) => return cb(Err(err))
+            Err(err) => return cb(Err(err), self.metrics_service.clone())
         };
 
         let cb_id = indy_utils::sequence::get_next_id();
@@ -472,7 +479,7 @@ impl IssuerCommandExecutor {
         cb(result
             .and_then(|result| {
                 self._rotate_credential_definition_start_complete(wallet_handle, schema_id, cred_def_id, tag, signature_type.clone(), result)
-            }))
+            }), self.metrics_service.clone())
     }
 
     fn _rotate_credential_definition_start_complete(&self,
