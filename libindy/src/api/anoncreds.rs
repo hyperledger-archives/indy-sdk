@@ -27,6 +27,8 @@ use std::ptr;
 use crate::indy_api_types::validation::Validatable;
 use crate::services::metrics::MetricsService;
 use std::rc::Rc;
+use crate::services::metrics::command_metrics::CommandMetric;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /*
 These functions wrap the Ursa algorithm as documented in this paper:
@@ -277,6 +279,11 @@ pub extern fn indy_issuer_rotate_credential_def_start(command_handle: CommandHan
     trace!("indy_issuer_rotate_credential_def_start: entities >>> wallet_handle: {:?}, cred_def_id: {:?}, config_json: {:?}",
            wallet_handle, cred_def_id, config_json);
 
+    fn get_cur_time() -> u128 {
+        let since_epoch = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time has gone backwards");
+        since_epoch.as_millis()
+    }
+
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
             AnoncredsCommand::Issuer(
@@ -288,7 +295,11 @@ pub extern fn indy_issuer_rotate_credential_def_start(command_handle: CommandHan
                         let (err, cred_def_json) = prepare_result_1!(result, String::new());
                         trace!("indy_issuer_rotate_credential_def_start:cred_def_json: {:?}", cred_def_json);
                         let cred_def_json = ctypes::string_to_cstring(cred_def_json);
-                        cb(command_handle, err, cred_def_json.as_ptr())
+                        let start_execution_ts = get_cur_time();
+                        let result = cb(command_handle, err, cred_def_json.as_ptr());
+                        metrics_service.cmd_callback(CommandMetric::IssuerCommandRotateCredentialDefinitionStart,get_cur_time() - start_execution_ts);
+
+                        result
                     })
                 ))));
 
@@ -335,7 +346,7 @@ pub extern fn indy_issuer_rotate_credential_def_apply(command_handle: CommandHan
                 IssuerCommand::RotateCredentialDefinitionApply(
                     wallet_handle,
                     cred_def_id,
-                    Box::new(move |result| {
+                    Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let err = prepare_result!(result);
                         trace!("indy_issuer_rotate_credential_def_apply:");
                         cb(command_handle, err)
@@ -462,7 +473,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: CommandHand
                     cred_def_id,
                     config_json,
                     tails_writer_handle,
-                    Box::new(move |result| {
+                    Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let (err, revoc_reg_id, revoc_reg_def_json, revoc_reg_json) = prepare_result_3!(result, String::new(), String::new(), String::new());
                         trace!("indy_issuer_create_and_store_credential_def: revoc_reg_id: {:?}, revoc_reg_def_json: {:?}, revoc_reg_json: {:?}",
                                revoc_reg_id, revoc_reg_def_json, revoc_reg_json);
@@ -626,7 +637,7 @@ pub extern fn indy_issuer_create_credential(command_handle: CommandHandle,
                     cred_values_json,
                     rev_reg_id,
                     blob_storage_reader_handle,
-                    Box::new(move |result| {
+                    Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let (err, cred_json, revoc_id, revoc_reg_delta_json) = prepare_result_3!(result, String::new(), None, None);
                         trace!("indy_issuer_create_credential: cred_json: {:?}, revoc_id: {:?}, revoc_reg_delta_json: {:?}",
                                secret!(cred_json.as_str()), secret!(&revoc_id), revoc_reg_delta_json);
@@ -1037,7 +1048,7 @@ pub extern fn indy_prover_set_credential_attr_tag_policy(command_handle: Command
                     cred_def_id,
                     tag_attrs_json,
                     retroactive,
-                    Box::new(move |result| {
+                    Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let err = prepare_result!(result);
                         trace!("indy_prover_set_credential_attr_tag_policy: ");
                         cb(command_handle, err)
@@ -1270,7 +1281,7 @@ pub extern fn indy_prover_delete_credential(command_handle: CommandHandle,
                 ProverCommand::DeleteCredential(
                     wallet_handle,
                     cred_id,
-                    Box::new(move |result| {
+                    Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let err = prepare_result!(result);
                         trace!("indy_prover_delete_credential: ");
                         cb(command_handle, err)
@@ -1392,7 +1403,7 @@ pub extern fn indy_prover_search_credentials(command_handle: CommandHandle,
                 ProverCommand::SearchCredentials(
                     wallet_handle,
                     query_json,
-                    Box::new(move |result| {
+                    Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let (err, handle, total_count) = prepare_result_2!(result, INVALID_SEARCH_HANDLE, 0);
                         cb(command_handle, err, handle, total_count)
                     })
@@ -1480,7 +1491,7 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: CommandHandl
             AnoncredsCommand::Prover(
                 ProverCommand::CloseCredentialsSearch(
                     search_handle,
-                    Box::new(move |result| {
+                    Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let err = prepare_result!(result);
                         trace!("indy_prover_close_credentials_search:");
                         cb(command_handle, err)
@@ -1734,7 +1745,7 @@ pub extern fn indy_prover_search_credentials_for_proof_req(command_handle: Comma
                     wallet_handle,
                     proof_request_json,
                     extra_query_json,
-                    Box::new(move |result| {
+                    Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let (err, search_handle) = prepare_result_1!(result, INVALID_SEARCH_HANDLE);
                         trace!("indy_prover_search_credentials_for_proof_req: search_handle: {:?}", search_handle);
                         cb(command_handle, err, search_handle)
@@ -1840,7 +1851,7 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
             AnoncredsCommand::Prover(
                 ProverCommand::CloseCredentialsSearchForProofReq(
                     search_handle,
-                    Box::new(move |result| {
+                    Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let err = prepare_result!(result);
                         trace!("indy_prover_close_credentials_search:");
                         cb(command_handle, err)
@@ -2246,7 +2257,7 @@ pub extern fn indy_verifier_verify_proof(command_handle: CommandHandle,
             credential_defs_json,
             rev_reg_defs_json,
             rev_regs_json,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, valid) = prepare_result_1!(result, false);
                 trace!("indy_verifier_verify_proof: valid: {:?}", valid);
 
@@ -2473,7 +2484,7 @@ pub  extern fn indy_to_unqualified(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::ToUnqualified(
             entity,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, res) = prepare_result_1!(result, String::new());
                 trace!("indy_to_unqualified: did: {:?}", res);
                 let res = ctypes::string_to_cstring(res);

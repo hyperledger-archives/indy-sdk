@@ -104,7 +104,7 @@ pub enum IssuerCommand {
     RotateCredentialDefinitionApply(
         WalletHandle,
         CredentialDefinitionId, // cred def id
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>, Rc<MetricsService>) + Send>),
     CreateAndStoreRevocationRegistry(
         WalletHandle,
         DidValue, // issuer did
@@ -113,7 +113,7 @@ pub enum IssuerCommand {
         CredentialDefinitionId, // credential definition id
         RevocationRegistryConfig, // config
         i32, // tails writer handle
-        Box<dyn Fn(IndyResult<(String, String, String)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, String, String)>, Rc<MetricsService>) + Send>),
     CreateCredentialOffer(
         WalletHandle,
         CredentialDefinitionId, // credential definition id
@@ -125,7 +125,7 @@ pub enum IssuerCommand {
         CredentialValues, // credential values
         Option<RevocationRegistryId>, // revocation registry id
         Option<i32>, // blob storage reader config handle
-        Box<dyn Fn(IndyResult<(String, Option<String>, Option<String>)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, Option<String>, Option<String>)>, Rc<MetricsService>) + Send>),
     RevokeCredential(
         WalletHandle,
         i32, // blob storage reader config handle
@@ -199,7 +199,7 @@ impl IssuerCommandExecutor {
             }
             IssuerCommand::RotateCredentialDefinitionApply(wallet_handle, cred_def_id, cb) => {
                 debug!(target: "wallet_command_executor", "RotateCredentialDefinitionApply command received");
-                cb(self.rotate_credential_definition_apply(wallet_handle, &cred_def_id));
+                cb(self.rotate_credential_definition_apply(wallet_handle, &cred_def_id), self.metrics_service.clone());
             }
             IssuerCommand::CreateAndStoreRevocationRegistry(wallet_handle, issuer_did, type_, tag, cred_def_id, config,
                                                             tails_writer_handle, cb) => {
@@ -210,7 +210,8 @@ impl IssuerCommandExecutor {
                                                              &tag,
                                                              &cred_def_id,
                                                              &config,
-                                                             tails_writer_handle));
+                                                             tails_writer_handle),
+                   self.metrics_service.clone());
             }
             IssuerCommand::CreateCredentialOffer(wallet_handle, cred_def_id, cb) => {
                 debug!(target: "issuer_command_executor", "CreateCredentialOffer command received");
@@ -218,7 +219,7 @@ impl IssuerCommandExecutor {
             }
             IssuerCommand::CreateCredential(wallet_handle, cred_offer, cred_req, cred_values, rev_reg_id, blob_storage_reader_handle, cb) => {
                 debug!(target: "issuer_command_executor", "CreateCredential command received");
-                cb(self.new_credential(wallet_handle, &cred_offer, &cred_req, &cred_values, rev_reg_id.as_ref(), blob_storage_reader_handle));
+                cb(self.new_credential(wallet_handle, &cred_offer, &cred_req, &cred_values, rev_reg_id.as_ref(), blob_storage_reader_handle), self.metrics_service.clone());
             }
             IssuerCommand::RevokeCredential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id, cb) => {
                 debug!(target: "issuer_command_executor", "RevokeCredential command received");

@@ -14,7 +14,7 @@ const COMMANDS_COUNT: usize = MetricsService::commands_count();
 pub struct MetricsService {
     queued_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
     executed_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
-    callback_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
+    pub callback_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
 }
 
 impl MetricsService {

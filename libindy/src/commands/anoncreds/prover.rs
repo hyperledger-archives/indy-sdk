@@ -32,6 +32,7 @@ use crate::utils::wql::Query;
 use super::tails::SDKTailsAccessor;
 use indy_api_types::{WalletHandle, SearchHandle};
 use crate::commands::BoxedCallbackStringStringSend;
+use crate::services::metrics::MetricsService;
 
 pub enum ProverCommand {
     CreateMasterSecret(
@@ -50,7 +51,7 @@ pub enum ProverCommand {
         CredentialDefinitionId, // credential definition id
         Option<CredentialAttrTagPolicy>, // credential attr tag policy
         bool, // retroactive
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>, Rc<MetricsService>) + Send>),
     GetCredentialAttrTagPolicy(
         WalletHandle,
         CredentialDefinitionId, // credential definition id
@@ -74,18 +75,18 @@ pub enum ProverCommand {
     DeleteCredential(
         WalletHandle,
         String, // credential id
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>, Rc<MetricsService>) + Send>),
     SearchCredentials(
         WalletHandle,
         Option<String>, // query json
-        Box<dyn Fn(IndyResult<(SearchHandle, usize)>) + Send>),
+        Box<dyn Fn(IndyResult<(SearchHandle, usize)>, Rc<MetricsService>) + Send>),
     FetchCredentials(
         SearchHandle,
         usize, // count
         Box<dyn Fn(IndyResult<String>) + Send>),
     CloseCredentialsSearch(
         SearchHandle,
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>, Rc<MetricsService>) + Send>),
     GetCredentialsForProofReq(
         WalletHandle,
         ProofRequest, // proof request
@@ -94,7 +95,7 @@ pub enum ProverCommand {
         WalletHandle,
         ProofRequest, // proof request
         Option<ProofRequestExtraQuery>, // extra query
-        Box<dyn Fn(IndyResult<SearchHandle>) + Send>),
+        Box<dyn Fn(IndyResult<SearchHandle>, Rc<MetricsService>) + Send>),
     FetchCredentialForProofReq(
         SearchHandle,
         String, // item referent
@@ -102,7 +103,7 @@ pub enum ProverCommand {
         Box<dyn Fn(IndyResult<String>) + Send>),
     CloseCredentialsSearchForProofReq(
         SearchHandle,
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>, Rc<MetricsService>) + Send>),
     CreateProof(
         WalletHandle,
         ProofRequest, // proof request
@@ -152,6 +153,7 @@ pub struct ProverCommandExecutor {
     wallet_service: Rc<WalletService>,
     crypto_service: Rc<CryptoService>,
     blob_storage_service: Rc<BlobStorageService>,
+    metrics_service: Rc<MetricsService>,
     searches: RefCell<HashMap<SearchHandle, Box<WalletSearch>>>,
     searches_for_proof_requests: RefCell<HashMap<SearchHandle, Box<HashMap<String, SearchForProofRequest>>>>,
 }
@@ -160,12 +162,14 @@ impl ProverCommandExecutor {
     pub fn new(anoncreds_service: Rc<AnoncredsService>,
                wallet_service: Rc<WalletService>,
                crypto_service: Rc<CryptoService>,
-               blob_storage_service: Rc<BlobStorageService>) -> ProverCommandExecutor {
+               blob_storage_service: Rc<BlobStorageService>,
+               metrics_service: Rc<MetricsService>) -> ProverCommandExecutor {
         ProverCommandExecutor {
             anoncreds_service,
             wallet_service,
             crypto_service,
             blob_storage_service,
+            metrics_service,
             searches: RefCell::new(HashMap::new()),
             searches_for_proof_requests: RefCell::new(HashMap::new()),
         }
@@ -185,7 +189,7 @@ impl ProverCommandExecutor {
             }
             ProverCommand::SetCredentialAttrTagPolicy(wallet_handle, cred_def_id, catpol, retroactive, cb) => {
                 debug!(target: "prover_command_executor", "SetCredentialAttrTagPolicy command received");
-                cb(self.set_credential_attr_tag_policy(wallet_handle, &cred_def_id, catpol.as_ref(), retroactive));
+                cb(self.set_credential_attr_tag_policy(wallet_handle, &cred_def_id, catpol.as_ref(), retroactive), self.metrics_service.clone());
             }
             ProverCommand::GetCredentialAttrTagPolicy(wallet_handle, cred_def_id, cb) => {
                 debug!(target: "prover_command_executor", "GetCredentialAttrTagPolicy command received");
@@ -208,11 +212,11 @@ impl ProverCommandExecutor {
             }
             ProverCommand::DeleteCredential(wallet_handle, cred_id, cb) => {
                 debug!(target: "prover_command_executor", "DeleteCredential command received");
-                cb(self.delete_credential(wallet_handle, &cred_id));
+                cb(self.delete_credential(wallet_handle, &cred_id), self.metrics_service.clone());
             }
             ProverCommand::SearchCredentials(wallet_handle, query_json, cb) => {
                 debug!(target: "prover_command_executor", "SearchCredentials command received");
-                cb(self.search_credentials(wallet_handle, query_json.as_ref().map(String::as_str)));
+                cb(self.search_credentials(wallet_handle, query_json.as_ref().map(String::as_str)), self.metrics_service.clone());
             }
             ProverCommand::FetchCredentials(search_handle, count, cb) => {
                 debug!(target: "prover_command_executor", "FetchCredentials command received");
@@ -220,7 +224,7 @@ impl ProverCommandExecutor {
             }
             ProverCommand::CloseCredentialsSearch(search_handle, cb) => {
                 debug!(target: "prover_command_executor", "CloseCredentialsSearch command received");
-                cb(self.close_credentials_search(search_handle));
+                cb(self.close_credentials_search(search_handle), self.metrics_service.clone());
             }
             ProverCommand::GetCredentialsForProofReq(wallet_handle, proof_req, cb) => {
                 debug!(target: "prover_command_executor", "GetCredentialsForProofReq command received");
@@ -228,7 +232,7 @@ impl ProverCommandExecutor {
             }
             ProverCommand::SearchCredentialsForProofReq(wallet_handle, proof_req, extra_query, cb) => {
                 debug!(target: "prover_command_executor", "SearchCredentialsForProofReq command received");
-                cb(self.search_credentials_for_proof_req(wallet_handle, &proof_req, extra_query.as_ref()));
+                cb(self.search_credentials_for_proof_req(wallet_handle, &proof_req, extra_query.as_ref()), self.metrics_service.clone());
             }
             ProverCommand::FetchCredentialForProofReq(search_handle, item_ref, count, cb) => {
                 debug!(target: "prover_command_executor", "FetchCredentialForProofReq command received");
@@ -236,7 +240,7 @@ impl ProverCommandExecutor {
             }
             ProverCommand::CloseCredentialsSearchForProofReq(search_handle, cb) => {
                 debug!(target: "prover_command_executor", "CloseCredentialsSearchForProofReq command received");
-                cb(self.close_credentials_search_for_proof_req(search_handle));
+                cb(self.close_credentials_search_for_proof_req(search_handle), self.metrics_service.clone());
             }
             ProverCommand::CreateProof(wallet_handle, proof_req, requested_credentials, master_secret_name,
                                        schemas, cred_defs, rev_states, cb) => {
