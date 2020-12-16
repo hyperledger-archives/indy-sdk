@@ -1,37 +1,39 @@
-use std::{collections::{HashMap, VecDeque}, fs};
+use std::{
+    collections::{HashMap, VecDeque},
+    fs,
+};
 
 use indy_api_types::errors::prelude::*;
 use indy_utils::environment;
 use serde::Deserialize;
 use sqlx::{
-    ConnectOptions,
-    Done, sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions}, SqlitePool,
+    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions},
+    ConnectOptions, Done, SqlitePool,
 };
 
 use async_trait::async_trait;
 
 use crate::{
     language,
-    RecordOptions,
-    SearchOptions,
-    storage::{StorageIterator, StorageRecord, Tag, TagName, WalletStorage, WalletStorageType}, wallet::EncryptedValue,
+    storage::{StorageIterator, StorageRecord, Tag, TagName, WalletStorage, WalletStorageType},
+    wallet::EncryptedValue,
+    RecordOptions, SearchOptions,
 };
 
-//mod query;
-//mod transaction;
+mod query;
 
 const _SQLITE_DB: &str = "sqlite.db";
 
-
 struct SQLiteStorageIterator {
-    records: VecDeque<StorageRecord>,
+    records: Option<VecDeque<StorageRecord>>,
     total_count: Option<usize>,
 }
 
 impl SQLiteStorageIterator {
-    fn new(records: VecDeque<StorageRecord>) -> IndyResult<SQLiteStorageIterator> {
-        let total_count = Some(records.len());
-
+    fn new(
+        records: Option<VecDeque<StorageRecord>>,
+        total_count: Option<usize>,
+    ) -> IndyResult<SQLiteStorageIterator> {
         Ok(SQLiteStorageIterator {
             records,
             total_count,
@@ -42,7 +44,11 @@ impl SQLiteStorageIterator {
 #[async_trait]
 impl StorageIterator for SQLiteStorageIterator {
     async fn next(&mut self) -> IndyResult<Option<StorageRecord>> {
-        Ok(self.records.pop_front())
+        if let Some(ref mut records) = self.records {
+            Ok(records.pop_front())
+        } else {
+            Ok(None)
+        }
     }
 
     fn get_total_count(&self) -> IndyResult<Option<usize>> {
@@ -518,7 +524,12 @@ impl WalletStorage for SQLiteStorage {
         })
         .collect();
 
-        Ok(Box::new(SQLiteStorageIterator::new(records)?))
+        let total_count = records.len();
+
+        Ok(Box::new(SQLiteStorageIterator::new(
+            Some(records),
+            Some(total_count),
+        )?))
     }
 
     async fn search(
@@ -527,32 +538,144 @@ impl WalletStorage for SQLiteStorage {
         query: &language::Operator,
         options: Option<&str>,
     ) -> IndyResult<Box<dyn StorageIterator>> {
-        unimplemented!();
+        let options = if let Some(options) = options {
+            serde_json::from_str(options).to_indy(
+                IndyErrorKind::InvalidStructure,
+                "Search options is malformed json",
+            )?
+        } else {
+            SearchOptions::default()
+        };
 
-        // let search_options = if let Some(options) = options {
-        //     serde_json::from_str(options).to_indy(
-        //         IndyErrorKind::InvalidStructure,
-        //         "Search options is malformed json",
-        //     )?
-        // } else {
-        //     SearchOptions::default()
-        // };
+        let mut conn = self.pool.acquire().await?;
 
-        // let total_count: Option<usize> = if search_options.retrieve_total_count {
-        //     let (query_string, query_arguments) = query::wql_to_sql_count(&type_, query)?;
+        let records = if options.retrieve_records {
+            let (query, args) = query::wql_to_sql(type_, query, None)?;
 
-        //     let res: Option<usize> = Option::from(self.conn.query_row(
-        //         &query_string,
-        //         &query_arguments,
-        //         |row| {
-        //             let x: i64 = row.get(0)?;
-        //             Ok(x as usize)
-        //         },
-        //     )?);
-        //     res
-        // } else {
-        //     None
-        // };
+            // "SELECT i.id, i.name, i.value, i.key, i.type FROM items as i WHERE i.type = ?"
+
+            let mut query =
+                sqlx::query_as::<sqlx::Sqlite, (i64, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)>(&query);
+
+            for arg in args.iter() {
+                query = match arg {
+                    query::ToSQL::ByteSlice(a) => query.bind(a),
+                    query::ToSQL::CharSlice(a) => query.bind(a),
+                }
+            }
+
+            let mut records = query.fetch_all(&mut conn).await?;
+
+            let mut mtags = if options.retrieve_tags && records.len() > 0 {
+                let mut tags: Vec<(i64, Tag)> = Vec::new();
+
+                let in_binings = std::iter::repeat("?").take(records.len()).collect::<Vec<_>>().join(",");
+
+                let query = format!(
+                    r#"
+                    SELECT item_id, name, value
+                    FROM tags_plaintext
+                    WHERE item_id IN ({})
+                    "#,
+                    in_binings
+                );
+
+                let mut query = sqlx::query_as::<sqlx::Sqlite, (i64, Vec<u8>, String)>(&query);
+
+                for record in records.iter() {
+                    query = query.bind(record.0);
+                }
+
+                tags.extend(
+                    query
+                        .fetch_all(&mut conn)
+                        .await?
+                        .drain(..)
+                        .map(|r| (r.0, Tag::PlainText(r.1, r.2))),
+                );
+
+                let query = format!(
+                    r#"
+                    SELECT item_id, name, value
+                    FROM tags_encrypted
+                    WHERE item_id IN ({})
+                    "#,
+                    in_binings
+                );
+
+                let mut query = sqlx::query_as::<sqlx::Sqlite, (i64, Vec<u8>, Vec<u8>)>(&query);
+
+                for record in records.iter() {
+                    query = query.bind(record.0);
+                }
+
+                tags.extend(
+                    query
+                        .fetch_all(&mut conn)
+                        .await?
+                        .drain(..)
+                        .map(|r| (r.0, Tag::Encrypted(r.1, r.2))),
+                );
+
+                let mut mtags = HashMap::new();
+
+                for (k, v) in tags {
+                    mtags.entry(k).or_insert_with(Vec::new).push(v)
+                }
+
+                mtags
+            } else {
+                HashMap::new()
+            };
+
+            let records = records
+                .drain(..)
+                .map(|r| {
+                    StorageRecord::new(
+                        r.1,
+                        if options.retrieve_value {
+                            Some(EncryptedValue::new(r.2, r.3))
+                        } else {
+                            None
+                        },
+                        if options.retrieve_type {
+                            Some(r.4)
+                        } else {
+                            None
+                        },
+                        if options.retrieve_tags {
+                            mtags.remove(&r.0).or_else(|| Some(Vec::new()))
+                        } else {
+                            None
+                        },
+                    )
+                })
+                .collect();
+
+            Some(records)
+        } else {
+            None
+        };
+
+        let total_count: Option<usize> = if options.retrieve_total_count {
+            let (query, mut args) = query::wql_to_sql_count(&type_, query)?;
+
+            let mut query = sqlx::query_as::<sqlx::Sqlite, (i64,)>(&query);
+
+            while let Some(arg) = args.pop() {
+                query = match arg {
+                    query::ToSQL::ByteSlice(a) => query.bind(a),
+                    query::ToSQL::CharSlice(a) => query.bind(a),
+                }
+            }
+
+            let (total_count,) = query.fetch_one(&mut conn).await?;
+            Some(total_count as usize)
+        } else {
+            None
+        };
+
+        Ok(Box::new(SQLiteStorageIterator::new(records, total_count)?))
 
         // if search_options.retrieve_records {
         //     let fetch_options = RecordOptions {
@@ -849,8 +972,8 @@ mod tests {
     use indy_utils::{assert_kind, test};
     use serde_json::json;
 
-    use super::*;
     use super::super::Tag;
+    use super::*;
 
     #[async_std::test]
     async fn sqlite_storage_type_create_works() {
