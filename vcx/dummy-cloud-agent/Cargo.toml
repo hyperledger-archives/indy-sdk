@@ -34,5 +34,5 @@ envconfig_derive = "0.6.0"
 
 
 [dev-dependencies]
-dirs_next = "2.0.0"
+dirs-next = "2.0.0"
 tokio-core = "0.1.17"
