@@ -1,10 +1,11 @@
-pub mod default;
-//pub mod plugged; FIXME:!!!
-
-use crate::language;
-use crate::wallet::EncryptedValue;
 use async_trait::async_trait;
 use indy_api_types::errors::prelude::*;
+
+use crate::{language, wallet::EncryptedValue};
+
+pub mod default;
+pub mod mysql;
+//pub mod plugged; FIXME:!!!
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Tag {

@@ -861,7 +861,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_empty_query() {
         test::cleanup_wallet("wallet_search_works_for_empty_query");
 
@@ -915,7 +914,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_empty_query_with_count() {
         test::cleanup_wallet("wallet_search_works_for_empty_query_with_count");
 
@@ -969,7 +967,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_empty_query_with_only_count() {
         test::cleanup_wallet("wallet_search_works_for_empty_query_with_only_count");
         {
@@ -1004,7 +1001,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_eq_encrypted() {
         test::cleanup_wallet("wallet_search_works_for_eq_encrypted");
         {
@@ -1098,7 +1094,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_empty_tag_plain() {
         test::cleanup_wallet("wallet_search_works_for_empty_tag_plain");
 
@@ -1130,7 +1125,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_empty_tag_encrypted() {
         test::cleanup_wallet("wallet_search_works_for_empty_tag_encrypted");
 
@@ -1162,7 +1156,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_eq_plan() {
         test::cleanup_wallet("wallet_search_works_for_eq_plan");
         {
@@ -1258,7 +1251,6 @@ mod tests {
     // neq tests //
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_neq_encrypted() {
         test::cleanup_wallet("wallet_search_works_for_neq_encrypted");
 
@@ -1353,7 +1345,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_neq_plain() {
         test::cleanup_wallet("wallet_search_works_for_neq_plain");
 
@@ -1448,7 +1439,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_gt_plain() {
         test::cleanup_wallet("wallet_search_works_for_gt_plain");
 
@@ -1543,7 +1533,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_gt_encrypted() {
         test::cleanup_wallet("wallet_search_works_for_gt_encrypted");
 
@@ -1567,7 +1556,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_gte_plain() {
         test::cleanup_wallet("wallet_search_works_for_gte_plain");
 
@@ -1662,7 +1650,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_gte_encrypted() {
         test::cleanup_wallet("wallet_search_works_for_gte_encrypted");
 
@@ -1686,7 +1673,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_lt_plain() {
         test::cleanup_wallet("wallet_search_works_for_lt_plain");
 
@@ -1780,7 +1766,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_lt_encrypted() {
         test::cleanup_wallet("wallet_search_works_for_lt_encrypted");
 
@@ -1804,7 +1789,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_lte_plain() {
         test::cleanup_wallet("wallet_search_works_for_lte_plain");
 
@@ -1899,7 +1883,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_lte_encrypted() {
         test::cleanup_wallet("wallet_search_works_for_lte_encrypted");
 
@@ -1922,7 +1905,7 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
+
     async fn wallet_search_works_for_like_plain() {
         test::cleanup_wallet("wallet_search_works_for_like_plain");
 
@@ -2032,7 +2015,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_like_encrypted() {
         test::cleanup_wallet("wallet_search_works_for_like_encrypted");
 
@@ -2056,7 +2038,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_in_plain() {
         test::cleanup_wallet("wallet_search_works_for_in_plain");
 
@@ -2179,7 +2160,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_in_encrypted() {
         test::cleanup_wallet("wallet_search_works_for_in_encrypted");
 
@@ -2302,7 +2282,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_and() {
         test::cleanup_wallet("wallet_search_works_for_and");
         {
@@ -2483,7 +2462,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_or() {
         test::cleanup_wallet("wallet_search_works_for_or");
 
@@ -2669,7 +2647,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_not() {
         test::cleanup_wallet("wallet_search_works_for_not");
         {
@@ -2798,7 +2775,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_nested() {
         test::cleanup_wallet("wallet_search_works_for_nested");
         {
@@ -2854,7 +2830,6 @@ mod tests {
     }
 
     #[async_std::test]
-    #[ignore]
     async fn wallet_search_works_for_nested_empty() {
         test::cleanup_wallet("wallet_search_works_for_nested_empty");
 
