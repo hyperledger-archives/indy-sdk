@@ -12,32 +12,38 @@ RUN apt-get update -y && apt-get install -y \
 	python3-nacl \
 	apt-transport-https \
 	ca-certificates \
+	software-properties-common \
 	supervisor
 
 RUN pip3 install -U \
-	pip==9.0.3 \
-	setuptools
+	"pip~=9.0" \
+	"setuptools~=50.0"
 
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 || \
+RUN add-apt-repository "deb http://us.archive.ubuntu.com/ubuntu xenial main universe" && \
 	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys CE7709D068DB5E88
 ARG indy_stream=master
-RUN echo "deb https://repo.sovrin.org/deb xenial $indy_stream" >> /etc/apt/sources.list
+RUN add-apt-repository "deb https://repo.sovrin.org/deb xenial ${indy_stream}" && \
+	add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable"
 
 RUN useradd -ms /bin/bash -u $uid indy
 
-ARG indy_plenum_ver=1.12.1~dev989
-ARG indy_node_ver=1.12.1~dev1172
-ARG python3_indy_crypto_ver=0.4.5
-ARG indy_crypto_ver=0.4.5
-ARG python3_pyzmq_ver=18.1.0
+ARG indy_plenum_ver=1.13.0.dev1032
+ARG indy_node_ver=1.13.0.dev1221
 
 RUN apt-get update -y && apt-get install -y \
-        python3-pyzmq=${python3_pyzmq_ver} \
-        indy-plenum=${indy_plenum_ver} \
-        indy-node=${indy_node_ver} \
-        python3-indy-crypto=${python3_indy_crypto_ver} \
-        libindy-crypto=${indy_crypto_ver} \
-        vim
+	libsodium18 \
+	libbz2-dev \
+	zlib1g-dev \
+	liblz4-dev \
+	libsnappy-dev \
+	rocksdb=5.8.8 \
+	libindy \
+	ursa \
+	vim
+
+RUN pip3 install \
+	indy-plenum==${indy_plenum_ver} \
+	indy-node==${indy_node_ver}
 
 RUN echo "[supervisord]\n\
 logfile = /tmp/supervisord.log\n\
@@ -81,10 +87,24 @@ stdout_logfile=/tmp/node4.log\n\
 stderr_logfile=/tmp/node4.log\n"\
 >> /etc/supervisord.conf
 
+RUN mkdir -p \
+	/etc/indy \
+	/var/lib/indy/backup \
+	/var/lib/indy/plugins \
+	/var/log/indy \
+	&& chown -R indy:root /etc/indy /var/lib/indy /var/log/indy
+
 USER indy
 
-RUN awk '{if (index($1, "NETWORK_NAME") != 0) {print("NETWORK_NAME = \"sandbox\"")} else print($0)}' /etc/indy/indy_config.py> /tmp/indy_config.py
-RUN mv /tmp/indy_config.py /etc/indy/indy_config.py
+RUN echo "LEDGER_DIR = '/var/lib/indy'\n\
+LOG_DIR = '/var/log/indy'\n\
+KEYS_DIR = '/var/lib/indy'\n\
+GENESIS_DIR = '/var/lib/indy'\n\
+BACKUP_DIR = '/var/lib/indy/backup'\n\
+PLUGINS_DIR = '/var/lib/indy/plugins'\n\
+NODE_INFO_DIR = '/var/lib/indy'\n\
+NETWORK_NAME = 'sandbox'\n"\
+>> /etc/indy/indy_config.py
 
 ARG pool_ip=127.0.0.1
 
