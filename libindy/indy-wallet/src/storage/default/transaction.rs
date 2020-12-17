@@ -14,6 +14,7 @@ impl<'conn> Transaction<'conn> {
             TransactionBehavior::Deferred => "BEGIN DEFERRED",
             TransactionBehavior::Immediate => "BEGIN IMMEDIATE",
             TransactionBehavior::Exclusive => "BEGIN EXCLUSIVE",
+			_ => "BEGIN IMMEDIATE"
         };
         conn.execute_batch(query)
             .map(move |_| {
@@ -77,6 +78,9 @@ impl<'conn> Transaction<'conn> {
             DropBehavior::Ignore => Ok(()),
             DropBehavior::Panic => {
                 panic!("drop behaviour is set to panic".to_string());
+            },
+			_ => {
+                panic!("unknown drop behaviour, panic".to_string());
             }
         }
     }
