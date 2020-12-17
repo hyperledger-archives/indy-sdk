@@ -74,7 +74,7 @@ pub struct Credentials {
 
 #[derive(Debug)]
 struct MySqlStorage {
-    wallet_id: u64,
+    wallet_id: i64,
     read_pool: MySqlPool,
     write_pool: MySqlPool,
 }
@@ -188,14 +188,14 @@ impl WalletStorage for MySqlStorage {
 
         let mut conn = self.read_pool.acquire().await?;
 
-        let (value, tags): (Vec<u8>, String) = sqlx::query_as(&format!(
+        let (value, tags): (Vec<u8>, serde_json::Value) = sqlx::query_as(&format!(
             r#"
             SELECT {}, {}
             FROM items
             WHERE
-                wallet_id = ?1
-                    AND type = ?2
-                    AND name = ?3
+                wallet_id = ?
+                    AND type = ?
+                    AND name = ?
             "#,
             if options.retrieve_value {
                 "value"
@@ -204,6 +204,7 @@ impl WalletStorage for MySqlStorage {
             },
             if options.retrieve_tags { "tags" } else { "''" },
         ))
+        .bind(self.wallet_id)
         .bind(&base64::encode(type_))
         .bind(&base64::encode(id))
         .fetch_one(&mut conn)
@@ -222,7 +223,7 @@ impl WalletStorage for MySqlStorage {
         };
 
         let tags = if options.retrieve_tags {
-            Some(_tags_from_json(&tags)?)
+            Some(_tags_from_json(tags)?)
         } else {
             None
         };
@@ -271,7 +272,7 @@ impl WalletStorage for MySqlStorage {
         sqlx::query(
             r#"
             INSERT INTO items (type, name, value, tags, wallet_id)
-            VALUE (?1, ?2, ?3, ?4, ?5)
+            VALUE (?, ?, ?, ?, ?)
             "#,
         )
         .bind(&base64::encode(type_))
@@ -292,8 +293,10 @@ impl WalletStorage for MySqlStorage {
         let row_updated = sqlx::query(
             r#"
             UPDATE items
-            SET value = ?1
-            WHERE type = ?2 AND name = ?3 AND wallet_id = 4
+            SET value = ?
+            WHERE type = ?
+                AND name = ?
+                AND wallet_id = ?
             "#,
         )
         .bind(&value.to_bytes())
@@ -328,7 +331,7 @@ impl WalletStorage for MySqlStorage {
 
         let tag_paths = _tags_to_plain(&tags)
             .into_iter()
-            .map(|(tag, val)| format!(r#"'$."{}"', {}"#, tag, val))
+            .map(|(tag, val)| format!(r#"'$."{}"', "{}""#, tag, val))
             .collect::<Vec<_>>()
             .join(",");
 
@@ -338,9 +341,9 @@ impl WalletStorage for MySqlStorage {
             r#"
             UPDATE items
                 SET tags = JSON_SET(tags, {})
-            WHERE type = ?1
-                AND name = ?2
-                AND wallet_id = ?3
+            WHERE type = ?
+                AND name = ?
+                AND wallet_id = ?
             "#,
             tag_paths
         ))
@@ -373,10 +376,10 @@ impl WalletStorage for MySqlStorage {
         let row_updated = sqlx::query(
             r#"
             UPDATE items
-            SET tags = ?1
-            WHERE type = ?2
-                AND name = ?3
-                AND wallet_id = ?4
+            SET tags = ?
+            WHERE type = ?
+                AND name = ?
+                AND wallet_id = ?
             "#,
         )
         .bind(&_tags_to_json(tags)?)
@@ -421,9 +424,9 @@ impl WalletStorage for MySqlStorage {
             r#"
             UPDATE items
             SET tags = JSON_REMOVE(tags, {})
-            WHERE type = ?1
-                AND name = ?2
-                AND wallet_id = ?3
+            WHERE type = ?
+                AND name = ?
+                AND wallet_id = ?
             "#,
             tag_name_paths
         ))
@@ -482,9 +485,9 @@ impl WalletStorage for MySqlStorage {
         let rows_affected = sqlx::query(
             r#"
             DELETE FROM items
-            WHERE type = ?1
-                AND name = ?2
-                AND wallet_id = ?3"#,
+            WHERE type = ?
+                AND name = ?
+                AND wallet_id = ?"#,
         )
         .bind(&base64::encode(type_))
         .bind(&base64::encode(id))
@@ -516,7 +519,7 @@ impl WalletStorage for MySqlStorage {
             r#"
             SELECT metadata
             FROM wallets
-            WHERE id = ?1
+            WHERE id = ?
             "#,
         )
         .bind(&self.wallet_id)
@@ -532,8 +535,8 @@ impl WalletStorage for MySqlStorage {
         sqlx::query(
             r#"
             UPDATE wallets
-            SET metadata = ?1
-            WHERE id = ?2
+            SET metadata = ?
+            WHERE id = ?
             "#,
         )
         .bind(metadata)
@@ -550,7 +553,8 @@ impl WalletStorage for MySqlStorage {
             r#"
             SELECT type, name, value, tags
             FROM items
-            WHERE wallet_id = ?1
+            WHERE wallet_id = ?
+            ORDER BY id
             "#,
         )
         .bind(self.wallet_id)
@@ -558,13 +562,13 @@ impl WalletStorage for MySqlStorage {
             let type_: String = r.get(0);
             let id: String = r.get(1);
             let value: Vec<u8> = r.get(2);
-            let tags: String = r.get(3);
+            let tags: serde_json::Value = r.get(3);
 
             let res = StorageRecord::new(
                 base64::decode(&id)?,
                 Some(EncryptedValue::from_bytes(&value)?),
                 Some(base64::decode(&type_)?),
-                Some(_tags_from_json(&tags)?),
+                Some(_tags_from_json(tags)?),
             );
 
             Ok(res)
@@ -633,7 +637,7 @@ impl WalletStorageType for MySqlStorageType {
         let rows_affected = sqlx::query(
             r#"
             DELETE FROM wallets
-            WHERE name = ?1
+            WHERE name = ?
             "#,
         )
         .bind(id)
@@ -701,7 +705,7 @@ impl WalletStorageType for MySqlStorageType {
         sqlx::query(
             r#"
             INSERT INTO wallets (name, metadata)
-            VALUES (?1, ?2)
+            VALUES (?, ?)
             "#,
         )
         .bind(id)
@@ -749,10 +753,10 @@ impl WalletStorageType for MySqlStorageType {
         let read_pool = self._connect(true, config, credentials).await?;
         let write_pool = self._connect(false, config, credentials).await?;
 
-        let (wallet_id,) = sqlx::query_as::<_, (u64,)>(
+        let (wallet_id,) = sqlx::query_as::<_, (i64,)>(
             r#"
             SELECT id FROM wallets
-            WHERE name = ?1
+            WHERE name = ?
             "#,
         )
         .bind(id)
@@ -769,80 +773,42 @@ impl WalletStorageType for MySqlStorageType {
 
 #[cfg(test)]
 mod tests {
-    use indy_utils::{assert_kind, test};
-    use serde_json::json;
+    use indy_utils::assert_kind;
 
     use super::super::Tag;
     use super::*;
-    use std::path::Path;
+
+    // docker run --name indy-mysql -e MYSQL_ROOT_PASSWORD=pass@word1 -p 3306:3306 -d mysql:latest
 
     #[async_std::test]
-    async fn smysql_storage_type_create_works() {
-        _cleanup("smysql_storage_type_create_works");
+    async fn mysql_storage_type_create_works() {
+        _cleanup("mysql_storage_type_create_works").await;
 
-        let storage_type = MySqlStorageType::new();
-
-        storage_type
-            .create_storage("smysql_storage_type_create_works", None, None, &_metadata())
-            .await
-            .unwrap();
-
-        _cleanup("smysql_storage_type_create_works");
-    }
-
-    #[async_std::test]
-    async fn smysql_storage_type_create_works_for_custom_path() {
-        _cleanup("smysql_storage_type_create_works_for_custom_path");
-
-        let config = json!({
-            "path": _custom_path("smysql_storage_type_create_works_for_custom_path")
-        })
-        .to_string();
-
-        _cleanup_custom_path("smysql_storage_type_create_works_for_custom_path");
         let storage_type = MySqlStorageType::new();
 
         storage_type
             .create_storage(
-                "smysql_storage_type_create_works_for_custom_path",
-                Some(&config),
-                None,
+                "mysql_storage_type_create_works",
+                _config(),
+                _credentials(),
                 &_metadata(),
             )
             .await
             .unwrap();
 
-        storage_type
-            .delete_storage(
-                "smysql_storage_type_create_works_for_custom_path",
-                Some(&config),
-                None,
-            )
-            .await
-            .unwrap();
-
-        _cleanup_custom_path("smysql_storage_type_create_works_for_custom_path");
-        _cleanup("smysql_storage_type_create_works_for_custom_path");
-    }
-
-    fn _cleanup_custom_path(custom_path: &str) {
-        let my_path = _custom_path(custom_path);
-        let path = Path::new(&my_path);
-        if path.exists() {
-            fs::remove_dir_all(path).unwrap();
-        }
+        _cleanup("mysql_storage_type_create_works").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_type_create_works_for_twice() {
-        _cleanup("smysql_storage_type_create_works_for_twice");
+    async fn mysql_storage_type_create_works_for_twice() {
+        _cleanup("mysql_storage_type_create_works_for_twice").await;
 
         let storage_type = MySqlStorageType::new();
         storage_type
             .create_storage(
-                "smysql_storage_type_create_works_for_twice",
-                None,
-                None,
+                "mysql_storage_type_create_works_for_twice",
+                _config(),
+                _credentials(),
                 &_metadata(),
             )
             .await
@@ -850,9 +816,9 @@ mod tests {
 
         let res = storage_type
             .create_storage(
-                "smysql_storage_type_create_works_for_twice",
-                None,
-                None,
+                "mysql_storage_type_create_works_for_twice",
+                _config(),
+                _credentials(),
                 &_metadata(),
             )
             .await;
@@ -860,112 +826,107 @@ mod tests {
         assert_kind!(IndyErrorKind::WalletAlreadyExists, res);
 
         storage_type
-            .delete_storage("smysql_storage_type_create_works_for_twice", None, None)
+            .delete_storage(
+                "mysql_storage_type_create_works_for_twice",
+                _config(),
+                _credentials(),
+            )
             .await
             .unwrap();
     }
 
     #[async_std::test]
-    async fn smysql_storage_get_storage_metadata_works() {
-        _cleanup("smysql_storage_get_storage_metadata_works");
+    async fn mysql_storage_get_storage_metadata_works() {
+        _cleanup("mysql_storage_get_storage_metadata_works").await;
 
         {
-            let storage = _storage("smysql_storage_get_storage_metadata_works").await;
+            let storage = _storage("mysql_storage_get_storage_metadata_works").await;
             let metadata = storage.get_storage_metadata().await.unwrap();
 
             assert_eq!(metadata, _metadata());
         }
 
-        _cleanup("smysql_storage_get_storage_metadata_works");
+        _cleanup("mysql_storage_get_storage_metadata_works").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_type_delete_works() {
-        _cleanup("smysql_storage_type_delete_works");
+    async fn mysql_storage_type_delete_works() {
+        _cleanup("mysql_storage_type_delete_works").await;
 
         let storage_type = MySqlStorageType::new();
-        storage_type
-            .create_storage("smysql_storage_type_delete_works", None, None, &_metadata())
-            .await
-            .unwrap();
-
-        storage_type
-            .delete_storage("smysql_storage_type_delete_works", None, None)
-            .await
-            .unwrap();
-    }
-
-    #[async_std::test]
-    async fn smysql_storage_type_delete_works_for_non_existing() {
-        _cleanup("smysql_storage_type_delete_works_for_non_existing");
-
-        let storage_type = MySqlStorageType::new();
-
         storage_type
             .create_storage(
-                "smysql_storage_type_delete_works_for_non_existing",
-                None,
-                None,
+                "mysql_storage_type_delete_works",
+                _config(),
+                _credentials(),
                 &_metadata(),
             )
             .await
             .unwrap();
 
-        let res = storage_type.delete_storage("unknown", None, None).await;
+        storage_type
+            .delete_storage("mysql_storage_type_delete_works", _config(), _credentials())
+            .await
+            .unwrap();
+    }
+
+    #[async_std::test]
+    async fn mysql_storage_type_delete_works_for_non_existing() {
+        _cleanup("mysql_storage_type_delete_works_for_non_existing").await;
+
+        let storage_type = MySqlStorageType::new();
+
+        storage_type
+            .create_storage(
+                "mysql_storage_type_delete_works_for_non_existing",
+                _config(),
+                _credentials(),
+                &_metadata(),
+            )
+            .await
+            .unwrap();
+
+        let res = storage_type
+            .delete_storage("unknown", _config(), _credentials())
+            .await;
         assert_kind!(IndyErrorKind::WalletNotFound, res);
 
         storage_type
             .delete_storage(
-                "smysql_storage_type_delete_works_for_non_existing",
-                None,
-                None,
+                "mysql_storage_type_delete_works_for_non_existing",
+                _config(),
+                _credentials(),
             )
             .await
             .unwrap();
     }
 
     #[async_std::test]
-    async fn smysql_storage_type_open_works() {
-        _cleanup("smysql_storage_type_open_works");
-        _storage("smysql_storage_type_open_works").await;
-        _cleanup("smysql_storage_type_open_works");
+    async fn mysql_storage_type_open_works() {
+        _cleanup("mysql_storage_type_open_works").await;
+        _storage("mysql_storage_type_open_works").await;
+        _cleanup("mysql_storage_type_open_works").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_type_open_works_for_custom() {
-        _cleanup("smysql_storage_type_open_works_for_custom");
-
-        let my_path = _custom_path("smysql_storage_type_open_works_for_custom");
-        let path = Path::new(&my_path);
-
-        if path.exists() && path.is_dir() {
-            fs::remove_dir_all(path).unwrap();
-        }
-
-        _storage_custom("smysql_storage_type_open_works_for_custom").await;
-
-        fs::remove_dir_all(path).unwrap();
-    }
-
-    #[async_std::test]
-    async fn smysql_storage_type_open_works_for_not_created() {
-        _cleanup("smysql_storage_type_open_works_for_not_created");
+    async fn mysql_storage_type_open_works_for_not_created() {
+        _cleanup("mysql_storage_type_open_works_for_not_created").await;
 
         let storage_type = MySqlStorageType::new();
 
         let res = storage_type
-            .open_storage("unknown", Some("{}"), Some("{}"))
+            .open_storage("unknown", _config(), _credentials())
             .await;
 
         assert_kind!(IndyErrorKind::WalletNotFound, res);
     }
 
     #[async_std::test]
-    async fn smysql_storage_add_works_for_is_802() {
-        _cleanup("smysql_storage_add_works_for_is_802");
+    async fn mysql_storage_add_works_for_is_802() {
+        _cleanup("mysql_storage_add_works_for_is_802").await;
 
         {
-            let storage = _storage("smysql_storage_add_works_for_is_802").await;
+            let storage = _storage("mysql_storage_add_works_for_is_802").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -979,15 +940,15 @@ mod tests {
             assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
         }
 
-        _cleanup("smysql_storage_add_works_for_is_802");
+        _cleanup("mysql_storage_add_works_for_is_802").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_set_get_works() {
-        _cleanup("smysql_storage_set_get_works");
+    async fn mysql_storage_set_get_works() {
+        _cleanup("mysql_storage_set_get_works").await;
 
         {
-            let storage = _storage("smysql_storage_set_get_works").await;
+            let storage = _storage("mysql_storage_set_get_works").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1007,48 +968,15 @@ mod tests {
             assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
         }
 
-        _cleanup("smysql_storage_set_get_works");
+        _cleanup("mysql_storage_set_get_works").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_set_get_works_for_custom() {
-        _cleanup("smysql_storage_set_get_works_for_custom");
-
-        let path = _custom_path("smysql_storage_set_get_works_for_custom");
-        let path = Path::new(&path);
+    async fn mysql_storage_set_get_works_for_twice() {
+        _cleanup("mysql_storage_set_get_works_for_twice").await;
 
         {
-            let storage = _storage_custom("smysql_storage_set_get_works_for_custom").await;
-
-            storage
-                .add(&_type1(), &_id1(), &_value1(), &_tags())
-                .await
-                .unwrap();
-
-            let record = storage
-                .get(
-                    &_type1(),
-                    &_id1(),
-                    r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##,
-                )
-                .await
-                .unwrap();
-
-            assert_eq!(record.id, _id1());
-            assert_eq!(record.value.unwrap(), _value1());
-            assert_eq!(record.type_, None);
-            assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
-        }
-
-        fs::remove_dir_all(path).unwrap();
-    }
-
-    #[async_std::test]
-    async fn smysql_storage_set_get_works_for_twice() {
-        _cleanup("smysql_storage_set_get_works_for_twice");
-
-        {
-            let storage = _storage("smysql_storage_set_get_works_for_twice").await;
+            let storage = _storage("mysql_storage_set_get_works_for_twice").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1059,14 +987,14 @@ mod tests {
             assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
         }
 
-        _cleanup("smysql_storage_set_get_works_for_twice");
+        _cleanup("mysql_storage_set_get_works_for_twice").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_set_get_works_for_reopen() {
-        _cleanup("smysql_storage_set_get_works_for_reopen");
+    async fn mysql_storage_set_get_works_for_reopen() {
+        _cleanup("mysql_storage_set_get_works_for_reopen").await;
 
-        _storage("smysql_storage_set_get_works_for_reopen")
+        _storage("mysql_storage_set_get_works_for_reopen")
             .await
             .add(&_type1(), &_id1(), &_value1(), &_tags())
             .await
@@ -1074,9 +1002,9 @@ mod tests {
 
         let record = MySqlStorageType::new()
             .open_storage(
-                "smysql_storage_set_get_works_for_reopen",
-                Some("{}"),
-                Some("{}"),
+                "mysql_storage_set_get_works_for_reopen",
+                _config(),
+                _credentials(),
             )
             .await
             .unwrap()
@@ -1091,15 +1019,15 @@ mod tests {
         assert_eq!(record.value.unwrap(), _value1());
         assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
 
-        _cleanup("smysql_storage_set_get_works_for_reopen");
+        _cleanup("mysql_storage_set_get_works_for_reopen").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_get_works_for_wrong_key() {
-        _cleanup("smysql_storage_get_works_for_wrong_key");
+    async fn mysql_storage_get_works_for_wrong_key() {
+        _cleanup("mysql_storage_get_works_for_wrong_key").await;
 
         {
-            let storage = _storage("smysql_storage_get_works_for_wrong_key").await;
+            let storage = _storage("mysql_storage_get_works_for_wrong_key").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1117,15 +1045,15 @@ mod tests {
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
 
-        _cleanup("smysql_storage_get_works_for_wrong_key");
+        _cleanup("mysql_storage_get_works_for_wrong_key").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_delete_works() {
-        _cleanup("smysql_storage_delete_works");
+    async fn mysql_storage_delete_works() {
+        _cleanup("mysql_storage_delete_works").await;
 
         {
-            let storage = _storage("smysql_storage_delete_works").await;
+            let storage = _storage("mysql_storage_delete_works").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1157,15 +1085,15 @@ mod tests {
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
 
-        _cleanup("smysql_storage_delete_works");
+        _cleanup("mysql_storage_delete_works").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_delete_works_for_non_existing() {
-        _cleanup("smysql_storage_delete_works_for_non_existing");
+    async fn mysql_storage_delete_works_for_non_existing() {
+        _cleanup("mysql_storage_delete_works_for_non_existing").await;
 
         {
-            let storage = _storage("smysql_storage_delete_works_for_non_existing").await;
+            let storage = _storage("mysql_storage_delete_works_for_non_existing").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1176,17 +1104,16 @@ mod tests {
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
 
-        _cleanup("smysql_storage_delete_works_for_non_existing");
+        _cleanup("mysql_storage_delete_works_for_non_existing").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_delete_returns_error_item_not_found_if_no_such_type() {
-        _cleanup("smysql_storage_delete_returns_error_item_not_found_if_no_such_type");
+    async fn mysql_storage_delete_returns_error_item_not_found_if_no_such_type() {
+        _cleanup("mysql_storage_delete_returns_error_item_not_found_if_no_such_type").await;
 
         {
             let storage =
-                _storage("smysql_storage_delete_returns_error_item_not_found_if_no_such_type")
-                    .await;
+                _storage("mysql_storage_delete_returns_error_item_not_found_if_no_such_type").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1197,15 +1124,15 @@ mod tests {
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
 
-        _cleanup("smysql_storage_delete_returns_error_item_not_found_if_no_such_type");
+        _cleanup("mysql_storage_delete_returns_error_item_not_found_if_no_such_type").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_get_all_works() {
-        _cleanup("smysql_storage_get_all_works");
+    async fn mysql_storage_get_all_works() {
+        _cleanup("mysql_storage_get_all_works").await;
 
         {
-            let storage = _storage("smysql_storage_get_all_works").await;
+            let storage = _storage("mysql_storage_get_all_works").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1233,30 +1160,30 @@ mod tests {
             assert!(record.is_none());
         }
 
-        _cleanup("smysql_storage_get_all_works");
+        _cleanup("mysql_storage_get_all_works").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_get_all_works_for_empty() {
-        _cleanup("smysql_storage_get_all_works_for_empty");
+    async fn mysql_storage_get_all_works_for_empty() {
+        _cleanup("mysql_storage_get_all_works_for_empty").await;
 
         {
-            let storage = _storage("smysql_storage_get_all_works_for_empty").await;
+            let storage = _storage("mysql_storage_get_all_works_for_empty").await;
             let mut storage_iterator = storage.get_all().await.unwrap();
 
             let record = storage_iterator.next().await.unwrap();
             assert!(record.is_none());
         }
 
-        _cleanup("smysql_storage_get_all_works_for_empty");
+        _cleanup("mysql_storage_get_all_works_for_empty").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_update_works() {
-        _cleanup("smysql_storage_update_works");
+    async fn mysql_storage_update_works() {
+        _cleanup("mysql_storage_update_works").await;
 
         {
-            let storage = _storage("smysql_storage_update_works").await;
+            let storage = _storage("mysql_storage_update_works").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1291,15 +1218,15 @@ mod tests {
             assert_eq!(record.value.unwrap(), _value2());
         }
 
-        _cleanup("smysql_storage_update_works");
+        _cleanup("mysql_storage_update_works").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_update_works_for_non_existing_id() {
-        _cleanup("smysql_storage_update_works_for_non_existing_id");
+    async fn mysql_storage_update_works_for_non_existing_id() {
+        _cleanup("mysql_storage_update_works_for_non_existing_id").await;
 
         {
-            let storage = _storage("smysql_storage_update_works_for_non_existing_id").await;
+            let storage = _storage("mysql_storage_update_works_for_non_existing_id").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1321,15 +1248,15 @@ mod tests {
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
 
-        _cleanup("smysql_storage_update_works_for_non_existing_id");
+        _cleanup("mysql_storage_update_works_for_non_existing_id").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_update_works_for_non_existing_type() {
-        _cleanup("smysql_storage_update_works_for_non_existing_type");
+    async fn mysql_storage_update_works_for_non_existing_type() {
+        _cleanup("mysql_storage_update_works_for_non_existing_type").await;
 
         {
-            let storage = _storage("smysql_storage_update_works_for_non_existing_type").await;
+            let storage = _storage("mysql_storage_update_works_for_non_existing_type").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1351,15 +1278,15 @@ mod tests {
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
 
-        _cleanup("smysql_storage_update_works_for_non_existing_type");
+        _cleanup("mysql_storage_update_works_for_non_existing_type").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_add_tags_works() {
-        _cleanup("smysql_storage_add_tags_works");
+    async fn mysql_storage_add_tags_works() {
+        _cleanup("mysql_storage_add_tags_works").await;
 
         {
-            let storage = _storage("smysql_storage_add_tags_works").await;
+            let storage = _storage("mysql_storage_add_tags_works").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1391,15 +1318,15 @@ mod tests {
             assert_eq!(_sort(record.tags.unwrap()), expected_tags);
         }
 
-        _cleanup("smysql_storage_add_tags_works");
+        _cleanup("mysql_storage_add_tags_works").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_add_tags_works_for_non_existing_id() {
-        _cleanup("smysql_storage_add_tags_works_for_non_existing_id");
+    async fn mysql_storage_add_tags_works_for_non_existing_id() {
+        _cleanup("mysql_storage_add_tags_works_for_non_existing_id").await;
 
         {
-            let storage = _storage("smysql_storage_add_tags_works_for_non_existing_id").await;
+            let storage = _storage("mysql_storage_add_tags_works_for_non_existing_id").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1410,15 +1337,15 @@ mod tests {
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
 
-        _cleanup("smysql_storage_add_tags_works_for_non_existing_id");
+        _cleanup("mysql_storage_add_tags_works_for_non_existing_id").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_add_tags_works_for_non_existing_type() {
-        _cleanup("smysql_storage_add_tags_works_for_non_existing_type");
+    async fn mysql_storage_add_tags_works_for_non_existing_type() {
+        _cleanup("mysql_storage_add_tags_works_for_non_existing_type").await;
 
         {
-            let storage = _storage("smysql_storage_add_tags_works_for_non_existing_type").await;
+            let storage = _storage("mysql_storage_add_tags_works_for_non_existing_type").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1429,15 +1356,15 @@ mod tests {
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
 
-        _cleanup("smysql_storage_add_tags_works_for_non_existing_type");
+        _cleanup("mysql_storage_add_tags_works_for_non_existing_type").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_add_tags_works_for_already_existing() {
-        _cleanup("smysql_storage_add_tags_works_for_already_existing");
+    async fn mysql_storage_add_tags_works_for_already_existing() {
+        _cleanup("mysql_storage_add_tags_works_for_already_existing").await;
 
         {
-            let storage = _storage("smysql_storage_add_tags_works_for_already_existing").await;
+            let storage = _storage("mysql_storage_add_tags_works_for_already_existing").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1475,15 +1402,15 @@ mod tests {
             assert_eq!(_sort(record.tags.unwrap()), expected_tags);
         }
 
-        _cleanup("smysql_storage_add_tags_works_for_already_existing");
+        _cleanup("mysql_storage_add_tags_works_for_already_existing").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_update_tags_works() {
-        _cleanup("smysql_storage_update_tags_works");
+    async fn mysql_storage_update_tags_works() {
+        _cleanup("mysql_storage_update_tags_works").await;
 
         {
-            let storage = _storage("smysql_storage_update_tags_works").await;
+            let storage = _storage("mysql_storage_update_tags_works").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1508,15 +1435,15 @@ mod tests {
             assert_eq!(_sort(record.tags.unwrap()), _sort(_new_tags()));
         }
 
-        _cleanup("smysql_storage_update_tags_works");
+        _cleanup("mysql_storage_update_tags_works").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_update_tags_works_for_non_existing_id() {
-        _cleanup("smysql_storage_update_tags_works_for_non_existing_id");
+    async fn mysql_storage_update_tags_works_for_non_existing_id() {
+        _cleanup("mysql_storage_update_tags_works_for_non_existing_id").await;
 
         {
-            let storage = _storage("smysql_storage_update_tags_works_for_non_existing_id").await;
+            let storage = _storage("mysql_storage_update_tags_works_for_non_existing_id").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1527,15 +1454,15 @@ mod tests {
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
 
-        _cleanup("smysql_storage_update_tags_works_for_non_existing_id");
+        _cleanup("mysql_storage_update_tags_works_for_non_existing_id").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_update_tags_works_for_non_existing_type() {
-        _cleanup("smysql_storage_update_tags_works_for_non_existing_type");
+    async fn mysql_storage_update_tags_works_for_non_existing_type() {
+        _cleanup("mysql_storage_update_tags_works_for_non_existing_type").await;
 
         {
-            let storage = _storage("smysql_storage_update_tags_works_for_non_existing_type").await;
+            let storage = _storage("mysql_storage_update_tags_works_for_non_existing_type").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1546,14 +1473,14 @@ mod tests {
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
 
-        _cleanup("smysql_storage_update_tags_works_for_non_existing_type");
+        _cleanup("mysql_storage_update_tags_works_for_non_existing_type").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_update_tags_works_for_already_existing() {
-        _cleanup("smysql_storage_update_tags_works_for_already_existing");
+    async fn mysql_storage_update_tags_works_for_already_existing() {
+        _cleanup("mysql_storage_update_tags_works_for_already_existing").await;
         {
-            let storage = _storage("smysql_storage_update_tags_works_for_already_existing").await;
+            let storage = _storage("mysql_storage_update_tags_works_for_already_existing").await;
 
             storage
                 .add(&_type1(), &_id1(), &_value1(), &_tags())
@@ -1590,15 +1517,15 @@ mod tests {
 
             assert_eq!(_sort(record.tags.unwrap()), expected_tags);
         }
-        _cleanup("smysql_storage_update_tags_works_for_already_existing");
+        _cleanup("mysql_storage_update_tags_works_for_already_existing").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_delete_tags_works() {
-        _cleanup("smysql_storage_delete_tags_works");
+    async fn mysql_storage_delete_tags_works() {
+        _cleanup("mysql_storage_delete_tags_works").await;
 
         {
-            let storage = _storage("smysql_storage_delete_tags_works").await;
+            let storage = _storage("mysql_storage_delete_tags_works").await;
 
             let tag_name1 = vec![0, 0, 0];
             let tag_name2 = vec![1, 1, 1];
@@ -1635,15 +1562,15 @@ mod tests {
             assert_eq!(record.tags.unwrap(), vec![tag3]);
         }
 
-        _cleanup("smysql_storage_delete_tags_works");
+        _cleanup("mysql_storage_delete_tags_works").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_delete_tags_works_for_non_existing_type() {
-        _cleanup("smysql_storage_delete_tags_works_for_non_existing_type");
+    async fn mysql_storage_delete_tags_works_for_non_existing_type() {
+        _cleanup("mysql_storage_delete_tags_works_for_non_existing_type").await;
 
         {
-            let storage = _storage("smysql_storage_delete_tags_works_for_non_existing_type").await;
+            let storage = _storage("mysql_storage_delete_tags_works_for_non_existing_type").await;
 
             let tag_name1 = vec![0, 0, 0];
             let tag_name2 = vec![1, 1, 1];
@@ -1667,15 +1594,15 @@ mod tests {
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
 
-        _cleanup("smysql_storage_delete_tags_works_for_non_existing_type");
+        _cleanup("mysql_storage_delete_tags_works_for_non_existing_type").await;
     }
 
     #[async_std::test]
-    async fn smysql_storage_delete_tags_works_for_non_existing_id() {
-        _cleanup("smysql_storage_delete_tags_works_for_non_existing_id");
+    async fn mysql_storage_delete_tags_works_for_non_existing_id() {
+        _cleanup("mysql_storage_delete_tags_works_for_non_existing_id").await;
 
         {
-            let storage = _storage("smysql_storage_delete_tags_works_for_non_existing_id").await;
+            let storage = _storage("mysql_storage_delete_tags_works_for_non_existing_id").await;
 
             let tag_name1 = vec![0, 0, 0];
             let tag_name2 = vec![1, 1, 1];
@@ -1699,36 +1626,50 @@ mod tests {
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
         }
 
-        _cleanup("smysql_storage_delete_tags_works_for_non_existing_id");
+        _cleanup("mysql_storage_delete_tags_works_for_non_existing_id").await;
     }
 
-    fn _cleanup(name: &str) {
-        test::cleanup_storage(name)
+    fn _config() -> Option<&'static str> {
+        Some(
+            r#"
+            {
+                "read_host": "127.0.0.1",
+                "write_host": "127.0.0.1",
+                "port": 3306,
+                "db_name": "indy"
+            }
+            "#,
+        )
+    }
+
+    fn _credentials() -> Option<&'static str> {
+        Some(
+            r#"
+            {
+                "user": "root",
+                "pass": "pass@word1"
+            }
+            "#,
+        )
+    }
+
+    async fn _cleanup(name: &str) {
+        MySqlStorageType::new()
+            .delete_storage(name, _config(), _credentials())
+            .await
+            .ok();
     }
 
     async fn _storage(name: &str) -> Box<dyn WalletStorage> {
         let storage_type = MySqlStorageType::new();
 
         storage_type
-            .create_storage(name, None, None, &_metadata())
-            .await
-            .unwrap();
-
-        storage_type.open_storage(name, None, None).await.unwrap()
-    }
-
-    async fn _storage_custom(name: &str) -> Box<dyn WalletStorage> {
-        let storage_type = MySqlStorageType::new();
-
-        let config = json!({ "path": _custom_path(name) }).to_string();
-
-        storage_type
-            .create_storage(name, Some(&config), None, &_metadata())
+            .create_storage(name, _config(), _credentials(), &_metadata())
             .await
             .unwrap();
 
         storage_type
-            .open_storage(name, Some(&config), None)
+            .open_storage(name, _config(), _credentials())
             .await
             .unwrap()
     }
@@ -1768,7 +1709,68 @@ mod tests {
     fn _value(i: u8) -> EncryptedValue {
         EncryptedValue {
             data: vec![6 + i, 7 + i, 8 + i],
-            key: vec![9 + i, 10 + i, 11 + i],
+            key: vec![
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+                9 + i,
+                10 + i,
+                11 + i,
+            ],
         }
     }
 
@@ -1833,8 +1835,8 @@ fn _tags_to_json(tags: &[Tag]) -> IndyResult<String> {
 }
 
 // FIXME: copy/paste
-fn _tags_from_json(json: &str) -> IndyResult<Vec<Tag>> {
-    let string_tags: HashMap<String, String> = serde_json::from_str(json).to_indy(
+fn _tags_from_json(json: serde_json::Value) -> IndyResult<Vec<Tag>> {
+    let string_tags: HashMap<String, String> = serde_json::from_value(json).to_indy(
         IndyErrorKind::InvalidState,
         "Unable to deserialize tags from json",
     )?;
