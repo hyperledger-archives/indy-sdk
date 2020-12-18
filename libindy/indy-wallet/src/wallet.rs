@@ -396,6 +396,7 @@ mod tests {
         wallet::Wallet,
         Metadata, MetadataArgon,
     };
+    use storage::mysql::MySqlStorageType;
 
     macro_rules! jsonstr {
         ($($x:tt)+) => {
@@ -425,6 +426,21 @@ mod tests {
 
         test::cleanup_wallet("wallet_get_id_works");
     }
+
+    #[async_std::test]
+    async fn wallet_get_id_works_for_mysql() {
+        test::cleanup_wallet("wallet_get_id_works_for_mysql");
+
+        {
+            let mut wallet = _wallet("wallet_get_id_works_for_mysql").await;
+            assert_eq!(wallet.get_id(), "wallet_get_id_works_for_mysql");
+
+            wallet.close().await.unwrap();
+        }
+
+        test::cleanup_wallet("wallet_get_id_works_for_mysql");
+    }
+
 
     #[async_std::test]
     async fn wallet_add_get_works() {
@@ -2945,6 +2961,33 @@ mod tests {
         Wallet::new(name.to_string(), storage, Rc::new(keys))
     }
 
+    async fn _mysql_wallet(name: &str) -> Wallet {
+        let storage_type = MySqlStorageType::new();
+        let master_key = _master_key();
+
+        let keys = Keys::new();
+
+        let metadata = {
+            let master_key_salt = encryption::gen_master_key_salt().unwrap();
+
+            let metadata = Metadata::MetadataArgon(MetadataArgon {
+                master_key_salt: master_key_salt[..].to_vec(),
+                keys: keys.serialize_encrypted(&master_key).unwrap(),
+            });
+
+            serde_json::to_vec(&metadata).unwrap()
+        };
+
+        storage_type
+            .create_storage(name, _mysql_config(), _mysql_credentials(), &metadata)
+            .await
+            .unwrap();
+
+        let storage = storage_type.open_storage(name, _mysql_config(), _mysql_credentials()).await.unwrap();
+
+        Wallet::new(name.to_string(), storage, Rc::new(keys))
+    }
+
     async fn _exists_wallet(name: &str) -> Wallet {
         let storage_type = SQLiteStorageType::new();
         let storage = storage_type.open_storage(name, None, None).await.unwrap();
@@ -3017,5 +3060,36 @@ mod tests {
     fn _sort(mut v: Vec<WalletRecord>) -> Vec<WalletRecord> {
         v.sort();
         v
+    }
+
+    fn _mysql_config() -> Option<&'static str> {
+        Some(
+            r#"
+            {
+                "read_host": "127.0.0.1",
+                "write_host": "127.0.0.1",
+                "port": 3306,
+                "db_name": "indy"
+            }
+            "#,
+        )
+    }
+
+    fn _mysql_credentials() -> Option<&'static str> {
+        Some(
+            r#"
+            {
+                "user": "root",
+                "pass": "pass@word1"
+            }
+            "#,
+        )
+    }
+
+    async fn _mysql_cleanup(name: &str) {
+        MySqlStorageType::new()
+            .delete_storage(name, _mysql_config(), _mysql_credentials())
+            .await
+            .ok();
     }
 }
