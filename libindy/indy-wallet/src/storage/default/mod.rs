@@ -657,7 +657,7 @@ impl WalletStorage for SQLiteStorage {
             None
         };
 
-        let total_count: Option<usize> = if options.retrieve_total_count {
+        let total_count = if options.retrieve_total_count {
             let (query, mut args) = query::wql_to_sql_count(&type_, query)?;
 
             let mut query = sqlx::query_as::<sqlx::Sqlite, (i64,)>(&query);
@@ -676,35 +676,6 @@ impl WalletStorage for SQLiteStorage {
         };
 
         Ok(Box::new(SQLiteStorageIterator::new(records, total_count)?))
-
-        // if search_options.retrieve_records {
-        //     let fetch_options = RecordOptions {
-        //         retrieve_value: search_options.retrieve_value,
-        //         retrieve_tags: search_options.retrieve_tags,
-        //         retrieve_type: search_options.retrieve_type,
-        //     };
-
-        //     let (query_string, query_arguments) = query::wql_to_sql(&type_, query, options)?;
-
-        //     let statement = self._prepare_statement(&query_string)?;
-        //     let tag_retriever = if fetch_options.retrieve_tags {
-        //         Some(TagRetriever::new_owned(self.conn.clone())?)
-        //     } else {
-        //         None
-        //     };
-        //     let storage_iterator = SQLiteStorageIterator::new(
-        //         Some(statement),
-        //         &query_arguments,
-        //         fetch_options,
-        //         tag_retriever,
-        //         total_count,
-        //     )?;
-        //     Ok(Box::new(storage_iterator))
-        // } else {
-        //     let storage_iterator =
-        //         SQLiteStorageIterator::new(None, &[], RecordOptions::default(), None, total_count)?;
-        //     Ok(Box::new(storage_iterator))
-        // }
     }
 
     async fn close(&mut self) -> IndyResult<()> {
