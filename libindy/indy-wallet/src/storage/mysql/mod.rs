@@ -1,20 +1,19 @@
 use std::{
-    cell::RefCell,
     collections::{HashMap, VecDeque},
-    fs,
     iter::Iterator,
-    pin::Pin,
 };
 
+use async_std::sync::RwLock;
 use async_trait::async_trait;
-use futures::{Stream, TryStreamExt};
+
 use indy_api_types::errors::prelude::*;
-use indy_utils::{crypto::base64, environment};
+use indy_utils::crypto::base64;
+
 use serde::Deserialize;
 
 use sqlx::{
     mysql::{MySqlConnectOptions, MySqlPoolOptions, MySqlRow},
-    ConnectOptions, Done, MySqlPool, Row,
+    Done, MySqlPool, Row,
 };
 
 use crate::{
@@ -23,19 +22,20 @@ use crate::{
     wallet::EncryptedValue,
     RecordOptions, SearchOptions,
 };
-use async_std::sync::RwLock;
+use query::{wql_to_sql, wql_to_sql_count};
 
-//mod query;
+mod query;
 
 struct MySQLStorageIterator {
-    records: VecDeque<IndyResult<StorageRecord>>,
+    records: Option<VecDeque<IndyResult<StorageRecord>>>,
     total_count: Option<usize>,
 }
 
 impl MySQLStorageIterator {
-    fn new(records: VecDeque<IndyResult<StorageRecord>>) -> IndyResult<MySQLStorageIterator> {
-        let total_count = Some(records.len());
-
+    fn new(
+        records: Option<VecDeque<IndyResult<StorageRecord>>>,
+        total_count: Option<usize>,
+    ) -> IndyResult<MySQLStorageIterator> {
         Ok(MySQLStorageIterator {
             records,
             total_count,
@@ -46,11 +46,16 @@ impl MySQLStorageIterator {
 #[async_trait]
 impl StorageIterator for MySQLStorageIterator {
     async fn next(&mut self) -> IndyResult<Option<StorageRecord>> {
-        if let Some(record) = self.records.pop_front() {
-            return Ok(Some(record?));
+        // TODO: Optimize!!!
+        if let Some(ref mut records) = self.records {
+            if let Some(record) = records.pop_front() {
+                return Ok(Some(record?));
+            } else {
+                Ok(None)
+            }
+        } else {
+            Ok(None)
         }
-
-        Ok(None)
     }
 
     fn get_total_count(&self) -> IndyResult<Option<usize>> {
@@ -84,12 +89,6 @@ pub struct MySqlStorageType {
 }
 
 impl MySqlStorageType {
-    pub fn new() -> MySqlStorageType {
-        MySqlStorageType {
-            connections: RwLock::new(HashMap::new()),
-        }
-    }
-
     pub async fn _connect(
         &self,
         read_only: bool,
@@ -578,8 +577,13 @@ impl WalletStorage for MySqlStorage {
         .into_iter()
         .collect();
 
+        let total_len = records.len();
+
         // FIXME: Fetch total count
-        Ok(Box::new(MySQLStorageIterator::new(records)?))
+        Ok(Box::new(MySQLStorageIterator::new(
+            Some(records),
+            Some(total_len),
+        )?))
     }
 
     async fn search(
@@ -588,7 +592,82 @@ impl WalletStorage for MySqlStorage {
         query: &language::Operator,
         options: Option<&str>,
     ) -> IndyResult<Box<dyn StorageIterator>> {
-        unimplemented!();
+        let options = if let Some(options) = options {
+            serde_json::from_str(options).to_indy(
+                IndyErrorKind::InvalidStructure,
+                "Search options is malformed json",
+            )?
+        } else {
+            SearchOptions::default()
+        };
+
+        let mut conn = self.read_pool.acquire().await?;
+
+        let total_count = if options.retrieve_total_count {
+            let (query, args) = wql_to_sql_count(self.wallet_id, type_, query)?;
+            let mut query = sqlx::query_as::<sqlx::MySql, (i64,)>(&query);
+
+            for arg in args.iter() {
+                query = query.bind(arg);
+            }
+
+            let (total_count,) = query.fetch_one(&mut conn).await?;
+            Some(total_count as usize)
+        } else {
+            None
+        };
+
+        let records = if options.retrieve_records {
+            let (query, args) = wql_to_sql(self.wallet_id, type_, query, &options)?;
+            let mut query = sqlx::query::<sqlx::MySql>(&query);
+
+            for arg in args.iter() {
+                query = query.bind(arg);
+            }
+
+            let records: VecDeque<_> = query
+                .map(|r: MySqlRow| -> IndyResult<StorageRecord> {
+                    let type_ = if options.retrieve_type {
+                        let type_: String = r.get(0);
+                        Some(base64::decode(&type_)?)
+                    } else {
+                        None
+                    };
+
+                    let id = {
+                        let id: String = r.get(1);
+                        base64::decode(&id)?
+                    };
+
+                    let value = if options.retrieve_value {
+                        let value: Vec<u8> = r.get(2);
+                        Some(EncryptedValue::from_bytes(&value)?)
+                    } else {
+                        None
+                    };
+
+                    let tags = if options.retrieve_tags {
+                        let tags: serde_json::Value = r.get(3);
+                        Some(_tags_from_json(tags)?)
+                    } else {
+                        None
+                    };
+
+                    let res = StorageRecord::new(id, value, type_, tags);
+
+                    Ok(res)
+                })
+                .fetch_all(&self.read_pool)
+                .await?
+                .into_iter()
+                .collect();
+
+            Some(records)
+        } else {
+            None
+        };
+
+        Ok(Box::new(MySQLStorageIterator::new(records, total_count)?))
     }
 
     async fn close(&mut self) -> IndyResult<()> {

@@ -1,255 +1,356 @@
 use indy_api_types::errors::prelude::*;
-use sqlx::prelude::Encode;
- 
-use crate::language::{Operator, TagName, TargetValue};
+use indy_utils::crypto::base64;
+use serde_json::Value;
 
-type ToSQL = sqlx::sqlite::SqliteValue;
+use crate::{
+    language::{Operator, TagName, TargetValue},
+    SearchOptions,
+};
 
-// Translates Wallet Query Language to SQL
-// WQL input is provided as a reference to a top level Operator
-// Result is a tuple of query string and query arguments
-pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, _options: Option<&str>) -> Result<(String, Vec<&'a dyn Encode>), IndyError> {
-    
-    let clause_string = operator_to_sql(op, &mut arguments)?;
+pub fn wql_to_sql(
+    wallet_id: i64,
+    type_: &[u8],
+    wql: &Operator,
+    options: &SearchOptions,
+) -> IndyResult<(String, Vec<Value>)> {
+    let mut arguments: Vec<Value> = Vec::new();
 
-    let query = if 
-    
-    sqlx::query_as("SELECT i.id, i.name, i.value, i.key, i.type FROM items as i WHERE i.type = ?")
-    
-    let mut arguments: Vec<dyn sqlx::prelude::Encode> = Vec::new();
-    arguments.push(class);
-    let clause_string = operator_to_sql(op, &mut arguments)?;
-    const BASE: &str = "SELECT i.id, i.name, i.value, i.key, i.type FROM items as i WHERE i.type = ?";
-    if !clause_string.is_empty() {
-        let mut query_string = String::with_capacity(BASE.len() + 5 + clause_string.len());
-        query_string.push_str(BASE);
-        query_string.push_str(" AND ");
-        query_string.push_str(&clause_string);
-        Ok((query_string, arguments))
-    } else {
-        Ok((BASE.to_string(), arguments))
-    }
+    let query_condition = match operator_to_sql(wql, &mut arguments) {
+        Ok(query_condition) => query_condition,
+        Err(err) => return Err(err),
+    };
 
-}
+    let query_string = format!(
+        "SELECT {}, name, {}, {} FROM items WHERE {} type = ? AND wallet_id = ?",
+        if options.retrieve_type {
+            "type"
+        } else {
+            "NULL"
+        },
+        if options.retrieve_value {
+            "value"
+        } else {
+            "NULL"
+        },
+        if options.retrieve_tags {
+            "tags"
+        } else {
+            "NULL"
+        },
+        if !query_condition.is_empty() {
+            query_condition + " AND"
+        } else {
+            "".to_string()
+        }
+    );
 
+    arguments.push(base64::encode(type_).into());
+    arguments.push(wallet_id.into());
 
-pub fn wql_to_sql_count<'a>(class: &'a Vec<u8>, op: &'a Operator) -> Result<(String, Vec<&'a dyn ToSql>), IndyError> {
-    let mut arguments: Vec<&dyn ToSql> = Vec::new();
-    arguments.push(class);
-    let clause_string = operator_to_sql(op, &mut arguments)?;
-    let mut query_string = "SELECT count(*) FROM items as i WHERE i.type = ?".to_string();
-    if !clause_string.is_empty() {
-        query_string.push_str(" AND ");
-        query_string.push_str(&clause_string);
-    }
     Ok((query_string, arguments))
 }
 
+pub fn wql_to_sql_count(
+    wallet_id: i64,
+    type_: &[u8],
+    wql: &Operator,
+) -> IndyResult<(String, Vec<Value>)> {
+    let mut arguments: Vec<Value> = Vec::new();
 
-fn operator_to_sql<'a>(op: &'a Operator, arguments: &mut Vec<&'a dyn ToSql>) -> IndyResult<String> {
+    let query_condition = match operator_to_sql(wql, &mut arguments) {
+        Ok(query_condition) => query_condition,
+        Err(err) => return Err(err),
+    };
+
+    let query_string = format!(
+        "SELECT count(*) FROM items i WHERE {} i.type = ? AND i.wallet_id = ?",
+        if !query_condition.is_empty() {
+            query_condition + " AND"
+        } else {
+            "".to_string()
+        }
+    );
+
+    arguments.push(base64::encode(type_).into());
+    arguments.push(wallet_id.into());
+
+    Ok((query_string, arguments))
+}
+
+fn operator_to_sql(op: &Operator, arguments: &mut Vec<Value>) -> IndyResult<String> {
     match *op {
-        Operator::Eq(ref tag_name, ref target_value) => eq_to_sql(tag_name, target_value, arguments),
-        Operator::Neq(ref tag_name, ref target_value) => neq_to_sql(tag_name, target_value, arguments),
-        Operator::Gt(ref tag_name, ref target_value) => gt_to_sql(tag_name, target_value, arguments),
-        Operator::Gte(ref tag_name, ref target_value) => gte_to_sql(tag_name, target_value, arguments),
-        Operator::Lt(ref tag_name, ref target_value) => lt_to_sql(tag_name, target_value, arguments),
-        Operator::Lte(ref tag_name, ref target_value) => lte_to_sql(tag_name, target_value, arguments),
-        Operator::Like(ref tag_name, ref target_value) => like_to_sql(tag_name, target_value, arguments),
-        Operator::In(ref tag_name, ref target_values) => in_to_sql(tag_name, target_values, arguments),
+        Operator::Eq(ref tag_name, ref target_value) => {
+            Ok(eq_to_sql(tag_name, target_value, arguments))
+        }
+        Operator::Neq(ref tag_name, ref target_value) => {
+            Ok(neq_to_sql(tag_name, target_value, arguments))
+        }
+        Operator::Gt(ref tag_name, ref target_value) => {
+            gt_to_sql(tag_name, target_value, arguments)
+        }
+        Operator::Gte(ref tag_name, ref target_value) => {
+            gte_to_sql(tag_name, target_value, arguments)
+        }
+        Operator::Lt(ref tag_name, ref target_value) => {
+            lt_to_sql(tag_name, target_value, arguments)
+        }
+        Operator::Lte(ref tag_name, ref target_value) => {
+            lte_to_sql(tag_name, target_value, arguments)
+        }
+        Operator::Like(ref tag_name, ref target_value) => {
+            like_to_sql(tag_name, target_value, arguments)
+        }
+        Operator::In(ref tag_name, ref target_values) => {
+            Ok(in_to_sql(tag_name, target_values, arguments))
+        }
         Operator::And(ref suboperators) => and_to_sql(suboperators, arguments),
         Operator::Or(ref suboperators) => or_to_sql(suboperators, arguments),
         Operator::Not(ref suboperator) => not_to_sql(suboperator, arguments),
     }
 }
 
+fn eq_to_sql(tag_name: &TagName, tag_value: &TargetValue, arguments: &mut Vec<Value>) -> String {
+    let tag_path = format!(r#"'$."{}"'"#, tag_name.to_plain());
 
-fn eq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a dyn ToSql>) -> IndyResult<String> {
-    match (name, value) {
-        (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
-            arguments.push(queried_name);
-            arguments.push(queried_value);
-            Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value = ?))".to_string())
-        },
-        (&TagName::EncryptedTagName(ref queried_name), &TargetValue::Encrypted(ref queried_value)) => {
-            arguments.push(queried_name);
-            arguments.push(queried_value);
-            Ok("(i.id in (SELECT item_id FROM tags_encrypted WHERE name = ? AND value = ?))".to_string())
-        },
-        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Invalid combination of tag name and value for equality operator"))
+    arguments.push(tag_value.to_plain().into());
+    format!("(JSON_UNQUOTE(JSON_EXTRACT(tags, {})) = ?)", tag_path)
+}
+
+fn neq_to_sql(tag_name: &TagName, tag_value: &TargetValue, arguments: &mut Vec<Value>) -> String {
+    let tag_path = format!(r#"'$."{}"'"#, tag_name.to_plain());
+
+    arguments.push(tag_value.to_plain().into());
+    format!("(JSON_UNQUOTE(JSON_EXTRACT(tags, {})) != ?)", tag_path)
+}
+
+fn gt_to_sql(
+    tag_name: &TagName,
+    tag_value: &TargetValue,
+    arguments: &mut Vec<Value>,
+) -> IndyResult<String> {
+    match (tag_name, tag_value) {
+        (&TagName::PlainTagName(_), &TargetValue::Unencrypted(_)) => {
+            let tag_path = format!(r#"'$."{}"'"#, tag_name.to_plain());
+            arguments.push(tag_value.to_plain().into());
+
+            Ok(format!(
+                "(JSON_UNQUOTE(JSON_EXTRACT(tags, {})) > ?)",
+                tag_path
+            ))
+        }
+        _ => Err(err_msg(
+            IndyErrorKind::WalletQueryError,
+            "Invalid combination of tag name and value for $gt operator",
+        )),
     }
 }
 
+fn gte_to_sql(
+    tag_name: &TagName,
+    tag_value: &TargetValue,
+    arguments: &mut Vec<Value>,
+) -> IndyResult<String> {
+    match (tag_name, tag_value) {
+        (&TagName::PlainTagName(_), &TargetValue::Unencrypted(_)) => {
+            let tag_path = format!(r#"'$."{}"'"#, tag_name.to_plain());
+            arguments.push(tag_value.to_plain().into());
 
-fn neq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a dyn ToSql>) -> IndyResult<String> {
-    match (name, value) {
-        (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
-            arguments.push(queried_name);
-            arguments.push(queried_value);
-            Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value != ?))".to_string())
-        },
-        (&TagName::EncryptedTagName(ref queried_name), &TargetValue::Encrypted(ref queried_value)) => {
-            arguments.push(queried_name);
-            arguments.push(queried_value);
-            Ok("(i.id in (SELECT item_id FROM tags_encrypted WHERE name = ? AND value != ?))".to_string())
-        },
-        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Invalid combination of tag name and value for inequality operator"))
+            Ok(format!(
+                "(JSON_UNQUOTE(JSON_EXTRACT(tags, {})) >= ?)",
+                tag_path
+            ))
+        }
+        _ => Err(err_msg(
+            IndyErrorKind::WalletQueryError,
+            "Invalid combination of tag name and value for $gt operator",
+        )),
     }
 }
 
+fn lt_to_sql(
+    tag_name: &TagName,
+    tag_value: &TargetValue,
+    arguments: &mut Vec<Value>,
+) -> IndyResult<String> {
+    match (tag_name, tag_value) {
+        (&TagName::PlainTagName(_), &TargetValue::Unencrypted(_)) => {
+            let tag_path = format!(r#"'$."{}"'"#, tag_name.to_plain());
+            arguments.push(tag_value.to_plain().into());
 
-fn gt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a dyn ToSql>) -> IndyResult<String> {
-    match (name, value) {
-        (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
-            arguments.push(queried_name);
-            arguments.push(queried_value);
-            Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value > ?))".to_string())
-        },
-        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Invalid combination of tag name and value for $gt operator"))
+            Ok(format!(
+                "JSON_UNQUOTE(JSON_EXTRACT(tags, {})) < ?)",
+                tag_path
+            ))
+        }
+        _ => Err(err_msg(
+            IndyErrorKind::WalletQueryError,
+            "Invalid combination of tag name and value for $lt operator",
+        )),
     }
 }
 
+fn lte_to_sql(
+    tag_name: &TagName,
+    tag_value: &TargetValue,
+    arguments: &mut Vec<Value>,
+) -> IndyResult<String> {
+    match (tag_name, tag_value) {
+        (&TagName::PlainTagName(_), &TargetValue::Unencrypted(_)) => {
+            let tag_path = format!(r#"'$."{}"'"#, tag_name.to_plain());
+            arguments.push(tag_value.to_plain().into());
 
-fn gte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a dyn ToSql>) -> IndyResult<String> {
-    match (name, value) {
-        (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
-            arguments.push(queried_name);
-            arguments.push(queried_value);
-            Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value >= ?))".to_string())
-        },
-        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Invalid combination of tag name and value for $gte operator"))
+            Ok(format!(
+                "JSON_UNQUOTE(JSON_EXTRACT(tags, {})) =< ?)",
+                tag_path
+            ))
+        }
+        _ => Err(err_msg(
+            IndyErrorKind::WalletQueryError,
+            "Invalid combination of tag name and value for $lt operator",
+        )),
     }
 }
 
+fn like_to_sql(
+    tag_name: &TagName,
+    tag_value: &TargetValue,
+    arguments: &mut Vec<Value>,
+) -> IndyResult<String> {
+    match (tag_name, tag_value) {
+        (&TagName::PlainTagName(_), &TargetValue::Unencrypted(_)) => {
+            let tag_path = format!(r#"'$."{}"'"#, tag_name.to_plain());
+            arguments.push(tag_value.to_plain().into());
 
-fn lt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a dyn ToSql>) -> IndyResult<String> {
-    match (name, value) {
-        (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
-            arguments.push(queried_name);
-            arguments.push(queried_value);
-            Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value < ?))".to_string())
-        },
-        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Invalid combination of tag name and value for $lt operator"))
+            Ok(format!(
+                "JSON_UNQUOTE(JSON_EXTRACT(tags, {})) LIKE ?)",
+                tag_path
+            ))
+        }
+        _ => Err(err_msg(
+            IndyErrorKind::WalletQueryError,
+            "Invalid combination of tag name and value for $lt operator",
+        )),
     }
 }
 
+fn in_to_sql(
+    tag_name: &TagName,
+    tag_values: &Vec<TargetValue>,
+    arguments: &mut Vec<Value>,
+) -> String {
+    let tag_path = format!(r#"'$."{}"'"#, tag_name.to_plain());
+    let mut in_string = format!("JSON_UNQUOTE(JSON_EXTRACT(tags, {})) IN (", tag_path);
 
-fn lte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a dyn ToSql>) -> IndyResult<String> {
-    match (name, value) {
-        (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
-            arguments.push(queried_name);
-            arguments.push(queried_value);
-            Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value <= ?))".to_string())
-        },
-        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Invalid combination of tag name and value for $lte operator"))
+    for (index, tag_value) in tag_values.iter().enumerate() {
+        in_string.push_str("?");
+        if index < tag_values.len() - 1 {
+            in_string.push(',');
+        } else {
+            in_string.push(')');
+        }
+
+        arguments.push(tag_value.to_plain().into());
     }
+
+    in_string
 }
 
-
-fn like_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a dyn ToSql>) -> IndyResult<String> {
-    match (name, value) {
-        (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
-            arguments.push(queried_name);
-            arguments.push(queried_value);
-            Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value LIKE ?))".to_string())
-        },
-        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Invalid combination of tag name and value for $like operator"))
-    }
-}
-
-
-fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mut Vec<&'a dyn ToSql>) -> IndyResult<String> {
-    let mut in_string = String::new();
-    match *name {
-        TagName::PlainTagName(ref queried_name) => {
-            in_string.push_str("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value IN (");
-            arguments.push(queried_name);
-
-            for (index, value) in values.iter().enumerate() {
-                if let TargetValue::Unencrypted(ref target) = *value {
-                    in_string.push_str("?");
-                    arguments.push(target);
-                    if index < values.len() - 1 {
-                        in_string.push(',');
-                    }
-                } else {
-                    return Err(err_msg(IndyErrorKind::WalletQueryError, "Encrypted tag value in $in for nonencrypted tag name"))
-                }
-            }
-
-            Ok(in_string + ")))")
-        },
-        TagName::EncryptedTagName(ref queried_name) => {
-            in_string.push_str("(i.id in (SELECT item_id FROM tags_encrypted WHERE name = ? AND value IN (");
-            arguments.push(queried_name);
-            let index_before_last = values.len() - 2;
-
-            for (index, value) in values.iter().enumerate() {
-                if let TargetValue::Encrypted(ref target) = *value {
-                    in_string.push_str("?");
-                    arguments.push(target);
-                    if index <= index_before_last {
-                        in_string.push(',');
-                    }
-                } else {
-                    return Err(err_msg(IndyErrorKind::WalletQueryError, "Unencrypted tag value in $in for encrypted tag name"))
-                }
-            }
-
-            Ok(in_string + ")))")
-        },
-    }
-}
-
-
-fn and_to_sql<'a>(suboperators: &'a [Operator], arguments: &mut Vec<&'a dyn ToSql>) -> IndyResult<String> {
+fn and_to_sql(suboperators: &[Operator], arguments: &mut Vec<Value>) -> IndyResult<String> {
     join_operators(suboperators, " AND ", arguments)
 }
 
-
-fn or_to_sql<'a>(suboperators: &'a [Operator], arguments: &mut Vec<&'a dyn ToSql>) -> IndyResult<String> {
+fn or_to_sql(suboperators: &[Operator], arguments: &mut Vec<Value>) -> IndyResult<String> {
     join_operators(suboperators, " OR ", arguments)
 }
 
-
-fn not_to_sql<'a>(suboperator: &'a Operator, arguments: &mut Vec<&'a dyn ToSql>) -> IndyResult<String> {
+fn not_to_sql(suboperator: &Operator, arguments: &mut Vec<Value>) -> IndyResult<String> {
     let suboperator_string = operator_to_sql(suboperator, arguments)?;
     Ok("NOT (".to_string() + &suboperator_string + ")")
 }
 
-
-fn join_operators<'a>(operators: &'a [Operator], join_str: &str, arguments: &mut Vec<&'a dyn ToSql>) -> IndyResult<String> {
+fn join_operators(
+    operators: &[Operator],
+    join_str: &str,
+    arguments: &mut Vec<Value>,
+) -> IndyResult<String> {
     let mut s = String::new();
+
     if !operators.is_empty() {
         s.push('(');
         for (index, operator) in operators.iter().enumerate() {
             let operator_string = operator_to_sql(operator, arguments)?;
+
             s.push_str(&operator_string);
+
             if index < operators.len() - 1 {
                 s.push_str(join_str);
             }
         }
+
         s.push(')');
     }
+
     Ok(s)
 }
 
+// FIXME: It is quite smilar for to_string method of tag and value, but for some reason
+// to_string uses "". It is added to avoid potential damage as i have no time
+// for investigation.
+trait ToPlain {
+    fn to_plain(&self) -> String;
+}
+
+impl ToPlain for TagName {
+    fn to_plain(&self) -> String {
+        match *self {
+            TagName::EncryptedTagName(ref v) => base64::encode(v),
+            TagName::PlainTagName(ref v) => format!("~{}", base64::encode(v)),
+        }
+    }
+}
+
+impl ToPlain for TargetValue {
+    fn to_plain(&self) -> String {
+        match *self {
+            TargetValue::Unencrypted(ref s) => s.to_owned(),
+            TargetValue::Encrypted(ref v) => base64::encode(v),
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use indy_utils::crypto::base64;
 
     #[test]
     fn simple_and() {
         let condition_1 = Operator::And(vec![
-            Operator::Eq(TagName::EncryptedTagName(vec![1,2,3]), TargetValue::Encrypted(vec![4,5,6])),
-            Operator::Eq(TagName::PlainTagName(vec![7,8,9]), TargetValue::Unencrypted("spam".to_string())),
+            Operator::Eq(
+                TagName::EncryptedTagName(vec![1, 2, 3]),
+                TargetValue::Encrypted(vec![4, 5, 6]),
+            ),
+            Operator::Eq(
+                TagName::PlainTagName(vec![7, 8, 9]),
+                TargetValue::Unencrypted("spam".to_string()),
+            ),
         ]);
+
         let condition_2 = Operator::And(vec![
-            Operator::Eq(TagName::EncryptedTagName(vec![10,11,12]), TargetValue::Encrypted(vec![13,14,15])),
-            Operator::Not(Box::new(Operator::Eq(TagName::PlainTagName(vec![16,17,18]), TargetValue::Unencrypted("eggs".to_string()))))
+            Operator::Eq(
+                TagName::EncryptedTagName(vec![10, 11, 12]),
+                TargetValue::Encrypted(vec![13, 14, 15]),
+            ),
+            Operator::Not(Box::new(Operator::Eq(
+                TagName::PlainTagName(vec![16, 17, 18]),
+                TargetValue::Unencrypted("eggs".to_string()),
+            ))),
         ]);
+
         let query = Operator::Or(vec![condition_1, condition_2]);
-        let class = vec![100,100,100];
-        let (_query, _arguments) = wql_to_sql(&class, &query, None).unwrap();
+        let class = [100, 100, 100];
+        let options = SearchOptions::default();
+
+        let (_query, _arguments) = wql_to_sql(1_i64, &class, &query, &options).unwrap();
     }
 }
