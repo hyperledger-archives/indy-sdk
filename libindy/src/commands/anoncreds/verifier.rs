@@ -21,7 +21,7 @@ pub enum VerifierCommand {
         RevocationRegistries, // rev reg entries
         Box<dyn Fn(IndyResult<bool>, Rc<MetricsService>) + Send>),
     GenerateNonce(
-        Box<dyn Fn(IndyResult<String>) + Send>)
+        Box<dyn Fn(IndyResult<String>, Rc<MetricsService>) + Send>)
 }
 
 pub struct VerifierCommandExecutor {
@@ -50,7 +50,7 @@ impl VerifierCommandExecutor {
             }
             VerifierCommand::GenerateNonce(cb) => {
                 debug!(target: "verifier_command_executor", "GenerateNonce command received");
-                cb(self.generate_nonce());
+                cb(self.generate_nonce(), self.metrics_service.clone());
             }
         };
     }

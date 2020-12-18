@@ -6,6 +6,9 @@ use indy_api_types::errors::prelude::*;
 use indy_utils::ctypes;
 
 use libc::c_char;
+use indy_wallet::Metadata;
+use crate::services::metrics::MetricsService;
+use std::rc::Rc;
 
 #[no_mangle]
 pub extern fn indy_open_blob_storage_reader(command_handle: CommandHandle,
@@ -59,7 +62,7 @@ pub extern fn indy_open_blob_storage_writer(command_handle: CommandHandle,
         .send(Command::BlobStorage(BlobStorageCommand::OpenWriter(
             type_,
             config_json,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_servic: Rc<MetricsService>| {
                 let (err, handle) = prepare_result_1!(result, 0);
                 trace!("indy_open_blob_storage_writer: handle: {:?}", handle);
                 cb(command_handle, err, handle)

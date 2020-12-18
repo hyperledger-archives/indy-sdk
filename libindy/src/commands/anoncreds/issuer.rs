@@ -117,7 +117,7 @@ pub enum IssuerCommand {
     CreateCredentialOffer(
         WalletHandle,
         CredentialDefinitionId, // credential definition id
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>, Rc<MetricsService>) + Send>),
     CreateCredential(
         WalletHandle,
         CredentialOffer, // credential offer
@@ -131,7 +131,7 @@ pub enum IssuerCommand {
         i32, // blob storage reader config handle
         RevocationRegistryId, //revocation registry id
         String, //credential revoc id
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>, Rc<MetricsService>) + Send>),
     /*    RecoverCredential(
             WalletHandle,
             i32, // blob storage reader config handle
@@ -141,7 +141,7 @@ pub enum IssuerCommand {
     MergeRevocationRegistryDeltas(
         RevocationRegistryDelta, //revocation registry delta
         RevocationRegistryDelta, //other revocation registry delta
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>, Rc<MetricsService>) + Send>),
 }
 
 pub struct IssuerCommandExecutor {
@@ -215,7 +215,7 @@ impl IssuerCommandExecutor {
             }
             IssuerCommand::CreateCredentialOffer(wallet_handle, cred_def_id, cb) => {
                 debug!(target: "issuer_command_executor", "CreateCredentialOffer command received");
-                cb(self.create_credential_offer(wallet_handle, &cred_def_id));
+                cb(self.create_credential_offer(wallet_handle, &cred_def_id), self.metrics_service.clone());
             }
             IssuerCommand::CreateCredential(wallet_handle, cred_offer, cred_req, cred_values, rev_reg_id, blob_storage_reader_handle, cb) => {
                 debug!(target: "issuer_command_executor", "CreateCredential command received");
@@ -223,7 +223,7 @@ impl IssuerCommandExecutor {
             }
             IssuerCommand::RevokeCredential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id, cb) => {
                 debug!(target: "issuer_command_executor", "RevokeCredential command received");
-                cb(self.revoke_credential(wallet_handle, blob_storage_reader_handle, &rev_reg_id, &cred_revoc_id));
+                cb(self.revoke_credential(wallet_handle, blob_storage_reader_handle, &rev_reg_id, &cred_revoc_id), self.metrics_service.clone());
             }
             /*            IssuerCommand::RecoverCredential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id, cb) => {
                             debug!(target: "issuer_command_executor", "RecoverCredential command received");
@@ -232,7 +232,8 @@ impl IssuerCommandExecutor {
             IssuerCommand::MergeRevocationRegistryDeltas(rev_reg_delta, other_rev_reg_delta, cb) => {
                 debug!(target: "issuer_command_executor", "MergeRevocationRegistryDeltas command received");
                 cb(self.merge_revocation_registry_deltas(&mut RevocationRegistryDeltaV1::from(rev_reg_delta),
-                                                         &RevocationRegistryDeltaV1::from(other_rev_reg_delta)));
+                                                         &RevocationRegistryDeltaV1::from(other_rev_reg_delta)),
+               self.metrics_service.clone());
             }
         };
     }

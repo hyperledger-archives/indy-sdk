@@ -7,6 +7,8 @@ use indy_api_types::validation::Validatable;
 use crate::domain::crypto::did::DidValue;
 
 use libc::c_char;
+use std::rc::Rc;
+use crate::services::metrics::MetricsService;
 
 
 /// Check if pairwise is exists.
@@ -40,7 +42,7 @@ pub  extern fn indy_is_pairwise_exists(command_handle: CommandHandle,
         .send(Command::Pairwise(PairwiseCommand::PairwiseExists(
             wallet_handle,
             their_did,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, exists) = prepare_result_1!(result, false);
                 trace!("indy_is_pairwise_exists: exists: {:?}", exists);
                 cb(command_handle, err, exists)
@@ -94,7 +96,7 @@ pub  extern fn indy_create_pairwise(command_handle: CommandHandle,
             their_did,
             my_did,
             metadata,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_create_pairwise:");
                 cb(command_handle, err)
@@ -223,7 +225,7 @@ pub  extern fn indy_set_pairwise_metadata(command_handle: CommandHandle,
             wallet_handle,
             their_did,
             metadata,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_set_pairwise_metadata:");
                 cb(command_handle, err)

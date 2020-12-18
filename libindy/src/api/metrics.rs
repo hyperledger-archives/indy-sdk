@@ -3,6 +3,8 @@ use crate::commands::{Command, CommandExecutor};
 use crate::commands::metrics::MetricsCommand;
 use indy_utils::ctypes;
 use libc::c_char;
+use crate::services::metrics::MetricsService;
+use std::rc::Rc;
 
 /// Collect metrics.
 ///

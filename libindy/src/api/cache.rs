@@ -9,6 +9,8 @@ use crate::domain::anoncreds::credential_definition::CredentialDefinitionId;
 use crate::domain::crypto::did::DidValue;
 use indy_api_types::validation::Validatable;
 use libc::c_char;
+use crate::services::metrics::MetricsService;
+use std::rc::Rc;
 
 
 /// Gets credential definition json data for specified credential definition id.
@@ -155,7 +157,7 @@ pub extern fn indy_purge_cred_def_cache(command_handle: CommandHandle,
         .send(Command::Cache(CacheCommand::PurgeCredDefCache(
             wallet_handle,
             options_json,
-            Box::new(move |result| {
+            Box::new(move |result, mtetrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_purge_cred_def_cache:");
                 cb(command_handle, err)
@@ -200,7 +202,7 @@ pub extern fn indy_purge_schema_cache(command_handle: CommandHandle,
         .send(Command::Cache(CacheCommand::PurgeSchemaCache(
             wallet_handle,
             options_json,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_sercvice: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_purge_schema_cache:");
                 cb(command_handle, err)

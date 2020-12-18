@@ -15,6 +15,7 @@ use crate::domain::cache::{GetCacheOptions, PurgeOptions};
 use crate::domain::crypto::did::DidValue;
 
 use indy_utils::next_command_handle;
+use crate::services::metrics::MetricsService;
 
 const CRED_DEF_CACHE: &str = "cred_def_cache";
 const SCHEMA_CACHE: &str = "schema_cache";
@@ -25,7 +26,7 @@ pub enum CacheCommand {
               DidValue, // submitter_did
               SchemaId, // id
               GetCacheOptions, // options
-              Box<dyn Fn(IndyResult<String>) + Send>),
+              Box<dyn Fn(IndyResult<String>, Rc<MetricsService>) + Send>),
     GetSchemaContinue(
         WalletHandle,
         IndyResult<(String, String)>, // ledger_response
@@ -37,7 +38,7 @@ pub enum CacheCommand {
                DidValue, // submitter_did
                CredentialDefinitionId, // id
                GetCacheOptions, // options
-               Box<dyn Fn(IndyResult<String>) + Send>),
+               Box<dyn Fn(IndyResult<String>, Rc<MetricsService>) + Send>),
     GetCredDefContinue(
         WalletHandle,
         IndyResult<(String, String)>, // ledger_response
@@ -46,14 +47,15 @@ pub enum CacheCommand {
     ),
     PurgeSchemaCache(WalletHandle,
                      PurgeOptions, // options
-                     Box<dyn Fn(IndyResult<()>) + Send>),
+                     Box<dyn Fn(IndyResult<()>, Rc<MetricsService>) + Send>),
     PurgeCredDefCache(WalletHandle,
                       PurgeOptions, // options
-                      Box<dyn Fn(IndyResult<()>) + Send>),
+                      Box<dyn Fn(IndyResult<()>, Rc<MetricsService>) + Send>),
 }
 
 pub struct CacheCommandExecutor {
     wallet_service: Rc<WalletService>,
+    metrics_service: Rc<MetricsService>,
 
     pending_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<String>)>>>,
 }
@@ -80,9 +82,10 @@ macro_rules! check_cache {
 }
 
 impl CacheCommandExecutor {
-    pub fn new(wallet_service: Rc<WalletService>) -> CacheCommandExecutor {
+    pub fn new(wallet_service: Rc<WalletService>, metrics_service: Rc<MetricsService>) -> CacheCommandExecutor {
         CacheCommandExecutor {
             wallet_service,
+            metrics_service,
             pending_callbacks: RefCell::new(HashMap::new()),
         }
     }
@@ -107,11 +110,11 @@ impl CacheCommandExecutor {
             }
             CacheCommand::PurgeSchemaCache(wallet_handle, options, cb) => {
                 debug!(target: "non_secrets_command_executor", "PurgeSchemaCache command received");
-                cb(self.purge_schema_cache(wallet_handle, options));
+                cb(self.purge_schema_cache(wallet_handle, options), self.metrics_service.clone());
             }
             CacheCommand::PurgeCredDefCache(wallet_handle, options, cb) => {
                 debug!(target: "non_secrets_command_executor", "PurgeCredDefCache command received");
-                cb(self.purge_cred_def_cache(wallet_handle, options));
+                cb(self.purge_cred_def_cache(wallet_handle, options), self.metrics_service.clone());
             }
         }
     }
@@ -122,7 +125,7 @@ impl CacheCommandExecutor {
                   submitter_did: &DidValue,
                   id: &SchemaId,
                   options: GetCacheOptions,
-                  cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+                  cb: Box<dyn Fn(IndyResult<String>, Rc<MetricsService>) + Send>) {
         trace!("get_schema >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, id: {:?}, options: {:?}",
                pool_handle, wallet_handle, submitter_did, id, options);
 
@@ -132,7 +135,7 @@ impl CacheCommandExecutor {
         check_cache!(cache, options, cb);
 
         if options.no_update.unwrap_or(false) {
-            return cb(Err(IndyError::from(IndyErrorKind::LedgerItemNotFound)));
+            return cb(Err(IndyError::from(IndyErrorKind::LedgerItemNotFound)), self.metrics_service.clone());
         }
 
         let cb_id = next_command_handle();
@@ -204,7 +207,7 @@ impl CacheCommandExecutor {
                     submitter_did: &DidValue,
                     id: &CredentialDefinitionId,
                     options: GetCacheOptions,
-                    cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+                    cb: Box<dyn Fn(IndyResult<String>, Rc<MetricsService>) + Send>) {
         trace!("get_cred_def >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, id: {:?}, options: {:?}",
                pool_handle, wallet_handle, submitter_did, id, options);
 
@@ -214,7 +217,7 @@ impl CacheCommandExecutor {
         check_cache!(cache, options, cb);
 
         if options.no_update.unwrap_or(false) {
-            return cb(Err(IndyError::from(IndyErrorKind::LedgerItemNotFound)));
+            return cb(Err(IndyError::from(IndyErrorKind::LedgerItemNotFound)), self.metrics_service.clone());
         }
 
         let cb_id = next_command_handle();

@@ -10,6 +10,8 @@ use indy_api_types::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
+use std::rc::Rc;
+use crate::services::metrics::MetricsService;
 
 
 /// Register custom wallet storage implementation.
@@ -202,7 +204,7 @@ pub extern fn indy_create_wallet(command_handle: CommandHandle,
         .send(Command::Wallet(WalletCommand::Create(
             config,
             credentials,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_create_wallet: cb command_handle: {:?}, err: {:?}", command_handle, err);
                 cb(command_handle, err)
@@ -284,7 +286,7 @@ pub extern fn indy_open_wallet(command_handle: CommandHandle,
         .send(Command::Wallet(WalletCommand::Open(
             config,
             credentials,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, handle) = prepare_result_1!(result, INVALID_WALLET_HANDLE);
                 trace!("indy_open_wallet: cb command_handle: {:?} err: {:?}, handle: {:?}",
                        command_handle, err, handle);
@@ -336,7 +338,7 @@ pub extern fn indy_export_wallet(command_handle: CommandHandle,
         .send(Command::Wallet(WalletCommand::Export(
             wallet_handle,
             export_config,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_export_wallet: cb command_handle: {:?} err: {:?}", command_handle, err);
                 cb(command_handle, err)
@@ -418,7 +420,7 @@ pub extern fn indy_import_wallet(command_handle: CommandHandle,
             config,
             credentials,
             import_config,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_import_wallet: cb command_handle: {:?}, err: {:?}", command_handle, err);
                 cb(command_handle, err)
@@ -457,7 +459,7 @@ pub extern fn indy_close_wallet(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Close(
             wallet_handle,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_close_wallet: cb command_handle: {:?}, err: {:?}", command_handle, err);
                 cb(command_handle, err)
@@ -527,7 +529,7 @@ pub extern fn indy_delete_wallet(command_handle: CommandHandle,
         .send(Command::Wallet(WalletCommand::Delete(
             config,
             credentials,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_delete_wallet: cb command_handle: {:?}, err: {:?}", command_handle, err);
                 cb(command_handle, err)

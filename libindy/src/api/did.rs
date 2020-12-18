@@ -12,6 +12,8 @@ use libc::c_char;
 
 use std::ptr;
 use crate::domain::ledger::attrib::Endpoint;
+use std::rc::Rc;
+use crate::services::metrics::MetricsService;
 
 
 /// Creates keys (signing and encryption keys) for a new
@@ -180,7 +182,7 @@ pub  extern fn indy_replace_keys_apply(command_handle: CommandHandle,
         .send(Command::Did(DidCommand::ReplaceKeysApply(
             wallet_handle,
             did,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_replace_keys_apply:");
                 cb(command_handle, err)
@@ -237,7 +239,7 @@ pub  extern fn indy_store_their_did(command_handle: CommandHandle,
         .send(Command::Did(DidCommand::StoreTheirDid(
             wallet_handle,
             identity_json,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_store_their_did:");
                 cb(command_handle, err)
@@ -413,7 +415,7 @@ pub extern fn indy_set_endpoint_for_did(command_handle: CommandHandle,
             wallet_handle,
             did,
             endpoint,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_set_endpoint_for_did:");
                 cb(command_handle, err)
@@ -468,7 +470,7 @@ pub extern fn indy_get_endpoint_for_did(command_handle: CommandHandle,
             wallet_handle,
             pool_handle,
             did,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, address, transport_vk) = prepare_result_2!(result, String::new(), None);
                 trace!("indy_get_endpoint_for_did: address: {:?}, transport_vk: {:?}", address, transport_vk);
                 let address = ctypes::string_to_cstring(address);
@@ -524,7 +526,7 @@ pub extern fn indy_set_did_metadata(command_handle: CommandHandle,
             wallet_handle,
             did,
             metadata,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_set_did_metadata:");
                 cb(command_handle, err)

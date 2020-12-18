@@ -9,6 +9,8 @@ use indy_api_types::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
+use std::rc::Rc;
+use crate::services::metrics::MetricsService;
 
 /// Creates a new local pool ledger configuration that can be used later to connect pool nodes.
 ///
@@ -44,7 +46,7 @@ pub extern fn indy_create_pool_ledger_config(command_handle: CommandHandle,
         .send(Command::Pool(PoolCommand::Create(
             config_name,
             config,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_create_pool_ledger_config:");
                 cb(command_handle, err)
@@ -106,7 +108,7 @@ pub extern fn indy_open_pool_ledger(command_handle: CommandHandle,
         .send(Command::Pool(PoolCommand::Open(
             config_name,
             config,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, pool_handle) = prepare_result_1!(result, INVALID_POOL_HANDLE);
                 trace!("indy_open_pool_ledger: pool_handle: {:?}", pool_handle);
                 cb(command_handle, err, pool_handle)
@@ -145,7 +147,7 @@ pub extern fn indy_refresh_pool_ledger(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::Refresh(
             handle,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_refresh_pool_ledger:");
                 cb(command_handle, err)
@@ -213,7 +215,7 @@ pub extern fn indy_close_pool_ledger(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::Close(
             handle,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_close_pool_ledger:");
                 cb(command_handle, err)
@@ -253,7 +255,7 @@ pub extern fn indy_delete_pool_ledger_config(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::Delete(
             config_name,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_delete_pool_ledger_config:");
                 cb(command_handle, err)
@@ -299,7 +301,7 @@ pub extern fn indy_set_protocol_version(command_handle: CommandHandle,
         .send(Command::Pool(
             PoolCommand::SetProtocolVersion(
             protocol_version,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_set_protocol_version:");
                 cb(command_handle, err)
