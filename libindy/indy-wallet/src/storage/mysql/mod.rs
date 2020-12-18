@@ -7,7 +7,7 @@ use async_std::sync::RwLock;
 use async_trait::async_trait;
 
 use indy_api_types::errors::prelude::*;
-use indy_utils::crypto::base64;
+use indy_utils::{crypto::base64};
 
 use serde::Deserialize;
 
@@ -50,7 +50,8 @@ impl StorageIterator for MySQLStorageIterator {
         if let Some(ref mut records) = self.records {
             if let Some(record) = records.pop_front() {
                 return Ok(Some(record?));
-            } else {
+            }
+            else {
                 Ok(None)
             }
         } else {
@@ -89,6 +90,12 @@ pub struct MySqlStorageType {
 }
 
 impl MySqlStorageType {
+    pub fn new() -> MySqlStorageType {
+        MySqlStorageType {
+            connections: RwLock::new(HashMap::new()),
+        }
+    }
+
     pub async fn _connect(
         &self,
         read_only: bool,
