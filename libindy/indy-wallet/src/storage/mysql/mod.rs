@@ -755,7 +755,7 @@ impl WalletStorageType for MySqlStorageType {
                 Ok(())
             }
             0 => Err(err_msg(
-                IndyErrorKind::WalletItemNotFound,
+                IndyErrorKind::WalletNotFound,
                 "Item to delete not found",
             )),
             _ => Err(err_msg(
@@ -806,7 +806,7 @@ impl WalletStorageType for MySqlStorageType {
             .begin()
             .await?;
 
-        sqlx::query(
+        let res = sqlx::query(
             r#"
             INSERT INTO wallets (name, metadata)
             VALUES (?, ?)
@@ -815,7 +815,19 @@ impl WalletStorageType for MySqlStorageType {
         .bind(id)
         .bind(metadata)
         .execute(&mut tx)
-        .await?; // FIXME: return wallet already exists on 1062 error code from MySQL
+        .await;
+
+        match res {
+            Err(sqlx::Error::Database(e)) if e.code().is_some() && e.code().unwrap() == "23000" => {
+                return Err(err_msg(
+                    IndyErrorKind::WalletAlreadyExists,
+                    "Wallet already exists",
+                ))
+            }
+            e => e?,
+        };
+
+        // FIXME: return wallet already exists on 1062 error code from MySQL
 
         tx.commit().await?;
         Ok(())
@@ -857,7 +869,7 @@ impl WalletStorageType for MySqlStorageType {
         let read_pool = self._connect(true, config, credentials).await?;
         let write_pool = self._connect(false, config, credentials).await?;
 
-        let (wallet_id,) = sqlx::query_as::<_, (i64,)>(
+        let res = sqlx::query_as::<_, (i64,)>(
             r#"
             SELECT id FROM wallets
             WHERE name = ?
@@ -865,7 +877,14 @@ impl WalletStorageType for MySqlStorageType {
         )
         .bind(id)
         .fetch_one(&read_pool)
-        .await?;
+        .await;
+
+        let (wallet_id,) = match res {
+            Err(sqlx::Error::RowNotFound) => {
+                return Err(err_msg(IndyErrorKind::WalletNotFound, "Wallet not found"));
+            }
+            e => e?,
+        };
 
         Ok(Box::new(MySqlStorage {
             read_pool,
