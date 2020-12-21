@@ -11,11 +11,15 @@ vcx_lock = asyncio.Lock()
 async def vcx_context(config_path: str, delete_wallet: bool = False):
     await vcx_lock.acquire()
     await vcx_init(config_path)
+
     try:
         yield
     finally:
         shutdown(delete_wallet)
         vcx_lock.release()
+
+    yield
+    shutdown(delete_wallet)
 
 
 @asynccontextmanager
@@ -27,3 +31,6 @@ async def vcx_context_with_config(config: str, delete_wallet: bool = False):
     finally:
         shutdown(delete_wallet)
         vcx_lock.release()
+
+    yield
+    shutdown(delete_wallet)
