@@ -286,8 +286,8 @@ pub struct LedgerCommandExecutor {
     ledger_service: Rc<LedgerService>,
     metrics_service: Rc<MetricsService>,
 
-    send_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<String>)>>>,
-    pending_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<(String, String)>)>>>,
+    send_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<String>, Rc<MetricsService>)>>>,
+    pending_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<(String, String)>, Rc<MetricsService>)>>>,
 }
 
 impl LedgerCommandExecutor {
@@ -320,7 +320,7 @@ impl LedgerCommandExecutor {
             LedgerCommand::SubmitAck(handle, result) => {
                 debug!(target: "ledger_command_executor", "SubmitAck command received");
                 match self.send_callbacks.borrow_mut().remove(&handle) {
-                    Some(cb) => cb(result.map_err(IndyError::from)),
+                    Some(cb) => cb(result.map_err(IndyError::from), self.metrics_service.clone()),
                     None => {
                         error!("Can't process LedgerCommand::SubmitAck for handle {:?} with result {:?} - appropriate callback not found!",
                                handle, result);
@@ -389,7 +389,7 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::ParseGetSchemaResponse(get_schema_response, cb) => {
                 debug!(target: "ledger_command_executor", "ParseGetSchemaResponse command received");
-                cb(self.parse_get_schema_response(&get_schema_response));
+                cb(self.parse_get_schema_response(&get_schema_response), self.metrics_service.clone());
             }
             LedgerCommand::BuildCredDefRequest(submitter_did, data, cb) => {
                 debug!(target: "ledger_command_executor", "BuildCredDefRequest command received");
@@ -401,7 +401,7 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::ParseGetCredDefResponse(get_cred_def_response, cb) => {
                 debug!(target: "ledger_command_executor", "ParseGetCredDefResponse command received");
-                cb(self.parse_get_cred_def_response(&get_cred_def_response));
+                cb(self.parse_get_cred_def_response(&get_cred_def_response), self.metrics_service.clone());
             }
             LedgerCommand::BuildNodeRequest(submitter_did, target_did, data, cb) => {
                 debug!(target: "ledger_command_executor", "BuildNodeRequest command received");
@@ -441,7 +441,7 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::ParseGetRevocRegDefResponse(get_revoc_ref_def_response, cb) => {
                 debug!(target: "ledger_command_executor", "ParseGetRevocRegDefDefResponse command received");
-                cb(self.parse_revoc_reg_def_response(&get_revoc_ref_def_response));
+                cb(self.parse_revoc_reg_def_response(&get_revoc_ref_def_response), self.metrics_service.clone());
             }
             LedgerCommand::BuildRevocRegEntryRequest(submitter_did, revoc_reg_def_id, rev_def_type, value, cb) => {
                 debug!(target: "ledger_command_executor", "BuildRevocRegEntryRequest command received");
@@ -561,7 +561,7 @@ impl LedgerCommandExecutor {
 
         match self._sign_request(wallet_handle, submitter_did, request_json, SignatureType::Single) {
             Ok(signed_request) => self.submit_request(pool_handle, signed_request.as_str(), cb),
-            Err(err) => cb(Err(err))
+            Err(err) => cb(Err(err), self.metrics_service.clone())
         }
     }
 
@@ -620,7 +620,7 @@ impl LedgerCommandExecutor {
         debug!("submit_request >>> handle: {:?}, request_json: {:?}", handle, request_json);
 
         if let Err(err) = serde_json::from_str::<Request<serde_json::Value>>(&request_json) {
-            return cb(Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Request is invalid json: {:?}", err))));
+            return cb(Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Request is invalid json: {:?}", err))), self.metrics_service.clone());
         }
 
         let x: IndyResult<CommandHandle> = self.pool_service.send_tx(handle, request_json);
@@ -1268,7 +1268,7 @@ impl LedgerCommandExecutor {
     }
 
     fn get_schema(&self, pool_handle: i32, submitter_did: Option<&DidValue>, id: &SchemaId, cb: BoxedCallbackStringStringSend) {
-        let request_json = try_cb!(self.build_get_schema_request(submitter_did, id), cb);
+        let request_json = try_cb!(self.build_get_schema_request(submitter_did, id), cb, self.metrics_service.clone());
 
         let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
@@ -1289,12 +1289,12 @@ impl LedgerCommandExecutor {
 
     fn _get_schema_continue(&self, id: SchemaId, pool_response: IndyResult<String>, cb_id: CommandHandle) {
         let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
-        let pool_response = try_cb!(pool_response, cb);
-        cb(self.ledger_service.parse_get_schema_response(&pool_response, id.get_method().as_ref().map(String::as_str)))
+        let pool_response = try_cb!(pool_response, cb, self.metrics_service.clone());
+        cb(self.ledger_service.parse_get_schema_response(&pool_response, id.get_method().as_ref().map(String::as_str)), self.metrics_service.clone())
     }
 
     fn get_cred_def(&self, pool_handle: i32, submitter_did: Option<&DidValue>, id: &CredentialDefinitionId, cb: BoxedCallbackStringStringSend) {
-        let request_json = try_cb!(self.build_get_cred_def_request(submitter_did, id), cb);
+        let request_json = try_cb!(self.build_get_cred_def_request(submitter_did, id), cb, self.metrics_service.clone());
 
         let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
@@ -1315,8 +1315,8 @@ impl LedgerCommandExecutor {
 
     fn _get_cred_def_continue(&self, id: CredentialDefinitionId, pool_response: IndyResult<String>, cb_id: CommandHandle) {
         let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
-        let pool_response = try_cb!(pool_response, cb);
-        cb(self.ledger_service.parse_get_cred_def_response(&pool_response, id.get_method().as_ref().map(String::as_str)))
+        let pool_response = try_cb!(pool_response, cb, self.metrics_service.clone());
+        cb(self.ledger_service.parse_get_cred_def_response(&pool_response, id.get_method().as_ref().map(String::as_str)), self.metrics_service.clone())
     }
 }
 

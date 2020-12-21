@@ -185,7 +185,7 @@ impl ProverCommandExecutor {
                                                    credential_def, master_secret_name, cb) => {
                 debug!(target: "prover_command_executor", "CreateCredentialRequest command received");
                 cb(self.create_credential_request(wallet_handle, &prover_did, &credential_offer,
-                                                  &CredentialDefinitionV1::from(credential_def), &master_secret_name));
+                                                  &CredentialDefinitionV1::from(credential_def), &master_secret_name), self.metrics_service.clone());
             }
             ProverCommand::SetCredentialAttrTagPolicy(wallet_handle, cred_def_id, catpol, retroactive, cb) => {
                 debug!(target: "prover_command_executor", "SetCredentialAttrTagPolicy command received");

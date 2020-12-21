@@ -178,7 +178,7 @@ impl IssuerCommandExecutor {
         match command {
             IssuerCommand::CreateSchema(issuer_did, name, version, attrs, cb) => {
                 debug!(target: "issuer_command_executor", "CreateSchema command received");
-                cb(self.create_schema(&issuer_did, &name, &version, attrs));
+                cb(self.create_schema(&issuer_did, &name, &version, attrs), self.metrics_service.clone());
             }
             IssuerCommand::CreateAndStoreCredentialDefinition(wallet_handle, issuer_did, schema, tag, type_, config, cb) => {
                 debug!(target: "issuer_command_executor", "CreateAndStoreCredentialDefinition command received");
@@ -279,10 +279,10 @@ impl IssuerCommandExecutor {
         let mut schema = schema.clone();
 
         let (cred_def_config, schema_id, cred_def_id, signature_type) =
-            try_cb!(self._prepare_create_and_store_credential_definition(&issuer_did, &mut schema, tag, type_, config), cb);
+            try_cb!(self._prepare_create_and_store_credential_definition(&issuer_did, &mut schema, tag, type_, config), cb, self.metrics_service.clone());
 
         if let Ok(cred_def) = self.wallet_service.get_indy_record_value::<CredentialDefinition>(wallet_handle, &cred_def_id.0, &RecordOptions::id_value()) {
-            return cb(Ok((cred_def_id.0, cred_def)));
+            return cb(Ok((cred_def_id.0, cred_def)), self.metrics_service.clone());
         }
 
         let cb_id = next_command_handle();
@@ -334,7 +334,8 @@ impl IssuerCommandExecutor {
         cb(result
             .and_then(|result| {
                 self._complete_create_and_store_credential_definition(wallet_handle, schema, schema_id, cred_def_id, tag, signature_type.clone(), result)
-            }))
+            }),
+           self.metrics_service.clone())
     }
 
     fn _prepare_create_and_store_credential_definition(&self,

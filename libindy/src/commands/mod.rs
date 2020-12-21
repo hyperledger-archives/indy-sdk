@@ -47,7 +47,7 @@ pub mod payments;
 pub mod cache;
 pub mod metrics;
 
-type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>) + Send>;
+type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>, Rc<MetricsService>) + Send>;
 
 pub enum Command {
     Exit,

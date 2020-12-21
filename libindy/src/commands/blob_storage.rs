@@ -8,7 +8,7 @@ pub enum BlobStorageCommand {
     OpenReader(
         String, // type
         String, // config
-        Box<dyn Fn(IndyResult<i32 /* handle */>) + Send>),
+        Box<dyn Fn(IndyResult<i32 /* handle */>, Rc<MetricsService>) + Send>),
     OpenWriter(
         String, // writer type
         String, // writer config JSON
@@ -32,7 +32,7 @@ impl BlobStorageCommandExecutor {
         match command {
             BlobStorageCommand::OpenReader(type_, config, cb) => {
                 debug!("OpenReader command received");
-                cb(self.open_reader(&type_, &config));
+                cb(self.open_reader(&type_, &config), self.metrics_service.clone());
             }
             BlobStorageCommand::OpenWriter(writer_type, writer_config, cb) => {
                 debug!("OpenWriter command received");

@@ -133,7 +133,7 @@ pub extern fn indy_register_wallet_storage(command_handle: CommandHandle,
                 get_search_total_count,
                 fetch_search_next_record,
                 free_search,
-                Box::new(move |result| {
+                Box::new(move |result, metrics_service: Rc<MetricsService>| {
                     let err = prepare_result!(result);
                     trace!("indy_register_wallet_type: cb command_handle: {:?}, err: {:?}", command_handle, err);
                     cb(command_handle, err)

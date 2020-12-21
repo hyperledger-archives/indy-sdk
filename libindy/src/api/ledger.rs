@@ -734,7 +734,7 @@ pub extern fn indy_parse_get_schema_response(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::ParseGetSchemaResponse(
             get_schema_response,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, schema_id, schema_json) = prepare_result_2!(result, String::new(), String::new());
                 trace!("indy_parse_get_schema_response: schema_id: {:?}, schema_json: {:?}", schema_id, schema_json);
                 let schema_id = ctypes::string_to_cstring(schema_id);
@@ -888,7 +888,7 @@ pub extern fn indy_parse_get_cred_def_response(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::ParseGetCredDefResponse(
             get_cred_def_response,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, cred_def_id, cred_def_json) = prepare_result_2!(result, String::new(), String::new());
                 trace!("indy_parse_get_cred_def_response: cred_def_id: {:?}, cred_def_json: {:?}", cred_def_id, cred_def_json);
                 let cred_def_id = ctypes::string_to_cstring(cred_def_id);
@@ -1376,7 +1376,7 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: CommandHandl
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::ParseGetRevocRegDefResponse(
             get_revoc_reg_def_response,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, revoc_reg_def_id, revoc_reg_def_json) = prepare_result_2!(result, String::new(), String::new());
                 trace!("indy_parse_get_revoc_reg_def_response: revoc_reg_def_id: {:?}, revoc_reg_def_json: {:?}", revoc_reg_def_id, revoc_reg_def_json);
 

@@ -72,7 +72,7 @@ pub  extern fn indy_create_and_store_my_did(command_handle: CommandHandle,
         .send(Command::Did(DidCommand::CreateAndStoreMyDid(
             wallet_handle,
             did_info,
-            Box::new(move |result| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, did, verkey) = prepare_result_2!(result, String::new(), String::new());
                 trace!("indy_create_and_store_my_did: did: {:?}, verkey: {:?}", did, verkey);
                 let did = ctypes::string_to_cstring(did);

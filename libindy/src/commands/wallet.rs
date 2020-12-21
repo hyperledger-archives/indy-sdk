@@ -42,7 +42,7 @@ pub enum WalletCommand {
                        WalletGetSearchTotalCount, // get search total count
                        WalletFetchSearchNextRecord, // fetch search next record
                        WalletFreeSearch, // free search
-                       Box<dyn Fn(IndyResult<()>) + Send>),
+                       Box<dyn Fn(IndyResult<()>, Rc<MetricsService>) + Send>),
     Create(Config, // config
            Credentials, // credentials
            Box<dyn Fn(IndyResult<()>, Rc<MetricsService>) + Send>),
@@ -102,8 +102,8 @@ pub struct WalletCommandExecutor {
     wallet_service: Rc<WalletService>,
     crypto_service: Rc<CryptoService>,
     metrics_service: Rc<MetricsService>,
-    open_callbacks: RefCell<HashMap<WalletHandle, Box<dyn Fn(IndyResult<WalletHandle>) + Send>>>,
-    pending_callbacks: RefCell<HashMap<CallbackHandle, Box<dyn Fn(IndyResult<()>) + Send>>>
+    open_callbacks: RefCell<HashMap<WalletHandle, Box<dyn Fn(IndyResult<WalletHandle>, Rc<MetricsService>) + Send>>>,
+    pending_callbacks: RefCell<HashMap<CallbackHandle, Box<dyn Fn(IndyResult<()>, Rc<MetricsService>) + Send>>>
 }
 
 impl WalletCommandExecutor {
@@ -131,7 +131,8 @@ impl WalletCommandExecutor {
                                        delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
                                        get_record_value, get_record_tags, free_record, get_storage_metadata, set_storage_metadata,
                                        free_storage_metadata, search_records, search_all_records, get_search_total_count,
-                                       fetch_search_next_record, free_search));
+                                       fetch_search_next_record, free_search),
+                    self.metrics_service.clone());
             }
             WalletCommand::Create(config, credentials, cb) => {
                 debug!(target: "wallet_command_executor", "Create command received");
@@ -270,7 +271,7 @@ impl WalletCommandExecutor {
                         key_result: DeriveKeyResult<MasterKey>) {
         let cb = get_cb!(self, cb_id );
         cb(key_result
-            .and_then(|key| self.wallet_service.create_wallet(config, credentials, (&key_data,& key))))
+            .and_then(|key| self.wallet_service.create_wallet(config, credentials, (&key_data,& key))), self.metrics_service.clone())
     }
 
     fn _open(&self,
@@ -279,7 +280,7 @@ impl WalletCommandExecutor {
              cb: Box<dyn Fn(IndyResult<WalletHandle>, Rc<MetricsService>) + Send>) {
         trace!("_open >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
-        let (wallet_handle, key_derivation_data, rekey_data) = try_cb!(self.wallet_service.open_wallet_prepare(config, credentials), cb);
+        let (wallet_handle, key_derivation_data, rekey_data) = try_cb!(self.wallet_service.open_wallet_prepare(config, credentials), cb, self.metrics_service.clone());
 
         self.open_callbacks.borrow_mut().insert(wallet_handle, cb);
 
@@ -332,7 +333,7 @@ impl WalletCommandExecutor {
                       key_result: DeriveKeyResult<(MasterKey, Option<MasterKey>)>) {
         let cb = self.open_callbacks.borrow_mut().remove(&wallet_handle).unwrap();
         cb(key_result
-            .and_then(|(key, rekey)| self.wallet_service.open_wallet_continue(wallet_handle, (&key, rekey.as_ref()))))
+            .and_then(|(key, rekey)| self.wallet_service.open_wallet_continue(wallet_handle, (&key, rekey.as_ref()))), self.metrics_service.clone())
     }
 
     fn _close(&self,
@@ -351,7 +352,7 @@ impl WalletCommandExecutor {
                cb: Box<dyn Fn(IndyResult<()>, Rc<MetricsService>) + Send>) {
         trace!("_delete >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
-        let (metadata, key_derivation_data) = try_cb!(self.wallet_service.delete_wallet_prepare(&config, &credentials), cb);
+        let (metadata, key_derivation_data) = try_cb!(self.wallet_service.delete_wallet_prepare(&config, &credentials), cb, self.metrics_service.clone());
 
         let cb_id: CallbackHandle = indy_utils::sequence::get_next_id();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
@@ -387,7 +388,7 @@ impl WalletCommandExecutor {
                         key_result: DeriveKeyResult<MasterKey>) {
         let cb = get_cb!(self, cb_id);
         cb(key_result
-            .and_then(|key| self.wallet_service.delete_wallet_continue(config, credentials, metadata, &key)))
+            .and_then(|key| self.wallet_service.delete_wallet_continue(config, credentials, metadata, &key)), self.metrics_service.clone())
     }
 
     fn _export(&self,
@@ -429,7 +430,7 @@ impl WalletCommandExecutor {
                         key_result: DeriveKeyResult<MasterKey>) {
         let cb = get_cb!(self, cb_id);
         cb(key_result
-            .and_then(|key| self.wallet_service.export_wallet(wallet_handle, export_config, 0, (&key_data,& key)))) // TODO - later add proper versioning
+            .and_then(|key| self.wallet_service.export_wallet(wallet_handle, export_config, 0, (&key_data,& key))), self.metrics_service.clone()) // TODO - later add proper versioning
     }
 
     fn _import(&self,
@@ -440,7 +441,7 @@ impl WalletCommandExecutor {
         trace!("_import >>> config: {:?}, credentials: {:?}, import_config: {:?}",
                config, secret!(credentials), secret!(import_config));
 
-        let (wallet_handle, key_data, import_key_data) = try_cb!(self.wallet_service.import_wallet_prepare(&config, &credentials, &import_config), cb);
+        let (wallet_handle, key_data, import_key_data) = try_cb!(self.wallet_service.import_wallet_prepare(&config, &credentials, &import_config), cb, self.metrics_service.clone());
 
         let cb_id : CallbackHandle = indy_utils::sequence::get_next_id();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
@@ -485,7 +486,7 @@ impl WalletCommandExecutor {
                         key_result: DeriveKeyResult<(MasterKey, MasterKey)>) {
         let cb = get_cb!(self, cb_id);
         cb(key_result
-            .and_then(|key| self.wallet_service.import_wallet_continue(wallet_handle, &config, &credential, key)))
+            .and_then(|key| self.wallet_service.import_wallet_continue(wallet_handle, &config, &credential, key)), self.metrics_service.clone())
     }
 
     fn _generate_key(&self,

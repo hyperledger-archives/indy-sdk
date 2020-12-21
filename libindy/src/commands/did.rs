@@ -100,12 +100,12 @@ pub enum DidCommand {
 }
 
 macro_rules! ensure_their_did {
-    ($self_:ident, $wallet_handle:ident, $pool_handle:ident, $their_did:ident, $deferred_cmd:expr, $cb:ident) => (
+    ($self_:ident, $wallet_handle:ident, $pool_handle:ident, $their_did:ident, $deferred_cmd:expr, $cb:ident, $metrics:expr) => (
             match $self_._wallet_get_their_did($wallet_handle, &$their_did) {
                 Ok(val) => val,
                 // No their their_did present in the wallet. Defer this command until it is fetched from ledger.
             Err(ref err) if err.kind() == IndyErrorKind::WalletItemNotFound  => return $self_._fetch_their_did_from_ledger($wallet_handle, $pool_handle, &$their_did, $deferred_cmd),
-                Err(err) => return $cb(Err(err)),
+                Err(err) => return $cb(Err(err), $metrics),
             }
         );
 }
@@ -136,7 +136,7 @@ impl DidCommandExecutor {
         match command {
             DidCommand::CreateAndStoreMyDid(wallet_handle, my_did_info, cb) => {
                 debug!("CreateAndStoreMyDid command received");
-                cb(self.create_and_store_my_did(wallet_handle, &my_did_info));
+                cb(self.create_and_store_my_did(wallet_handle, &my_did_info), self.metrics_service.clone());
             }
             DidCommand::ReplaceKeysStart(wallet_handle, key_info, did, cb) => {
                 debug!("ReplaceKeysStart command received");
@@ -378,7 +378,7 @@ impl DidCommandExecutor {
                    cb: Box<dyn Fn(IndyResult<String>, Rc<MetricsService>) + Send>) {
         debug!("key_for_did >>> pool_handle: {:?}, wallet_handle: {:?}, did: {:?}", pool_handle, wallet_handle, did);
 
-        try_cb!(self.crypto_service.validate_did(&did), cb);
+        try_cb!(self.crypto_service.validate_did(&did), cb, self.metrics_service.clone());
 
         // Look to my did
         match self._wallet_get_my_did(wallet_handle, &did) {
@@ -458,7 +458,7 @@ impl DidCommandExecutor {
                             cb: Box<dyn Fn(IndyResult<(String, Option<String>)>, Rc<MetricsService>) + Send>) {
         debug!("get_endpoint_for_did >>> wallet_handle: {:?}, pool_handle: {:?}, did: {:?}", wallet_handle, pool_handle, did);
 
-        try_cb!(self.crypto_service.validate_did(&did), cb);
+        try_cb!(self.crypto_service.validate_did(&did), cb, self.metrics_service.clone());
 
         let endpoint =
             self.wallet_service.get_indy_object::<Endpoint>(wallet_handle, &did.0, &RecordOptions::id_value());
@@ -690,7 +690,7 @@ impl DidCommandExecutor {
     fn _call_error_cb(&self, command: DidCommand, err: IndyError) {
         match command {
             DidCommand::CreateAndStoreMyDid(_, _, cb) => {
-                cb(Err(err));
+                cb(Err(err), self.metrics_service.clone());
             }
             DidCommand::ReplaceKeysStart(_, _, _, cb) => {
                 cb(Err(err), self.metrics_service.clone());

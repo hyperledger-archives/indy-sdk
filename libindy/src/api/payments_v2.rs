@@ -52,7 +52,7 @@ pub extern fn indy_build_get_payment_sources_with_from_request(command_handle: C
                     submitter_did,
                     payment_address,
                     from,
-                    Box::new(move |result| {
+                    Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let (err, get_sources_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
                         trace!("indy_build_get_payment_sources_with_from_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
                         let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);

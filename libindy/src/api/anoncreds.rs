@@ -98,7 +98,7 @@ pub extern fn indy_issuer_create_schema(command_handle: CommandHandle,
                     name,
                     version,
                     attrs,
-                    Box::new(move |result| {
+                    Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let (err, id, schema_json) = prepare_result_2!(result, String::new(), String::new());
                         trace!("ursa_cl_credential_public_key_to_json: id: {:?}, schema_json: {:?}", id, schema_json);
                         let id = ctypes::string_to_cstring(id);
@@ -208,7 +208,7 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: Comman
                     tag,
                     signature_type,
                     config_json,
-                    Box::new(move |result| {
+                    Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let (err, cred_def_id, cred_def_json) = prepare_result_2!(result, String::new(), String::new());
                         trace!("indy_issuer_create_and_store_credential_def: cred_def_id: {:?}, cred_def_json: {:?}", cred_def_id, cred_def_json);
                         let cred_def_id = ctypes::string_to_cstring(cred_def_id);
@@ -972,7 +972,7 @@ pub extern fn indy_prover_create_credential_req(command_handle: CommandHandle,
                     cred_offer_json,
                     cred_def_json,
                     master_secret_id,
-                    Box::new(move |result| {
+                    Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let (err, cred_req_json, cred_req_metadata_json) = prepare_result_2!(result, String::new(), String::new());
                         trace!("indy_prover_create_credential_req: cred_req_json: {:?}, cred_req_metadata_json: {:?}", cred_req_json, cred_req_metadata_json);
                         let cred_req_json = ctypes::string_to_cstring(cred_req_json);
