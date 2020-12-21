@@ -312,11 +312,22 @@ impl From<sqlx::Error> for IndyError {
             sqlx::Error::RowNotFound => {
                 err.to_indy(IndyErrorKind::WalletItemNotFound, "Item not found")
             }
-            // FIXME: Analyze downcasted error!!!
-            sqlx::Error::Database(_) => err.to_indy(
-                IndyErrorKind::WalletItemAlreadyExists,
-                "Wallet item already exists",
-            ),
+            sqlx::Error::Database(e) => match e.code() {
+                Some(code) => match code.as_ref() {
+                    // Constraint unuque - sqlite (2067)
+                    "2067" => err.to_indy(
+                        IndyErrorKind::WalletItemAlreadyExists,
+                        "Wallet item already exists",
+                    ),
+                    // Integrity constraint violation (23000)
+                    "23000" => err.to_indy(
+                        IndyErrorKind::WalletItemAlreadyExists,
+                        "Wallet item already exists",
+                    ),
+                    _ => err.to_indy(IndyErrorKind::InvalidState, "Unexpected database error"),
+                },
+                None => err.to_indy(IndyErrorKind::InvalidState, "Unexpected database error"),
+            },
             sqlx::Error::Io(_) => err.to_indy(
                 IndyErrorKind::IOError,
                 "IO error during access sqlite database",
@@ -325,7 +336,7 @@ impl From<sqlx::Error> for IndyError {
                 IndyErrorKind::IOError,
                 "IO error during access sqlite database",
             ),
-            _ => err.to_indy(IndyErrorKind::InvalidState, "Unexpected sqlite error"),
+            _ => err.to_indy(IndyErrorKind::InvalidState, "Unexpected database error"),
         }
     }
 }
