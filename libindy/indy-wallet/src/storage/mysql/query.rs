@@ -178,7 +178,7 @@ fn lt_to_sql(
             arguments.push(tag_value.to_plain().into());
 
             Ok(format!(
-                "JSON_UNQUOTE(JSON_EXTRACT(tags, {})) < ?)",
+                "(JSON_UNQUOTE(JSON_EXTRACT(tags, {})) < ?)",
                 tag_path
             ))
         }
@@ -200,7 +200,7 @@ fn lte_to_sql(
             arguments.push(tag_value.to_plain().into());
 
             Ok(format!(
-                "JSON_UNQUOTE(JSON_EXTRACT(tags, {})) =< ?)",
+                "(JSON_UNQUOTE(JSON_EXTRACT(tags, {})) <= ?)",
                 tag_path
             ))
         }
@@ -222,7 +222,7 @@ fn like_to_sql(
             arguments.push(tag_value.to_plain().into());
 
             Ok(format!(
-                "JSON_UNQUOTE(JSON_EXTRACT(tags, {})) LIKE ?)",
+                "(JSON_UNQUOTE(JSON_EXTRACT(tags, {})) LIKE ?)",
                 tag_path
             ))
         }
@@ -321,7 +321,6 @@ impl ToPlain for TargetValue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use indy_utils::crypto::base64;
 
     #[test]
     fn simple_and() {

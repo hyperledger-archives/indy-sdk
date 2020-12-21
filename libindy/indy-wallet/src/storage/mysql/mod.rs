@@ -7,7 +7,7 @@ use async_std::sync::RwLock;
 use async_trait::async_trait;
 
 use indy_api_types::errors::prelude::*;
-use indy_utils::{crypto::base64};
+use indy_utils::crypto::base64;
 
 use serde::Deserialize;
 
@@ -50,8 +50,7 @@ impl StorageIterator for MySQLStorageIterator {
         if let Some(ref mut records) = self.records {
             if let Some(record) = records.pop_front() {
                 return Ok(Some(record?));
-            }
-            else {
+            } else {
                 Ok(None)
             }
         } else {
@@ -615,7 +614,16 @@ impl WalletStorage for MySqlStorage {
             let mut query = sqlx::query_as::<sqlx::MySql, (i64,)>(&query);
 
             for arg in args.iter() {
-                query = query.bind(arg);
+                query = if arg.is_i64() {
+                    query.bind(arg.as_i64().unwrap())
+                } else if arg.is_string() {
+                    query.bind(arg.as_str().unwrap())
+                } else {
+                    return Err(err_msg(
+                        IndyErrorKind::InvalidState,
+                        "Unexpected sql parameter type.",
+                    ));
+                }
             }
 
             let (total_count,) = query.fetch_one(&mut conn).await?;
@@ -626,10 +634,20 @@ impl WalletStorage for MySqlStorage {
 
         let records = if options.retrieve_records {
             let (query, args) = wql_to_sql(self.wallet_id, type_, query, &options)?;
+
             let mut query = sqlx::query::<sqlx::MySql>(&query);
 
             for arg in args.iter() {
-                query = query.bind(arg);
+                query = if arg.is_i64() {
+                    query.bind(arg.as_i64().unwrap())
+                } else if arg.is_string() {
+                    query.bind(arg.as_str().unwrap())
+                } else {
+                    return Err(err_msg(
+                        IndyErrorKind::InvalidState,
+                        "Unexpected sql parameter type.",
+                    ));
+                }
             }
 
             let records: VecDeque<_> = query
@@ -859,7 +877,7 @@ impl WalletStorageType for MySqlStorageType {
 
 #[cfg(test)]
 mod tests {
-    use indy_utils::assert_kind;
+    use indy_utils::{assert_kind, environment};
 
     use super::super::Tag;
     use super::*;
