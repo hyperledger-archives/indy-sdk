@@ -119,7 +119,7 @@ impl MySqlStorageType {
             )?
             .ok_or(err_msg(
                 IndyErrorKind::InvalidStructure,
-                "Absent config json",
+                "Absent credentials json",
             ))?;
 
         let host_addr = if read_only {
@@ -193,7 +193,7 @@ impl WalletStorage for MySqlStorage {
 
         let mut conn = self.read_pool.acquire().await?;
 
-        let (value, tags): (Vec<u8>, serde_json::Value) = sqlx::query_as(&format!(
+        let query = format!(
             r#"
             SELECT {}, {}
             FROM items
@@ -208,6 +208,23 @@ impl WalletStorage for MySqlStorage {
                 "''"
             },
             if options.retrieve_tags { "tags" } else { "''" },
+        );
+
+        let (value, tags): (Option<Vec<u8>>, Option<serde_json::Value>) = sqlx::query_as(&format!(
+            r#"
+            SELECT {}, {}
+            FROM items
+            WHERE
+                wallet_id = ?
+                    AND type = ?
+                    AND name = ?
+            "#,
+            if options.retrieve_value {
+                "value"
+            } else {
+                "NULL"
+            },
+            if options.retrieve_tags { "tags" } else { "NULL" },
         ))
         .bind(self.wallet_id)
         .bind(&base64::encode(type_))
@@ -215,7 +232,7 @@ impl WalletStorage for MySqlStorage {
         .fetch_one(&mut conn)
         .await?;
 
-        let value = if options.retrieve_value {
+        let value = if let Some(value) = value {
             Some(EncryptedValue::from_bytes(&value)?)
         } else {
             None
@@ -227,7 +244,7 @@ impl WalletStorage for MySqlStorage {
             None
         };
 
-        let tags = if options.retrieve_tags {
+        let tags = if let Some(tags) = tags {
             Some(_tags_from_json(tags)?)
         } else {
             None
