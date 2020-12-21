@@ -429,18 +429,17 @@ mod tests {
 
     #[async_std::test]
     async fn wallet_get_id_works_for_mysql() {
-        test::cleanup_wallet("wallet_get_id_works_for_mysql");
+        _mysql_cleanup_wallet("wallet_get_id_works_for_mysql").await;
 
         {
-            let mut wallet = _wallet("wallet_get_id_works_for_mysql").await;
+            let mut wallet = _mysql_wallet("wallet_get_id_works_for_mysql").await;
             assert_eq!(wallet.get_id(), "wallet_get_id_works_for_mysql");
 
             wallet.close().await.unwrap();
         }
 
-        test::cleanup_wallet("wallet_get_id_works_for_mysql");
+        _mysql_cleanup_wallet("wallet_get_id_works_for_mysql").await;
     }
-
 
     #[async_std::test]
     async fn wallet_add_get_works() {
@@ -930,6 +929,59 @@ mod tests {
     }
 
     #[async_std::test]
+    async fn wallet_search_works_for_empty_query_mysql() {
+        _mysql_cleanup_wallet("wallet_search_works_for_empty_query_mysql").await;
+
+        {
+            let mut wallet = _mysql_wallet("wallet_search_works_for_empty_query_mysql").await;
+
+            wallet
+                .add(_type1(), _id1(), _value1(), &_tags())
+                .await
+                .unwrap();
+
+            wallet
+                .add(_type1(), _id2(), _value2(), &_tags())
+                .await
+                .unwrap();
+
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    "{}",
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                    type_: None,
+                },
+                WalletRecord {
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: None,
+                    type_: None,
+                },
+            ]);
+
+            let records = _fetch_all(&mut iterator).await;
+            assert_eq!(records, expected_records);
+
+            let total_count = iterator.get_total_count().unwrap();
+            assert!(total_count.is_none());
+
+            wallet.close().await.unwrap();
+        }
+
+        _mysql_cleanup_wallet("wallet_search_works_for_empty_query_mysql").await;
+    }
+
+    #[async_std::test]
     async fn wallet_search_works_for_empty_query_with_count() {
         test::cleanup_wallet("wallet_search_works_for_empty_query_with_count");
 
@@ -980,6 +1032,60 @@ mod tests {
         }
 
         test::cleanup_wallet("wallet_search_works_for_empty_query_with_count");
+    }
+
+    #[async_std::test]
+    async fn wallet_search_works_for_empty_query_with_count_mysql() {
+        _mysql_cleanup_wallet("wallet_search_works_for_empty_query_with_count_mysql").await;
+
+        {
+            let mut wallet =
+                _mysql_wallet("wallet_search_works_for_empty_query_with_count_mysql").await;
+
+            wallet
+                .add(_type1(), _id1(), _value1(), &_tags())
+                .await
+                .unwrap();
+
+            wallet
+                .add(_type1(), _id2(), _value2(), &_tags())
+                .await
+                .unwrap();
+
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    "{}",
+                    Some(&_search_options(true, true, true, true, true)),
+                )
+                .await
+                .unwrap();
+
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: Some(_tags()),
+                    type_: Some(_type1().to_string()),
+                },
+                WalletRecord {
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: Some(_tags()),
+                    type_: Some(_type1().to_string()),
+                },
+            ]);
+
+            let records = _fetch_all(&mut iterator).await;
+            assert_eq!(records, expected_records);
+
+            let total_count = iterator.get_total_count().unwrap().unwrap();
+            assert_eq!(total_count, 2);
+
+            wallet.close().await.unwrap();
+        }
+
+        _mysql_cleanup_wallet("wallet_search_works_for_empty_query_with_count_mysql").await;
     }
 
     #[async_std::test]
@@ -1899,6 +2005,100 @@ mod tests {
     }
 
     #[async_std::test]
+    async fn wallet_search_works_for_lte_plain_mysql() {
+        _mysql_cleanup_wallet("wallet_search_works_for_lte_plain_mysql").await;
+
+        {
+            let mut wallet = _mysql_wallet("wallet_search_works_for_lte_plain_mysql").await;
+
+            wallet
+                .add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"2"}))
+                .await
+                .unwrap();
+
+            wallet
+                .add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"3"}))
+                .await
+                .unwrap();
+
+            wallet
+                .add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"4"}))
+                .await
+                .unwrap();
+
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({"~tag_name": {"$lte": "3"}}),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: None,
+                },
+            ]);
+
+            assert_eq!(_fetch_all(&mut iterator).await, expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            // unsuccessful search with no matches
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({"~tag_name": {"$lte": "1"}}),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            assert!(iterator.next().await.unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            // unsuccessful search with nonexisting value
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({"~tag_name_different": {"$lte": "3"}}),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            assert!(iterator.next().await.unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            // unsuccessful search with different type_
+            let mut iterator = wallet
+                .search(
+                    _type2(),
+                    &jsonstr!({"~tag_name": {"$lte": "3"}}),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            assert!(iterator.next().await.unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            wallet.close().await.unwrap();
+        }
+
+        _mysql_cleanup_wallet("wallet_search_works_for_lte_plain_mysql").await;
+    }
+
+    #[async_std::test]
     async fn wallet_search_works_for_lte_encrypted() {
         test::cleanup_wallet("wallet_search_works_for_lte_encrypted");
 
@@ -1921,7 +2121,6 @@ mod tests {
     }
 
     #[async_std::test]
-
     async fn wallet_search_works_for_like_plain() {
         test::cleanup_wallet("wallet_search_works_for_like_plain");
 
@@ -2028,6 +2227,137 @@ mod tests {
         }
 
         test::cleanup_wallet("wallet_search_works_for_like_plain");
+    }
+
+    #[async_std::test]
+    async fn wallet_search_works_for_lte_encrypted_mysql() {
+        _mysql_cleanup_wallet("wallet_search_works_for_lte_encrypted_mysql").await;
+
+        {
+            let mut wallet = _mysql_wallet("wallet_search_works_for_lte_encrypted_mysql").await;
+
+            let res = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({"tag_name": {"$lte": "3"}}),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await;
+
+            assert_kind!(IndyErrorKind::WalletQueryError, res);
+            wallet.close().await.unwrap();
+        }
+
+        _mysql_cleanup_wallet("wallet_search_works_for_lte_encrypted_mysql").await;
+    }
+
+    #[async_std::test]
+    async fn wallet_search_works_for_like_plain_mysql() {
+        _mysql_cleanup_wallet("wallet_search_works_for_like_plain_mysql").await;
+
+        {
+            let mut wallet = _mysql_wallet("wallet_search_works_for_like_plain_mysql").await;
+
+            wallet
+                .add(
+                    _type1(),
+                    _id1(),
+                    _value1(),
+                    &jsonmap!({"~tag_name": "tag_value_1"}),
+                )
+                .await
+                .unwrap();
+
+            wallet
+                .add(
+                    _type1(),
+                    _id2(),
+                    _value2(),
+                    &jsonmap!({"~tag_name": "tag_value_2"}),
+                )
+                .await
+                .unwrap();
+
+            wallet
+                .add(
+                    _type1(),
+                    _id3(),
+                    _value3(),
+                    &jsonmap!({"~tag_name": "not_matching"}),
+                )
+                .await
+                .unwrap();
+
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({"~tag_name": {"$like": "tag_value_%"}}),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: None,
+                },
+            ]);
+
+            assert_eq!(_fetch_all(&mut iterator).await, expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            // unsuccessful search with no matches
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({"~tag_name": {"$like": "tag_value_no_match%"}}),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            assert!(iterator.next().await.unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            // unsuccessful search with nonexisting value
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({"~tag_name_different": {"$like": "tag_value_%"}}),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            assert!(iterator.next().await.unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            // unsuccessful search wrong type_
+            let mut iterator = wallet
+                .search(
+                    _type2(),
+                    &jsonstr!({"~tag_name": {"$like": "tag_value_%"}}),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            assert!(iterator.next().await.unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            wallet.close().await.unwrap();
+        }
+
+        _mysql_cleanup_wallet("wallet_search_works_for_like_plain_mysql").await;
     }
 
     #[async_std::test]
@@ -2298,6 +2628,128 @@ mod tests {
     }
 
     #[async_std::test]
+    async fn wallet_search_works_for_in_encrypted_mysql() {
+        _mysql_cleanup_wallet("wallet_search_works_for_in_encrypted_mysql").await;
+
+        {
+            let mut wallet = _mysql_wallet("wallet_search_works_for_in_encrypted_mysql").await;
+
+            wallet
+                .add(
+                    _type1(),
+                    _id1(),
+                    _value1(),
+                    &jsonmap!({"tag_name": "tag_value_1"}),
+                )
+                .await
+                .unwrap();
+
+            wallet
+                .add(
+                    _type1(),
+                    _id2(),
+                    _value2(),
+                    &jsonmap!({"tag_name": "tag_value_2"}),
+                )
+                .await
+                .unwrap();
+
+            wallet
+                .add(
+                    _type1(),
+                    _id3(),
+                    _value3(),
+                    &jsonmap!({"tag_name": "tag_value_3"}),
+                )
+                .await
+                .unwrap();
+
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({"tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id3().to_string(),
+                    value: Some(_value3().to_string()),
+                    tags: None,
+                },
+            ]);
+
+            assert_eq!(_fetch_all(&mut iterator).await, expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            // unsuccessful search with no matches
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({"tag_name": {"$in": ["tag_value_4", "tag_value_5"]}}),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            assert!(iterator.next().await.unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            // unsuccessful search with nonexisting tag
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({"tag_name_different": {"$in": ["tag_value_1", "tag_value_3"]}}),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            assert!(iterator.next().await.unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            // unsuccessful plain search
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({"~tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            assert!(iterator.next().await.unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            // unsuccessful search wrong type_
+            let mut iterator = wallet
+                .search(
+                    _type2(),
+                    &jsonstr!({"tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            assert!(iterator.next().await.unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            wallet.close().await.unwrap();
+        }
+
+        _mysql_cleanup_wallet("wallet_search_works_for_in_encrypted_mysql").await
+    }
+
+    #[async_std::test]
     async fn wallet_search_works_for_and() {
         test::cleanup_wallet("wallet_search_works_for_and");
         {
@@ -2475,6 +2927,187 @@ mod tests {
         }
 
         test::cleanup_wallet("wallet_search_works_for_and");
+    }
+
+    #[async_std::test]
+    async fn wallet_search_works_for_and_mysql() {
+        _mysql_cleanup_wallet("wallet_search_works_for_and_mysql").await;
+        
+        {
+            let mut wallet = _mysql_wallet("wallet_search_works_for_and_mysql").await;
+
+            wallet
+                .add(
+                    _type1(),
+                    _id1(),
+                    _value1(),
+                    &jsonmap!({
+                                "tag_name_1": "tag_value_1",
+                                "tag_name_2": "tag_value_2",
+                                "~tag_name_2": "tag_value_2",
+                                "~tag_name_3": "tag_value_3"}),
+                )
+                .await
+                .unwrap();
+
+            wallet
+                .add(
+                    _type1(),
+                    _id2(),
+                    _value2(),
+                    &jsonmap!({
+                                "tag_name_1": "tag_value_1",
+                                "tag_name_2": "tag_value_2",
+                                "~tag_name_2": "tag_value_3",
+                                "~tag_name_3": "tag_value_3"}),
+                )
+                .await
+                .unwrap();
+
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({
+                       "tag_name_1": "tag_value_1",
+                       "tag_name_2": "tag_value_2",
+                       "~tag_name_2": "tag_value_2",
+                    }),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            let expected_records = vec![WalletRecord {
+                type_: None,
+                id: _id1().to_string(),
+                value: Some(_value1().to_string()),
+                tags: None,
+            }];
+
+            assert_eq!(_fetch_all(&mut iterator).await, expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({
+                       "tag_name_1": "tag_value_1",
+                       "~tag_name_2": "tag_value_3",
+                    }),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            let expected_records = vec![WalletRecord {
+                type_: None,
+                id: _id2().to_string(),
+                value: Some(_value2().to_string()),
+                tags: None,
+            }];
+
+            assert_eq!(_fetch_all(&mut iterator).await, expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({
+                       "tag_name_1": "tag_value_1",
+                       "~tag_name_3": "tag_value_3",
+                    }),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: None,
+                },
+            ]);
+
+            assert_eq!(_fetch_all(&mut iterator).await, expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            // no matches
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({
+                        "tag_name_1": "tag_value_1",
+                        "~tag_name_3": "tag_value_3",
+                        "tag_name_4": "tag_value_4",
+                    }),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            assert!(iterator.next().await.unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            // wrong type
+            let mut iterator = wallet
+                .search(
+                    _type2(),
+                    &jsonstr!({
+                         "tag_name_1": "tag_value_1",
+                         "~tag_name_2": "tag_value_2",
+                    }),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            assert!(iterator.next().await.unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            // wrong tag name
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({
+                          "tag_name_1": "tag_value_1",
+                          "tag_name_3": "tag_value_3",
+                    }),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            assert!(iterator.next().await.unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            // wrong tag value
+            let mut iterator = wallet
+                .search(
+                    _type1(),
+                    &jsonstr!({
+                            "tag_name_1": "tag_value_0",
+                             "~tag_name_2": "tag_value_3",
+                    }),
+                    Some(&_search_options(true, false, false, true, false)),
+                )
+                .await
+                .unwrap();
+
+            assert!(iterator.next().await.unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            wallet.close().await.unwrap();
+        }
+
+        _mysql_cleanup_wallet("wallet_search_works_for_and_mysql").await;
     }
 
     #[async_std::test]
@@ -2983,7 +3616,10 @@ mod tests {
             .await
             .unwrap();
 
-        let storage = storage_type.open_storage(name, _mysql_config(), _mysql_credentials()).await.unwrap();
+        let storage = storage_type
+            .open_storage(name, _mysql_config(), _mysql_credentials())
+            .await
+            .unwrap();
 
         Wallet::new(name.to_string(), storage, Rc::new(keys))
     }
@@ -3086,7 +3722,7 @@ mod tests {
         )
     }
 
-    async fn _mysql_cleanup(name: &str) {
+    async fn _mysql_cleanup_wallet(name: &str) {
         MySqlStorageType::new()
             .delete_storage(name, _mysql_config(), _mysql_credentials())
             .await

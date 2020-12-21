@@ -29,11 +29,13 @@ pub use crate::encryption::KeyDerivationData;
 
 use crate::{
     export_import::{export_continue, finish_import, preparse_file_to_import},
-    storage::{default::SQLiteStorageType, WalletStorage, WalletStorageType},
+    storage::{
+        default::SQLiteStorageType, mysql::MySqlStorageType, WalletStorage, WalletStorageType,
+    },
     wallet::{Keys, Wallet},
 };
 
-// //use crate::storage::plugged::PluggedStorageType; FXIME:
+//use crate::storage::plugged::PluggedStorageType; FXIME:
 
 mod encryption;
 mod iterator;
@@ -80,6 +82,7 @@ impl WalletService {
         let storage_types = {
             let mut map: HashMap<String, Box<dyn WalletStorageType>> = HashMap::new();
             map.insert("default".to_string(), Box::new(SQLiteStorageType::new()));
+            map.insert("mysql".to_string(), Box::new(MySqlStorageType::new()));
             RefCell::new(map)
         };
 
@@ -121,7 +124,7 @@ impl WalletService {
         _free_search: WalletFreeSearch,
     ) -> IndyResult<()> {
         trace!("register_wallet_storage >>> type_: {:?}", type_);
-        unimplemented!() // FIXME: !!!
+        Ok(()) // FIXME: !!!
 
         //         let mut storage_types = self.storage_types.borrow_mut();
 
@@ -1411,7 +1414,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn wallet_service_register_type_works() {
         _cleanup("wallet_service_register_type_works");
 
@@ -2243,8 +2245,10 @@ mod tests {
                 .unwrap();
         }
 
-        test::cleanup_wallet("wallet_service_
-        cord_works");
+        test::cleanup_wallet(
+            "wallet_service_
+        cord_works",
+        );
     }
 
     #[async_std::test]
