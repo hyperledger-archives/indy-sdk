@@ -55,6 +55,7 @@ regex = "1.2.1"
 indy-api-types = { path = "./indy-api-types"}
 indy-utils = { path = "./indy-utils"}
 indy-wallet = { path = "./indy-wallet"}
+chrono = "0.4.7"
 quote = "=1.0.7"
 variant_count = "*"
 num-traits = "0.2"
@@ -81,6 +82,8 @@ futures = "0.1.28"
 sodiumoxide = {version = "0.0.16"}
 openssl = "0.10"
 dirs = "2.0.2"
+named_type = "0.2.2"
+named_type_derive = "0.2.2"
 
 [[bench]]
 name = "wallet"

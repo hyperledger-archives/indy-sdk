@@ -27,10 +27,13 @@ mod demos {
     use crate::utils::domain::anoncreds::revocation_state::RevocationState;
     use crate::utils::domain::anoncreds::revocation_registry::RevocationRegistry;
     use crate::utils::domain::anoncreds::credential_offer::CredentialOffer;
+    use indy::WalletHandle;
 
-    #[test]
-    fn anoncreds_works_for_single_issuer_single_prover() {
-        Setup::empty();
+    static SELF_ATTESTED_VALUE: &'static str = "8-800-300";
+
+    fn from_issuance_to_proof(w3c_style: bool) -> (Setup, String, WalletHandle, String, WalletHandle,
+                                    String, String, String, String) {
+        let harness = Setup::empty();
 
         //1. Create Issuer wallet, gets wallet handle
         let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_single_issuer_single_prover").unwrap();
@@ -61,6 +64,7 @@ mod demos {
         let proof_req_json = json!({
                                        "nonce": nonce,
                                        "name":"proof_req_1",
+                                       "w3c": w3c_style,
                                        "version":"0.1",
                                        "requested_attributes":{
                                             "attr1_referent":{
@@ -84,7 +88,6 @@ mod demos {
         let credential = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
         //8. Prover creates Proof
-        let self_attested_value = "8-800-300";
         let requested_credentials_json = format!(r#"{{
                                                   "self_attested_attributes":{{"attr3_referent":"{}"}},
                                                   "requested_attributes":{{
@@ -95,7 +98,7 @@ mod demos {
                                                   "requested_predicates":{{
                                                         "predicate1_referent":{{ "cred_id":"{}" }}
                                                   }}
-                                                }}"#, self_attested_value, credential.referent, credential.referent, credential.referent, credential.referent);
+                                                }}"#, SELF_ATTESTED_VALUE, credential.referent, credential.referent, credential.referent, credential.referent);
 
         let schemas_json = json!({schema_id: serde_json::from_str::<Schema>(&schema_json).unwrap()}).to_string();
         let cred_defs_json = json!({cred_def_id: serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()}).to_string();
@@ -109,12 +112,24 @@ mod demos {
                                                         &cred_defs_json,
                                                         &rev_states_json).unwrap();
 
+        (harness, issuer_wallet_config, issuer_wallet_handle, prover_wallet_config,
+            prover_wallet_handle, schemas_json, cred_defs_json, proof_json, proof_req_json)
+    }
+
+    #[test]
+    fn anoncreds_works_for_single_issuer_single_prover() {
+        let (_harness,
+            issuer_wallet_config, issuer_wallet_handle,
+            prover_wallet_config, prover_wallet_handle,
+            schemas_json, cred_defs_json, proof_json, proof_req_json) =
+                from_issuance_to_proof(false);
         let proof: Proof = serde_json::from_str(&proof_json).unwrap();
+        println!("proof_json = {}", &proof_json);
 
         //9. Verifier verifies proof
         assert_eq!("Alex", proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().raw);
         assert_eq!(0, proof.requested_proof.unrevealed_attrs.get("attr2_referent").unwrap().sub_proof_index);
-        assert_eq!(self_attested_value, proof.requested_proof.self_attested_attrs.get("attr3_referent").unwrap());
+        assert_eq!(SELF_ATTESTED_VALUE, proof.requested_proof.self_attested_attrs.get("attr3_referent").unwrap());
         let revealed_attr_groups = proof.requested_proof.revealed_attr_groups.get("attr4_referent").unwrap();
         assert_eq!("Alex", revealed_attr_groups.values.get("name").unwrap().raw);
         assert_eq!("175", revealed_attr_groups.values.get("height").unwrap().raw);
@@ -129,6 +144,25 @@ mod demos {
                                                      &rev_reg_defs_json,
                                                      &rev_regs_json).unwrap();
         assert!(valid);
+
+        wallet::close_and_delete_wallet(issuer_wallet_handle, &issuer_wallet_config).unwrap();
+        wallet::close_and_delete_wallet(prover_wallet_handle, &prover_wallet_config).unwrap();
+    }
+
+    #[test]
+    fn w3c_presentations_work() {
+        let (_harness,
+            issuer_wallet_config, issuer_wallet_handle,
+            prover_wallet_config, prover_wallet_handle,
+            _schemas_json, _cred_defs_json, _proof_json, _proof_req_json) =
+                from_issuance_to_proof(true);
+
+        // TODO: refactor from_issuance_to_proof() and add meaningful tests here.
+        // The intent is that this test will convert a proof to a w3c verifiable presentation
+        // and then call verifier_validate_presentation() on it. That validation func doesn't
+        // exist yet, and right now from_issuance_to_proof() takes a bool param that tells
+        // whether to make the proof_json into a w3c vp. What we want instead is to get generic
+        // proof json that we then turn into a vp by calling w3c::to_vp().
 
         wallet::close_and_delete_wallet(issuer_wallet_handle, &issuer_wallet_config).unwrap();
         wallet::close_and_delete_wallet(prover_wallet_handle, &prover_wallet_config).unwrap();

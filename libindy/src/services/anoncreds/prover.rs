@@ -1,6 +1,7 @@
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
+
 use ursa::cl::{
     BlindedCredentialSecrets,
     BlindedCredentialSecretsCorrectnessProof,
@@ -757,6 +758,7 @@ mod tests {
                     PREDICATE_REFERENT.to_string() => _predicate_info()
                 ),
                 non_revoked: None,
+                w3c: false
             }
         }
 
