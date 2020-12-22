@@ -30,6 +30,9 @@ ARG indy_node_ver=1.12.1~dev1172
 ARG python3_indy_crypto_ver=0.4.5
 ARG indy_crypto_ver=0.4.5
 ARG python3_pyzmq_ver=18.1.0
+ARG python3_orderedset_ver=2.0
+ARG python3_psutil_ver=5.4.3
+ARG python3_pympler_ver=0.5
 
 RUN apt-get update -y && apt-get install -y \
         python3-pyzmq=${python3_pyzmq_ver} \
@@ -37,6 +40,9 @@ RUN apt-get update -y && apt-get install -y \
         indy-node=${indy_node_ver} \
         python3-indy-crypto=${python3_indy_crypto_ver} \
         libindy-crypto=${indy_crypto_ver} \
+        python3-orderedset=${python3_orderedset_ver} \
+        python3-psutil=${python3_psutil_ver} \
+        python3-pympler=${python3_pympler_ver} \
         vim
 
 RUN echo "[supervisord]\n\
