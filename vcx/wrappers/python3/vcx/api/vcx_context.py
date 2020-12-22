@@ -1,5 +1,5 @@
 import asyncio
-from contextlib import contextmanager, asynccontextmanager
+from contextlib import asynccontextmanager
 
 from vcx.api.vcx_init import vcx_init, vcx_init_with_config
 from vcx.common import shutdown
