@@ -1,3 +1,22 @@
+# Project Status
+Releases are currently only created as they are needed. We are actively seeking contributors to take ownership of creating new releases.
+
+An alternative approach to the Indy SDK is being developed which divides LibIndy into multiple shared libraries which will be part of the Indy and Aries projects:
+
+* a verifiable data registry for communication with Indy ledgers,
+* an encrypted storage service for Hyperledger Aries agents,
+* a credential exchange library,
+* and a library of shared Rust functions.
+
+Progress is recorded in the notes for the [Indy Contributors Meeting](https://wiki.hyperledger.org/display/indy/Indy+Contributors+Meeting).
+
+[Indy Node](https://github.com/hyperledger/indy-node) will continue to be maintained and improved.
+
+If you would like to continue the development of Indy SDK by implementing a feature, bug fix, or publishing a release, please contact us and the appropriate guidance and controls can be granted. You can find us in [#indy-contributors on Hyperledger Rocket Chat](http://chat.hyperledger.org/channel/indy-contributors) or [the Indy mailing list](http://lists.hyperledger.org/g/indy/).
+
+Feel free to contact us if you have questions. 
+
+
 # Indy SDK
 ![logo](https://raw.githubusercontent.com/hyperledger/indy-node/master/collateral/logos/indy-logo.png)
 This is the official SDK for [Hyperledger Indy](https://www.hyperledger.org/projects),
