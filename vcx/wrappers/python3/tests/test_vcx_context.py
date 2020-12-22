@@ -17,8 +17,9 @@ def set_lock_event_loop(event_loop):
 @pytest.mark.asyncio
 async def test_vcx_init(set_lock_event_loop):
     from random import random
+
     async def run():
         async with vcx_context_with_config("ENABLE_TEST_MODE"):
-            await asyncio.sleep(random() / 1000)
+            await asyncio.sleep(random() / 10000)
 
     await asyncio.gather(*(run() for _ in range(10)))
