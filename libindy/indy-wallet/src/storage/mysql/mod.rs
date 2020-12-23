@@ -140,7 +140,7 @@ impl MySqlStorageType {
         }
 
         let connection = MySqlPoolOptions::default()
-            .max_connections(200)
+            .max_connections(4000)
             .test_before_acquire(false)
             .connect_with(
                 MySqlConnectOptions::new()
