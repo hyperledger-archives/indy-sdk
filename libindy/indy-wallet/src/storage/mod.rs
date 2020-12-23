@@ -44,13 +44,13 @@ impl StorageRecord {
 }
 
 #[async_trait]
-pub trait StorageIterator {
+pub trait StorageIterator: Send + Sync {
     async fn next(&mut self) -> Result<Option<StorageRecord>, IndyError>;
     fn get_total_count(&self) -> Result<Option<usize>, IndyError>;
 }
 
 #[async_trait]
-pub trait WalletStorage {
+pub trait WalletStorage: Send + Sync {
     async fn get(&self, type_: &[u8], id: &[u8], options: &str)
         -> Result<StorageRecord, IndyError>;
     async fn add(
@@ -90,7 +90,7 @@ pub trait WalletStorage {
 }
 
 #[async_trait]
-pub trait WalletStorageType {
+pub trait WalletStorageType: Send + Sync {
     async fn create_storage(
         &self,
         id: &str,

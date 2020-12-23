@@ -1,5 +1,5 @@
 use crate::services::blob_storage::BlobStorageService;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use indy_api_types::errors::prelude::*;
 
@@ -15,11 +15,11 @@ pub enum BlobStorageCommand {
 }
 
 pub struct BlobStorageCommandExecutor {
-    blob_storage_service: Rc<BlobStorageService>
+    blob_storage_service:Arc<BlobStorageService>
 }
 
 impl BlobStorageCommandExecutor {
-    pub fn new(blob_storage_service: Rc<BlobStorageService>) -> BlobStorageCommandExecutor {
+    pub fn new(blob_storage_service:Arc<BlobStorageService>) -> BlobStorageCommandExecutor {
         BlobStorageCommandExecutor {
             blob_storage_service
         }

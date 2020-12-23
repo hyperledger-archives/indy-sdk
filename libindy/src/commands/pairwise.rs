@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::str;
 
 use indy_api_types::errors::prelude::*;
@@ -36,11 +36,11 @@ pub enum PairwiseCommand {
 }
 
 pub struct PairwiseCommandExecutor {
-    wallet_service: Rc<WalletService>
+    wallet_service:Arc<WalletService>
 }
 
 impl PairwiseCommandExecutor {
-    pub fn new(wallet_service: Rc<WalletService>) -> PairwiseCommandExecutor {
+    pub fn new(wallet_service:Arc<WalletService>) -> PairwiseCommandExecutor {
         PairwiseCommandExecutor {
             wallet_service
         }

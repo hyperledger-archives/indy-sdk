@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use indy_api_types::{SearchHandle, WalletHandle};
 use indy_api_types::domain::wallet::Tags;
@@ -58,12 +58,12 @@ pub enum NonSecretsCommand {
 }
 
 pub struct NonSecretsCommandExecutor {
-    wallet_service: Rc<WalletService>,
+    wallet_service:Arc<WalletService>,
     searches: RefCell<HashMap<SearchHandle, Box<WalletSearch>>>,
 }
 
 impl NonSecretsCommandExecutor {
-    pub fn new(wallet_service: Rc<WalletService>) -> NonSecretsCommandExecutor {
+    pub fn new(wallet_service:Arc<WalletService>) -> NonSecretsCommandExecutor {
         NonSecretsCommandExecutor {
             wallet_service,
             searches: RefCell::new(HashMap::new()),

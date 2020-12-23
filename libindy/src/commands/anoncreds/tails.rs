@@ -7,18 +7,18 @@ use ursa::errors::prelude::{UrsaCryptoError, UrsaCryptoErrorKind};
 
 use rust_base58::{ToBase58, FromBase58};
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 const TAILS_BLOB_TAG_SZ: u8 = 2;
 const TAIL_SIZE: usize = Tail::BYTES_REPR_SIZE;
 
 pub struct SDKTailsAccessor {
-    tails_service: Rc<BlobStorageService>,
+    tails_service:Arc<BlobStorageService>,
     tails_reader_handle: i32,
 }
 
 impl SDKTailsAccessor {
-    pub fn new(tails_service: Rc<BlobStorageService>,
+    pub fn new(tails_service:Arc<BlobStorageService>,
                tails_reader_handle: i32,
                rev_reg_def: &RevocationRegistryDefinitionV1) -> IndyResult<SDKTailsAccessor> {
         let tails_hash = rev_reg_def.value.tails_hash.from_base58()
@@ -64,7 +64,7 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
     }
 }
 
-pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
+pub fn store_tails_from_generator(service:Arc<BlobStorageService>,
                                   writer_handle: i32,
                                   rtg: &mut RevocationTailsGenerator) -> IndyResult<(String, String)> {
     debug!("store_tails_from_generator >>> writer_handle: {:?}", writer_handle);

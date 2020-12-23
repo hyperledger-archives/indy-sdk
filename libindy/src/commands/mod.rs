@@ -2,8 +2,7 @@ extern crate threadpool;
 extern crate ursa;
 
 use std::env;
-use std::rc::Rc;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 
 use futures::StreamExt;
@@ -129,42 +128,42 @@ impl CommandExecutor {
             worker: Some(thread.spawn(move || {
                 info!(target: "command_executor", "Worker thread started");
 
-                let anoncreds_service = Rc::new(AnoncredsService::new());
-                let blob_storage_service = Rc::new(BlobStorageService::new());
-                let crypto_service = Rc::new(CryptoService::new());
-                let ledger_service = Rc::new(LedgerService::new());
-                let payments_service = Rc::new(PaymentsService::new());
-                let pool_service = Rc::new(PoolService::new());
-                let wallet_service = Rc::new(WalletService::new());
-                let metrics_service = Rc::new(MetricsService::new());
+                let anoncreds_service = Arc::new(AnoncredsService::new());
+                let blob_storage_service = Arc::new(BlobStorageService::new());
+                let crypto_service = Arc::new(CryptoService::new());
+                let ledger_service = Arc::new(LedgerService::new());
+                let payments_service = Arc::new(PaymentsService::new());
+                let pool_service = Arc::new(PoolService::new());
+                let wallet_service = Arc::new(WalletService::new());
+                let metrics_service = Arc::new(MetricsService::new());
 
-                let anoncreds_command_executor = Rc::new(AnoncredsCommandExecutor::new(anoncreds_service.clone(), blob_storage_service.clone(), pool_service.clone(), wallet_service.clone(), crypto_service.clone()));
-                let crypto_command_executor = Rc::new(CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone()));
-                let ledger_command_executor = Rc::new(LedgerCommandExecutor::new(pool_service.clone(), crypto_service.clone(), wallet_service.clone(), ledger_service.clone()));
-                let pool_command_executor = Rc::new(PoolCommandExecutor::new(pool_service.clone()));
-                let did_command_executor = Rc::new(DidCommandExecutor::new(wallet_service.clone(), crypto_service.clone(), ledger_service.clone(), pool_service.clone()));
-                let wallet_command_executor = Rc::new(WalletCommandExecutor::new(wallet_service.clone(), crypto_service.clone()));
-                let pairwise_command_executor = Rc::new(PairwiseCommandExecutor::new(wallet_service.clone()));
-                let blob_storage_command_executor = Rc::new(BlobStorageCommandExecutor::new(blob_storage_service.clone()));
-                let non_secret_command_executor = Rc::new(NonSecretsCommandExecutor::new(wallet_service.clone()));
-                let payments_command_executor = Rc::new(PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone()));
-                let cache_command_executor = Rc::new(CacheCommandExecutor::new(crypto_service.clone(), ledger_service.clone(), pool_service.clone(), wallet_service.clone()));
-                let metrics_command_executor = Rc::new(MetricsCommandExecutor::new(wallet_service.clone(), metrics_service.clone()));
+                let anoncreds_command_executor = Arc::new(AnoncredsCommandExecutor::new(anoncreds_service.clone(), blob_storage_service.clone(), pool_service.clone(), wallet_service.clone(), crypto_service.clone()));
+                let crypto_command_executor = Arc::new(CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone()));
+                let ledger_command_executor = Arc::new(LedgerCommandExecutor::new(pool_service.clone(), crypto_service.clone(), wallet_service.clone(), ledger_service.clone()));
+                let pool_command_executor = Arc::new(PoolCommandExecutor::new(pool_service.clone()));
+                let did_command_executor = Arc::new(DidCommandExecutor::new(wallet_service.clone(), crypto_service.clone(), ledger_service.clone(), pool_service.clone()));
+                let wallet_command_executor = Arc::new(WalletCommandExecutor::new(wallet_service.clone(), crypto_service.clone()));
+                let pairwise_command_executor = Arc::new(PairwiseCommandExecutor::new(wallet_service.clone()));
+                let blob_storage_command_executor = Arc::new(BlobStorageCommandExecutor::new(blob_storage_service.clone()));
+                let non_secret_command_executor = Arc::new(NonSecretsCommandExecutor::new(wallet_service.clone()));
+                let payments_command_executor = Arc::new(PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone()));
+                let cache_command_executor = Arc::new(CacheCommandExecutor::new(crypto_service.clone(), ledger_service.clone(), pool_service.clone(), wallet_service.clone()));
+                let metrics_command_executor = Arc::new(MetricsCommandExecutor::new(wallet_service.clone(), metrics_service.clone()));
 
                 async fn _exec_cmd(instrumented_cmd: InstrumentedCommand,
-                                   metrics_service: Rc<MetricsService>,
-                                   anoncreds_command_executor: Rc<AnoncredsCommandExecutor>,
-                                   crypto_command_executor: Rc<CryptoCommandExecutor>,
-                                   ledger_command_executor: Rc<LedgerCommandExecutor>,
-                                   pool_command_executor: Rc<PoolCommandExecutor>,
-                                   did_command_executor: Rc<DidCommandExecutor>,
-                                   wallet_command_executor: Rc<WalletCommandExecutor>,
-                                   pairwise_command_executor: Rc<PairwiseCommandExecutor>,
-                                   blob_storage_command_executor: Rc<BlobStorageCommandExecutor>,
-                                   non_secret_command_executor: Rc<NonSecretsCommandExecutor>,
-                                   payments_command_executor: Rc<PaymentsCommandExecutor>,
-                                   cache_command_executor: Rc<CacheCommandExecutor>,
-                                   metrics_command_executor: Rc<MetricsCommandExecutor>,
+                                   metrics_service:Arc<MetricsService>,
+                                   anoncreds_command_executor:Arc<AnoncredsCommandExecutor>,
+                                   crypto_command_executor:Arc<CryptoCommandExecutor>,
+                                   ledger_command_executor:Arc<LedgerCommandExecutor>,
+                                   pool_command_executor:Arc<PoolCommandExecutor>,
+                                   did_command_executor:Arc<DidCommandExecutor>,
+                                   wallet_command_executor:Arc<WalletCommandExecutor>,
+                                   pairwise_command_executor:Arc<PairwiseCommandExecutor>,
+                                   blob_storage_command_executor:Arc<BlobStorageCommandExecutor>,
+                                   non_secret_command_executor:Arc<NonSecretsCommandExecutor>,
+                                   payments_command_executor:Arc<PaymentsCommandExecutor>,
+                                   cache_command_executor:Arc<CacheCommandExecutor>,
+                                   metrics_command_executor:Arc<MetricsCommandExecutor>,
                 ) {
                     let cmd_index: CommandIndex = (&instrumented_cmd.command).into();
                     let start_execution_ts = get_cur_time();
@@ -218,7 +217,7 @@ impl CommandExecutor {
                         }
                         Command::Metrics(cmd) => {
                             debug!("MetricsCommand command received");
-                            metrics_command_executor.execute(cmd);
+                            metrics_command_executor.execute(cmd).await;
                         }
                         Command::Exit => {
                             debug!("Exit command received");

@@ -1132,6 +1132,7 @@ dependencies = [
  "futures-core",
  "futures-task",
  "futures-util",
+ "num_cpus",
 ]
 
 [[package]]
@@ -1545,6 +1546,7 @@ name = "libindy"
 version = "1.15.0"
 dependencies = [
  "android_logger",
+ "async-std",
  "backtrace",
  "byteorder",
  "convert_case",

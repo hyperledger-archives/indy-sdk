@@ -3,8 +3,8 @@ use std::{
     iter::Iterator,
 };
 
-use async_std::sync::RwLock;
 use async_trait::async_trait;
+use futures::lock::Mutex;
 
 use indy_api_types::errors::prelude::*;
 use indy_utils::crypto::base64;
@@ -85,13 +85,13 @@ struct MySqlStorage {
 }
 
 pub struct MySqlStorageType {
-    connections: RwLock<HashMap<String, MySqlPool>>,
+    connections: Mutex<HashMap<String, MySqlPool>>,
 }
 
 impl MySqlStorageType {
     pub fn new() -> MySqlStorageType {
         MySqlStorageType {
-            connections: RwLock::new(HashMap::new()),
+            connections: Mutex::new(HashMap::new()),
         }
     }
 
@@ -133,11 +133,15 @@ impl MySqlStorageType {
             credentials.user, credentials.pass, host_addr, config.port, config.db_name
         );
 
-        if let Some(connection) = self.connections.read().await.get(&connection_string) {
+        let mut connref = self.connections.lock().await;
+
+        if let Some(connection) = connref.get(&connection_string) {
             return Ok(connection.clone());
         }
 
         let connection = MySqlPoolOptions::default()
+            .max_connections(200)
+            .test_before_acquire(false)
             .connect_with(
                 MySqlConnectOptions::new()
                     .host(host_addr)
@@ -147,10 +151,7 @@ impl MySqlStorageType {
             )
             .await?;
 
-        self.connections
-            .write()
-            .await
-            .insert(connection_string, connection.clone());
+        connref.insert(connection_string, connection.clone());
         Ok(connection)
     }
 }
@@ -193,23 +194,6 @@ impl WalletStorage for MySqlStorage {
 
         let mut conn = self.read_pool.acquire().await?;
 
-        let query = format!(
-            r#"
-            SELECT {}, {}
-            FROM items
-            WHERE
-                wallet_id = ?
-                    AND type = ?
-                    AND name = ?
-            "#,
-            if options.retrieve_value {
-                "value"
-            } else {
-                "''"
-            },
-            if options.retrieve_tags { "tags" } else { "''" },
-        );
-
         let (value, tags): (Option<Vec<u8>>, Option<serde_json::Value>) = sqlx::query_as(&format!(
             r#"
             SELECT {}, {}
@@ -224,7 +208,11 @@ impl WalletStorage for MySqlStorage {
             } else {
                 "NULL"
             },
-            if options.retrieve_tags { "tags" } else { "NULL" },
+            if options.retrieve_tags {
+                "tags"
+            } else {
+                "NULL"
+            },
         ))
         .bind(self.wallet_id)
         .bind(&base64::encode(type_))
@@ -755,7 +743,7 @@ impl WalletStorageType for MySqlStorageType {
             .begin()
             .await?;
 
-        let rows_affected = sqlx::query(
+         let res = sqlx::query(
             r#"
             DELETE FROM wallets
             WHERE name = ?
@@ -763,22 +751,27 @@ impl WalletStorageType for MySqlStorageType {
         )
         .bind(id)
         .execute(&mut tx)
-        .await?
-        .rows_affected();
+        .await;
+
+        let rows_affected = res?.rows_affected();
 
         match rows_affected {
             1 => {
                 tx.commit().await?;
                 Ok(())
             }
-            0 => Err(err_msg(
-                IndyErrorKind::WalletNotFound,
-                "Item to delete not found",
-            )),
-            _ => Err(err_msg(
-                IndyErrorKind::InvalidState,
-                "More than one row deleted. Seems wallet structure is inconsistent",
-            )),
+            0 => {
+                Err(err_msg(
+                    IndyErrorKind::WalletNotFound,
+                    "Item to delete not found",
+                ))
+            }
+            _ => {
+                Err(err_msg(
+                    IndyErrorKind::InvalidState,
+                    "More than one row deleted. Seems wallet structure is inconsistent",
+                ))
+            }
         }
     }
 
@@ -919,6 +912,95 @@ mod tests {
     use super::*;
 
     // docker run --name indy-mysql -e MYSQL_ROOT_PASSWORD=pass@word1 -p 3306:3306 -d mysql:latest
+
+    #[async_std::test]
+    async fn mysql_storage_sync_send() {
+        use futures::{channel::oneshot, executor::ThreadPool, future::join_all};
+        use std::{sync::Arc, time::SystemTime};
+
+        let count = 1000;
+        let executor = ThreadPool::new().expect("Failed to new ThreadPool");
+        let storage_type = Arc::new(Box::new(MySqlStorageType::new()));
+
+        let waiters: Vec<_> = (0..count)
+            .into_iter()
+            .map(|id| {
+                let st = storage_type.clone();
+                let (tx, rx) = oneshot::channel::<IndyResult<()>>();
+
+                let future = async move {
+                    let res = st
+                        .delete_storage(
+                            &format!("mysql_storage_sync_send_{}", id),
+                            _config(),
+                            _credentials(),
+                        )
+                        .await;
+
+                    tx.send(res).unwrap();
+                };
+
+                executor.spawn_ok(future);
+                rx
+            })
+            .collect();
+
+        let res = join_all(waiters).await;
+        println!("------------> 1 {:?}", SystemTime::now());
+
+        let waiters: Vec<_> = (0..count)
+            .into_iter()
+            .map(|id| {
+                let st = storage_type.clone();
+                let (tx, rx) = oneshot::channel::<IndyResult<()>>();
+
+                let future = async move {
+                    let res = st.create_storage(
+                        &format!("mysql_storage_sync_send_{}", id),
+                        _config(),
+                        _credentials(),
+                        &_metadata(),
+                    )
+                    .await;
+
+                    tx.send(res).unwrap();
+                };
+
+                executor.spawn_ok(future);
+                rx
+            })
+            .collect();
+
+            let res = join_all(waiters).await;
+
+        println!("------------> 3 {:?}", SystemTime::now());
+
+        let waiters: Vec<_> = (0..count)
+            .into_iter()
+            .map(|id| {
+                let st = storage_type.clone();
+                let (tx, rx) = oneshot::channel::<IndyResult<()>>();
+
+                let future = async move {
+                    let res = st.delete_storage(
+                        &format!("mysql_storage_sync_send_{}", id),
+                        _config(),
+                        _credentials(),
+                    )
+                    .await;
+
+                    tx.send(res).unwrap();
+                };
+
+                executor.spawn_ok(future);
+                rx
+            })
+            .collect();
+
+            let res = join_all(waiters).await;
+
+        println!("------------> 5 {:?}", SystemTime::now());
+    }
 
     #[async_std::test]
     async fn mysql_storage_type_create_works() {

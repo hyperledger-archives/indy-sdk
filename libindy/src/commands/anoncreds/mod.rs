@@ -16,7 +16,7 @@ use crate::services::anoncreds::helpers::to_unqualified;
 
 use indy_api_types::errors::prelude::*;
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub enum AnoncredsCommand {
     Issuer(IssuerCommand),
@@ -34,11 +34,11 @@ pub struct AnoncredsCommandExecutor {
 }
 
 impl AnoncredsCommandExecutor {
-    pub fn new(anoncreds_service: Rc<AnoncredsService>,
-               blob_storage_service: Rc<BlobStorageService>,
-               pool_service: Rc<PoolService>,
-               wallet_service: Rc<WalletService>,
-               crypto_service: Rc<CryptoService>) -> AnoncredsCommandExecutor {
+    pub fn new(anoncreds_service:Arc<AnoncredsService>,
+               blob_storage_service:Arc<BlobStorageService>,
+               pool_service:Arc<PoolService>,
+               wallet_service:Arc<WalletService>,
+               crypto_service:Arc<CryptoService>) -> AnoncredsCommandExecutor {
         AnoncredsCommandExecutor {
             issuer_command_cxecutor: IssuerCommandExecutor::new(
                 anoncreds_service.clone(), pool_service.clone(),
