@@ -339,7 +339,7 @@ fn _map_io_err(e: io::Error) -> IndyError {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     use serde_json;
 
@@ -747,7 +747,7 @@ mod tests {
 
         let storage = storage_type.open_storage(id, None, None).await.unwrap();
 
-        Wallet::new(id.to_string(), storage, Rc::new(keys))
+        Wallet::new(id.to_string(), storage, Arc::new(keys))
     }
 
     async fn _assert_is_empty(wallet: &Wallet) {

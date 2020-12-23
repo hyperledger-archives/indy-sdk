@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::rc::Rc;
+use std::sync::Arc;
 
 use indy_api_types::{SearchHandle, WalletHandle};
 use indy_api_types::errors::prelude::*;
@@ -147,19 +147,19 @@ impl SearchForProofRequest {
 }
 
 pub struct ProverCommandExecutor {
-    anoncreds_service: Rc<AnoncredsService>,
-    wallet_service: Rc<WalletService>,
-    crypto_service: Rc<CryptoService>,
-    blob_storage_service: Rc<BlobStorageService>,
+    anoncreds_service:Arc<AnoncredsService>,
+    wallet_service:Arc<WalletService>,
+    crypto_service:Arc<CryptoService>,
+    blob_storage_service:Arc<BlobStorageService>,
     searches: RefCell<HashMap<SearchHandle, Box<WalletSearch>>>,
     searches_for_proof_requests: RefCell<HashMap<SearchHandle, Box<HashMap<String, SearchForProofRequest>>>>,
 }
 
 impl ProverCommandExecutor {
-    pub fn new(anoncreds_service: Rc<AnoncredsService>,
-               wallet_service: Rc<WalletService>,
-               crypto_service: Rc<CryptoService>,
-               blob_storage_service: Rc<BlobStorageService>) -> ProverCommandExecutor {
+    pub fn new(anoncreds_service:Arc<AnoncredsService>,
+               wallet_service:Arc<WalletService>,
+               crypto_service:Arc<CryptoService>,
+               blob_storage_service:Arc<BlobStorageService>) -> ProverCommandExecutor {
         ProverCommandExecutor {
             anoncreds_service,
             wallet_service,

@@ -525,6 +525,7 @@ struct PoolThread<S: Networker, R: RequestHandler<S>> {
 impl<S: Networker, R: RequestHandler<S>> PoolThread<S, R> {
     pub fn new(cmd_socket: zmq::Socket, name: String, id: PoolHandle, timeout: i64, extended_timeout: i64, active_timeout: i64, conn_limit: usize, preordered_nodes: Vec<String>, number_read_nodes: u8) -> Self {
         let networker = Rc::new(RefCell::new(S::new(active_timeout, conn_limit, preordered_nodes)));
+       
         PoolThread {
             pool_sm: Some(PoolSM::new(networker.clone(), &name, id, timeout, extended_timeout, number_read_nodes)),
             events: VecDeque::new(),

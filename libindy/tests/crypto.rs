@@ -606,7 +606,7 @@ mod load {
     use crate::utils::{wallet, did};
 
     const AGENT_CNT: usize = 10;
-    const DATA_SZ: usize = 10 * 1024;
+    const DATA_SZ: usize = 10;
     const OPERATIONS_CNT: usize = 10;
 
     /**

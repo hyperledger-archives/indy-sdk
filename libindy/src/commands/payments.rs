@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::string::String;
 use std::vec::Vec;
 
@@ -120,14 +120,14 @@ pub enum PaymentsCommand {
 }
 
 pub struct PaymentsCommandExecutor {
-    payments_service: Rc<PaymentsService>,
-    wallet_service: Rc<WalletService>,
-    crypto_service: Rc<CryptoService>,
-    ledger_service: Rc<LedgerService>,
+    payments_service:Arc<PaymentsService>,
+    wallet_service:Arc<WalletService>,
+    crypto_service:Arc<CryptoService>,
+    ledger_service:Arc<LedgerService>,
 }
 
 impl PaymentsCommandExecutor {
-    pub fn new(payments_service: Rc<PaymentsService>, wallet_service: Rc<WalletService>, crypto_service: Rc<CryptoService>, ledger_service: Rc<LedgerService>) -> PaymentsCommandExecutor {
+    pub fn new(payments_service:Arc<PaymentsService>, wallet_service:Arc<WalletService>, crypto_service:Arc<CryptoService>, ledger_service:Arc<LedgerService>) -> PaymentsCommandExecutor {
         PaymentsCommandExecutor {
             payments_service,
             wallet_service,
@@ -236,7 +236,7 @@ impl PaymentsCommandExecutor {
     async fn create_address<'a>(&'a self, wallet_handle: WalletHandle, type_: &'a str, config: &'a str) -> IndyResult<String> {
         trace!("create_address >>> wallet_handle: {:?}, type_: {:?}, config: {:?}", wallet_handle, type_, config);
 
-        self.wallet_service.check(wallet_handle).map_err(map_err_err!())?;
+        self.wallet_service.check(wallet_handle).await.map_err(map_err_err!())?;
 
         let res = self.payments_service.create_address(wallet_handle, type_, config).await?;
 

@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::domain::ledger::request::ProtocolVersion;
 use crate::domain::pool::{PoolConfig, PoolOpenConfig};
@@ -31,11 +31,11 @@ pub enum PoolCommand {
 }
 
 pub struct PoolCommandExecutor {
-    pool_service: Rc<PoolService>,
+    pool_service:Arc<PoolService>,
 }
 
 impl PoolCommandExecutor {
-    pub fn new(pool_service: Rc<PoolService>) -> PoolCommandExecutor {
+    pub fn new(pool_service:Arc<PoolService>) -> PoolCommandExecutor {
         PoolCommandExecutor {
             pool_service,
         }

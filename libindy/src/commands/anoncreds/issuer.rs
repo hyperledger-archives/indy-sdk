@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::rc::Rc;
+use std::sync::Arc;
 
 use indy_api_types::{CommandHandle, WalletHandle};
 use indy_api_types::domain::wallet::Tags;
@@ -144,21 +144,21 @@ pub enum IssuerCommand {
 }
 
 pub struct IssuerCommandExecutor {
-    pub anoncreds_service: Rc<AnoncredsService>,
-    pub blob_storage_service: Rc<BlobStorageService>,
-    pub pool_service: Rc<PoolService>,
-    pub wallet_service: Rc<WalletService>,
-    pub crypto_service: Rc<CryptoService>,
+    pub anoncreds_service:Arc<AnoncredsService>,
+    pub blob_storage_service:Arc<BlobStorageService>,
+    pub pool_service:Arc<PoolService>,
+    pub wallet_service:Arc<WalletService>,
+    pub crypto_service:Arc<CryptoService>,
     pending_str_str_callbacks: RefCell<HashMap<CommandHandle, BoxedCallbackStringStringSend>>,
     pending_str_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<String>) + Send>>>,
 }
 
 impl IssuerCommandExecutor {
-    pub fn new(anoncreds_service: Rc<AnoncredsService>,
-               pool_service: Rc<PoolService>,
-               blob_storage_service: Rc<BlobStorageService>,
-               wallet_service: Rc<WalletService>,
-               crypto_service: Rc<CryptoService>) -> IssuerCommandExecutor {
+    pub fn new(anoncreds_service:Arc<AnoncredsService>,
+               pool_service:Arc<PoolService>,
+               blob_storage_service:Arc<BlobStorageService>,
+               wallet_service:Arc<WalletService>,
+               crypto_service:Arc<CryptoService>) -> IssuerCommandExecutor {
         IssuerCommandExecutor {
             anoncreds_service,
             pool_service,

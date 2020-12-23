@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 use std::string::ToString;
 
 use indy_api_types::{PoolHandle, WalletHandle};
@@ -249,18 +249,18 @@ pub enum LedgerCommand {
 }
 
 pub struct LedgerCommandExecutor {
-    pool_service: Rc<PoolService>,
-    crypto_service: Rc<CryptoService>,
-    wallet_service: Rc<WalletService>,
-    ledger_service: Rc<LedgerService>,
+    pool_service:Arc<PoolService>,
+    crypto_service:Arc<CryptoService>,
+    wallet_service:Arc<WalletService>,
+    ledger_service:Arc<LedgerService>,
 
 }
 
 impl LedgerCommandExecutor {
-    pub fn new(pool_service: Rc<PoolService>,
-               crypto_service: Rc<CryptoService>,
-               wallet_service: Rc<WalletService>,
-               ledger_service: Rc<LedgerService>) -> LedgerCommandExecutor {
+    pub fn new(pool_service:Arc<PoolService>,
+               crypto_service:Arc<CryptoService>,
+               wallet_service:Arc<WalletService>,
+               ledger_service:Arc<LedgerService>) -> LedgerCommandExecutor {
         LedgerCommandExecutor {
             pool_service,
             crypto_service,
@@ -304,7 +304,7 @@ impl LedgerCommandExecutor {
                 cb(self.build_nym_request(&submitter_did, &target_did,
                                           verkey.as_ref().map(String::as_str),
                                           alias.as_ref().map(String::as_str),
-                                          role.as_ref().map(String::as_str)));
+                                          role.as_ref().map(String::as_str)).await);
             }
             LedgerCommand::BuildAttribRequest(submitter_did, target_did, hash, raw, enc, cb) => {
                 debug!(target: "ledger_command_executor", "BuildAttribRequest command received");
@@ -512,7 +512,7 @@ impl LedgerCommandExecutor {
         }
 
         let serialized_request = serialize_signature(request.clone())?;
-        let signature = self.crypto_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
+        let signature = self.crypto_service.sign(&my_key, &serialized_request.as_bytes().to_vec()).await?;
         let did = my_did.did.to_short();
 
         match signature_type {
@@ -603,7 +603,7 @@ impl LedgerCommandExecutor {
         Ok(res)
     }
 
-    fn build_nym_request(&self,
+    async fn build_nym_request(&self,
                          submitter_did: &DidValue,
                          target_did: &DidValue,
                          verkey: Option<&str>,
@@ -614,8 +614,9 @@ impl LedgerCommandExecutor {
 
         self.crypto_service.validate_did(submitter_did)?;
         self.crypto_service.validate_did(target_did)?;
+        
         if let Some(vk) = verkey {
-            self.crypto_service.validate_key(vk)?;
+            self.crypto_service.validate_key(vk).await?;
         }
 
         let res = self.ledger_service.build_nym_request(submitter_did,

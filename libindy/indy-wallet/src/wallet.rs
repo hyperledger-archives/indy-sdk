@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, sync::Arc};
 
 use indy_api_types::errors::prelude::*;
 
@@ -134,11 +134,11 @@ impl EncryptedValue {
 pub(super) struct Wallet {
     id: String,
     storage: Box<dyn storage::WalletStorage>,
-    keys: Rc<Keys>,
+    keys: Arc<Keys>,
 }
 
 impl Wallet {
-    pub fn new(id: String, storage: Box<dyn storage::WalletStorage>, keys: Rc<Keys>) -> Wallet {
+    pub fn new(id: String, storage: Box<dyn storage::WalletStorage>, keys: Arc<Keys>) -> Wallet {
         Wallet { id, storage, keys }
     }
 
@@ -360,7 +360,7 @@ impl Wallet {
             .search(&encrypted_type_, &encrypted_query, options)
             .await?;
 
-        let wallet_iterator = WalletIterator::new(storage_iterator, Rc::clone(&self.keys));
+        let wallet_iterator = WalletIterator::new(storage_iterator, Arc::clone(&self.keys));
 
         Ok(wallet_iterator)
     }
@@ -372,7 +372,7 @@ impl Wallet {
 
     pub async fn get_all(&self) -> IndyResult<WalletIterator> {
         let all_items = self.storage.get_all().await?;
-        Ok(WalletIterator::new(all_items, Rc::clone(&self.keys)))
+        Ok(WalletIterator::new(all_items, self.keys.clone()))
     }
 
     pub fn get_id<'a>(&'a self) -> &'a str {
@@ -3591,7 +3591,7 @@ mod tests {
 
         let storage = storage_type.open_storage(name, None, None).await.unwrap();
 
-        Wallet::new(name.to_string(), storage, Rc::new(keys))
+        Wallet::new(name.to_string(), storage, Arc::new(keys))
     }
 
     async fn _mysql_wallet(name: &str) -> Wallet {
@@ -3621,7 +3621,7 @@ mod tests {
             .await
             .unwrap();
 
-        Wallet::new(name.to_string(), storage, Rc::new(keys))
+        Wallet::new(name.to_string(), storage, Arc::new(keys))
     }
 
     async fn _exists_wallet(name: &str) -> Wallet {
@@ -3636,7 +3636,7 @@ mod tests {
         let master_key = _master_key();
         let keys = Keys::deserialize_encrypted(&metadata.keys, &master_key).unwrap();
 
-        Wallet::new(name.to_string(), storage, Rc::new(keys))
+        Wallet::new(name.to_string(), storage, Arc::new(keys))
     }
 
     fn _master_key() -> chacha20poly1305_ietf::Key {

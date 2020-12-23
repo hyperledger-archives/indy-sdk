@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use indy_api_types::{PoolHandle, WalletHandle};
 use indy_api_types::errors::prelude::*;
@@ -85,17 +85,17 @@ pub enum DidCommand {
 }
 
 pub struct DidCommandExecutor {
-    wallet_service: Rc<WalletService>,
-    crypto_service: Rc<CryptoService>,
-    ledger_service: Rc<LedgerService>,
-    pool_service: Rc<PoolService>,
+    wallet_service:Arc<WalletService>,
+    crypto_service:Arc<CryptoService>,
+    ledger_service:Arc<LedgerService>,
+    pool_service:Arc<PoolService>,
 }
 
 impl DidCommandExecutor {
-    pub fn new(wallet_service: Rc<WalletService>,
-               crypto_service: Rc<CryptoService>,
-               ledger_service: Rc<LedgerService>,
-               pool_service: Rc<PoolService>) -> DidCommandExecutor {
+    pub fn new(wallet_service:Arc<WalletService>,
+               crypto_service:Arc<CryptoService>,
+               ledger_service:Arc<LedgerService>,
+               pool_service:Arc<PoolService>) -> DidCommandExecutor {
         DidCommandExecutor {
             wallet_service,
             crypto_service,
@@ -156,7 +156,7 @@ impl DidCommandExecutor {
             }
             DidCommand::AbbreviateVerkey(did, verkey, cb) => {
                 debug!("AbbreviateVerkey command received");
-                cb(self.abbreviate_verkey(&did, verkey));
+                cb(self.abbreviate_verkey(&did, verkey).await);
             }
             DidCommand::QualifyDid(wallet_handle, did, method, cb) => {
                 debug!("QualifyDid command received");
@@ -170,7 +170,7 @@ impl DidCommandExecutor {
                                      my_did_info: &MyDidInfo) -> IndyResult<(String, String)> {
         debug!("create_and_store_my_did >>> wallet_handle: {:?}, my_did_info_json: {:?}", wallet_handle, secret!(my_did_info));
 
-        let (did, key) = self.crypto_service.create_my_did(&my_did_info)?;
+        let (did, key) = self.crypto_service.create_my_did(&my_did_info).await?;
 
         if let Ok(current_did) = self._wallet_get_my_did(wallet_handle, &did.did).await {
             if did.verkey == current_did.verkey {
@@ -201,7 +201,7 @@ impl DidCommandExecutor {
 
         let my_did = self._wallet_get_my_did(wallet_handle, my_did).await?;
 
-        let temporary_key = self.crypto_service.create_key(&key_info)?;
+        let temporary_key = self.crypto_service.create_key(&key_info).await?;
         let my_temporary_did = TemporaryDid { did: my_did.did, verkey: temporary_key.verkey.clone() };
 
         self.wallet_service.add_indy_object(wallet_handle, &temporary_key.verkey, &temporary_key, &HashMap::new()).await?;
@@ -240,7 +240,7 @@ impl DidCommandExecutor {
                              their_did_info: &TheirDidInfo) -> IndyResult<()> {
         debug!("store_their_did >>> wallet_handle: {:?}, their_did_info: {:?}", wallet_handle, their_did_info);
 
-        let their_did = self.crypto_service.create_their_did(their_did_info)?;
+        let their_did = self.crypto_service.create_their_did(their_did_info).await?;
 
         self.wallet_service.upsert_indy_object(wallet_handle, &their_did.did.0, &their_did).await?;
 
@@ -407,7 +407,7 @@ impl DidCommandExecutor {
 
         if endpoint.verkey.is_some() {
             let transport_key = endpoint.verkey.as_ref().unwrap();
-            self.crypto_service.validate_key(transport_key)?;
+            self.crypto_service.validate_key(transport_key).await?;
         }
 
         self.wallet_service.upsert_indy_object(wallet_handle, &did.0, endpoint).await?;
@@ -471,13 +471,13 @@ impl DidCommandExecutor {
         Ok(res)
     }
 
-    fn abbreviate_verkey(&self,
+    async fn abbreviate_verkey(&self,
                          did: &DidValue,
                          verkey: String) -> IndyResult<String> {
         debug!("abbreviate_verkey >>> did: {:?}, verkey: {:?}", did, verkey);
 
         self.crypto_service.validate_did(&did)?;
-        self.crypto_service.validate_key(&verkey)?;
+        self.crypto_service.validate_key(&verkey).await?;
 
         if !did.is_abbreviatable() {
             return Ok(verkey);
@@ -582,7 +582,7 @@ impl DidCommandExecutor {
             GetNymReplyResult::GetNymReplyResultV1(res) => TheirDidInfo::new(res.txn.data.did.qualify(did.get_method()), res.txn.data.verkey)
         };
 
-        let their_did = self.crypto_service.create_their_did(&their_did_info)?;
+        let their_did = self.crypto_service.create_their_did(&their_did_info).await?;
 
         self.wallet_service.add_indy_object(wallet_handle, &their_did.did.0, &their_did, &HashMap::new()).await?;
 

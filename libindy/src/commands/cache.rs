@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use indy_api_types::{PoolHandle, WalletHandle};
@@ -39,10 +39,10 @@ pub enum CacheCommand {
 }
 
 pub struct CacheCommandExecutor {
-    crypto_service: Rc<CryptoService>,
-    ledger_service: Rc<LedgerService>,
-    pool_service: Rc<PoolService>,
-    wallet_service: Rc<WalletService>,
+    crypto_service:Arc<CryptoService>,
+    ledger_service:Arc<LedgerService>,
+    pool_service:Arc<PoolService>,
+    wallet_service:Arc<WalletService>,
 }
 
 macro_rules! check_cache {
@@ -67,7 +67,7 @@ macro_rules! check_cache {
 }
 
 impl CacheCommandExecutor {
-    pub fn new(crypto_service: Rc<CryptoService>, ledger_service: Rc<LedgerService>, pool_service: Rc<PoolService>, wallet_service: Rc<WalletService>) -> CacheCommandExecutor {
+    pub fn new(crypto_service:Arc<CryptoService>, ledger_service:Arc<LedgerService>, pool_service:Arc<PoolService>, wallet_service:Arc<WalletService>) -> CacheCommandExecutor {
         CacheCommandExecutor {
             crypto_service,
             ledger_service,

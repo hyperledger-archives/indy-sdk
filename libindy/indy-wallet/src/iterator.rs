@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use indy_api_types::errors::IndyError;
 
@@ -8,11 +8,11 @@ use super::{
 
 pub(super) struct WalletIterator {
     storage_iterator: Box<dyn StorageIterator>,
-    keys: Rc<Keys>,
+    keys: Arc<Keys>,
 }
 
 impl WalletIterator {
-    pub fn new(storage_iter: Box<dyn StorageIterator>, keys: Rc<Keys>) -> Self {
+    pub fn new(storage_iter: Box<dyn StorageIterator>, keys: Arc<Keys>) -> Self {
         WalletIterator {
             storage_iterator: storage_iter,
             keys,

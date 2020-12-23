@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::str;
 
 use indy_api_types::errors::prelude::*;
@@ -86,14 +86,14 @@ pub enum CryptoCommand {
 }
 
 pub struct CryptoCommandExecutor {
-    wallet_service: Rc<WalletService>,
-    crypto_service: Rc<CryptoService>,
+    wallet_service:Arc<WalletService>,
+    crypto_service:Arc<CryptoService>,
 }
 
 impl CryptoCommandExecutor {
     pub fn new(
-        wallet_service: Rc<WalletService>,
-        crypto_service: Rc<CryptoService>,
+        wallet_service:Arc<WalletService>,
+        crypto_service:Arc<CryptoService>,
     ) -> CryptoCommandExecutor {
         CryptoCommandExecutor {
             wallet_service,
@@ -121,7 +121,7 @@ impl CryptoCommandExecutor {
             }
             CryptoCommand::CryptoVerify(their_vk, msg, signature, cb) => {
                 debug!("CryptoVerify command received");
-                cb(self.crypto_verify(&their_vk, &msg, &signature));
+                cb(self.crypto_verify(&their_vk, &msg, &signature).await);
             }
             CryptoCommand::AuthenticatedEncrypt(wallet_handle, my_vk, their_vk, msg, cb) => {
                 debug!("AuthenticatedEncrypt command received");
@@ -133,7 +133,7 @@ impl CryptoCommandExecutor {
             }
             CryptoCommand::AnonymousEncrypt(their_vk, msg, cb) => {
                 debug!("AnonymousEncrypt command received");
-                cb(self.anonymous_encrypt(&their_vk, &msg));
+                cb(self.anonymous_encrypt(&their_vk, &msg).await);
             }
             CryptoCommand::AnonymousDecrypt(wallet_handle, my_vk, encrypted_msg, cb) => {
                 debug!("AnonymousDecrypt command received");
@@ -157,7 +157,8 @@ impl CryptoCommandExecutor {
             secret!(key_info)
         );
 
-        let key = self.crypto_service.create_key(key_info)?;
+        let key = self.crypto_service.create_key(key_info).await?;
+       
         self.wallet_service
             .add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new()).await?;
 
@@ -172,7 +173,7 @@ impl CryptoCommandExecutor {
             wallet_handle, my_vk, msg
         );
 
-        self.crypto_service.validate_key(my_vk)?;
+        self.crypto_service.validate_key(my_vk).await?;
 
         let key: Key = self.wallet_service.get_indy_object(
             wallet_handle,
@@ -180,14 +181,14 @@ impl CryptoCommandExecutor {
             &RecordOptions::id_value(),
         ).await?;
 
-        let res = self.crypto_service.sign(&key, msg)?;
+        let res = self.crypto_service.sign(&key, msg).await?;
 
         trace!("crypto_sign <<< res: {:?}", res);
 
         Ok(res)
     }
 
-    fn crypto_verify(&self,
+    async fn crypto_verify(&self,
                      their_vk: &str,
                      msg: &[u8],
                      signature: &[u8]) -> IndyResult<bool> {
@@ -196,9 +197,9 @@ impl CryptoCommandExecutor {
             their_vk, msg, signature
         );
 
-        self.crypto_service.validate_key(their_vk)?;
+        self.crypto_service.validate_key(their_vk).await?;
 
-        let res = self.crypto_service.verify(their_vk, msg, signature)?;
+        let res = self.crypto_service.verify(their_vk, msg, signature).await?;
 
         trace!("crypto_verify <<< res: {:?}", res);
 
@@ -215,8 +216,8 @@ impl CryptoCommandExecutor {
     ) -> IndyResult<Vec<u8>> {
         trace!("authenticated_encrypt >>> wallet_handle: {:?}, my_vk: {:?}, their_vk: {:?}, msg: {:?}", wallet_handle, my_vk, their_vk, msg);
 
-        self.crypto_service.validate_key(my_vk)?;
-        self.crypto_service.validate_key(their_vk)?;
+        self.crypto_service.validate_key(my_vk).await?;
+        self.crypto_service.validate_key(their_vk).await?;
 
         let my_key: Key = self.wallet_service.get_indy_object(
             wallet_handle,
@@ -224,12 +225,12 @@ impl CryptoCommandExecutor {
             &RecordOptions::id_value(),
         ).await?;
 
-        let msg = self.crypto_service.create_combo_box(&my_key, &their_vk, msg)?;
+        let msg = self.crypto_service.create_combo_box(&my_key, &their_vk, msg).await?;
 
         let msg = msg.to_msg_pack()
             .map_err(|e| err_msg(IndyErrorKind::InvalidState, format!("Can't serialize ComboBox: {:?}", e)))?;
 
-        let res = self.crypto_service.crypto_box_seal(&their_vk, &msg)?;
+        let res = self.crypto_service.crypto_box_seal(&their_vk, &msg).await?;
 
         trace!("authenticated_encrypt <<< res: {:?}", res);
 
@@ -245,7 +246,7 @@ impl CryptoCommandExecutor {
     ) -> IndyResult<(String, Vec<u8>)> {
         trace!("authenticated_decrypt >>> wallet_handle: {:?}, my_vk: {:?}, msg: {:?}", wallet_handle, my_vk, msg);
 
-        self.crypto_service.validate_key(my_vk)?;
+        self.crypto_service.validate_key(my_vk).await?;
 
         let my_key: Key = self.wallet_service.get_indy_object(
             wallet_handle,
@@ -253,7 +254,7 @@ impl CryptoCommandExecutor {
             &RecordOptions::id_value(),
         ).await?;
 
-        let decrypted_msg = self.crypto_service.crypto_box_seal_open(&my_key, &msg)?;
+        let decrypted_msg = self.crypto_service.crypto_box_seal_open(&my_key, &msg).await?;
 
         let parsed_msg = ComboBox::from_msg_pack(decrypted_msg.as_slice())
             .map_err(|err| err_msg(IndyErrorKind::InvalidStructure, format!("Can't deserialize ComboBox: {:?}", err)))?;
@@ -264,7 +265,7 @@ impl CryptoCommandExecutor {
         let nonce: Vec<u8> = base64::decode(&parsed_msg.nonce)
             .map_err(|err| err_msg(IndyErrorKind::InvalidStructure, format!("Can't decode nonce from base64 {}", err)))?;
 
-        let decrypted_msg = self.crypto_service.crypto_box_open(&my_key, &parsed_msg.sender, &doc, &nonce)?;
+        let decrypted_msg = self.crypto_service.crypto_box_open(&my_key, &parsed_msg.sender, &doc, &nonce).await?;
 
         let res = (parsed_msg.sender, decrypted_msg);
 
@@ -273,7 +274,7 @@ impl CryptoCommandExecutor {
         Ok(res)
     }
 
-    fn anonymous_encrypt(&self,
+    async fn anonymous_encrypt(&self,
                          their_vk: &str,
                          msg: &[u8]) -> IndyResult<Vec<u8>> {
         trace!(
@@ -281,9 +282,9 @@ impl CryptoCommandExecutor {
             their_vk, msg
         );
 
-        self.crypto_service.validate_key(their_vk)?;
+        self.crypto_service.validate_key(their_vk).await?;
 
-        let res = self.crypto_service.crypto_box_seal(their_vk, &msg)?;
+        let res = self.crypto_service.crypto_box_seal(their_vk, &msg).await?;
 
         trace!("anonymous_encrypt <<< res: {:?}", res);
 
@@ -299,7 +300,7 @@ impl CryptoCommandExecutor {
             wallet_handle, my_vk, encrypted_msg
         );
 
-        self.crypto_service.validate_key(&my_vk)?;
+        self.crypto_service.validate_key(&my_vk).await?;
 
         let my_key: Key = self.wallet_service.get_indy_object(
             wallet_handle,
@@ -309,7 +310,7 @@ impl CryptoCommandExecutor {
 
         let res = self
             .crypto_service
-            .crypto_box_seal_open(&my_key, &encrypted_msg)?;
+            .crypto_box_seal_open(&my_key, &encrypted_msg).await?;
 
         trace!("anonymous_decrypt <<< res: {:?}", res);
 
@@ -322,7 +323,7 @@ impl CryptoCommandExecutor {
             wallet_handle, verkey, metadata
         );
 
-        self.crypto_service.validate_key(verkey)?;
+        self.crypto_service.validate_key(verkey).await?;
 
         let metadata = KeyMetadata {
             value: metadata.to_string(),
@@ -342,7 +343,7 @@ impl CryptoCommandExecutor {
             wallet_handle, verkey
         );
 
-        self.crypto_service.validate_key(verkey)?;
+        self.crypto_service.validate_key(verkey).await?;
 
         let metadata = self.wallet_service.get_indy_object::<KeyMetadata>(
             wallet_handle,
@@ -376,13 +377,13 @@ impl CryptoCommandExecutor {
         let cek = chacha20poly1305_ietf::gen_key();
 
         let base64_protected = if let Some(sender_vk) = sender_vk {
-            self.crypto_service.validate_key(&sender_vk)?;
+            self.crypto_service.validate_key(&sender_vk).await?;
 
             //returns authcrypted pack_message format. See Wire message format HIPE for details
             self._prepare_protected_authcrypt(&cek, receiver_list, &sender_vk, wallet_handle).await?
         } else {
             //returns anoncrypted pack_message format. See Wire message format HIPE for details
-            self._prepare_protected_anoncrypt(&cek, receiver_list)?
+            self._prepare_protected_anoncrypt(&cek, receiver_list).await?
         };
 
         // Use AEAD to encrypt `message` with "protected" data as "associated data"
@@ -393,7 +394,7 @@ impl CryptoCommandExecutor {
         self._format_pack_message(&base64_protected, &ciphertext, &iv, &tag)
     }
 
-    fn _prepare_protected_anoncrypt(&self,
+    async fn _prepare_protected_anoncrypt(&self,
                                     cek: &chacha20poly1305_ietf::Key,
                                     receiver_list: Vec<String>,
     ) -> IndyResult<String> {
@@ -401,7 +402,7 @@ impl CryptoCommandExecutor {
 
         for their_vk in receiver_list {
             //encrypt sender verkey
-            let enc_cek = self.crypto_service.crypto_box_seal(&their_vk, &cek[..])?;
+            let enc_cek = self.crypto_service.crypto_box_seal(&their_vk, &cek[..]).await?;
 
             //create recipient struct and push to encrypted list
             encrypted_recipients_struct.push(Recipient {
@@ -413,6 +414,7 @@ impl CryptoCommandExecutor {
                 },
             });
         } // end for-loop
+       
         Ok(self._base64_encode_protected(encrypted_recipients_struct, false)?)
     }
 
@@ -432,9 +434,9 @@ impl CryptoCommandExecutor {
 
         //encrypt cek for recipient
         for their_vk in receiver_list {
-            let (enc_cek, iv) = self.crypto_service.crypto_box(&my_key, &their_vk, &cek[..])?;
+            let (enc_cek, iv) = self.crypto_service.crypto_box(&my_key, &their_vk, &cek[..]).await?;
 
-            let enc_sender = self.crypto_service.crypto_box_seal(&their_vk, sender_vk.as_bytes())?;
+            let enc_sender = self.crypto_service.crypto_box_seal(&their_vk, sender_vk.as_bytes()).await?;
 
             //create recipient struct and push to encrypted list
             encrypted_recipients_struct.push(Recipient {
@@ -574,7 +576,7 @@ impl CryptoCommandExecutor {
         ).await?;
 
         //decrypt sender_vk
-        let sender_vk_vec = self.crypto_service.crypto_box_seal_open(&my_key, enc_sender_vk.as_slice())?;
+        let sender_vk_vec = self.crypto_service.crypto_box_seal_open(&my_key, enc_sender_vk.as_slice()).await?;
         let sender_vk = String::from_utf8(sender_vk_vec)
             .map_err(|err| err_msg(IndyErrorKind::InvalidStructure, format!("Failed to utf-8 encode sender_vk {}", err)))?;
 
@@ -583,7 +585,7 @@ impl CryptoCommandExecutor {
             &my_key,
             &sender_vk,
             encrypted_key_vec.as_slice(),
-            iv.as_slice())?;
+            iv.as_slice()).await?;
 
         //convert cek to chacha Key struct
         let cek: chacha20poly1305_ietf::Key =
@@ -608,7 +610,7 @@ impl CryptoCommandExecutor {
 
         //decrypt cek
         let cek_as_vec = self.crypto_service
-            .crypto_box_seal_open(&my_key, encrypted_key_vec.as_slice())?;
+            .crypto_box_seal_open(&my_key, encrypted_key_vec.as_slice()).await?;
 
         //convert cek to chacha Key struct
         let cek: chacha20poly1305_ietf::Key =

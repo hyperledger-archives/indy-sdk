@@ -2,6 +2,8 @@ use crate::services::metrics::models::MetricsValue;
 use crate::services::metrics::MetricsService;
 use indy_api_types::errors::prelude::*;
 use indy_wallet::WalletService;
+use std::sync::Arc;
+use crate::services::metrics::MetricsService;
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -20,14 +22,14 @@ pub enum MetricsCommand {
 }
 
 pub struct MetricsCommandExecutor {
-    wallet_service: Rc<WalletService>,
-    metrics_service: Rc<MetricsService>,
+    wallet_service:Arc<WalletService>,
+    metrics_service:Arc<MetricsService>,
 }
 
 impl MetricsCommandExecutor {
     pub fn new(
-        wallet_service: Rc<WalletService>,
-        metrics_service: Rc<MetricsService>,
+        wallet_service:Arc<WalletService>,
+        metrics_service:Arc<MetricsService>,
     ) -> MetricsCommandExecutor {
         MetricsCommandExecutor {
             wallet_service,
@@ -35,20 +37,20 @@ impl MetricsCommandExecutor {
         }
     }
 
-    pub fn execute(&self, command: MetricsCommand) {
+    pub async fn execute(&self, command: MetricsCommand) {
         match command {
             MetricsCommand::CollectMetrics(cb) => {
                 debug!(target: "metrics_command_executor", "CollectMetrics command received");
-                cb(self.collect());
+                cb(self.collect().await);
             }
         };
     }
 
-    fn collect(&self) -> IndyResult<String> {
+    async fn collect(&self) -> IndyResult<String> {
         trace!("_collect >>>");
         let mut metrics_map = serde_json::Map::new();
         self.append_threapool_metrics(&mut metrics_map)?;
-        self.append_wallet_metrics(&mut metrics_map)?;
+        self.append_wallet_metrics(&mut metrics_map).await?;
         self.metrics_service
             .append_command_metrics(&mut metrics_map)?;
         let res = serde_json::to_string(&metrics_map)
@@ -106,22 +108,22 @@ impl MetricsCommandExecutor {
 
         wallet_count.push(self.get_metric_json(
             OPENED_WALLETS_COUNT,
-            self.wallet_service.get_wallets_count()
+            self.wallet_service.get_wallets_count().await
         )?);
 
         wallet_count.push(self.get_metric_json(
             OPENED_WALLET_IDS_COUNT,
-            self.wallet_service.get_wallet_ids_count()
+            self.wallet_service.get_wallet_ids_count().await
         )?);
 
         wallet_count.push(self.get_metric_json(
             PENDING_FOR_IMPORT_WALLETS_COUNT,
-            self.wallet_service.get_pending_for_import_count()
+            self.wallet_service.get_pending_for_import_count().await
         )?);
 
         wallet_count.push(self.get_metric_json(
         PENDING_FOR_OPEN_WALLETS_COUNT,
-        self.wallet_service.get_pending_for_open_count()
+        self.wallet_service.get_pending_for_open_count().await
         )?);
 
         metrics_map.insert(
