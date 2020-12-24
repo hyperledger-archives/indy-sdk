@@ -32,4 +32,9 @@ cargo deb --no-build --deb-version ${version}-${package_type} --variant ${packag
 
 mkdir debs &&  mv target/debian/*.deb ./debs/
 
+# Fix for 'gpg: signing failed: Inappropriate ioctl for device' code signing error
+# ToDo:
+#  - If this fixes the issue, the logic should be implemented in the sovrin-packaging tools and removed from here.
+export GPG_TTY=$(tty)
+
 ./sovrin-packaging/upload_debs.py ./debs $repo $type --distro=$package_type --host $host --ssh-key $key $extra_flags
