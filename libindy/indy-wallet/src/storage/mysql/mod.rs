@@ -525,7 +525,7 @@ impl WalletStorage for MySqlStorage {
     async fn get_storage_metadata(&self) -> IndyResult<Vec<u8>> {
         let mut conn = self.read_pool.acquire().await?;
 
-        let (metadata,): (Vec<u8>,) = sqlx::query_as::<_, (Vec<u8>,)>(
+        let (metadata,): (String,) = sqlx::query_as::<_, (String,)>(
             r#"
             SELECT metadata
             FROM wallets
@@ -536,7 +536,7 @@ impl WalletStorage for MySqlStorage {
         .fetch_one(&mut conn)
         .await?;
 
-        Ok(metadata)
+        base64::decode(&metadata)
     }
 
     async fn set_storage_metadata(&self, metadata: &[u8]) -> IndyResult<()> {
@@ -549,7 +549,7 @@ impl WalletStorage for MySqlStorage {
             WHERE id = ?
             "#,
         )
-        .bind(metadata)
+        .bind(base64::encode(metadata))
         .bind(&self.wallet_id)
         .execute(&mut tx)
         .await?;
