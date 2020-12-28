@@ -24,12 +24,12 @@ impl MetricsService {
         }
     }
 
-    pub fn cmd_left_queue(&self, command_index: CommandMetric, duration: u128) {
-        self.queued_counters.borrow_mut()[command_index as usize].add(duration);
+    pub fn cmd_left_queue(&self, command_metric: CommandMetric, duration: u128) {
+        self.queued_counters.borrow_mut()[command_metric as usize].add(duration);
     }
 
-    pub fn cmd_executed(&self, command_index: CommandMetric, duration: u128) {
-        self.executed_counters.borrow_mut()[command_index as usize].add(duration);
+    pub fn cmd_executed(&self, command_metric: CommandMetric, duration: u128) {
+        self.executed_counters.borrow_mut()[command_metric as usize].add(duration);
     }
 
     pub fn cmd_name(index: usize) -> String {
@@ -45,7 +45,7 @@ impl MetricsService {
         stage: String,
     ) -> HashMap<String, String> {
         let mut tags = HashMap::<String, String>::new();
-        tags.insert("command".to_owned(), command.clone());
+        tags.insert("command".to_owned(), command.to_owned());
         tags.insert("stage".to_owned(), stage.to_owned());
         tags
     }
@@ -60,79 +60,28 @@ impl MetricsService {
         let mut commands_duration_ms_bucket = Vec::new();
 
         for index in (0..MetricsService::commands_count()).rev() {
-            let command = MetricsService::cmd_name(index);
+            let command_name = MetricsService::cmd_name(index);
             let tags_executed = MetricsService::get_command_tags(
-                command.clone(),
+                command_name.to_owned(),
                 String::from("executed"),
             );
             let tags_queued = MetricsService::get_command_tags(
-                command.clone(),
+                command_name.to_owned(),
                 String::from("queued"),
             );
 
-            commands_count.push(
-                serde_json::to_value(MetricsValue::new(
-                    self.executed_counters.borrow()[index].count as usize,
-                    tags_executed.clone(),
-                ))
-                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-            );
-            commands_count.push(
-                serde_json::to_value(MetricsValue::new(
-                    self.queued_counters.borrow()[index].count as usize,
-                    tags_queued.clone(),
-                ))
-                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-            );
+            commands_count.push(self.get_metric_json(self.executed_counters.borrow()[index].count as usize, tags_executed.clone())?);
+            commands_count.push(self.get_metric_json(self.queued_counters.borrow()[index].count as usize, tags_queued.clone())?);
 
-            commands_duration_ms.push(
-                serde_json::to_value(MetricsValue::new(
-                    self.executed_counters.borrow()[index].duration_ms_sum as usize,
-                    tags_executed.clone(),
-                ))
-                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-            );
-            commands_duration_ms.push(
-                serde_json::to_value(MetricsValue::new(
-                    self.queued_counters.borrow()[index].duration_ms_sum as usize,
-                    tags_queued.clone(),
-                ))
-                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-            );
+            commands_duration_ms.push(self.get_metric_json(self.executed_counters.borrow()[index].duration_ms_sum as usize, tags_executed.clone())?);
+            commands_duration_ms.push(self.get_metric_json(self.queued_counters.borrow()[index].duration_ms_sum as usize,tags_queued.clone())?);
 
             for index_bucket in (0..self.executed_counters.borrow()[index].duration_ms_bucket.len()).rev() {
-                let executed_bucket = self.executed_counters.borrow()[index as usize].duration_ms_bucket[index_bucket];
-                let queued_bucket = self.queued_counters.borrow()[index as usize].duration_ms_bucket[index_bucket as usize];
+                let executed_bucket = self.executed_counters.borrow()[index].duration_ms_bucket[index_bucket];
+                let queued_bucket = self.queued_counters.borrow()[index].duration_ms_bucket[index_bucket];
 
-                commands_duration_ms_bucket.push(
-                    serde_json::to_value(MetricsValue::new(
-                        executed_bucket as usize,
-                        tags_executed.clone(),
-                    ))
-                        .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-                );
-                commands_duration_ms_bucket.push(
-                    serde_json::to_value(MetricsValue::new(
-                        queued_bucket as usize,
-                        tags_queued.clone(),
-                    ))
-                        .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-                );
-
-                commands_duration_ms_bucket.push(
-                    serde_json::to_value(MetricsValue::new(
-                        executed_bucket as usize,
-                        tags_executed.clone(),
-                    ))
-                        .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-                );
-                commands_duration_ms_bucket.push(
-                    serde_json::to_value(MetricsValue::new(
-                        queued_bucket as usize,
-                        tags_queued.clone(),
-                    ))
-                        .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-                );
+                commands_duration_ms_bucket.push(self.get_metric_json(executed_bucket as usize, tags_executed.clone())?);
+                commands_duration_ms_bucket.push(self.get_metric_json(queued_bucket as usize, tags_queued.clone())?);
             }
         }
 
@@ -153,6 +102,15 @@ impl MetricsService {
         );
 
         Ok(())
+    }
+
+    fn get_metric_json(&self, value: usize, tags: HashMap<String, String>) -> IndyResult<Value> {
+        let res = serde_json::to_value(MetricsValue::new(
+            value,
+            tags,
+        )).to_indy(IndyErrorKind::IOError, "Unable to convert json")?;
+
+        Ok(res)
     }
 }
 
@@ -239,6 +197,15 @@ mod test {
                 .len(),
             COMMANDS_COUNT * 2
         );
+        assert_eq!(
+            metrics_map
+                .get("commands_duration_ms_bucket")
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .len(),
+            COMMANDS_COUNT * 32
+        );
 
         let commands_count = metrics_map
             .get("commands_count")
@@ -257,24 +224,24 @@ mod test {
             .unwrap();
 
         let expected_commands_count = [
-            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"queued"},"value":0}),
-            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
-            json!({"tags":{"command": "non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
+            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
+            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
+            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
+            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0)
         ];
 
         let expected_commands_duration_ms = [
-            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"queued"},"value":0}),
-            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
+            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
+            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
+            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
+            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0)
         ];
 
         let expected_commands_duration_ms_bucket = [
-            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"queued"},"value":0}),
-            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
+            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
+            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
+            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
+            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0)
         ];
 
         for command in &expected_commands_count {
@@ -288,5 +255,9 @@ mod test {
         for command in &expected_commands_duration_ms_bucket {
             assert!(commands_duration_ms_bucket.contains(&command));
         }
+    }
+
+    fn generate_json(command: String, stage: String, value: usize) -> Value {
+        json!({"tags":{"command": command, "stage": stage} ,"value": value})
     }
 }
