@@ -1,7 +1,7 @@
 use crate::services::metrics::command_metrics::CommandMetric;
 use convert_case::{Case, Casing};
 use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
-use models::MetricsValue;
+use models::{MetricsValue, CommandCounters};
 use serde_json::{Map, Value};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -12,32 +12,24 @@ pub mod models;
 const COMMANDS_COUNT: usize = MetricsService::commands_count();
 
 pub struct MetricsService {
-    queued_commands_count: RefCell<[u128; COMMANDS_COUNT]>,
-    queued_commands_duration_ms: RefCell<[u128; COMMANDS_COUNT]>,
-
-    executed_commands_count: RefCell<[u128; COMMANDS_COUNT]>,
-    executed_commands_duration_ms: RefCell<[u128; COMMANDS_COUNT]>,
+    queued_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
+    executed_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
 }
 
 impl MetricsService {
     pub fn new() -> Self {
         MetricsService {
-            queued_commands_count: RefCell::new([u128::MIN; COMMANDS_COUNT]),
-            queued_commands_duration_ms: RefCell::new([u128::MIN; COMMANDS_COUNT]),
-
-            executed_commands_count: RefCell::new([u128::MIN; COMMANDS_COUNT]),
-            executed_commands_duration_ms: RefCell::new([u128::MIN; COMMANDS_COUNT]),
+            queued_counters: RefCell::new([CommandCounters::new(0,0,[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]); COMMANDS_COUNT]),
+            executed_counters: RefCell::new([CommandCounters::new(0,0,[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]); COMMANDS_COUNT]),
         }
     }
 
     pub fn cmd_left_queue(&self, command_index: CommandMetric, duration: u128) {
-        self.queued_commands_count.borrow_mut()[command_index as usize] += 1;
-        self.queued_commands_duration_ms.borrow_mut()[command_index as usize] += duration;
+        self.queued_counters.borrow_mut()[command_index as usize].add(duration);
     }
 
     pub fn cmd_executed(&self, command_index: CommandMetric, duration: u128) {
-        self.executed_commands_count.borrow_mut()[command_index as usize] += 1;
-        self.executed_commands_duration_ms.borrow_mut()[command_index as usize] += duration;
+        self.executed_counters.borrow_mut()[command_index as usize].add(duration);
     }
 
     pub fn cmd_name(index: usize) -> String {
@@ -58,9 +50,14 @@ impl MetricsService {
         tags
     }
 
+    fn append_command_metrics_bucket(&self, index_command: usize, index_bucket: usize) -> u128 {
+        self.executed_counters.borrow()[index_command].duration_ms_bucket[index_bucket]
+    }
+
     pub fn append_command_metrics(&self, metrics_map: &mut Map<String, Value>) -> IndyResult<()> {
         let mut commands_count = Vec::new();
         let mut commands_duration_ms = Vec::new();
+        let mut commands_duration_ms_bucket = Vec::new();
 
         for index in (0..MetricsService::commands_count()).rev() {
             let command = MetricsService::cmd_name(index);
@@ -75,14 +72,14 @@ impl MetricsService {
 
             commands_count.push(
                 serde_json::to_value(MetricsValue::new(
-                    self.executed_commands_count.borrow()[index] as usize,
+                    self.executed_counters.borrow()[index].count as usize,
                     tags_executed.clone(),
                 ))
                 .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
             );
             commands_count.push(
                 serde_json::to_value(MetricsValue::new(
-                    self.queued_commands_count.borrow()[index] as usize,
+                    self.queued_counters.borrow()[index].count as usize,
                     tags_queued.clone(),
                 ))
                 .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
@@ -90,18 +87,53 @@ impl MetricsService {
 
             commands_duration_ms.push(
                 serde_json::to_value(MetricsValue::new(
-                    self.executed_commands_duration_ms.borrow()[index] as usize,
-                    tags_executed,
+                    self.executed_counters.borrow()[index].duration_ms_sum as usize,
+                    tags_executed.clone(),
                 ))
                 .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
             );
             commands_duration_ms.push(
                 serde_json::to_value(MetricsValue::new(
-                    self.queued_commands_duration_ms.borrow()[index] as usize,
-                    tags_queued,
+                    self.queued_counters.borrow()[index].duration_ms_sum as usize,
+                    tags_queued.clone(),
                 ))
                 .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
             );
+
+            for index_bucket in (0..self.executed_counters.borrow()[index].duration_ms_bucket.len()).rev() {
+                let executed_bucket = self.executed_counters.borrow()[index as usize].duration_ms_bucket[index_bucket];
+                let queued_bucket = self.queued_counters.borrow()[index as usize].duration_ms_bucket[index_bucket as usize];
+
+                commands_duration_ms_bucket.push(
+                    serde_json::to_value(MetricsValue::new(
+                        executed_bucket as usize,
+                        tags_executed.clone(),
+                    ))
+                        .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
+                );
+                commands_duration_ms_bucket.push(
+                    serde_json::to_value(MetricsValue::new(
+                        queued_bucket as usize,
+                        tags_queued.clone(),
+                    ))
+                        .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
+                );
+
+                commands_duration_ms_bucket.push(
+                    serde_json::to_value(MetricsValue::new(
+                        executed_bucket as usize,
+                        tags_executed.clone(),
+                    ))
+                        .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
+                );
+                commands_duration_ms_bucket.push(
+                    serde_json::to_value(MetricsValue::new(
+                        queued_bucket as usize,
+                        tags_queued.clone(),
+                    ))
+                        .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
+                );
+            }
         }
 
         metrics_map.insert(
@@ -112,6 +144,11 @@ impl MetricsService {
         metrics_map.insert(
             String::from("commands_duration_ms"),
             serde_json::to_value(commands_duration_ms)
+                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
+        );
+        metrics_map.insert(
+            String::from("commands_duration_ms_bucket"),
+            serde_json::to_value(commands_duration_ms_bucket)
                 .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
         );
 
@@ -127,10 +164,10 @@ mod test {
     fn test_counters_are_initialized_as_zeros() {
         let metrics_service = MetricsService::new();
         for index in (0..MetricsService::commands_count()).rev() {
-            assert_eq!(metrics_service.queued_commands_count.borrow()[index as usize], 0);
-            assert_eq!(metrics_service.queued_commands_duration_ms.borrow()[index as usize], 0);
-            assert_eq!(metrics_service.executed_commands_count.borrow()[index as usize], 0);
-            assert_eq!(metrics_service.executed_commands_duration_ms.borrow()[index as usize], 0);
+            assert_eq!(metrics_service.queued_counters.borrow()[index as usize].count, 0 /*queued_commands_count.borrow()[index as usize], 0*/);
+            assert_eq!(metrics_service.queued_counters.borrow()[index as usize].duration_ms_sum, 0 /*queued_commands_duration_ms.borrow()[index as usize], 0*/);
+            assert_eq!(metrics_service.executed_counters.borrow()[index as usize].count, 0 /*executed_commands_count.borrow()[index as usize], 0*/);
+            assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_sum, 0 /*executed_commands_duration_ms.borrow()[index as usize], 0*/);
         }
     }
 
@@ -143,16 +180,16 @@ mod test {
 
         metrics_service.cmd_left_queue(index, duration1);
 
-        assert_eq!(metrics_service.queued_commands_count.borrow()[index as usize], 1);
-        assert_eq!(metrics_service.queued_commands_duration_ms.borrow()[index as usize], duration1);
+        assert_eq!(metrics_service.queued_counters.borrow()[index as usize].count, 1);
+        assert_eq!(metrics_service.queued_counters.borrow()[index as usize].duration_ms_sum, duration1);
 
         metrics_service.cmd_left_queue(index, duration2);
 
-        assert_eq!(metrics_service.queued_commands_count.borrow()[index as usize], 1 + 1);
-        assert_eq!(metrics_service.queued_commands_duration_ms.borrow()[index as usize],
+        assert_eq!(metrics_service.queued_counters.borrow()[index as usize].count, 1 + 1);
+        assert_eq!(metrics_service.queued_counters.borrow()[index as usize].duration_ms_sum,
                    duration1 + duration2);
-        assert_eq!(metrics_service.executed_commands_count.borrow()[index as usize], 0);
-        assert_eq!(metrics_service.executed_commands_duration_ms.borrow()[index as usize], 0);
+        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].count, 0);
+        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_sum, 0);
     }
 
     #[test]
@@ -164,15 +201,15 @@ mod test {
 
         metrics_service.cmd_executed(index, duration1);
 
-        assert_eq!(metrics_service.executed_commands_count.borrow()[index as usize], 1);
-        assert_eq!(metrics_service.executed_commands_duration_ms.borrow()[index as usize], duration1);
+        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].count, 1);
+        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_sum, duration1);
 
         metrics_service.cmd_executed(index, duration2);
 
-        assert_eq!(metrics_service.queued_commands_count.borrow()[index as usize], 0);
-        assert_eq!(metrics_service.queued_commands_duration_ms.borrow()[index as usize], 0);
-        assert_eq!(metrics_service.executed_commands_count.borrow()[index as usize], 1+1);
-        assert_eq!(metrics_service.executed_commands_duration_ms.borrow()[index as usize], duration1 + duration2);
+        assert_eq!(metrics_service.queued_counters.borrow()[index as usize].count, 0);
+        assert_eq!(metrics_service.queued_counters.borrow()[index as usize].duration_ms_sum, 0);
+        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].count, 1 + 1);
+        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_sum, duration1 + duration2);
     }
 
     #[test]
@@ -213,6 +250,11 @@ mod test {
             .unwrap()
             .as_array()
             .unwrap();
+        let commands_duration_ms_bucket = metrics_map
+            .get("commands_duration_ms_bucket")
+            .unwrap()
+            .as_array()
+            .unwrap();
 
         let expected_commands_count = [
             json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
@@ -228,12 +270,23 @@ mod test {
             json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
         ];
 
+        let expected_commands_duration_ms_bucket = [
+            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"queued"},"value":0}),
+            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
+        ];
+
         for command in &expected_commands_count {
             assert!(commands_count.contains(&command));
         }
 
         for command in &expected_commands_duration_ms {
             assert!(commands_duration_ms.contains(&command));
+        }
+
+        for command in &expected_commands_duration_ms_bucket {
+            assert!(commands_duration_ms_bucket.contains(&command));
         }
     }
 }

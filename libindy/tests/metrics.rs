@@ -81,6 +81,12 @@ mod collect {
             .as_array()
             .unwrap();
 
+        let commands_duration_ms_bucket = metrics_map
+            .get("commands_duration_ms_bucket")
+            .unwrap()
+            .as_array()
+            .unwrap();
+
         let expected_commands_count = [
             json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
             json!({"tags":{"command":"pairwise_command_pairwise_exists","stage":"queued"},"value":0}),
@@ -95,12 +101,23 @@ mod collect {
             json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
         ];
 
+        let expected_commands_duration_ms_bucket = [
+            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"pairwise_command_pairwise_exists","stage":"queued"},"value":0}),
+            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
+        ];
+
         for command in &expected_commands_count {
             assert!(commands_count.contains(&command));
         }
 
         for command in &expected_commands_duration_ms {
             assert!(commands_duration_ms.contains(&command));
+        }
+
+        for command in &expected_commands_duration_ms_bucket {
+            assert!(commands_duration_ms_bucket.contains(&command));
         }
     }
     fn config(name: &str) -> String {
