@@ -16,25 +16,24 @@ use crate::commands::did::{DidCommand, DidCommandExecutor};
 use crate::commands::ledger::{LedgerCommand, LedgerCommandExecutor};
 use crate::commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
 use crate::commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
-use crate::commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
+//use crate::commands::payments::{PaymentsCommand, PaymentsCommandExecutor}; FIXME:
 use crate::commands::pool::{PoolCommand, PoolCommandExecutor};
 use crate::commands::wallet::{WalletCommand, WalletCommandExecutor};
-use crate::commands::metrics::{MetricsCommand, MetricsCommandExecutor};
+// use crate::commands::metrics::{MetricsCommand, MetricsCommandExecutor}; FIXME:
 use crate::domain::IndyConfig;
 use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::AnoncredsService;
 use crate::services::blob_storage::BlobStorageService;
 use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
-use crate::services::payments::PaymentsService;
+//use crate::services::payments::PaymentsService; FIXME:
 use crate::services::pool::{PoolService, set_freshness_threshold};
-use crate::services::metrics::MetricsService;
-use crate::services::metrics::command_index::CommandIndex;
+//use crate::services::metrics::MetricsService; FIXME:
+//use crate::services::metrics::command_index::CommandIndex; FIXME:
 use indy_wallet::WalletService;
 
 use self::threadpool::ThreadPool;
 use std::time::{SystemTime, UNIX_EPOCH};
-use futures::task::LocalSpawnExt;
 
 pub mod anoncreds;
 pub mod blob_storage;
@@ -45,11 +44,11 @@ pub mod did;
 pub mod wallet;
 pub mod pairwise;
 pub mod non_secrets;
-pub mod payments;
+//pub mod payments;
 pub mod cache;
-pub mod metrics;
+//pub mod metrics;
 
-type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>) + Send>;
+type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>) + Send + Sync>;
 
 pub enum Command {
     Exit,
@@ -62,9 +61,9 @@ pub enum Command {
     Wallet(WalletCommand),
     Pairwise(PairwiseCommand),
     NonSecrets(NonSecretsCommand),
-    Payments(PaymentsCommand),
+    //Payments(PaymentsCommand),
     Cache(CacheCommand),
-    Metrics(MetricsCommand),
+    //Metrics(MetricsCommand),
 }
 
 pub struct InstrumentedCommand {
@@ -132,10 +131,10 @@ impl CommandExecutor {
                 let blob_storage_service = Arc::new(BlobStorageService::new());
                 let crypto_service = Arc::new(CryptoService::new());
                 let ledger_service = Arc::new(LedgerService::new());
-                let payments_service = Arc::new(PaymentsService::new());
+                //let payments_service = Arc::new(PaymentsService::new());
                 let pool_service = Arc::new(PoolService::new());
                 let wallet_service = Arc::new(WalletService::new());
-                let metrics_service = Arc::new(MetricsService::new());
+                //let metrics_service = Arc::new(MetricsService::new());
 
                 let anoncreds_command_executor = Arc::new(AnoncredsCommandExecutor::new(anoncreds_service.clone(), blob_storage_service.clone(), pool_service.clone(), wallet_service.clone(), crypto_service.clone()));
                 let crypto_command_executor = Arc::new(CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone()));
@@ -146,12 +145,12 @@ impl CommandExecutor {
                 let pairwise_command_executor = Arc::new(PairwiseCommandExecutor::new(wallet_service.clone()));
                 let blob_storage_command_executor = Arc::new(BlobStorageCommandExecutor::new(blob_storage_service.clone()));
                 let non_secret_command_executor = Arc::new(NonSecretsCommandExecutor::new(wallet_service.clone()));
-                let payments_command_executor = Arc::new(PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone()));
+                // FIXME: let payments_command_executor = Arc::new(PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone()));
                 let cache_command_executor = Arc::new(CacheCommandExecutor::new(crypto_service.clone(), ledger_service.clone(), pool_service.clone(), wallet_service.clone()));
-                let metrics_command_executor = Arc::new(MetricsCommandExecutor::new(wallet_service.clone(), metrics_service.clone()));
+                // FIXME: let metrics_command_executor = Arc::new(MetricsCommandExecutor::new(wallet_service.clone(), metrics_service.clone()));
 
                 async fn _exec_cmd(instrumented_cmd: InstrumentedCommand,
-                                   metrics_service:Arc<MetricsService>,
+                                   //metrics_service:Arc<MetricsService>, FIXME:
                                    anoncreds_command_executor:Arc<AnoncredsCommandExecutor>,
                                    crypto_command_executor:Arc<CryptoCommandExecutor>,
                                    ledger_command_executor:Arc<LedgerCommandExecutor>,
@@ -161,14 +160,15 @@ impl CommandExecutor {
                                    pairwise_command_executor:Arc<PairwiseCommandExecutor>,
                                    blob_storage_command_executor:Arc<BlobStorageCommandExecutor>,
                                    non_secret_command_executor:Arc<NonSecretsCommandExecutor>,
-                                   payments_command_executor:Arc<PaymentsCommandExecutor>,
+                                   //payments_command_executor:Arc<PaymentsCommandExecutor>,
                                    cache_command_executor:Arc<CacheCommandExecutor>,
-                                   metrics_command_executor:Arc<MetricsCommandExecutor>,
+                                   //metrics_command_executor:Arc<MetricsCommandExecutor>, FIXME:
                 ) {
-                    let cmd_index: CommandIndex = (&instrumented_cmd.command).into();
-                    let start_execution_ts = get_cur_time();
-                    metrics_service.cmd_left_queue(cmd_index,
-                                                   start_execution_ts - instrumented_cmd.enqueue_ts);
+                    // FIXME:
+                    // let cmd_index: CommandIndex = (&instrumented_cmd.command).into();
+                    // let start_execution_ts = get_cur_time();
+                    // metrics_service.cmd_left_queue(cmd_index,
+                    //                                start_execution_ts - instrumented_cmd.enqueue_ts);
 
                     match instrumented_cmd.command {
                         Command::Anoncreds(cmd) => {
@@ -177,7 +177,7 @@ impl CommandExecutor {
                         }
                         Command::BlobStorage(cmd) => {
                             debug!("BlobStorageCommand command received");
-                            blob_storage_command_executor.execute(cmd);
+                            blob_storage_command_executor.execute(cmd).await;
                         }
                         Command::Crypto(cmd) => {
                             debug!("CryptoCommand command received");
@@ -207,32 +207,34 @@ impl CommandExecutor {
                             debug!("NonSecretCommand command received");
                             non_secret_command_executor.execute(cmd).await;
                         }
-                        Command::Payments(cmd) => {
-                            debug!("PaymentsCommand command received");
-                            payments_command_executor.execute(cmd).await;
-                        }
+                        // FIXME:
+                        // Command::Payments(cmd) => {
+                        //     debug!("PaymentsCommand command received");
+                        //     payments_command_executor.execute(cmd).await;
+                        // }
                         Command::Cache(cmd) => {
                             debug!("CacheCommand command received");
                             cache_command_executor.execute(cmd).await;
                         }
-                        Command::Metrics(cmd) => {
-                            debug!("MetricsCommand command received");
-                            metrics_command_executor.execute(cmd).await;
-                        }
+                        // Command::Metrics(cmd) => {
+                        //     debug!("MetricsCommand command received");
+                        //     metrics_command_executor.execute(cmd).await;
+                        // }
                         Command::Exit => {
                             debug!("Exit command received");
                         }
                     }
 
-                    metrics_service.cmd_executed(cmd_index,
-                                                 get_cur_time() - start_execution_ts);
+                    // FIXMLE
+                    // metrics_service.cmd_executed(cmd_index,
+                    //                              get_cur_time() - start_execution_ts);
                 };
 
-                let mut in_progress_tasks = futures::executor::LocalPool::new();
-                let spawner = in_progress_tasks.spawner();
+                let executor = futures::executor::ThreadPool::new().expect("Can't create ThreadPool executor");
+                
                 loop {
                     trace!("CommandExecutor main loop >>");
-                    let cmd = in_progress_tasks.run_until(receiver.next());
+                    let cmd = futures::executor::block_on(receiver.next());
                     
                     let cmd = if let Some(cmd) = cmd {
                         cmd
@@ -245,7 +247,7 @@ impl CommandExecutor {
                         break
                     }
 
-                    spawner.spawn_local(_exec_cmd(cmd, metrics_service.clone(), anoncreds_command_executor.clone(), crypto_command_executor.clone(), ledger_command_executor.clone(), pool_command_executor.clone(), did_command_executor.clone(), wallet_command_executor.clone(), pairwise_command_executor.clone(), blob_storage_command_executor.clone(), non_secret_command_executor.clone(), payments_command_executor.clone(), cache_command_executor.clone(), metrics_command_executor.clone())).unwrap();
+                    executor.spawn_ok(_exec_cmd(cmd, /*metrics_service.clone(),*/ anoncreds_command_executor.clone(), crypto_command_executor.clone(), ledger_command_executor.clone(), pool_command_executor.clone(), did_command_executor.clone(), wallet_command_executor.clone(), pairwise_command_executor.clone(), blob_storage_command_executor.clone(), non_secret_command_executor.clone(), /*payments_command_executor.clone(),*/ cache_command_executor.clone(), /*metrics_command_executor.clone()*/));
                     trace!("CommandExecutor main loop <<");
                 }
 

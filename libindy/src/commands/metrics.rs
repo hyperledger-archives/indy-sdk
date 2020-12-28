@@ -14,7 +14,7 @@ const PENDING_FOR_IMPORT_WALLETS_COUNT: &str = "pending_for_import_wallets_count
 const PENDING_FOR_OPEN_WALLETS_COUNT: &str = "pending_for_open_wallets_count";
 
 pub enum MetricsCommand {
-    CollectMetrics(Box<dyn Fn(IndyResult<String>) + Send>)
+    CollectMetrics(Box<dyn Fn(IndyResult<String>) + Send + Sync>)
 }
 
 pub struct MetricsCommandExecutor {

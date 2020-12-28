@@ -14,25 +14,25 @@ pub enum PairwiseCommand {
     PairwiseExists(
         WalletHandle,
         DidValue, // their_did
-        Box<dyn Fn(IndyResult<bool>) + Send>),
+        Box<dyn Fn(IndyResult<bool>) + Send + Sync>),
     CreatePairwise(
         WalletHandle,
         DidValue, // their_did
         DidValue, // my_did
         Option<String>, // metadata
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     ListPairwise(
         WalletHandle,
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     GetPairwise(
         WalletHandle,
         DidValue, // their_did
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     SetPairwiseMetadata(
         WalletHandle,
         DidValue, // their_did
         Option<String>, // metadata
-        Box<dyn Fn(IndyResult<()>) + Send>)
+        Box<dyn Fn(IndyResult<()>) + Send + Sync>)
 }
 
 pub struct PairwiseCommandExecutor {

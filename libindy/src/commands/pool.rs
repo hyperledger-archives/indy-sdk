@@ -10,24 +10,24 @@ pub enum PoolCommand {
     Create(
         String, // name
         Option<PoolConfig>, // config
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     Delete(
         String, // name
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     Open(
         String, // name
         Option<PoolOpenConfig>, // config
-        Box<dyn Fn(IndyResult<PoolHandle>) + Send>),
-    List(Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<PoolHandle>) + Send + Sync>),
+    List(Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     Close(
         PoolHandle, // pool handle
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     Refresh(
         PoolHandle, // pool handle
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     SetProtocolVersion(
         usize, // protocol version
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
 }
 
 pub struct PoolCommandExecutor {
@@ -49,7 +49,7 @@ impl PoolCommandExecutor {
             }
             PoolCommand::Delete(name, cb) => {
                 debug!(target: "pool_command_executor", "Delete command received");
-                cb(self.delete(&name));
+                cb(self.delete(&name).await);
             }
             PoolCommand::Open(name, config, cb) => {
                 debug!(target: "pool_command_executor", "Open command received");
@@ -84,17 +84,17 @@ impl PoolCommandExecutor {
         Ok(())
     }
 
-    fn delete(&self, name: &str) -> IndyResult<()> {
+    async fn delete(&self, name: &str) -> IndyResult<()> {
         debug!("delete >>> name: {:?}", name);
 
-        self.pool_service.delete(name)?;
+        self.pool_service.delete(name).await?;
 
         debug!("delete << res: ()");
 
         Ok(())
     }
 
-    async fn open(&self, name: String, config: Option<PoolOpenConfig>, cb: Box<dyn Fn(IndyResult<PoolHandle>) + Send>) {
+    async fn open(&self, name: String, config: Option<PoolOpenConfig>, cb: Box<dyn Fn(IndyResult<PoolHandle>) + Send + Sync>) {
         debug!("open >>> name: {:?}, config: {:?}", name, config);
 
         let result = self.pool_service.open(name, config).await;
@@ -115,7 +115,7 @@ impl PoolCommandExecutor {
         Ok(res)
     }
 
-    async fn close(&self, pool_handle: PoolHandle, cb: Box<dyn Fn(IndyResult<()>) + Send>) {
+    async fn close(&self, pool_handle: PoolHandle, cb: Box<dyn Fn(IndyResult<()>) + Send + Sync>) {
         debug!("close >>> handle: {:?}", pool_handle);
 
         let result = self.pool_service.close(pool_handle).await;
@@ -125,7 +125,7 @@ impl PoolCommandExecutor {
         debug!("close <<<");
     }
 
-    async fn refresh(&self, handle: PoolHandle, cb: Box<dyn Fn(IndyResult<()>) + Send>) {
+    async fn refresh(&self, handle: PoolHandle, cb: Box<dyn Fn(IndyResult<()>) + Send + Sync>) {
         debug!("refresh >>> handle: {:?}", handle);
 
         let result = self.pool_service.refresh(handle).await;

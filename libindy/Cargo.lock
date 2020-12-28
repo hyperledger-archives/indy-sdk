@@ -1547,6 +1547,7 @@ version = "1.15.0"
 dependencies = [
  "android_logger",
  "async-std",
+ "async-trait",
  "backtrace",
  "byteorder",
  "convert_case",

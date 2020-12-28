@@ -23,19 +23,19 @@ pub enum CacheCommand {
               DidValue, // submitter_did
               SchemaId, // id
               GetCacheOptions, // options
-              Box<dyn Fn(IndyResult<String>) + Send>),
+              Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     GetCredDef(PoolHandle,
                WalletHandle,
                DidValue, // submitter_did
                CredentialDefinitionId, // id
                GetCacheOptions, // options
-               Box<dyn Fn(IndyResult<String>) + Send>),
+               Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     PurgeSchemaCache(WalletHandle,
                      PurgeOptions, // options
-                     Box<dyn Fn(IndyResult<()>) + Send>),
+                     Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     PurgeCredDefCache(WalletHandle,
                       PurgeOptions, // options
-                      Box<dyn Fn(IndyResult<()>) + Send>),
+                      Box<dyn Fn(IndyResult<()>) + Send + Sync>),
 }
 
 pub struct CacheCommandExecutor {

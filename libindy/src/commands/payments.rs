@@ -22,15 +22,15 @@ pub enum PaymentsCommand {
     RegisterMethod(
         String, //type
         PaymentsMethodCBs, //method callbacks
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     CreateAddress(
         WalletHandle,
         String, //type
         String, //config
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     ListAddresses(
         WalletHandle,
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     AddRequestFees(
         WalletHandle,
         Option<DidValue>, //submitter did
@@ -42,7 +42,7 @@ pub enum PaymentsCommand {
     ParseResponseWithFees(
         String, //type
         String, //response
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildGetPaymentSourcesRequest(
         WalletHandle,
         Option<DidValue>, //submitter did
@@ -52,7 +52,7 @@ pub enum PaymentsCommand {
     ParseGetPaymentSourcesResponse(
         String, //type
         String, //response
-        Box<dyn Fn(IndyResult<(String, i64)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, i64)>) + Send + Sync>),
     BuildPaymentReq(
         WalletHandle,
         Option<DidValue>, //submitter did
@@ -63,7 +63,7 @@ pub enum PaymentsCommand {
     ParsePaymentResponse(
         String, //payment_method
         String, //response
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     AppendTxnAuthorAgreementAcceptanceToExtra(
         Option<String>, // extra json
         Option<String>, // text
@@ -71,7 +71,7 @@ pub enum PaymentsCommand {
         Option<String>, // hash
         String, // acceptance mechanism type
         u64, // time of acceptance
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildMintReq(
         WalletHandle,
         Option<DidValue>, //submitter did
@@ -83,16 +83,16 @@ pub enum PaymentsCommand {
         Option<DidValue>, //submitter did
         String, //method
         String, //fees
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildGetTxnFeesReq(
         WalletHandle,
         Option<DidValue>, //submitter did
         String, //method
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     ParseGetTxnFeesResponse(
         String, //method
         String, //response
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildVerifyPaymentReq(
         WalletHandle,
         Option<DidValue>, //submitter_did
@@ -101,22 +101,22 @@ pub enum PaymentsCommand {
     ParseVerifyPaymentResponse(
         String, //payment_method
         String, //resp_json
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     GetRequestInfo(
         String, // get auth rule response json
         RequesterInfo, //requester info
         Fees, //fees
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     SignWithAddressReq(
         WalletHandle,
         String, //address
         Vec<u8>, //message
-        Box<dyn Fn(IndyResult<Vec<u8>>) + Send>),
+        Box<dyn Fn(IndyResult<Vec<u8>>) + Send + Sync>),
     VerifyWithAddressReq(
         String, //address
         Vec<u8>, //message
         Vec<u8>, //signature
-        Box<dyn Fn(IndyResult<bool>) + Send>),
+        Box<dyn Fn(IndyResult<bool>) + Send + Sync>),
 }
 
 pub struct PaymentsCommandExecutor {

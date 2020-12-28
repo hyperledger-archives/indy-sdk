@@ -58,6 +58,7 @@ use crate::services::crypto::CryptoService;
 use crate::services::pool::PoolService;
 
 use super::tails::{SDKTailsAccessor, store_tails_from_generator};
+use futures::lock::Mutex;
 
 pub enum IssuerCommand {
     CreateSchema(
@@ -89,7 +90,7 @@ pub enum IssuerCommand {
         WalletHandle,
         CredentialDefinitionId, // cred def id
         Option<CredentialDefinitionConfig>, // config
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     RotateCredentialDefinitionStartComplete(
         WalletHandle,
         SchemaId, // schema id
@@ -103,7 +104,7 @@ pub enum IssuerCommand {
     RotateCredentialDefinitionApply(
         WalletHandle,
         CredentialDefinitionId, // cred def id
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     CreateAndStoreRevocationRegistry(
         WalletHandle,
         DidValue, // issuer did
@@ -112,11 +113,11 @@ pub enum IssuerCommand {
         CredentialDefinitionId, // credential definition id
         RevocationRegistryConfig, // config
         i32, // tails writer handle
-        Box<dyn Fn(IndyResult<(String, String, String)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, String, String)>) + Send + Sync>),
     CreateCredentialOffer(
         WalletHandle,
         CredentialDefinitionId, // credential definition id
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     CreateCredential(
         WalletHandle,
         CredentialOffer, // credential offer
@@ -124,23 +125,23 @@ pub enum IssuerCommand {
         CredentialValues, // credential values
         Option<RevocationRegistryId>, // revocation registry id
         Option<i32>, // blob storage reader config handle
-        Box<dyn Fn(IndyResult<(String, Option<String>, Option<String>)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, Option<String>, Option<String>)>) + Send + Sync>),
     RevokeCredential(
         WalletHandle,
         i32, // blob storage reader config handle
         RevocationRegistryId, //revocation registry id
         String, //credential revoc id
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     /*    RecoverCredential(
             WalletHandle,
             i32, // blob storage reader config handle
             String, //revocation revoc id
             String, //credential revoc id
-            Box<dyn Fn(Result<String, IndyError>) + Send>),*/
+            Box<dyn Fn(Result<String, IndyError>) + Send + Sync>),*/
     MergeRevocationRegistryDeltas(
         RevocationRegistryDelta, //revocation registry delta
         RevocationRegistryDelta, //other revocation registry delta
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
 }
 
 pub struct IssuerCommandExecutor {
@@ -149,8 +150,8 @@ pub struct IssuerCommandExecutor {
     pub pool_service:Arc<PoolService>,
     pub wallet_service:Arc<WalletService>,
     pub crypto_service:Arc<CryptoService>,
-    pending_str_str_callbacks: RefCell<HashMap<CommandHandle, BoxedCallbackStringStringSend>>,
-    pending_str_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<String>) + Send>>>,
+    pending_str_str_callbacks: Mutex<HashMap<CommandHandle, BoxedCallbackStringStringSend>>,
+    pending_str_callbacks: Mutex<HashMap<CommandHandle, Box<dyn Fn(IndyResult<String>) + Send + Sync>>>,
 }
 
 impl IssuerCommandExecutor {
@@ -165,8 +166,8 @@ impl IssuerCommandExecutor {
             blob_storage_service,
             wallet_service,
             crypto_service,
-            pending_str_str_callbacks: RefCell::new(HashMap::new()),
-            pending_str_callbacks: RefCell::new(HashMap::new()),
+            pending_str_str_callbacks: Mutex::new(HashMap::new()),
+            pending_str_callbacks: Mutex::new(HashMap::new()),
         }
     }
 
@@ -280,7 +281,7 @@ impl IssuerCommandExecutor {
         }
 
         let cb_id = next_command_handle();
-        self.pending_str_str_callbacks.borrow_mut().insert(cb_id, cb);
+        self.pending_str_str_callbacks.lock().await.insert(cb_id, cb);
 
         let tag = tag.to_string();
         let attr_names = schema.attr_names.clone();
@@ -308,7 +309,7 @@ impl IssuerCommandExecutor {
                                      support_revocation: bool,
                                      cb: Box<dyn Fn(IndyResult<(CredentialDefinitionData,
                                                                 CredentialPrivateKey,
-                                                                CredentialKeyCorrectnessProof)>) + Send>) {
+                                                                CredentialKeyCorrectnessProof)>) + Send + Sync>) {
         let attr_names = attr_names.clone();
         crate::commands::THREADPOOL.lock().unwrap().execute(move || cb(crate::services::anoncreds::issuer::Issuer::new_credential_definition(&attr_names, support_revocation)));
     }
@@ -324,7 +325,7 @@ impl IssuerCommandExecutor {
                                                               result: IndyResult<(CredentialDefinitionData,
                                                                                   CredentialPrivateKey,
                                                                                   CredentialKeyCorrectnessProof)>) {
-        let cb = self.pending_str_str_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
+        let cb = self.pending_str_str_callbacks.lock().await.remove(&cb_id).expect("FIXME INVALID STATE");
         let result = match result {
             Ok(result) => self._complete_create_and_store_credential_definition(wallet_handle, schema, schema_id, cred_def_id, tag, signature_type.clone(), result).await,
             Err(err) => Err(err),
@@ -414,7 +415,7 @@ impl IssuerCommandExecutor {
                                                     wallet_handle: WalletHandle,
                                                     cred_def_id: &'a CredentialDefinitionId,
                                                     cred_def_config: Option<&'a CredentialDefinitionConfig>,
-                                                    cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+                                                    cb: Box<dyn Fn(IndyResult<String>) + Send + Sync>) {
         debug!("rotate_credential_definition_start >>> wallet_handle: {:?}, cred_def_id: {:?}, cred_def_config: {:?}",
                wallet_handle, cred_def_id, cred_def_config);
 
@@ -438,7 +439,7 @@ impl IssuerCommandExecutor {
         };
 
         let cb_id = indy_utils::sequence::get_next_id();
-        self.pending_str_callbacks.borrow_mut().insert(cb_id, cb);
+        self.pending_str_callbacks.lock().await.insert(cb_id, cb);
 
         let support_revocation = cred_def_config.map(|config| config.support_revocation).unwrap_or_default();
 
@@ -469,7 +470,7 @@ impl IssuerCommandExecutor {
                                                          result: IndyResult<(CredentialDefinitionData,
                                                                              CredentialPrivateKey,
                                                                              CredentialKeyCorrectnessProof)>) {
-        let cb = self.pending_str_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
+        let cb = self.pending_str_callbacks.lock().await.remove(&cb_id).expect("FIXME INVALID STATE");
 
         let result = match result {
             Ok(result) => self._rotate_credential_definition_start_complete(wallet_handle, schema_id, cred_def_id, tag, signature_type.clone(), result).await,
@@ -592,7 +593,7 @@ impl IssuerCommandExecutor {
                                                                   &issuer_did)?;
 
         let (tails_location, tails_hash) =
-            store_tails_from_generator(self.blob_storage_service.clone(), tails_writer_handle, &mut revoc_tails_generator)?;
+            store_tails_from_generator(self.blob_storage_service.clone(), tails_writer_handle, &mut revoc_tails_generator).await?;
 
         let revoc_reg_def_value = RevocationRegistryDefinitionValue {
             max_cred_num,
@@ -725,7 +726,7 @@ impl IssuerCommandExecutor {
 
                 let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
                                                                blob_storage_reader_handle,
-                                                               &rev_reg_def)?;
+                                                               &rev_reg_def).await?;
 
                 (Some(rev_reg_def), Some(rev_reg), Some(rev_key_priv), Some(sdk_tails_accessor), Some(rev_reg_info))
             }
@@ -820,7 +821,7 @@ impl IssuerCommandExecutor {
 
         let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
                                                        blob_storage_reader_handle,
-                                                       &revocation_registry_definition)?;
+                                                       &revocation_registry_definition).await?;
 
         if cred_revoc_id > revocation_registry_definition.value.max_cred_num + 1 {
             return Err(err_msg(IndyErrorKind::InvalidUserRevocId, format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id)));
@@ -879,7 +880,7 @@ impl IssuerCommandExecutor {
 
         let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
                                                        blob_storage_reader_handle,
-                                                       &revocation_registry_definition)?;
+                                                       &revocation_registry_definition).await?;
 
         if cred_revoc_id > revocation_registry_definition.value.max_cred_num + 1 {
             return Err(err_msg(IndyErrorKind::InvalidUserRevocId, format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id)));

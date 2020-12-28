@@ -45,30 +45,31 @@ pub fn parse_generic_reply_for_proof_checking(json_msg: &SJsonValue, raw_msg: &s
             warn!("parse_generic_reply_for_proof_checking: can't get key in sp for built-in type");
             None
         }
-    } else if let Some((parser, free)) = PoolService::get_sp_parser(type_) {
-        trace!("TransactionHandler::parse_generic_reply_for_proof_checking: plugged: parser {:?}, free {:?}",
-               parser, free);
+    // FIXME: Do we need custom parsers???
+    // } else if let Some((parser, free)) = PoolService::get_sp_parser(type_) {
+    //     trace!("TransactionHandler::parse_generic_reply_for_proof_checking: plugged: parser {:?}, free {:?}",
+    //            parser, free);
 
-        let msg = CString::new(raw_msg).ok()?;
-        let mut parsed_c_str = ::std::ptr::null();
-        let err = parser(msg.as_ptr(), &mut parsed_c_str);
-        if err != ErrorCode::Success {
-            debug!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< plugin return err {:?}", err);
-            return None;
-        }
-        let c_str = if parsed_c_str.is_null() { None } else { Some(unsafe { CStr::from_ptr(parsed_c_str) }) };
-        let parsed_sps = c_str
-            .and_then(|c_str| c_str.to_str().map_err(map_err_trace!()).ok())
-            .and_then(|c_str|
-                serde_json::from_str::<Vec<ParsedSP>>(c_str)
-                    .map_err(|err|
-                        debug!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< can't parse plugin response {}", err))
-                    .ok());
+    //     let msg = CString::new(raw_msg).ok()?;
+    //     let mut parsed_c_str = ::std::ptr::null();
+    //     let err = parser(msg.as_ptr(), &mut parsed_c_str);
+    //     if err != ErrorCode::Success {
+    //         debug!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< plugin return err {:?}", err);
+    //         return None;
+    //     }
+    //     let c_str = if parsed_c_str.is_null() { None } else { Some(unsafe { CStr::from_ptr(parsed_c_str) }) };
+    //     let parsed_sps = c_str
+    //         .and_then(|c_str| c_str.to_str().map_err(map_err_trace!()).ok())
+    //         .and_then(|c_str|
+    //             serde_json::from_str::<Vec<ParsedSP>>(c_str)
+    //                 .map_err(|err|
+    //                     debug!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< can't parse plugin response {}", err))
+    //                 .ok());
 
-        let err = free(parsed_c_str);
-        trace!("TransactionHandler::parse_generic_reply_for_proof_checking: plugin free res {:?}", err);
+    //     let err = free(parsed_c_str);
+    //     trace!("TransactionHandler::parse_generic_reply_for_proof_checking: plugin free res {:?}", err);
 
-        parsed_sps
+    //     parsed_sps
     } else {
         trace!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< type not supported");
         None
@@ -1605,133 +1606,136 @@ mod tests {
                    }));
     }
 
-    #[test]
-    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_plugged() {
-        extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
-            unsafe { *parsed = msg; }
-            ErrorCode::Success
-        }
-        extern fn free(_data: *const c_char) -> ErrorCode { ErrorCode::Success }
+    // #[test]
+    // FIXME: support pluggable parsers
+    // fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_plugged() {
+    //     extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
+    //         unsafe { *parsed = msg; }
+    //         ErrorCode::Success
+    //     }
+    //     extern fn free(_data: *const c_char) -> ErrorCode { ErrorCode::Success }
 
-        let parsed_sp = json!([{
-            "root_hash": "rh",
-            "proof_nodes": "pns",
-            "multi_signature": "ms",
-            "kvs_to_verify": {
-                "type": "Simple",
-                "kvs": [],
-            },
-        }]);
+    //     let parsed_sp = json!([{
+    //         "root_hash": "rh",
+    //         "proof_nodes": "pns",
+    //         "multi_signature": "ms",
+    //         "kvs_to_verify": {
+    //             "type": "Simple",
+    //             "kvs": [],
+    //         },
+    //     }]);
 
-        PoolService::register_sp_parser("test", parse, free).unwrap();
-        let mut parsed_sps = super::parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
-                                                                           parsed_sp.to_string().as_str(),
-                                                                           None)
-            .unwrap();
+    //     PoolService::register_sp_parser("test", parse, free).unwrap();
+    //     let mut parsed_sps = super::parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
+    //                                                                        parsed_sp.to_string().as_str(),
+    //                                                                        None)
+    //         .unwrap();
 
-        assert_eq!(parsed_sps.len(), 1);
-        let parsed_sp = parsed_sps.remove(0);
-        assert_eq!(parsed_sp.root_hash, "rh");
-        assert_eq!(parsed_sp.multi_signature, "ms");
-        assert_eq!(parsed_sp.proof_nodes, "pns");
-        assert_eq!(parsed_sp.kvs_to_verify,
-                   KeyValuesInSP::Simple(KeyValueSimpleData {
-                       kvs: Vec::new(),
-                       verification_type: KeyValueSimpleDataVerificationType::Simple,
-                   }));
-    }
+    //     assert_eq!(parsed_sps.len(), 1);
+    //     let parsed_sp = parsed_sps.remove(0);
+    //     assert_eq!(parsed_sp.root_hash, "rh");
+    //     assert_eq!(parsed_sp.multi_signature, "ms");
+    //     assert_eq!(parsed_sp.proof_nodes, "pns");
+    //     assert_eq!(parsed_sp.kvs_to_verify,
+    //                KeyValuesInSP::Simple(KeyValueSimpleData {
+    //                    kvs: Vec::new(),
+    //                    verification_type: KeyValueSimpleDataVerificationType::Simple,
+    //                }));
+    // }
 
-    #[test]
-    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_plugged_range() {
-        extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
-            unsafe { *parsed = msg; }
-            ErrorCode::Success
-        }
-        extern fn free(_data: *const c_char) -> ErrorCode { ErrorCode::Success }
+    // FIXME: !!!
+    // #[test]
+    // fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_plugged_range() {
+    //     extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
+    //         unsafe { *parsed = msg; }
+    //         ErrorCode::Success
+    //     }
+    //     extern fn free(_data: *const c_char) -> ErrorCode { ErrorCode::Success }
 
-        let parsed_sp = json!([{
-            "root_hash": "rh",
-            "proof_nodes": "pns",
-            "multi_signature": "ms",
-            "kvs_to_verify": {
-                "type": "Simple",
-                "kvs": [],
-                "verification_type": {
-                    "type": "NumericalSuffixAscendingNoGaps",
-                    "from": 1,
-                    "next": 2,
-                    "prefix": "abc"
-                }
-            },
-        }]);
+    //     let parsed_sp = json!([{
+    //         "root_hash": "rh",
+    //         "proof_nodes": "pns",
+    //         "multi_signature": "ms",
+    //         "kvs_to_verify": {
+    //             "type": "Simple",
+    //             "kvs": [],
+    //             "verification_type": {
+    //                 "type": "NumericalSuffixAscendingNoGaps",
+    //                 "from": 1,
+    //                 "next": 2,
+    //                 "prefix": "abc"
+    //             }
+    //         },
+    //     }]);
 
-        PoolService::register_sp_parser("test", parse, free).unwrap();
-        let mut parsed_sps = super::parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
-                                                                           parsed_sp.to_string().as_str(),
-                                                                           None)
-            .unwrap();
+    //     PoolService::register_sp_parser("test", parse, free).unwrap();
+    //     let mut parsed_sps = super::parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
+    //                                                                        parsed_sp.to_string().as_str(),
+    //                                                                        None)
+    //         .unwrap();
 
-        assert_eq!(parsed_sps.len(), 1);
-        let parsed_sp = parsed_sps.remove(0);
-        assert_eq!(parsed_sp.root_hash, "rh");
-        assert_eq!(parsed_sp.multi_signature, "ms");
-        assert_eq!(parsed_sp.proof_nodes, "pns");
-        assert_eq!(parsed_sp.kvs_to_verify,
-                   KeyValuesInSP::Simple(KeyValueSimpleData {
-                       kvs: Vec::new(),
-                       verification_type: KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(
-                           NumericalSuffixAscendingNoGapsData {
-                               from: Some(1),
-                               next: Some(2),
-                               prefix: "abc".to_string(),
-                           }),
-                   }));
-    }
+    //     assert_eq!(parsed_sps.len(), 1);
+    //     let parsed_sp = parsed_sps.remove(0);
+    //     assert_eq!(parsed_sp.root_hash, "rh");
+    //     assert_eq!(parsed_sp.multi_signature, "ms");
+    //     assert_eq!(parsed_sp.proof_nodes, "pns");
+    //     assert_eq!(parsed_sp.kvs_to_verify,
+    //                KeyValuesInSP::Simple(KeyValueSimpleData {
+    //                    kvs: Vec::new(),
+    //                    verification_type: KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(
+    //                        NumericalSuffixAscendingNoGapsData {
+    //                            from: Some(1),
+    //                            next: Some(2),
+    //                            prefix: "abc".to_string(),
+    //                        }),
+    //                }));
+    // }
 
-    #[test]
-    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_plugged_range_nones() {
-        extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
-            unsafe { *parsed = msg; }
-            ErrorCode::Success
-        }
-        extern fn free(_data: *const c_char) -> ErrorCode { ErrorCode::Success }
+    // FIXME: !!! support pluggable parsers
+    // #[test]
+    // fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_plugged_range_nones() {
+    //     extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
+    //         unsafe { *parsed = msg; }
+    //         ErrorCode::Success
+    //     }
+    //     extern fn free(_data: *const c_char) -> ErrorCode { ErrorCode::Success }
 
-        let parsed_sp = json!([{
-            "root_hash": "rh",
-            "proof_nodes": "pns",
-            "multi_signature": "ms",
-            "kvs_to_verify": {
-                "type": "Simple",
-                "kvs": [],
-                "verification_type": {
-                    "type": "NumericalSuffixAscendingNoGaps",
-                    "from": serde_json::Value::Null,
-                    "next": serde_json::Value::Null,
-                    "prefix": "abc"
-                }
-            },
-        }]);
+    //     let parsed_sp = json!([{
+    //         "root_hash": "rh",
+    //         "proof_nodes": "pns",
+    //         "multi_signature": "ms",
+    //         "kvs_to_verify": {
+    //             "type": "Simple",
+    //             "kvs": [],
+    //             "verification_type": {
+    //                 "type": "NumericalSuffixAscendingNoGaps",
+    //                 "from": serde_json::Value::Null,
+    //                 "next": serde_json::Value::Null,
+    //                 "prefix": "abc"
+    //             }
+    //         },
+    //     }]);
 
-        PoolService::register_sp_parser("test", parse, free).unwrap();
-        let mut parsed_sps = super::parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
-                                                                           parsed_sp.to_string().as_str(),
-                                                                           None)
-            .unwrap();
+    //     PoolService::register_sp_parser("test", parse, free).unwrap();
+    //     let mut parsed_sps = super::parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
+    //                                                                        parsed_sp.to_string().as_str(),
+    //                                                                        None)
+    //         .unwrap();
 
-        assert_eq!(parsed_sps.len(), 1);
-        let parsed_sp = parsed_sps.remove(0);
-        assert_eq!(parsed_sp.root_hash, "rh");
-        assert_eq!(parsed_sp.multi_signature, "ms");
-        assert_eq!(parsed_sp.proof_nodes, "pns");
-        assert_eq!(parsed_sp.kvs_to_verify,
-                   KeyValuesInSP::Simple(KeyValueSimpleData {
-                       kvs: Vec::new(),
-                       verification_type: KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(
-                           NumericalSuffixAscendingNoGapsData {
-                               from: None,
-                               next: None,
-                               prefix: "abc".to_string(),
-                           }),
-                   }));
-    }
+    //     assert_eq!(parsed_sps.len(), 1);
+    //     let parsed_sp = parsed_sps.remove(0);
+    //     assert_eq!(parsed_sp.root_hash, "rh");
+    //     assert_eq!(parsed_sp.multi_signature, "ms");
+    //     assert_eq!(parsed_sp.proof_nodes, "pns");
+    //     assert_eq!(parsed_sp.kvs_to_verify,
+    //                KeyValuesInSP::Simple(KeyValueSimpleData {
+    //                    kvs: Vec::new(),
+    //                    verification_type: KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(
+    //                        NumericalSuffixAscendingNoGapsData {
+    //                            from: None,
+    //                            next: None,
+    //                            prefix: "abc".to_string(),
+    //                        }),
+    //                }));
+    // }
 }

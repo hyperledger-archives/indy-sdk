@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 use std::slice;
-use std::sync::mpsc::{channel, Receiver};
+use std::sync::mpsc::{sync_channel, Receiver};
 
 lazy_static! {
     static ref COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(1);
@@ -19,10 +19,10 @@ lazy_static! {
 pub fn _closure_to_cb_ec() -> (Receiver<ErrorCode>, i32,
                                Option<extern fn(command_handle: CommandHandle,
                                                 err: ErrorCode)>) {
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(2);
 
     lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, Box<dyn FnMut(ErrorCode) + Send>>> = Default::default();
+        static ref CALLBACKS: Mutex<HashMap<i32, Box<dyn FnMut(ErrorCode) + Send + Sync>>> = Default::default();
     }
 
     let closure = Box::new(move |err| {
@@ -45,10 +45,10 @@ pub fn _closure_to_cb_ec() -> (Receiver<ErrorCode>, i32,
 pub fn _closure_to_cb_ec_i32() -> (Receiver<(ErrorCode, i32)>, i32,
                                    Option<extern fn(command_handle: CommandHandle, err: ErrorCode,
                                                     c_i32: i32)>) {
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(2);
 
     lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, Box<dyn FnMut(ErrorCode, i32) + Send>>> = Default::default();
+        static ref CALLBACKS: Mutex<HashMap<i32, Box<dyn FnMut(ErrorCode, i32) + Send + Sync>>> = Default::default();
     }
 
     let closure = Box::new(move |err, val| {
@@ -71,10 +71,10 @@ pub fn _closure_to_cb_ec_i32() -> (Receiver<(ErrorCode, i32)>, i32,
 pub fn _closure_to_cb_ec_wallethandle() -> (Receiver<(ErrorCode, WalletHandle)>, CommandHandle,
                                    Option<extern fn(command_handle: CommandHandle, err: ErrorCode,
                                                     c_i32: WalletHandle)>) {
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(2);
 
     lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<CommandHandle, Box<dyn FnMut(ErrorCode, WalletHandle) + Send>>> = Default::default();
+        static ref CALLBACKS: Mutex<HashMap<CommandHandle, Box<dyn FnMut(ErrorCode, WalletHandle) + Send + Sync>>> = Default::default();
     }
 
     let closure = Box::new(move |err, val| {
@@ -97,10 +97,10 @@ pub fn _closure_to_cb_ec_wallethandle() -> (Receiver<(ErrorCode, WalletHandle)>,
 pub fn _closure_to_cb_ec_i32_usize() -> (Receiver<(ErrorCode, i32, usize)>, i32,
                                          Option<extern fn(command_handle: CommandHandle, err: ErrorCode,
                                                           c_i32: i32, c_usize: usize)>) {
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(2);
 
     lazy_static! {
-            static ref CALLBACKS: Mutex<HashMap<i32, Box<dyn FnMut(ErrorCode, i32, usize) + Send>>> = Default::default();
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<dyn FnMut(ErrorCode, i32, usize) + Send + Sync>>> = Default::default();
         }
 
     let closure = Box::new(move |err, val, val_2| {
@@ -123,10 +123,10 @@ pub fn _closure_to_cb_ec_i32_usize() -> (Receiver<(ErrorCode, i32, usize)>, i32,
 pub fn _closure_to_cb_ec_bool() -> (Receiver<(ErrorCode, bool)>, i32,
                                     Option<extern fn(command_handle: CommandHandle, err: ErrorCode,
                                                      valid: bool)>) {
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(2);
 
     lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, Box<dyn FnMut(ErrorCode, bool) + Send>>> = Default::default();
+        static ref CALLBACKS: Mutex<HashMap<i32, Box<dyn FnMut(ErrorCode, bool) + Send + Sync>>> = Default::default();
     }
 
     let closure = Box::new(move |err, val| {
@@ -150,7 +150,7 @@ pub fn _closure_to_cb_ec_string() -> (Receiver<(ErrorCode, String)>, i32,
                                       Option<extern fn(command_handle: CommandHandle,
                                                        err: ErrorCode,
                                                        c_str: *const c_char)>) {
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(2);
 
     lazy_static! {
             static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String) + Send > >> = Default::default();
@@ -179,7 +179,7 @@ pub fn _closure_to_cb_ec_string_string() -> (Receiver<(ErrorCode, String, String
                                                               err: ErrorCode,
                                                               str1: *const c_char,
                                                               str2: *const c_char)>) {
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(2);
 
     lazy_static! {
             static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String, String) + Send > >> = Default::default();
@@ -210,7 +210,7 @@ pub fn _closure_to_cb_ec_string_string_string() -> (Receiver<(ErrorCode, String,
                                                                      str1: *const c_char,
                                                                      str2: *const c_char,
                                                                      str3: *const c_char)>) {
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(2);
 
     lazy_static! {
             static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String, String, String) + Send > >> = Default::default();
@@ -240,7 +240,7 @@ pub fn _closure_to_cb_ec_opt_string() -> (Receiver<(ErrorCode, Option<String>)>,
                                           Option<extern fn(command_handle: CommandHandle,
                                                            err: ErrorCode,
                                                            str1: *const c_char)>) {
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(2);
 
     lazy_static! {
             static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, Option<String>) + Send > >> = Default::default();
@@ -271,7 +271,7 @@ pub fn _closure_to_cb_ec_string_opt_string() -> (Receiver<(ErrorCode, String, Op
                                                                   err: ErrorCode,
                                                                   str1: *const c_char,
                                                                   str2: *const c_char)>) {
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(2);
 
     lazy_static! {
             static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String, Option<String>) + Send > >> = Default::default();
@@ -304,7 +304,7 @@ pub fn _closure_to_cb_ec_string_opt_string_opt_string() -> (Receiver<(ErrorCode,
                                                                              str1: *const c_char,
                                                                              str2: *const c_char,
                                                                              str3: *const c_char)>) {
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(2);
 
     lazy_static! {
             static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String, Option<String>, Option<String>) + Send > >> = Default::default();
@@ -339,7 +339,7 @@ pub fn _closure_to_cb_ec_vec_u8() -> (Receiver<(ErrorCode, Vec<u8>)>, i32,
                                                        err: ErrorCode,
                                                        raw: *const u8,
                                                        len: u32)>) {
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(2);
 
     lazy_static! {
             static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
@@ -369,7 +369,7 @@ pub fn _closure_to_cb_ec_string_vec_u8() -> (Receiver<(ErrorCode, String, Vec<u8
                                                               str: *const c_char,
                                                               raw: *const u8,
                                                               len: u32)>) {
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(2);
 
     lazy_static! {
             static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String, Vec<u8>) + Send > >> = Default::default();
@@ -400,7 +400,7 @@ pub fn _closure_to_cb_ec_string_string_u64() -> (Receiver<(ErrorCode, String, St
                                                                   str1: *const c_char,
                                                                   str2: *const c_char,
                                                                   val: u64)>) {
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(2);
 
     lazy_static! {
             static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String, String, u64) + Send > >> = Default::default();

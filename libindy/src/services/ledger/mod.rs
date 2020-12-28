@@ -576,6 +576,33 @@ mod tests {
         DidValue(DEST.to_string())
     }
 
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[async_std::test]
+    async fn ledger_service_allows_send() {
+        use futures::{channel::oneshot, executor::ThreadPool, future::join_all};
+        use std::{sync::Arc, time::SystemTime};
+
+        let executor = Arc::new(ThreadPool::new().expect("Failed to new ThreadPool"));
+        let service = Arc::new(Box::new(LedgerService::new()));
+        let s = service.clone();
+        let (tx, rx) = oneshot::channel::<IndyResult<()>>();
+
+        let future = async move {
+            let res = s.validate_action("default");
+            tx.send(res);
+        };
+
+        executor.spawn_ok(future);
+
+        let res = rx.await;
+        println!("-------> {:?}", res);
+    }
+}
+
     #[test]
     fn build_nym_request_works_for_only_required_fields() {
         let ledger_service = LedgerService::new();

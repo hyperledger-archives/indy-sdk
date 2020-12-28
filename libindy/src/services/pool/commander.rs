@@ -1,7 +1,7 @@
 use indy_api_types::errors::prelude::*;
 use crate::services::pool::events::PoolEvent;
 
-use super::zmq;
+use zmq;
 
 use byteorder::{ByteOrder, LittleEndian};
 use indy_api_types::INVALID_COMMAND_HANDLE;
