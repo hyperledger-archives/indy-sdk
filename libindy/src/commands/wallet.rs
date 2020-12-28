@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use futures::executor::ThreadPool;
 use indy_api_types::{
     domain::wallet::{Config, Credentials, ExportConfig, KeyConfig},
     errors::prelude::*,
@@ -80,7 +79,6 @@ pub enum WalletCommand {
 pub struct WalletCommandExecutor {
     wallet_service: Arc<WalletService>,
     crypto_service: Arc<CryptoService>,
-    thread_pool: ThreadPool,
 }
 
 impl WalletCommandExecutor {
@@ -88,13 +86,9 @@ impl WalletCommandExecutor {
         wallet_service: Arc<WalletService>,
         crypto_service: Arc<CryptoService>,
     ) -> WalletCommandExecutor {
-        let thread_pool =
-            ThreadPool::new().expect("Can't allocate thread pool for WalletCommandExecutor");
-
         WalletCommandExecutor {
             wallet_service,
             crypto_service,
-            thread_pool,
         }
     }
 
@@ -159,41 +153,31 @@ impl WalletCommandExecutor {
             }
             WalletCommand::Create(config, credentials, cb) => {
                 debug!(target: "wallet_command_executor", "Create command received");
-                let wallet_service = self.wallet_service.clone();
-
-                self.thread_pool.spawn_ok(async move {
-                    cb(Self::_create(wallet_service, config, credentials).await)
-                })
+                cb(self._create(config, credentials).await)
             }
             WalletCommand::Open(config, credentials, cb) => {
                 debug!(target: "wallet_command_executor", "Open command received");
-                let wallet_service = self.wallet_service.clone();
-                cb(Self::_open(wallet_service, config, credentials).await);
+                cb(self._open(config, credentials).await);
             }
             WalletCommand::Close(handle, cb) => {
                 debug!(target: "wallet_command_executor", "Close command received");
-                let wallet_service = self.wallet_service.clone();
-                cb(Self::_close(wallet_service, handle).await);
+                cb(self._close(handle).await);
             }
             WalletCommand::Delete(config, credentials, cb) => {
                 debug!(target: "wallet_command_executor", "Delete command received");
-                let wallet_service = self.wallet_service.clone();
-                cb(Self::_delete(wallet_service, config, credentials).await)
+                cb(self._delete(config, credentials).await)
             }
             WalletCommand::Export(wallet_handle, export_config, cb) => {
                 debug!(target: "wallet_command_executor", "Export command received");
-                let wallet_service = self.wallet_service.clone();
-                cb(Self::_export(wallet_service, wallet_handle, export_config).await)
+                cb(self._export(wallet_handle, export_config).await)
             }
             WalletCommand::Import(config, credentials, import_config, cb) => {
                 debug!(target: "wallet_command_executor", "Import command received");
-                let wallet_service = self.wallet_service.clone();
-                cb(Self::_import(wallet_service, config, credentials, import_config).await);
+                cb(self._import(config, credentials, import_config).await);
             }
             WalletCommand::GenerateKey(config, cb) => {
                 debug!(target: "wallet_command_executor", "DeriveKey command received");
-                let crypto_service = self.crypto_service.clone();
-                cb(Self::_generate_key(crypto_service, config));
+                cb(self._generate_key(config));
             }
         };
     }
@@ -260,11 +244,7 @@ impl WalletCommandExecutor {
         Ok(())
     }
 
-    async fn _create(
-        wallet_service: Arc<WalletService>,
-        config: Config,
-        credentials: Credentials,
-    ) -> IndyResult<()> {
+    async fn _create(&self, config: Config, credentials: Credentials) -> IndyResult<()> {
         trace!(
             "_create >>> config: {:?}, credentials: {:?}",
             &config,
@@ -278,7 +258,8 @@ impl WalletCommandExecutor {
 
         let key = Self::_derive_key(key_data.clone()).await?;
 
-        let res = wallet_service
+        let res = self
+            .wallet_service
             .create_wallet(&config, &credentials, (&key_data, &key))
             .await;
 
@@ -286,18 +267,15 @@ impl WalletCommandExecutor {
         res
     }
 
-    async fn _open(
-        wallet_service: Arc<WalletService>,
-        config: Config,
-        credentials: Credentials,
-    ) -> IndyResult<WalletHandle> {
+    async fn _open(&self, config: Config, credentials: Credentials) -> IndyResult<WalletHandle> {
         trace!(
             "_open >>> config: {:?}, credentials: {:?}",
             &config,
             secret!(&credentials)
         );
 
-        let (wallet_handle, key_derivation_data, rekey_data) = wallet_service
+        let (wallet_handle, key_derivation_data, rekey_data) = self
+            .wallet_service
             .open_wallet_prepare(&config, &credentials)
             .await?;
 
@@ -309,7 +287,8 @@ impl WalletCommandExecutor {
             None
         };
 
-        let res = wallet_service
+        let res = self
+            .wallet_service
             .open_wallet_continue(wallet_handle, (&key, rekey.as_ref()))
             .await;
 
@@ -318,20 +297,17 @@ impl WalletCommandExecutor {
         res
     }
 
-    async fn _close(
-        wallet_service: Arc<WalletService>,
-        wallet_handle: WalletHandle,
-    ) -> IndyResult<()> {
+    async fn _close(&self, wallet_handle: WalletHandle) -> IndyResult<()> {
         trace!("_close >>> handle: {:?}", wallet_handle);
 
-        wallet_service.close_wallet(wallet_handle).await?;
+        self.wallet_service.close_wallet(wallet_handle).await?;
 
         trace!("_close <<< res: ()");
         Ok(())
     }
 
     async fn _delete(
-        wallet_service: Arc<WalletService>,
+        &self,
         config: Config,
         credentials: Credentials,
     ) -> IndyResult<()> {
@@ -341,13 +317,15 @@ impl WalletCommandExecutor {
             secret!(&credentials)
         );
 
-        let (metadata, key_derivation_data) = wallet_service
+        let (metadata, key_derivation_data) = self
+            .wallet_service
             .delete_wallet_prepare(&config, &credentials)
             .await?;
 
         let key = Self::_derive_key(key_derivation_data).await?;
 
-        let res = wallet_service
+        let res = self
+            .wallet_service
             .delete_wallet_continue(&config, &credentials, &metadata, &key)
             .await;
 
@@ -356,7 +334,7 @@ impl WalletCommandExecutor {
     }
 
     async fn _export(
-        wallet_service: Arc<WalletService>,
+        &self,
         wallet_handle: WalletHandle,
         export_config: ExportConfig,
     ) -> IndyResult<()> {
@@ -373,17 +351,17 @@ impl WalletCommandExecutor {
 
         let key = Self::_derive_key(key_data.clone()).await?;
 
-        let res = wallet_service
+        let res = self
+            .wallet_service
             .export_wallet(wallet_handle, &export_config, 0, (&key_data, &key))
             .await;
 
         trace!("_export <<< {:?}", res);
-
         res
     }
 
     async fn _import(
-        wallet_service: Arc<WalletService>,
+        &self,
         config: Config,
         credentials: Credentials,
         import_config: ExportConfig,
@@ -395,14 +373,16 @@ impl WalletCommandExecutor {
             secret!(&import_config)
         );
 
-        let (wallet_handle, key_data, import_key_data) = wallet_service
+        let (wallet_handle, key_data, import_key_data) = self
+            .wallet_service
             .import_wallet_prepare(&config, &credentials, &import_config)
             .await?;
 
         let import_key = Self::_derive_key(import_key_data).await?;
         let key = Self::_derive_key(key_data).await?;
 
-        let res = wallet_service
+        let res = self
+            .wallet_service
             .import_wallet_continue(wallet_handle, &config, &credentials, (import_key, key))
             .await;
 
@@ -412,14 +392,16 @@ impl WalletCommandExecutor {
     }
 
     fn _generate_key(
-        crypto_service: Arc<CryptoService>,
+        &self,
         config: Option<KeyConfig>,
     ) -> IndyResult<String> {
         trace!("_generate_key >>>config: {:?}", secret!(&config));
 
-        let seed = config.as_ref().and_then(|config| config.seed.as_ref().map(String::as_str));
+        let seed = config
+            .as_ref()
+            .and_then(|config| config.seed.as_ref().map(String::as_str));
 
-        let key = match crypto_service.convert_seed(seed)? {
+        let key = match self.crypto_service.convert_seed(seed)? {
             Some(seed) => randombytes::randombytes_deterministic(
                 chacha20poly1305_ietf::KEYBYTES,
                 &randombytes::Seed::from_slice(&seed[..])?,

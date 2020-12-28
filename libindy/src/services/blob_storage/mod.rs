@@ -1,155 +1,271 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 
+use async_trait::async_trait;
 use indy_api_types::errors::prelude::*;
 use indy_utils::sequence;
 
-use sha2::Sha256;
-use sha2::digest::{FixedOutput, Update};
+use futures::lock::Mutex;
+use sha2::{
+    digest::{FixedOutput, Update},
+    Sha256,
+};
 
-mod default_writer;
 mod default_reader;
+mod default_writer;
 
-trait WriterType {
-    fn open(&self, config: &str) -> IndyResult<Box<dyn Writer>>;
+#[async_trait]
+trait WriterType: Send + Sync {
+    async fn open(&self, config: &str) -> IndyResult<Box<dyn Writer>>;
 }
 
-trait Writer {
-    fn create(&self, id: i32) -> IndyResult<Box<dyn WritableBlob>>;
+#[async_trait]
+trait Writer: Send + Sync {
+    async fn create(&self, id: i32) -> IndyResult<Box<dyn WritableBlob>>;
 }
 
-trait WritableBlob {
-    fn append(&mut self, bytes: &[u8]) -> IndyResult<usize>;
-    fn finalize(&mut self, hash: &[u8]) -> IndyResult<String>;
+#[async_trait]
+trait WritableBlob: Send + Sync {
+    async fn append(&mut self, bytes: &[u8]) -> IndyResult<usize>;
+    async fn finalize(&mut self, hash: &[u8]) -> IndyResult<String>;
 }
 
-trait ReaderType {
-    fn open(&self, config: &str) -> IndyResult<Box<dyn Reader>>;
+#[async_trait]
+trait ReaderType: Send + Sync {
+    async fn open(&self, config: &str) -> IndyResult<Box<dyn Reader>>;
 }
 
-trait Reader {
-    fn open(&self, hash: &[u8], location: &str) -> IndyResult<Box<dyn ReadableBlob>>;
+#[async_trait]
+trait Reader: Send + Sync {
+    async fn open(&self, hash: &[u8], location: &str) -> IndyResult<Box<dyn ReadableBlob>>;
 }
 
-trait ReadableBlob {
-    fn read(&mut self, size: usize, offset: usize) -> IndyResult<Vec<u8>>;
-    fn verify(&mut self) -> IndyResult<bool>;
-    fn close(&self) -> IndyResult<()>;
+#[async_trait]
+trait ReadableBlob: Send + Sync {
+    async fn read(&mut self, size: usize, offset: usize) -> IndyResult<Vec<u8>>;
+    async fn verify(&mut self) -> IndyResult<bool>;
+    async fn close(&self) -> IndyResult<()>;
 }
 
 pub struct BlobStorageService {
-    writer_types: RefCell<HashMap<String, Box<dyn WriterType>>>,
-    writer_configs: RefCell<HashMap<i32, Box<dyn Writer>>>,
-    writer_blobs: RefCell<HashMap<i32, (Box<dyn WritableBlob>, Sha256)>>,
+    writer_types: Mutex<HashMap<String, Box<dyn WriterType>>>,
+    writer_configs: Mutex<HashMap<i32, Box<dyn Writer>>>,
+    writer_blobs: Mutex<HashMap<i32, (Box<dyn WritableBlob>, Sha256)>>,
 
-    reader_types: RefCell<HashMap<String, Box<dyn ReaderType>>>,
-    reader_configs: RefCell<HashMap<i32, Box<dyn Reader>>>,
-    reader_blobs: RefCell<HashMap<i32, Box<dyn ReadableBlob>>>,
+    reader_types: Mutex<HashMap<String, Box<dyn ReaderType>>>,
+    reader_configs: Mutex<HashMap<i32, Box<dyn Reader>>>,
+    reader_blobs: Mutex<HashMap<i32, Box<dyn ReadableBlob>>>,
 }
 
 impl BlobStorageService {
     pub fn new() -> BlobStorageService {
         let mut writer_types: HashMap<String, Box<dyn WriterType>> = HashMap::new();
-        writer_types.insert("default".to_owned(), Box::new(default_writer::DefaultWriterType::new()));
+        writer_types.insert(
+            "default".to_owned(),
+            Box::new(default_writer::DefaultWriterType::new()),
+        );
+
         let mut reader_types: HashMap<String, Box<dyn ReaderType>> = HashMap::new();
-        reader_types.insert("default".to_owned(), Box::new(default_reader::DefaultReaderType::new()));
+        reader_types.insert(
+            "default".to_owned(),
+            Box::new(default_reader::DefaultReaderType::new()),
+        );
 
         BlobStorageService {
-            writer_types: RefCell::new(writer_types),
-            writer_configs: RefCell::new(HashMap::new()),
-            writer_blobs: RefCell::new(HashMap::new()),
+            writer_types: Mutex::new(writer_types),
+            writer_configs: Mutex::new(HashMap::new()),
+            writer_blobs: Mutex::new(HashMap::new()),
 
-            reader_types: RefCell::new(reader_types),
-            reader_configs: RefCell::new(HashMap::new()),
-            reader_blobs: RefCell::new(HashMap::new()),
+            reader_types: Mutex::new(reader_types),
+            reader_configs: Mutex::new(HashMap::new()),
+            reader_blobs: Mutex::new(HashMap::new()),
         }
     }
 }
 
 /* Writer */
 impl BlobStorageService {
-    pub fn open_writer(&self, type_: &str, config: &str) -> IndyResult<i32> {
-        let writer_config = self.writer_types.try_borrow()?
-            .get(type_).ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Unknown BlobStorage Writer type"))?
-            .open(config)?;
+    pub async fn open_writer(&self, type_: &str, config: &str) -> IndyResult<i32> {
+        let writer_config = self
+            .writer_types
+            .lock()
+            .await
+            .get(type_)
+            .ok_or_else(|| {
+                err_msg(
+                    IndyErrorKind::InvalidStructure,
+                    "Unknown BlobStorage Writer type",
+                )
+            })?
+            .open(config)
+            .await?;
 
         let config_handle = sequence::get_next_id();
-        self.writer_configs.try_borrow_mut()?.insert(config_handle, writer_config);
+
+        self.writer_configs
+            .lock()
+            .await
+            .insert(config_handle, writer_config);
 
         Ok(config_handle)
     }
 
-    pub fn create_blob(&self, config_handle: i32) -> IndyResult<i32> {
+    pub async fn create_blob(&self, config_handle: i32) -> IndyResult<i32> {
         let blob_handle = sequence::get_next_id();
-        let writer = self.writer_configs.try_borrow()?
-            .get(&config_handle).ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage config handle"))? // FIXME: Review error kind
-            .create(blob_handle)?;
 
-        self.writer_blobs.try_borrow_mut()?.insert(blob_handle, (writer, Sha256::default()));
+        let writer = self
+            .writer_configs
+            .lock()
+            .await
+            .get(&config_handle)
+            .ok_or_else(|| {
+                err_msg(
+                    IndyErrorKind::InvalidStructure,
+                    "Invalid BlobStorage config handle",
+                )
+            })? // FIXME: Review error kind
+            .create(blob_handle)
+            .await?;
+
+        self.writer_blobs
+            .lock()
+            .await
+            .insert(blob_handle, (writer, Sha256::default()));
 
         Ok(blob_handle)
     }
 
-    pub fn append(&self, handle: i32, bytes: &[u8]) -> IndyResult<usize> {
-        let mut writers = self.writer_blobs.try_borrow_mut()?;
-        let &mut (ref mut writer, ref mut hasher) = writers
-            .get_mut(&handle).ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage handle"))?; // FIXME: Review error kind
+    pub async fn append(&self, handle: i32, bytes: &[u8]) -> IndyResult<usize> {
+        let mut writers = self.writer_blobs.lock().await;
+
+        let &mut (ref mut writer, ref mut hasher) = writers.get_mut(&handle).ok_or_else(|| {
+            err_msg(
+                IndyErrorKind::InvalidStructure,
+                "Invalid BlobStorage handle",
+            )
+        })?; // FIXME: Review error kind
 
         hasher.update(bytes);
-        writer.append(bytes)
+        let res = writer.append(bytes).await?;
+        Ok(res)
     }
 
-    pub fn finalize(&self, handle: i32) -> IndyResult<(String, Vec<u8>)> {
-        let mut writers = self.writer_blobs.try_borrow_mut()?;
-        let (mut writer, hasher) = writers
-            .remove(&handle).ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage handle"))?; // FIXME: Review error kind
+    pub async fn finalize(&self, handle: i32) -> IndyResult<(String, Vec<u8>)> {
+        let mut writers = self.writer_blobs.lock().await;
+
+        let (mut writer, hasher) = writers.remove(&handle).ok_or_else(|| {
+            err_msg(
+                IndyErrorKind::InvalidStructure,
+                "Invalid BlobStorage handle",
+            )
+        })?; // FIXME: Review error kind
 
         let hash = hasher.finalize_fixed().to_vec();
 
-        writer.finalize(hash.as_slice())
+        writer
+            .finalize(hash.as_slice())
+            .await
             .map(|location| (location, hash))
     }
 }
 
 /* Reader */
 impl BlobStorageService {
-    pub fn open_reader(&self, type_: &str, config: &str) -> IndyResult<i32> {
-        let reader_config = self.reader_types.try_borrow()?
-            .get(type_).ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage Reader type"))? // FIXME: Review error kind
-            .open(config)?;
+    pub async fn open_reader(&self, type_: &str, config: &str) -> IndyResult<i32> {
+        let reader_config = self
+            .reader_types
+            .lock()
+            .await
+            .get(type_)
+            .ok_or_else(|| {
+                err_msg(
+                    IndyErrorKind::InvalidStructure,
+                    "Invalid BlobStorage Reader type",
+                )
+            })? // FIXME: Review error kind
+            .open(config)
+            .await?;
 
         let config_handle = sequence::get_next_id();
-        self.reader_configs.try_borrow_mut()?.insert(config_handle, reader_config);
+
+        self.reader_configs
+            .lock()
+            .await
+            .insert(config_handle, reader_config);
 
         Ok(config_handle)
     }
 
-    pub fn open_blob(&self, config_handle: i32, location: &str, hash: &[u8]) -> IndyResult<i32> {
-        let reader = self.reader_configs.try_borrow()?
-            .get(&config_handle).ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage config handle"))? // FIXME: Review error kind
-            .open(hash, location)?;
+    pub async fn open_blob(
+        &self,
+        config_handle: i32,
+        location: &str,
+        hash: &[u8],
+    ) -> IndyResult<i32> {
+        let reader = self
+            .reader_configs
+            .lock()
+            .await
+            .get(&config_handle)
+            .ok_or_else(|| {
+                err_msg(
+                    IndyErrorKind::InvalidStructure,
+                    "Invalid BlobStorage config handle",
+                )
+            })? // FIXME: Review error kind
+            .open(hash, location)
+            .await?;
 
         let reader_handle = sequence::get_next_id();
-        self.reader_blobs.try_borrow_mut()?.insert(reader_handle, reader);
+        self.reader_blobs.lock().await.insert(reader_handle, reader);
 
         Ok(reader_handle)
     }
 
-    pub fn read(&self, handle: i32, size: usize, offset: usize) -> IndyResult<Vec<u8>> {
-        self.reader_blobs.try_borrow_mut()?
-            .get_mut(&handle).ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage handle"))? // FIXME: Review error kind
+    pub async fn read(&self, handle: i32, size: usize, offset: usize) -> IndyResult<Vec<u8>> {
+        self.reader_blobs
+            .lock()
+            .await
+            .get_mut(&handle)
+            .ok_or_else(|| {
+                err_msg(
+                    IndyErrorKind::InvalidStructure,
+                    "Invalid BlobStorage handle",
+                )
+            })? // FIXME: Review error kind
             .read(size, offset)
+            .await
     }
 
-    pub fn _verify(&self, handle: i32) -> IndyResult<bool> {
-        self.reader_blobs.try_borrow_mut()?
-            .get_mut(&handle).ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage handle"))? // FIXME: Review error kind
+    pub async fn _verify(&self, handle: i32) -> IndyResult<bool> {
+        let res = self
+            .reader_blobs
+            .lock()
+            .await
+            .get_mut(&handle)
+            .ok_or_else(|| {
+                err_msg(
+                    IndyErrorKind::InvalidStructure,
+                    "Invalid BlobStorage handle",
+                )
+            })? // FIXME: Review error kind
             .verify()
+            .await?;
+
+        Ok(res)
     }
 
-    pub fn close(&self, handle: i32) -> IndyResult<()> {
-        self.reader_blobs.try_borrow_mut()?
-            .remove(&handle).ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage handle"))? // FIXME: Review error kind
+    pub async fn close(&self, handle: i32) -> IndyResult<()> {
+        self.reader_blobs
+            .lock()
+            .await
+            .remove(&handle)
+            .ok_or_else(|| {
+                err_msg(
+                    IndyErrorKind::InvalidStructure,
+                    "Invalid BlobStorage handle",
+                )
+            })? // FIXME: Review error kind
             .close()
+            .await
     }
 }

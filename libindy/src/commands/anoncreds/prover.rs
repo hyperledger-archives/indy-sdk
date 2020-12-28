@@ -31,12 +31,13 @@ use crate::services::crypto::CryptoService;
 use crate::utils::wql::Query;
 
 use super::tails::SDKTailsAccessor;
+use futures::lock::Mutex;
 
 pub enum ProverCommand {
     CreateMasterSecret(
         WalletHandle,
         Option<String>, // master secret id
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     CreateCredentialRequest(
         WalletHandle,
         DidValue, // prover did
@@ -49,11 +50,11 @@ pub enum ProverCommand {
         CredentialDefinitionId, // credential definition id
         Option<CredentialAttrTagPolicy>, // credential attr tag policy
         bool, // retroactive
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     GetCredentialAttrTagPolicy(
         WalletHandle,
         CredentialDefinitionId, // credential definition id
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     StoreCredential(
         WalletHandle,
         Option<String>, // credential id
@@ -61,47 +62,47 @@ pub enum ProverCommand {
         Credential, // credentials
         CredentialDefinition, // credential definition
         Option<RevocationRegistryDefinition>, // revocation registry definition
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     GetCredentials(
         WalletHandle,
         Option<String>, // filter json
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     GetCredential(
         WalletHandle,
         String, // credential id
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     DeleteCredential(
         WalletHandle,
         String, // credential id
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     SearchCredentials(
         WalletHandle,
         Option<String>, // query json
-        Box<dyn Fn(IndyResult<(SearchHandle, usize)>) + Send>),
+        Box<dyn Fn(IndyResult<(SearchHandle, usize)>) + Send + Sync>),
     FetchCredentials(
         SearchHandle,
         usize, // count
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     CloseCredentialsSearch(
         SearchHandle,
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     GetCredentialsForProofReq(
         WalletHandle,
         ProofRequest, // proof request
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     SearchCredentialsForProofReq(
         WalletHandle,
         ProofRequest, // proof request
         Option<ProofRequestExtraQuery>, // extra query
-        Box<dyn Fn(IndyResult<SearchHandle>) + Send>),
+        Box<dyn Fn(IndyResult<SearchHandle>) + Send + Sync>),
     FetchCredentialForProofReq(
         SearchHandle,
         String, // item referent
         usize, // count
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     CloseCredentialsSearchForProofReq(
         SearchHandle,
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     CreateProof(
         WalletHandle,
         ProofRequest, // proof request
@@ -110,14 +111,14 @@ pub enum ProverCommand {
         Schemas, // schemas
         CredentialDefinitions, // credential defs
         RevocationStates, // revocation states
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     CreateRevocationState(
         i32, // blob storage reader handle
         RevocationRegistryDefinition, // revocation registry definition
         RevocationRegistryDelta, // revocation registry delta
         u64, //timestamp
         String, //credential revocation id
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     UpdateRevocationState(
         i32, // tails reader _handle
         RevocationState, // revocation state
@@ -125,7 +126,7 @@ pub enum ProverCommand {
         RevocationRegistryDelta, // revocation registry delta
         u64, //timestamp
         String, //credential revocation id
-        Box<dyn Fn(IndyResult<String>) + Send>)
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>)
 }
 
 struct SearchForProofRequest {
@@ -151,8 +152,8 @@ pub struct ProverCommandExecutor {
     wallet_service:Arc<WalletService>,
     crypto_service:Arc<CryptoService>,
     blob_storage_service:Arc<BlobStorageService>,
-    searches: RefCell<HashMap<SearchHandle, Box<WalletSearch>>>,
-    searches_for_proof_requests: RefCell<HashMap<SearchHandle, Box<HashMap<String, SearchForProofRequest>>>>,
+    searches: Mutex<HashMap<SearchHandle, Box<WalletSearch>>>,
+    searches_for_proof_requests: Mutex<HashMap<SearchHandle, Box<HashMap<String, SearchForProofRequest>>>>,
 }
 
 impl ProverCommandExecutor {
@@ -165,8 +166,8 @@ impl ProverCommandExecutor {
             wallet_service,
             crypto_service,
             blob_storage_service,
-            searches: RefCell::new(HashMap::new()),
-            searches_for_proof_requests: RefCell::new(HashMap::new()),
+            searches: Mutex::new(HashMap::new()),
+            searches_for_proof_requests: Mutex::new(HashMap::new()),
         }
     }
 
@@ -219,7 +220,7 @@ impl ProverCommandExecutor {
             }
             ProverCommand::CloseCredentialsSearch(search_handle, cb) => {
                 debug!(target: "prover_command_executor", "CloseCredentialsSearch command received");
-                cb(self.close_credentials_search(search_handle));
+                cb(self.close_credentials_search(search_handle).await);
             }
             ProverCommand::GetCredentialsForProofReq(wallet_handle, proof_req, cb) => {
                 debug!(target: "prover_command_executor", "GetCredentialsForProofReq command received");
@@ -235,7 +236,7 @@ impl ProverCommandExecutor {
             }
             ProverCommand::CloseCredentialsSearchForProofReq(search_handle, cb) => {
                 debug!(target: "prover_command_executor", "CloseCredentialsSearchForProofReq command received");
-                cb(self.close_credentials_search_for_proof_req(search_handle));
+                cb(self.close_credentials_search_for_proof_req(search_handle).await);
             }
             ProverCommand::CreateProof(wallet_handle, proof_req, requested_credentials, master_secret_name,
                                        schemas, cred_defs, rev_states, cb) => {
@@ -247,11 +248,11 @@ impl ProverCommandExecutor {
             }
             ProverCommand::CreateRevocationState(blob_storage_reader_handle, rev_reg_def, rev_reg_delta, timestamp, cred_rev_id, cb) => {
                 debug!(target: "prover_command_executor", "CreateRevocationState command received");
-                cb(self.create_revocation_state(blob_storage_reader_handle, rev_reg_def, rev_reg_delta, timestamp, &cred_rev_id));
+                cb(self.create_revocation_state(blob_storage_reader_handle, rev_reg_def, rev_reg_delta, timestamp, &cred_rev_id).await);
             }
             ProverCommand::UpdateRevocationState(blob_storage_reader_handle, rev_state, rev_reg_def, rev_reg_delta, timestamp, cred_rev_id, cb) => {
                 debug!(target: "prover_command_executor", "UpdateRevocationState command received");
-                cb(self.update_revocation_state(blob_storage_reader_handle, rev_state, rev_reg_def, rev_reg_delta, timestamp, &cred_rev_id));
+                cb(self.update_revocation_state(blob_storage_reader_handle, rev_state, rev_reg_def, rev_reg_delta, timestamp, &cred_rev_id).await);
             }
         };
     }
@@ -469,7 +470,7 @@ impl ProverCommandExecutor {
 
         let handle : SearchHandle = next_search_handle();
 
-        self.searches.borrow_mut().insert(handle, Box::new(credentials_search));
+        self.searches.lock().await.insert(handle, Box::new(credentials_search));
 
         let res = (handle, total_count);
 
@@ -483,7 +484,8 @@ impl ProverCommandExecutor {
                                count: usize, ) -> IndyResult<String> {
         trace!("fetch_credentials >>> search_handle: {:?}, count: {:?}", search_handle, count);
 
-        let mut searches = self.searches.borrow_mut();
+        let mut searches = self.searches.lock().await;
+        
         let search = searches.get_mut(&search_handle)
             .ok_or_else(|| err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {:?}", search_handle)))?;
 
@@ -507,10 +509,10 @@ impl ProverCommandExecutor {
         Ok(credentials_info_json)
     }
 
-    fn close_credentials_search(&self, search_handle: SearchHandle) -> IndyResult<()> {
+    async fn close_credentials_search(&self, search_handle: SearchHandle) -> IndyResult<()> {
         trace!("close_credentials_search >>> search_handle: {:?}", search_handle);
 
-        match self.searches.borrow_mut().remove(&search_handle) {
+        match self.searches.lock().await.remove(&search_handle) {
             Some(_) => Ok(()),
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {:?}", search_handle)))
         }?;
@@ -616,7 +618,7 @@ impl ProverCommandExecutor {
         }
 
         let search_handle = next_search_handle();
-        self.searches_for_proof_requests.borrow_mut().insert(search_handle, Box::new(credentials_for_proof_request_search));
+        self.searches_for_proof_requests.lock().await.insert(search_handle, Box::new(credentials_for_proof_request_search));
 
         debug!("search_credentials_for_proof_req <<< credentials_for_proof_request_json: {:?}", search_handle);
 
@@ -626,7 +628,8 @@ impl ProverCommandExecutor {
     async fn fetch_credential_for_proof_request(&self, search_handle: SearchHandle, item_referent: &str, count: usize) -> IndyResult<String> {
         trace!("fetch_credential_for_proof_request >>> search_handle: {:?}, item_referent: {:?}, count: {:?}", search_handle, item_referent, count);
 
-        let mut searches = self.searches_for_proof_requests.borrow_mut();
+        let mut searches = self.searches_for_proof_requests.lock().await;
+        
         let search: &mut SearchForProofRequest = searches.get_mut(&search_handle)
             .ok_or_else(|| err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {:?}", search_handle)))?
             .get_mut(item_referent)
@@ -643,10 +646,10 @@ impl ProverCommandExecutor {
         Ok(requested_credentials_json)
     }
 
-    fn close_credentials_search_for_proof_req(&self, search_handle: SearchHandle) -> IndyResult<()> {
+    async fn close_credentials_search_for_proof_req(&self, search_handle: SearchHandle) -> IndyResult<()> {
         trace!("close_credentials_search_for_proof_req >>> search_handle: {:?}", search_handle);
 
-        match self.searches_for_proof_requests.borrow_mut().remove(&search_handle) {
+        match self.searches_for_proof_requests.lock().await.remove(&search_handle) {
             Some(_) => Ok(()),
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {:?}", search_handle)))
         }?;
@@ -719,7 +722,7 @@ impl ProverCommandExecutor {
         Ok(proof_json)
     }
 
-    fn create_revocation_state(&self,
+    async fn create_revocation_state(&self,
                                blob_storage_reader_handle: i32,
                                revoc_reg_def: RevocationRegistryDefinition,
                                rev_reg_delta: RevocationRegistryDelta,
@@ -734,7 +737,7 @@ impl ProverCommandExecutor {
 
         let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
                                                        blob_storage_reader_handle,
-                                                       &revoc_reg_def)?;
+                                                       &revoc_reg_def).await?;
 
         let rev_reg_delta = RevocationRegistryDeltaV1::from(rev_reg_delta);
 
@@ -754,7 +757,7 @@ impl ProverCommandExecutor {
         Ok(revocation_state_json)
     }
 
-    fn update_revocation_state(&self,
+    async fn update_revocation_state(&self,
                                blob_storage_reader_handle: i32,
                                mut rev_state: RevocationState,
                                rev_reg_def: RevocationRegistryDefinition,
@@ -772,7 +775,7 @@ impl ProverCommandExecutor {
 
         let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
                                                        blob_storage_reader_handle,
-                                                       &revocation_registry_definition)?;
+                                                       &revocation_registry_definition).await?;
 
         rev_state.witness.update(rev_idx, revocation_registry_definition.value.max_cred_num, &rev_reg_delta.value, &sdk_tails_accessor)?;
 

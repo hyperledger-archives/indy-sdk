@@ -77,7 +77,7 @@ pub struct Header {
 
 pub(super) async fn export_continue(
     wallet: &Wallet,
-    writer: &mut dyn Write,
+    writer: &mut (dyn Write + Send + Sync),
     version: u32,
     key: chacha20poly1305_ietf::Key,
     key_data: &KeyDerivationData,
@@ -355,7 +355,7 @@ mod tests {
 
     async fn export(
         wallet: &Wallet,
-        writer: &mut dyn Write,
+        writer: &mut (dyn Write + Send + Sync),
         passphrase: &str,
         version: u32,
         key_derivation_method: &KeyDerivationMethod,

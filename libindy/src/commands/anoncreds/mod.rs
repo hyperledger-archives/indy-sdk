@@ -24,7 +24,7 @@ pub enum AnoncredsCommand {
     Verifier(VerifierCommand),
     ToUnqualified(
         String, // entity
-        Box<dyn Fn(IndyResult<String>) + Send>)
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>)
 }
 
 pub struct AnoncredsCommandExecutor {

@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::sync::Mutex;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use rand::thread_rng;
@@ -11,10 +11,10 @@ use crate::services::pool::types::*;
 use indy_utils::sequence;
 use indy_utils::crypto::base64;
 
-use super::time::Duration;
+use time::Duration;
 
-use super::zmq::PollItem;
-use super::zmq::Socket as ZSocket;
+use zmq::PollItem;
+use zmq::Socket as ZSocket;
 
 pub trait Networker {
     fn new(active_timeout: i64, conn_limit: usize, preordered_nodes: Vec<String>) -> Self;
@@ -170,8 +170,8 @@ pub struct PoolConnection {
     sockets: Vec<Option<ZSocket>>,
     ctx: zmq::Context,
     key_pair: zmq::CurveKeyPair,
-    resend: RefCell<HashMap<String, (usize, String)>>,
-    timeouts: RefCell<HashMap<(String, String), Tm>>,
+    resend: Mutex<HashMap<String, (usize, String)>>,
+    timeouts: Mutex<HashMap<(String, String), Tm>>,
     time_created: time::Tm,
     req_cnt: usize,
     active_timeout: i64,
@@ -200,9 +200,9 @@ impl PoolConnection {
             sockets,
             ctx: zmq::Context::new(),
             key_pair: zmq::CurveKeyPair::new().expect("FIXME"),
-            resend: RefCell::new(HashMap::new()),
+            resend: Mutex::new(HashMap::new()),
             time_created: time::now(),
-            timeouts: RefCell::new(HashMap::new()),
+            timeouts: Mutex::new(HashMap::new()),
             req_cnt: 0,
             active_timeout,
         }
@@ -236,7 +236,7 @@ impl PoolConnection {
     }
 
     fn get_timeout(&self) -> ((String, String), i64) {
-        if let Some((&(ref req_id, ref node_alias), timeout)) = self.timeouts.borrow().iter()
+        if let Some((&(ref req_id, ref node_alias), timeout)) = self.timeouts.lock().unwrap().iter()
             .map(|(key, value)| (key, (*value - time::now()).num_milliseconds()))
             .min_by(|&(_, ref val1), &(_, ref val2)| val1.cmp(&val2)) {
             ((req_id.to_string(), node_alias.to_string()), timeout)
@@ -259,7 +259,7 @@ impl PoolConnection {
             Some(NetworkerEvent::SendOneRequest(msg, req_id, timeout)) => {
                 self.req_cnt += 1;
                 self._send_msg_to_one_node(0, req_id.clone(), msg.clone(), timeout)?;
-                self.resend.borrow_mut().insert(req_id, (0, msg));
+                self.resend.lock().unwrap().insert(req_id, (0, msg));
             }
             Some(NetworkerEvent::SendAllRequest(msg, req_id, timeout, nodes_to_send)) => {
                 self.req_cnt += 1;
@@ -270,7 +270,7 @@ impl PoolConnection {
                 }
             }
             Some(NetworkerEvent::Resend(req_id, timeout)) => {
-                let resend = if let Some(&mut (ref mut cnt, ref req)) = self.resend.borrow_mut().get_mut(&req_id) {
+                let resend = if let Some(&mut (ref mut cnt, ref req)) = self.resend.lock().unwrap().get_mut(&req_id) {
                     *cnt += 1;
                     //TODO: FIXME: We can collect consensus just walking through if we are not collecting node aliases on the upper layer.
                     Some((*cnt % self.nodes.len(), req.clone()))
@@ -289,7 +289,7 @@ impl PoolConnection {
     }
 
     fn extend_timeout(&self, req_id: &str, node_alias: &str, extended_timeout: i64) {
-        if let Some(timeout) = self.timeouts.borrow_mut().get_mut(&(req_id.to_string(), node_alias.to_string())) {
+        if let Some(timeout) = self.timeouts.lock().unwrap().get_mut(&(req_id.to_string(), node_alias.to_string())) {
             *timeout = time::now() + Duration::seconds(extended_timeout);
         } else {
             debug!("late REQACK for req_id {}, node {}", req_id, node_alias);
@@ -299,18 +299,18 @@ impl PoolConnection {
     fn clean_timeout(&self, req_id: &str, node_alias: Option<String>) {
         match node_alias {
             Some(node_alias) => {
-                self.timeouts.borrow_mut().remove(&(req_id.to_string(), node_alias));
+                self.timeouts.lock().unwrap().remove(&(req_id.to_string(), node_alias));
             }
             None => {
-                let keys_to_remove: Vec<(String, String)> = self.timeouts.borrow().keys()
+                let keys_to_remove: Vec<(String, String)> = self.timeouts.lock().unwrap().keys()
                     .cloned().filter(|&(ref req_id_timeout, _)| req_id == req_id_timeout).collect();
-                keys_to_remove.iter().for_each(|key| { self.timeouts.borrow_mut().remove(key); });
+                keys_to_remove.iter().for_each(|key| { self.timeouts.lock().unwrap().remove(key); });
             }
         }
     }
 
     fn has_active_requests(&self) -> bool {
-        !self.timeouts.borrow().is_empty()
+        !self.timeouts.lock().unwrap().is_empty()
     }
 
     fn is_orphaned(&self) -> bool {
@@ -323,7 +323,7 @@ impl PoolConnection {
             let s = self._get_socket(idx)?;
             s.send(&req, zmq::DONTWAIT)?;
         }
-        self.timeouts.borrow_mut().insert((req_id, self.nodes[idx].name.clone()), time::now() + Duration::seconds(timeout));
+        self.timeouts.lock().unwrap().insert((req_id, self.nodes[idx].name.clone()), time::now() + Duration::seconds(timeout));
         trace!("_send_msg_to_one_node <<");
         Ok(())
     }

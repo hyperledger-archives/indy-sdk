@@ -1682,6 +1682,7 @@ pub type CustomTransactionParser = extern fn(reply_from_node: *const c_char, par
 pub type CustomFree = extern fn(data: *const c_char) -> ErrorCode;
 
 
+// FIXME:
 /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
 ///
 /// # params
@@ -1696,41 +1697,41 @@ pub type CustomFree = extern fn(data: *const c_char) -> ErrorCode;
 ///
 /// # errors
 /// Common*
-#[no_mangle]
-pub extern fn indy_register_transaction_parser_for_sp(command_handle: CommandHandle,
-                                                      txn_type: *const c_char,
-                                                      parser: Option<CustomTransactionParser>,
-                                                      free: Option<CustomFree>,
-                                                      cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_register_transaction_parser_for_sp: >>> txn_type {:?}, parser {:?}, free {:?}",
-           txn_type, parser, free);
+// #[no_mangle]
+// pub extern fn indy_register_transaction_parser_for_sp(command_handle: CommandHandle,
+//                                                       txn_type: *const c_char,
+//                                                       parser: Option<CustomTransactionParser>,
+//                                                       free: Option<CustomFree>,
+//                                                       cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode)>) -> ErrorCode {
+//     trace!("indy_register_transaction_parser_for_sp: >>> txn_type {:?}, parser {:?}, free {:?}",
+//            txn_type, parser, free);
 
-    check_useful_c_str!(txn_type, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(parser, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(free, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+//     check_useful_c_str!(txn_type, ErrorCode::CommonInvalidParam2);
+//     check_useful_c_callback!(parser, ErrorCode::CommonInvalidParam3);
+//     check_useful_c_callback!(free, ErrorCode::CommonInvalidParam4);
+//     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_register_transaction_parser_for_sp: entities: txn_type {}, parser {:?}, free {:?}",
-           txn_type, parser, free);
+//     trace!("indy_register_transaction_parser_for_sp: entities: txn_type {}, parser {:?}, free {:?}",
+//            txn_type, parser, free);
 
-    let res = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::RegisterSPParser(
-            txn_type,
-            parser,
-            free,
-            Box::new(move |res| {
-                let res = prepare_result!(res);
-                trace!("indy_register_transaction_parser_for_sp: res: {:?}", res);
-                cb(command_handle, res)
-            }),
-        )));
+//     let res = CommandExecutor::instance()
+//         .send(Command::Ledger(LedgerCommand::RegisterSPParser(
+//             txn_type,
+//             parser,
+//             free,
+//             Box::new(move |res| {
+//                 let res = prepare_result!(res);
+//                 trace!("indy_register_transaction_parser_for_sp: res: {:?}", res);
+//                 cb(command_handle, res)
+//             }),
+//         )));
 
-    let res = prepare_result!(res);
+//     let res = prepare_result!(res);
 
-    trace!("indy_register_transaction_parser_for_sp: <<< res: {:?}", res);
+//     trace!("indy_register_transaction_parser_for_sp: <<< res: {:?}", res);
 
-    res
-}
+//     res
+// }
 
 /// Parse transaction response to fetch metadata.
 /// The important use case for this method is validation of Node's response freshens.

@@ -28,6 +28,7 @@ fatal_warnings = []
 
 [dependencies]
 async-std = "1.8.0"
+async-trait = "0.1.42"
 env_logger = "0.7"
 etcommon-rlp = "0.2.4"
 failure = "0.1.7"

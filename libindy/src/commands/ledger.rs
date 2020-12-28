@@ -35,78 +35,78 @@ pub enum LedgerCommand {
         WalletHandle,
         DidValue, // submitter did
         String, // request json
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     SubmitRequest(
         PoolHandle, // pool handle
         String, // request json
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     SubmitAction(
         PoolHandle, // pool handle
         String, // request json
         Option<String>, // nodes
         Option<i32>, // timeout
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     SignRequest(
         WalletHandle,
         DidValue, // submitter did
         String, // request json
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     MultiSignRequest(
         WalletHandle,
         DidValue, // submitter did
         String, // request json
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildGetDdoRequest(
         Option<DidValue>, // submitter did
         DidValue, // target did
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildNymRequest(
         DidValue, // submitter did
         DidValue, // target did
         Option<String>, // verkey
         Option<String>, // alias
         Option<String>, // role
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildAttribRequest(
         DidValue, // submitter did
         DidValue, // target did
         Option<String>, // hash
         Option<serde_json::Value>, // raw
         Option<String>, // enc
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildGetAttribRequest(
         Option<DidValue>, // submitter did
         DidValue, // target did
         Option<String>, // raw
         Option<String>, // hash
         Option<String>, // enc
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildGetNymRequest(
         Option<DidValue>, // submitter did
         DidValue, // target did
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     ParseGetNymResponse(
         String, // get nym response json
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildSchemaRequest(
         DidValue, // submitter did
         Schema, // data
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildGetSchemaRequest(
         Option<DidValue>, // submitter did
         SchemaId, // id
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     ParseGetSchemaResponse(
         String, // get schema response json
         BoxedCallbackStringStringSend),
     BuildCredDefRequest(
         DidValue, // submitter did
         CredentialDefinition, // data
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildGetCredDefRequest(
         Option<DidValue>, // submitter did
         CredentialDefinitionId, // id
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     ParseGetCredDefResponse(
         String, // get cred definition response
         BoxedCallbackStringStringSend),
@@ -114,25 +114,25 @@ pub enum LedgerCommand {
         DidValue, // submitter did
         DidValue, // target_did
         NodeOperationData, // data
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildGetValidatorInfoRequest(
         DidValue, // submitter did
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildGetTxnRequest(
         Option<DidValue>, // submitter did
         Option<String>, // ledger type
         i32, // data
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildPoolConfigRequest(
         DidValue, // submitter did
         bool, // writes
         bool, // force
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildPoolRestartRequest(
         DidValue, //submitter did
         String, //action
         Option<String>, //datetime
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildPoolUpgradeRequest(
         DidValue, // submitter did
         String, // name
@@ -145,15 +145,15 @@ pub enum LedgerCommand {
         bool, // reinstall
         bool, // force
         Option<String>, // package
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildRevocRegDefRequest(
         DidValue, // submitter did
         RevocationRegistryDefinition, // data
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildGetRevocRegDefRequest(
         Option<DidValue>, // submitter did
         RevocationRegistryId, // revocation registry definition id
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     ParseGetRevocRegDefResponse(
         String, // get revocation registry definition response
         BoxedCallbackStringStringSend),
@@ -162,32 +162,33 @@ pub enum LedgerCommand {
         RevocationRegistryId, // revocation registry definition id
         String, // revocation registry definition type
         RevocationRegistryDelta, // value
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildGetRevocRegRequest(
         Option<DidValue>, // submitter did
         RevocationRegistryId, // revocation registry definition id
         i64, // timestamp
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     ParseGetRevocRegResponse(
         String, // get revocation registry response
-        Box<dyn Fn(IndyResult<(String, String, u64)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, String, u64)>) + Send + Sync>),
     BuildGetRevocRegDeltaRequest(
         Option<DidValue>, // submitter did
         RevocationRegistryId, // revocation registry definition id
         Option<i64>, // from
         i64, // to
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     ParseGetRevocRegDeltaResponse(
         String, // get revocation registry delta response
-        Box<dyn Fn(IndyResult<(String, String, u64)>) + Send>),
-    RegisterSPParser(
-        String, // txn type
-        CustomTransactionParser,
-        CustomFree,
-        Box<dyn Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<(String, String, u64)>) + Send + Sync>),
+    // FIXME:
+    // RegisterSPParser(
+    //     String, // txn type
+    //     CustomTransactionParser,
+    //     CustomFree,
+    //     Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     GetResponseMetadata(
         String, // response
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildAuthRuleRequest(
         DidValue, // submitter did
         String, // auth type
@@ -196,11 +197,11 @@ pub enum LedgerCommand {
         Option<String>, // old value
         Option<String>, // new value
         Constraint, // constraint
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildAuthRulesRequest(
         DidValue, // submitter did
         AuthRules, // auth rules
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildGetAuthRuleRequest(
         Option<DidValue>, // submitter did
         Option<String>, // auth type
@@ -208,32 +209,32 @@ pub enum LedgerCommand {
         Option<String>, // field
         Option<String>, // old value
         Option<String>, // new value
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildTxnAuthorAgreementRequest(
         DidValue, // submitter did
         Option<String>, // text
         String, // version
         Option<u64>,   // ratification date
         Option<u64>,   // retirement date
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildDisableAllTxnAuthorAgreementsRequest(
         DidValue, // submitter did
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildGetTxnAuthorAgreementRequest(
         Option<DidValue>, // submitter did
         Option<GetTxnAuthorAgreementData>, // data
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildAcceptanceMechanismRequests(
         DidValue, // submitter did
         AcceptanceMechanisms, // aml
         String, // version
         Option<String>, // aml context
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     BuildGetAcceptanceMechanismsRequest(
         Option<DidValue>, // submitter did
         Option<u64>, // timestamp
         Option<String>, // version
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     AppendTxnAuthorAgreementAcceptanceToRequest(
         String, // request json
         Option<String>, // text
@@ -241,11 +242,11 @@ pub enum LedgerCommand {
         Option<String>, // hash
         String, // acceptance mechanism type
         u64, // time of acceptance
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     AppendRequestEndorser(
         String, // request json
         DidValue, // endorser did
-        Box<dyn Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>),
 }
 
 pub struct LedgerCommandExecutor {
@@ -283,10 +284,11 @@ impl LedgerCommandExecutor {
                 debug!(target: "ledger_command_executor", "SubmitRequest command received");
                 cb(self.submit_action(handle, &request_json, nodes.as_ref().map(String::as_str), timeout).await);
             }
-            LedgerCommand::RegisterSPParser(txn_type, parser, free, cb) => {
-                debug!(target: "ledger_command_executor", "RegisterSPParser command received");
-                cb(self.register_sp_parser(&txn_type, parser, free));
-            }
+            // FIXME:
+            // LedgerCommand::RegisterSPParser(txn_type, parser, free, cb) => {
+            //     debug!(target: "ledger_command_executor", "RegisterSPParser command received");
+            //     cb(self.register_sp_parser(&txn_type, parser, free));
+            // }
             LedgerCommand::SignRequest(wallet_handle, submitter_did, request_json, cb) => {
                 debug!(target: "ledger_command_executor", "SignRequest command received");
                 cb(self.sign_request(wallet_handle, &submitter_did, &request_json).await);
@@ -471,14 +473,15 @@ impl LedgerCommandExecutor {
         };
     }
 
-    fn register_sp_parser(&self, txn_type: &str,
-                          parser: CustomTransactionParser, free: CustomFree) -> IndyResult<()> {
-        debug!("register_sp_parser >>> txn_type: {:?}, parser: {:?}, free: {:?}",
-               txn_type, parser, free);
+    // FIXME:
+    // fn register_sp_parser(&self, txn_type: &str,
+    //                       parser: CustomTransactionParser, free: CustomFree) -> IndyResult<()> {
+    //     debug!("register_sp_parser >>> txn_type: {:?}, parser: {:?}, free: {:?}",
+    //            txn_type, parser, free);
 
-        PoolService::register_sp_parser(txn_type, parser, free)
-            .map_err(IndyError::from)
-    }
+    //     PoolService::register_sp_parser(txn_type, parser, free)
+    //         .map_err(IndyError::from)
+    // }
 
     async fn sign_and_submit_request<'a>(&'a self,
                                          pool_handle: PoolHandle,

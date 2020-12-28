@@ -7,6 +7,7 @@ use indy_api_types::domain::wallet::Tags;
 use indy_api_types::errors::prelude::*;
 use indy_utils::next_search_handle;
 use indy_wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
+use futures::lock::Mutex;
 
 pub enum NonSecretsCommand {
     AddRecord(WalletHandle,
@@ -14,59 +15,59 @@ pub enum NonSecretsCommand {
               String, // id
               String, // value
               Option<Tags>, //tags
-              Box<dyn Fn(IndyResult<()>) + Send>),
+              Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     UpdateRecordValue(WalletHandle,
                       String, // type
                       String, // id
                       String, // value
-                      Box<dyn Fn(IndyResult<()>) + Send>),
+                      Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     UpdateRecordTags(WalletHandle,
                      String, // type
                      String, // id
                      Tags, //tags
-                     Box<dyn Fn(IndyResult<()>) + Send>),
+                     Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     AddRecordTags(WalletHandle,
                   String, // type
                   String, // id
                   Tags, //tags
-                  Box<dyn Fn(IndyResult<()>) + Send>),
+                  Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     DeleteRecordTags(WalletHandle,
                      String, // type
                      String, // id
                      String, //tag names json
-                     Box<dyn Fn(IndyResult<()>) + Send>),
+                     Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     DeleteRecord(WalletHandle,
                  String, // type
                  String, // id
-                 Box<dyn Fn(IndyResult<()>) + Send>),
+                 Box<dyn Fn(IndyResult<()>) + Send + Sync>),
     GetRecord(WalletHandle,
               String, // type
               String, // id
               String, // options json
-              Box<dyn Fn(IndyResult<String>) + Send>),
+              Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     OpenSearch(WalletHandle,
                String, // type
                String, // query json
                String, // options json
-               Box<dyn Fn(IndyResult<SearchHandle>) + Send>),
+               Box<dyn Fn(IndyResult<SearchHandle>) + Send + Sync>),
     FetchSearchNextRecords(WalletHandle,
                            SearchHandle, // wallet search handle
                            usize, // count
-                           Box<dyn Fn(IndyResult<String>) + Send>),
+                           Box<dyn Fn(IndyResult<String>) + Send + Sync>),
     CloseSearch(SearchHandle, // wallet search handle
-                Box<dyn Fn(IndyResult<()>) + Send>),
+                Box<dyn Fn(IndyResult<()>) + Send + Sync>),
 }
 
 pub struct NonSecretsCommandExecutor {
     wallet_service:Arc<WalletService>,
-    searches: RefCell<HashMap<SearchHandle, Box<WalletSearch>>>,
+    searches: Mutex<HashMap<SearchHandle, Box<WalletSearch>>>,
 }
 
 impl NonSecretsCommandExecutor {
     pub fn new(wallet_service:Arc<WalletService>) -> NonSecretsCommandExecutor {
         NonSecretsCommandExecutor {
             wallet_service,
-            searches: RefCell::new(HashMap::new()),
+            searches: Mutex::new(HashMap::new()),
         }
     }
 
@@ -110,7 +111,7 @@ impl NonSecretsCommandExecutor {
             }
             NonSecretsCommand::CloseSearch(wallet_search_handle, cb) => {
                 debug!(target: "non_secrets_command_executor", "CloseSearch command received");
-                cb(self.close_search(wallet_search_handle));
+                cb(self.close_search(wallet_search_handle).await);
             }
         };
     }
@@ -252,7 +253,7 @@ impl NonSecretsCommandExecutor {
 
         let search_handle = next_search_handle();
 
-        self.searches.borrow_mut().insert(search_handle, Box::new(search));
+        self.searches.lock().await.insert(search_handle, Box::new(search));
 
         trace!("open_search <<< res: {:?}", search_handle);
 
@@ -265,11 +266,13 @@ impl NonSecretsCommandExecutor {
                                        count: usize) -> IndyResult<String> {
         trace!("fetch_search_next_records >>> wallet_handle: {:?}, wallet_search_handle: {:?}, count: {:?}", wallet_handle, wallet_search_handle, count);
 
-        let mut searches = self.searches.borrow_mut();
+        let mut searches = self.searches.lock().await;
+        
         let search = searches.get_mut(&wallet_search_handle)
             .ok_or_else(||err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown WalletSearch handle: {:?}", wallet_search_handle)))?;
 
         let mut records: Vec<WalletRecord> = Vec::new();
+       
         for _ in 0..count {
             match search.fetch_next_record().await? {
                 Some(record) => records.push(record),
@@ -289,11 +292,11 @@ impl NonSecretsCommandExecutor {
         Ok(res)
     }
 
-    fn close_search(&self,
+    async fn close_search(&self,
                     wallet_search_handle: SearchHandle) -> IndyResult<()> {
         trace!("close_search >>> wallet_search_handle: {:?}", wallet_search_handle);
 
-        match self.searches.borrow_mut().remove(&wallet_search_handle) {
+        match self.searches.lock().await.remove(&wallet_search_handle) {
             Some(_) => Ok(()),
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Wallet Search Handle is invalid: {:?}", wallet_search_handle)))
         }?;

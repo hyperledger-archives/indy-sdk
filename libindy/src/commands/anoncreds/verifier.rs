@@ -18,9 +18,9 @@ pub enum VerifierCommand {
         CredentialDefinitions, // credential defs
         RevocationRegistryDefinitions, // rev reg defs
         RevocationRegistries, // rev reg entries
-        Box<dyn Fn(IndyResult<bool>) + Send>),
+        Box<dyn Fn(IndyResult<bool>) + Send + Sync>),
     GenerateNonce(
-        Box<dyn Fn(IndyResult<String>) + Send>)
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>)
 }
 
 pub struct VerifierCommandExecutor {
