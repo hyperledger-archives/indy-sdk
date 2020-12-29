@@ -92,6 +92,40 @@ pub fn create_and_open_default_wallet(wallet_name: &str) -> Result<(WalletHandle
     Ok((wallet_handle, config))
 }
 
+pub fn create_and_open_mysql_wallet(
+    wallet_name: &str,
+) -> Result<(WalletHandle, String, String), IndyError> {
+    let storage_config = json!({
+        "read_host": "127.0.0.1",
+        "write_host": "127.0.0.1",
+        "port": 3306,
+        "db_name": "indy"
+    });
+
+    let storage_creds = json!({
+        "user": "root",
+        "pass": "pass@word1"
+    });
+
+    let wallet_config = json!({
+        "id": format!("default-wallet_id-{}-{}", wallet_name, sequence::get_next_id()),
+        "storage_type": "mysql",
+        "storage_config": storage_config
+    })
+    .to_string();
+
+    let wallet_credentials = json!({
+        "key": "8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY",
+        "key_derivation_method": "RAW",
+        "storage_credentials": storage_creds
+    })
+    .to_string();
+
+    create_wallet(&wallet_config, &wallet_credentials)?;
+    let wallet_handle = open_wallet(&wallet_config, &wallet_credentials).unwrap();
+    Ok((wallet_handle, wallet_config, wallet_credentials))
+}
+
 pub fn create_and_open_plugged_wallet() -> Result<(WalletHandle, String), IndyError> {
     let config = json!({
             "id": format!("default-wallet_id-{}", sequence::get_next_id()),

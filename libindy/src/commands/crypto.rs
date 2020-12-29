@@ -18,76 +18,9 @@ pub const PROTECTED_HEADER_TYP: &str = "JWM/1.0";
 pub const PROTECTED_HEADER_ALG_AUTH: &str = "Authcrypt";
 pub const PROTECTED_HEADER_ALG_ANON: &str = "Anoncrypt";
 
-pub enum CryptoCommand {
-    CreateKey(
-        WalletHandle,
-        KeyInfo, // key info
-        Box<dyn Fn(IndyResult<String /*verkey*/>) + Send + Sync>,
-    ),
-    SetKeyMetadata(
-        WalletHandle,
-        String, // verkey
-        String, // metadata
-        Box<dyn Fn(IndyResult<()>) + Send + Sync>,
-    ),
-    GetKeyMetadata(
-        WalletHandle,
-        String, // verkey
-        Box<dyn Fn(IndyResult<String>) + Send + Sync>,
-    ),
-    CryptoSign(
-        WalletHandle,
-        String,  // my vk
-        Vec<u8>, // msg
-        Box<dyn Fn(IndyResult<Vec<u8>>) + Send + Sync>,
-    ),
-    CryptoVerify(
-        String,  // their vk
-        Vec<u8>, // msg
-        Vec<u8>, // signature
-        Box<dyn Fn(IndyResult<bool>) + Send + Sync>,
-    ),
-    AuthenticatedEncrypt(
-        WalletHandle,
-        String,  // my vk
-        String,  // their vk
-        Vec<u8>, // msg
-        Box<dyn Fn(IndyResult<Vec<u8>>) + Send + Sync>,
-    ),
-    AuthenticatedDecrypt(
-        WalletHandle,
-        String,  // my vk
-        Vec<u8>, // encrypted msg
-        Box<dyn Fn(IndyResult<(String, Vec<u8>)>) + Send + Sync>,
-    ),
-    AnonymousEncrypt(
-        String,  // their vk
-        Vec<u8>, // msg
-        Box<dyn Fn(IndyResult<Vec<u8>>) + Send + Sync>,
-    ),
-    AnonymousDecrypt(
-        WalletHandle,
-        String,  // my vk
-        Vec<u8>, // msg
-        Box<dyn Fn(IndyResult<Vec<u8>>) + Send + Sync>,
-    ),
-    PackMessage(
-        Vec<u8>, // plaintext message
-        Vec<String>,  // list of receiver's keys
-        Option<String>,  // senders verkey
-        WalletHandle,
-        Box<dyn Fn(IndyResult<Vec<u8>>) + Send + Sync>,
-    ),
-    UnpackMessage(
-        JWE,
-        WalletHandle,
-        Box<dyn Fn(IndyResult<Vec<u8>>) + Send + Sync>,
-    ),
-}
-
 pub struct CryptoCommandExecutor {
-    wallet_service:Arc<WalletService>,
-    crypto_service:Arc<CryptoService>,
+    wallet_service: Arc<WalletService>,
+    crypto_service: Arc<CryptoService>,
 }
 
 impl CryptoCommandExecutor {
@@ -101,56 +34,7 @@ impl CryptoCommandExecutor {
         }
     }
 
-    pub async fn execute(&self, command: CryptoCommand) {
-        match command {
-            CryptoCommand::CreateKey(wallet_handle, key_info, cb) => {
-                debug!("CreateKey command received");
-                cb(self.create_key(wallet_handle, &key_info).await);
-            }
-            CryptoCommand::SetKeyMetadata(wallet_handle, verkey, metadata, cb) => {
-                debug!("SetKeyMetadata command received");
-                cb(self.set_key_metadata(wallet_handle, &verkey, &metadata).await);
-            }
-            CryptoCommand::GetKeyMetadata(wallet_handle, verkey, cb) => {
-                debug!("GetKeyMetadata command received");
-                cb(self.get_key_metadata(wallet_handle, &verkey).await);
-            }
-            CryptoCommand::CryptoSign(wallet_handle, my_vk, msg, cb) => {
-                debug!("CryptoSign command received");
-                cb(self.crypto_sign(wallet_handle, &my_vk, &msg).await);
-            }
-            CryptoCommand::CryptoVerify(their_vk, msg, signature, cb) => {
-                debug!("CryptoVerify command received");
-                cb(self.crypto_verify(&their_vk, &msg, &signature).await);
-            }
-            CryptoCommand::AuthenticatedEncrypt(wallet_handle, my_vk, their_vk, msg, cb) => {
-                debug!("AuthenticatedEncrypt command received");
-                cb(self.authenticated_encrypt(wallet_handle, &my_vk, &their_vk, &msg).await);
-            }
-            CryptoCommand::AuthenticatedDecrypt(wallet_handle, my_vk, encrypted_msg, cb) => {
-                debug!("AuthenticatedDecrypt command received");
-                cb(self.authenticated_decrypt(wallet_handle, &my_vk, &encrypted_msg).await);
-            }
-            CryptoCommand::AnonymousEncrypt(their_vk, msg, cb) => {
-                debug!("AnonymousEncrypt command received");
-                cb(self.anonymous_encrypt(&their_vk, &msg).await);
-            }
-            CryptoCommand::AnonymousDecrypt(wallet_handle, my_vk, encrypted_msg, cb) => {
-                debug!("AnonymousDecrypt command received");
-                cb(self.anonymous_decrypt(wallet_handle, &my_vk, &encrypted_msg).await);
-            }
-            CryptoCommand::PackMessage(message, receivers, sender_vk, wallet_handle, cb) => {
-                debug!("PackMessage command received");
-                cb(self.pack_msg(message, receivers, sender_vk, wallet_handle).await);
-            }
-            CryptoCommand::UnpackMessage(jwe_json, wallet_handle, cb) => {
-                debug!("UnpackMessage command received");
-                cb(self.unpack_msg(jwe_json, wallet_handle).await);
-            }
-        };
-    }
-
-    async fn create_key(&self, wallet_handle: WalletHandle, key_info: &KeyInfo) -> IndyResult<String> {
+    pub async fn create_key(&self, wallet_handle: WalletHandle, key_info: &KeyInfo) -> IndyResult<String> {
         debug!(
             "create_key >>> wallet_handle: {:?}, key_info: {:?}",
             wallet_handle,
@@ -167,7 +51,7 @@ impl CryptoCommandExecutor {
         Ok(res)
     }
 
-    async fn crypto_sign(&self, wallet_handle: WalletHandle, my_vk: &str, msg: &[u8]) -> IndyResult<Vec<u8>> {
+    pub async fn crypto_sign(&self, wallet_handle: WalletHandle, my_vk: &str, msg: &[u8]) -> IndyResult<Vec<u8>> {
         trace!(
             "crypto_sign >>> wallet_handle: {:?}, sender_vk: {:?}, msg: {:?}",
             wallet_handle, my_vk, msg
@@ -188,7 +72,7 @@ impl CryptoCommandExecutor {
         Ok(res)
     }
 
-    async fn crypto_verify(&self,
+    pub async fn crypto_verify(&self,
                      their_vk: &str,
                      msg: &[u8],
                      signature: &[u8]) -> IndyResult<bool> {
@@ -207,7 +91,7 @@ impl CryptoCommandExecutor {
     }
 
     //TODO begin deprecation process this function. It will be replaced by pack
-    async fn authenticated_encrypt(
+    pub async fn authenticated_encrypt(
         &self,
         wallet_handle: WalletHandle,
         my_vk: &str,
@@ -238,7 +122,7 @@ impl CryptoCommandExecutor {
     }
 
     //TODO begin deprecation process this function. It will be replaced by unpack
-    async fn authenticated_decrypt(
+    pub async fn authenticated_decrypt(
         &self,
         wallet_handle: WalletHandle,
         my_vk: &str,
@@ -274,7 +158,7 @@ impl CryptoCommandExecutor {
         Ok(res)
     }
 
-    async fn anonymous_encrypt(&self,
+    pub async fn anonymous_encrypt(&self,
                          their_vk: &str,
                          msg: &[u8]) -> IndyResult<Vec<u8>> {
         trace!(
@@ -291,7 +175,7 @@ impl CryptoCommandExecutor {
         Ok(res)
     }
 
-    async fn anonymous_decrypt(&self,
+    pub async fn anonymous_decrypt(&self,
                                wallet_handle: WalletHandle,
                                my_vk: &str,
                                encrypted_msg: &[u8]) -> IndyResult<Vec<u8>> {
@@ -317,7 +201,7 @@ impl CryptoCommandExecutor {
         Ok(res)
     }
 
-    async fn set_key_metadata(&self, wallet_handle: WalletHandle, verkey: &str, metadata: &str) -> IndyResult<()> {
+    pub async fn set_key_metadata(&self, wallet_handle: WalletHandle, verkey: &str, metadata: &str) -> IndyResult<()> {
         debug!(
             "set_key_metadata >>> wallet_handle: {:?}, verkey: {:?}, metadata: {:?}",
             wallet_handle, verkey, metadata
@@ -337,7 +221,7 @@ impl CryptoCommandExecutor {
         Ok(())
     }
 
-    async fn get_key_metadata(&self, wallet_handle: WalletHandle, verkey: &str) -> IndyResult<String> {
+    pub async fn get_key_metadata(&self, wallet_handle: WalletHandle, verkey: &str) -> IndyResult<String> {
         debug!(
             "get_key_metadata >>> wallet_handle: {:?}, verkey: {:?}",
             wallet_handle, verkey

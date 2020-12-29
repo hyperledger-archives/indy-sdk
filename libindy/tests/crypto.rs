@@ -605,9 +605,9 @@ mod load {
 
     use crate::utils::{wallet, did};
 
-    const AGENT_CNT: usize = 10;
-    const DATA_SZ: usize = 10;
-    const OPERATIONS_CNT: usize = 10;
+    const AGENT_CNT: usize = 5;
+    const DATA_SZ: usize = 1000;
+    const OPERATIONS_CNT: usize = 1000;
 
     /**
      Environment variables can be used for tuning this test:
@@ -625,6 +625,7 @@ mod load {
 
         let mut agents = Vec::new();
         let mut os_rng = OsRng;
+       
         for i in 0..agent_cnt {
             let (wallet, wallet_config) = wallet::create_and_open_default_wallet(&format!("parallel_auth_encrypt-{}", i)).unwrap();
             let (_did, verkey) = did::create_and_store_my_did(wallet, None).unwrap();
@@ -640,6 +641,7 @@ mod load {
         for (wallet, verkey, data, wallet_config) in agents {
             let thread = thread::spawn(move || {
                 let mut time_diffs = Vec::new();
+              
                 for _ in 0..operations_cnt {
                     let time = SystemTime::now();
                     let _encrypted = crypto::auth_crypt(wallet, &verkey, &verkey, data.as_slice()).unwrap();
@@ -651,30 +653,114 @@ mod load {
                 wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
                 time_diffs
             });
+          
             results.push(thread);
         }
 
         let mut all_diffs = Vec::new();
+       
         for result in results {
             all_diffs.push(result.join().unwrap());
         }
+        
         let total_duration = SystemTime::now().duration_since(start_time).unwrap();
 
         let mut time_diff_max = Duration::from_secs(0);
         let mut time_sum_diff = Duration::from_secs(0);
+        
         for time_diffs in all_diffs {
-            warn!("{:?}", time_diffs);
+            println!("{:?}", time_diffs);
             time_diff_max = time_diffs.iter().fold(time_diff_max, |acc, cur| max(acc, *cur));
             time_sum_diff = time_diffs.iter().fold(time_sum_diff, |acc, cur| acc + *cur);
         }
 
-        warn!("================= Settings =================\n\
+        println!("================= Settings =================\n\
         Agent cnt:               \t{:?}\n\
         Operations per agent cnt:\t{:?}\n\
         Data size:               \t{:?}",
               agent_cnt, operations_cnt, data_sz);
 
-        warn!("================= Summary =================\n\
+        println!("================= Summary =================\n\
+        Max pending:   \t{:?}\n\
+        Total ops cnt: \t{:?}\n\
+        Sum pending:   \t{:?}\n\
+        Total duration:\t{:?}",
+              time_diff_max, agent_cnt * operations_cnt, time_sum_diff, total_duration);
+    }
+
+
+    /**
+     Environment variables can be used for tuning this test:
+     - AGENTS_CNT - count of parallel agents
+     - OPERATIONS_CNT - operations per agent (consequence in same agent)
+     - DATA_SZ - data size for encryption
+    */
+    #[test]
+    fn parallel_auth_encrypt_mysql() {
+        Setup::empty();
+
+        let agent_cnt = std::env::var("AGENTS_CNT").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(AGENT_CNT);
+        let data_sz = std::env::var("DATA_SZ").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(DATA_SZ);
+        let operations_cnt = std::env::var("OPERATIONS_CNT").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(OPERATIONS_CNT);
+
+        let mut agents = Vec::new();
+        let mut os_rng = OsRng;
+        
+        for i in 0..agent_cnt {
+            let (wallet, wallet_config, wallet_credentials) = wallet::create_and_open_mysql_wallet(&format!("parallel_auth_encrypt_mysql-{}", i)).unwrap();
+            let (_did, verkey) = did::create_and_store_my_did(wallet, None).unwrap();
+            let mut data = vec![0u8; data_sz];
+            os_rng.fill_bytes(&mut data.as_mut_slice());
+            agents.push((wallet, verkey, data, wallet_config, wallet_credentials));
+        }
+
+        let start_time = SystemTime::now();
+
+        let mut results = Vec::new();
+
+        for (wallet, verkey, data, wallet_config, wallet_credentials) in agents {
+            let thread = thread::spawn(move || {
+                let mut time_diffs = Vec::new();
+                
+                for _ in 0..operations_cnt {
+                    let time = SystemTime::now();
+                    let _encrypted = crypto::auth_crypt(wallet, &verkey, &verkey, data.as_slice()).unwrap();
+                    let time_diff = SystemTime::now().duration_since(time).unwrap();
+                    time_diffs.push(time_diff);
+                }
+
+                wallet::close_wallet(wallet).unwrap();
+                wallet::delete_wallet(&wallet_config, &wallet_credentials).unwrap();
+                time_diffs
+            });
+         
+            results.push(thread);
+        }
+
+        let mut all_diffs = Vec::new();
+       
+        for result in results {
+            all_diffs.push(result.join().unwrap());
+        }
+     
+        let total_duration = SystemTime::now().duration_since(start_time).unwrap();
+
+        let mut time_diff_max = Duration::from_secs(0);
+        let mut time_sum_diff = Duration::from_secs(0);
+      
+        for time_diffs in all_diffs {
+            println!("{:?}", time_diffs);
+            time_diff_max = time_diffs.iter().fold(time_diff_max, |acc, cur| max(acc, *cur));
+            time_sum_diff = time_diffs.iter().fold(time_sum_diff, |acc, cur| acc + *cur);
+        }
+
+        println!("================= Settings =================\n\
+        Agent cnt:               \t{:?}\n\
+        Operations per agent cnt:\t{:?}\n\
+        Data size:               \t{:?}",
+              agent_cnt, operations_cnt, data_sz);
+
+        println!("================= Summary =================\n\
         Max pending:   \t{:?}\n\
         Total ops cnt: \t{:?}\n\
         Sum pending:   \t{:?}\n\
