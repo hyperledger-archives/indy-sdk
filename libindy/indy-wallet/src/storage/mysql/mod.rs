@@ -823,7 +823,7 @@ impl WalletStorageType for MySqlStorageType {
             "#,
         )
         .bind(id)
-        .bind(metadata)
+        .bind(base64::encode(metadata))
         .execute(&mut tx)
         .await;
 
