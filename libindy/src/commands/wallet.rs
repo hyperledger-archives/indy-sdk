@@ -176,7 +176,7 @@ impl WalletCommandExecutor {
                 cb(self._import(config, credentials, import_config).await);
             }
             WalletCommand::GenerateKey(config, cb) => {
-                debug!(target: "wallet_command_executor", "DeriveKey command received");
+                debug!(target: "wallet_command_executor", "GenerateKey command received");
                 cb(self._generate_key(config));
             }
         };
