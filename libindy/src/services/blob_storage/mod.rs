@@ -5,7 +5,7 @@ use indy_api_types::errors::prelude::*;
 use indy_utils::sequence;
 
 use sha2::Sha256;
-use sha2::digest::{FixedOutput, Input};
+use sha2::digest::{Update, FixedOutput};
 
 mod default_writer;
 mod default_reader;
@@ -95,7 +95,7 @@ impl BlobStorageService {
         let &mut (ref mut writer, ref mut hasher) = writers
             .get_mut(&handle).ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage handle"))?; // FIXME: Review error kind
 
-        hasher.input(bytes);
+        hasher.update(bytes);
         writer.append(bytes)
     }
 
@@ -104,7 +104,7 @@ impl BlobStorageService {
         let (mut writer, hasher) = writers
             .remove(&handle).ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage handle"))?; // FIXME: Review error kind
 
-        let hash = hasher.fixed_result().to_vec();
+        let hash = hasher.finalize_fixed().to_vec();
 
         writer.finalize(hash.as_slice())
             .map(|location| (location, hash))
