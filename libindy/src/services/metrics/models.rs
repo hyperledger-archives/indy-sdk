@@ -36,13 +36,13 @@ impl CommandCounters {
 
     fn add_buckets(&mut self, duration: u128) {
         for (mut le_index, le_value) in LIST_LE.iter().enumerate() {
-            let mut index: f64 = 0.0;
+            let index: f64;
 
             match le_value.parse::<f64>() {
                 Ok(le_value) => {
                     index = le_value;
                 },
-                Err(err) => {
+                Err(_err) => {
                     index = duration as f64;
                     le_index = LIST_LE.len()-1;
                 }
