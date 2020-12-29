@@ -397,7 +397,7 @@ impl DidCommandExecutor {
                                               wallet_handle,
                                               did.clone(),
                                               cb),
-                                           cb);
+                                           cb, self.metrics_service.clone());
 
         let res = their_did.verkey;
 

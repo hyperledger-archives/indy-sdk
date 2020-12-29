@@ -14,7 +14,7 @@ const COMMANDS_COUNT: usize = MetricsService::commands_count();
 pub struct MetricsService {
     queued_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
     executed_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
-    pub callback_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
+    callback_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
 }
 
 impl MetricsService {
@@ -60,6 +60,7 @@ impl MetricsService {
         let mut commands_count = Vec::new();
         let mut commands_duration_ms = Vec::new();
         let mut commands_duration_ms_bucket = Vec::new();
+        let mut commands_callback = Vec::new();
 
         for index in (0..MetricsService::commands_count()).rev() {
             let command_name = MetricsService::cmd_name(index);
@@ -71,6 +72,10 @@ impl MetricsService {
                 command_name.to_owned(),
                 String::from("queued"),
             );
+            let tags_callback = MetricsService::get_command_tags(
+                command.clone(),
+                String::from("callback"),
+            );
 
             commands_count.push(self.get_metric_json(self.executed_counters.borrow()[index].count as usize, tags_executed.clone())?);
             commands_count.push(self.get_metric_json(self.queued_counters.borrow()[index].count as usize, tags_queued.clone())?);
@@ -78,12 +83,22 @@ impl MetricsService {
             commands_duration_ms.push(self.get_metric_json(self.executed_counters.borrow()[index].duration_ms_sum as usize, tags_executed.clone())?);
             commands_duration_ms.push(self.get_metric_json(self.queued_counters.borrow()[index].duration_ms_sum as usize,tags_queued.clone())?);
 
+            commands_callback.push(
+                serde_json::to_value(MetricsValue::new(
+                    self.callback_counters.borrow()[index].duration_ms_sum as usize,
+                    tags_executed.clone(),
+                ))
+                    .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
+            );
+
             for index_bucket in (0..self.executed_counters.borrow()[index].duration_ms_bucket.len()).rev() {
                 let executed_bucket = self.executed_counters.borrow()[index].duration_ms_bucket[index_bucket];
                 let queued_bucket = self.queued_counters.borrow()[index].duration_ms_bucket[index_bucket];
+                let callback_bucket = self.callback_counters.borrow()[index as usize].duration_ms_bucket[index_bucket];
 
                 commands_duration_ms_bucket.push(self.get_metric_json(executed_bucket as usize, tags_executed.clone())?);
                 commands_duration_ms_bucket.push(self.get_metric_json(queued_bucket as usize, tags_queued.clone())?);
+                commands_callback.push(self.get_metric_json(callback_bucket as usize, tags_queued.clone())?);
             }
         }
 
@@ -100,6 +115,11 @@ impl MetricsService {
         metrics_map.insert(
             String::from("commands_duration_ms_bucket"),
             serde_json::to_value(commands_duration_ms_bucket)
+                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
+        );
+        metrics_map.insert(
+            String::from("commands_callback"),
+            serde_json::to_value(commands_callback)
                 .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
         );
 
@@ -285,5 +305,147 @@ mod test {
 
     fn generate_json(command: String, stage: String, value: usize) -> Value {
         json!({"tags":{"command": command, "stage": stage} ,"value": value})
+    #[test]
+    fn test_append_command_count_metrics() {
+        let metrics_service = MetricsService::new();
+        let mut metrics_map = serde_json::Map::new();
+
+        metrics_service.append_command_metrics(&mut metrics_map);
+
+        assert!(metrics_map.contains_key("commands_count"));
+        assert_eq!(
+            metrics_map
+                .get("commands_count")
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .len(),
+            COMMANDS_COUNT * 2
+        );
+
+        let commands_count = metrics_map
+            .get("commands_count")
+            .unwrap()
+            .as_array()
+            .unwrap();
+
+        let expected_commands_count = [
+            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"queued"},"value":0}),
+            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
+            json!({"tags":{"command": "non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
+        ];
+
+        for command in &expected_commands_count {
+            assert!(commands_count.contains(&command));
+        }
+    }
+
+    #[test]
+    fn test_append_command_duration_ms_metrics() {
+        let metrics_service = MetricsService::new();
+        let mut metrics_map = serde_json::Map::new();
+
+        metrics_service.append_command_metrics(&mut metrics_map);
+
+        assert!(metrics_map.contains_key("commands_duration_ms"));
+        assert_eq!(
+            metrics_map
+                .get("commands_duration_ms")
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .len(),
+            COMMANDS_COUNT * 2
+        );
+
+        let commands_duration_ms = metrics_map
+            .get("commands_duration_ms")
+            .unwrap()
+            .as_array()
+            .unwrap();
+
+        let expected_commands_duration_ms = [
+            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"queued"},"value":0}),
+            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
+        ];
+
+        for command in &expected_commands_duration_ms {
+            assert!(commands_duration_ms.contains(&command));
+        }
+    }
+
+    #[test]
+    fn test_append_command_duration_ms_bucket_metrics() {
+        let metrics_service = MetricsService::new();
+        let mut metrics_map = serde_json::Map::new();
+
+        metrics_service.append_command_metrics(&mut metrics_map);
+
+        assert!(metrics_map.contains_key("commands_duration_ms_bucket"));
+        assert_eq!(
+            metrics_map
+                .get("commands_duration_ms_bucket")
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .len(),
+            COMMANDS_COUNT * 32
+        );
+
+        let commands_duration_ms_bucket = metrics_map
+            .get("commands_duration_ms_bucket")
+            .unwrap()
+            .as_array()
+            .unwrap();
+
+        let expected_commands_duration_ms_bucket = [
+            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"queued"},"value":0}),
+            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
+        ];
+
+        for command in &expected_commands_duration_ms_bucket {
+            assert!(commands_duration_ms_bucket.contains(&command));
+        }
+    }
+
+    #[test]
+    fn test_append_command_callback_metrics() {
+        let metrics_service = MetricsService::new();
+        let mut metrics_map = serde_json::Map::new();
+
+        metrics_service.append_command_metrics(&mut metrics_map);
+
+        assert!(metrics_map.contains_key("commands_callback"));
+        assert_eq!(
+            metrics_map
+                .get("commands_callback")
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .len(),
+            COMMANDS_COUNT * 2
+        );
+
+        let commands_callback = metrics_map
+            .get("commands_callback")
+            .unwrap()
+            .as_array()
+            .unwrap();
+
+        let expected_commands_callback = [
+            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"queued"},"value":0}),
+            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
+            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
+        ];
+
+        for command in &expected_commands_callback {
+            assert!(commands_callback.contains(&command));
+        }
     }
 }

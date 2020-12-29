@@ -44,9 +44,9 @@ pub enum PoolCommand {
 pub struct PoolCommandExecutor {
     pool_service: Rc<PoolService>,
     metrics_service: Rc<MetricsService>,
-    close_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<()>)>>>,
-    refresh_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<()>)>>>,
-    open_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<PoolHandle>)>>>,
+    close_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<()>, Rc<MetricsService>)>>>,
+    refresh_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<()>, Rc<MetricsService>)>>>,
+    open_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<PoolHandle>, Rc<MetricsService>)>>>,
 }
 
 impl PoolCommandExecutor {
@@ -80,7 +80,7 @@ impl PoolCommandExecutor {
                     Ok(mut cbs) => {
                         match cbs.remove(&handle) {
                             Some(cb) => {
-                                cb(result.and_then(|_| self.pool_service.add_open_pool(pool_id)))
+                                cb(result.and_then(|_| self.pool_service.add_open_pool(pool_id)), self.metrics_service.clone())
                             }
                             None => {
                                 error!("Can't process PoolCommand::OpenAck for handle {:?} with result {:?} - appropriate callback not found!", handle, result);
@@ -103,7 +103,7 @@ impl PoolCommandExecutor {
                 match self.close_callbacks.try_borrow_mut() {
                     Ok(mut cbs) => {
                         match cbs.remove(&handle) {
-                            Some(cb) => cb(result.map_err(IndyError::from)),
+                            Some(cb) => cb(result.map_err(IndyError::from), self.metrics_service.clone()),
                             None => {
                                 error!("Can't process PoolCommand::CloseAck for handle {:?} with result {:?} - appropriate callback not found!", handle, result);
                             }
@@ -121,7 +121,7 @@ impl PoolCommandExecutor {
                 match self.refresh_callbacks.try_borrow_mut() {
                     Ok(mut cbs) => {
                         match cbs.remove(&handle) {
-                            Some(cb) => cb(result),
+                            Some(cb) => cb(result, self.metrics_service.clone()),
                             None => {
                                 error!("Can't process PoolCommand::RefreshAck for handle {:?} with result {:?} - appropriate callback not found!",
                                        handle, result);

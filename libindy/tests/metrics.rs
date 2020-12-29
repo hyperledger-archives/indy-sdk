@@ -165,12 +165,6 @@ mod collect {
         json!({"id": name}).to_string()
     }
 
-    #[test]
-    fn collect_metrics_callback() {
-        let setup = Setup::empty();
-        let config = config(&setup.name);
-        wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
-        anoncreds::issuer_rotate_credential_def_start(WalletHandle { 0: 0 }, "qwerty", Some(config.as_str()));
-    }
+
 
 }
