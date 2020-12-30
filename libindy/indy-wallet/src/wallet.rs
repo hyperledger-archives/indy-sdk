@@ -365,9 +365,8 @@ impl Wallet {
         Ok(wallet_iterator)
     }
 
-    pub async fn close(&mut self) -> IndyResult<()> {
-        self.storage.close().await?;
-        Ok(())
+    fn close(&mut self) -> IndyResult<()> {
+        self.storage.close()
     }
 
     pub async fn get_all(&self) -> IndyResult<WalletIterator> {
@@ -377,6 +376,12 @@ impl Wallet {
 
     pub fn get_id<'a>(&'a self) -> &'a str {
         &self.id
+    }
+}
+
+impl Drop for Wallet {
+    fn drop(&mut self) {
+        self.close().unwrap(); //FIXME pass the error to the API cb
     }
 }
 

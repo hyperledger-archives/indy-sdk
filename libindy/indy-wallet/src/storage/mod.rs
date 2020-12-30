@@ -86,7 +86,7 @@ pub trait WalletStorage: Send + Sync {
         query: &language::Operator,
         options: Option<&str>,
     ) -> Result<Box<dyn StorageIterator>, IndyError>;
-    async fn close(&mut self) -> Result<(), IndyError>;
+    fn close(&mut self) -> Result<(), IndyError>;
 }
 
 #[async_trait]

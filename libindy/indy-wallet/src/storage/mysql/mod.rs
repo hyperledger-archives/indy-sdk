@@ -700,7 +700,7 @@ impl WalletStorage for MySqlStorage {
         Ok(Box::new(MySQLStorageIterator::new(records, total_count)?))
     }
 
-    async fn close(&mut self) -> IndyResult<()> {
+    fn close(&mut self) -> IndyResult<()> {
         Ok(())
     }
 }
