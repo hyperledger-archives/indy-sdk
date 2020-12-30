@@ -148,7 +148,7 @@ pub  extern fn indy_list_pairwise(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Pairwise(PairwiseCommand::ListPairwise(
             wallet_handle,
-            boxed_callback_string!("indy_list_pairwise", cb, command_handle)
+            boxed_callback_string!("indy_list_pairwise", cb, command_handle, CommandMetric::PairwiseCommandListPairwise)
         )));
 
     let res = prepare_result!(result);
@@ -190,7 +190,7 @@ pub  extern fn indy_get_pairwise(command_handle: CommandHandle,
         .send(Command::Pairwise(PairwiseCommand::GetPairwise(
             wallet_handle,
             their_did,
-            boxed_callback_string!("indy_get_pairwise", cb, command_handle)
+            boxed_callback_string!("indy_get_pairwise", cb, command_handle, CommandMetric::PairwiseCommandGetPairwise)
         )));
 
     let res = prepare_result!(result);

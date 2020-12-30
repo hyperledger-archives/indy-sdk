@@ -383,7 +383,7 @@ pub  extern fn indy_get_wallet_record(command_handle: CommandHandle,
                 type_,
                 id,
                 options_json,
-                boxed_callback_string!("indy_get_wallet_record", cb, command_handle)
+                boxed_callback_string!("indy_get_wallet_record", cb, command_handle, CommandMetric::NonSecretsCommandGetRecord)
             )));
 
     let res = prepare_result!(result);
@@ -502,7 +502,7 @@ pub  extern fn indy_fetch_wallet_search_next_records(command_handle: CommandHand
                 wallet_handle,
                 wallet_search_handle,
                 count,
-                boxed_callback_string!("indy_fetch_wallet_search_next_records", cb, command_handle)
+                boxed_callback_string!("indy_fetch_wallet_search_next_records", cb, command_handle, CommandMetric::NonSecretsCommandFetchSearchNextRecords)
             )));
 
     let res = prepare_result!(result);

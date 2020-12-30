@@ -60,7 +60,7 @@ pub extern fn indy_get_cred_def(command_handle: CommandHandle,
             submitter_did,
             id,
             options_json,
-            boxed_callback_string!("indy_get_cred_def", cb, command_handle)
+            boxed_callback_string!("indy_get_cred_def", cb, command_handle, CommandMetric::CacheCommandGetCredDef)
         )));
 
     let res = prepare_result!(result);
@@ -118,7 +118,7 @@ pub extern fn indy_get_schema(command_handle: CommandHandle,
             submitter_did,
             id,
             options_json,
-            boxed_callback_string!("indy_get_schema", cb, command_handle)
+            boxed_callback_string!("indy_get_schema", cb, command_handle, CommandMetric::CacheCommandGetSchema)
         )));
 
     let res = prepare_result!(result);

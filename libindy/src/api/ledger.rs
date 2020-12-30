@@ -68,7 +68,7 @@ pub extern fn indy_sign_and_submit_request(command_handle: CommandHandle,
             wallet_handle,
             submitter_did,
             request_json,
-            boxed_callback_string!("indy_sign_and_submit_request", cb, command_handle)
+            boxed_callback_string!("indy_sign_and_submit_request", cb, command_handle, CommandMetric::LedgerCommandSignAndSubmitRequest)
         )));
 
     let res = prepare_result!(result);
@@ -112,7 +112,7 @@ pub extern fn indy_submit_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::SubmitRequest(
             pool_handle,
             request_json,
-            boxed_callback_string!("indy_submit_request", cb, command_handle)
+            boxed_callback_string!("indy_submit_request", cb, command_handle, CommandMetric::LedgerCommandSubmitRequest)
         )));
 
     let res = prepare_result!(result);
@@ -172,7 +172,7 @@ pub extern fn indy_submit_action(command_handle: CommandHandle,
                 request_json,
                 nodes,
                 timeout,
-                boxed_callback_string!("indy_submit_action", cb, command_handle)
+                boxed_callback_string!("indy_submit_action", cb, command_handle, CommandMetric::LedgerCommandSubmitAction)
             )));
 
     let res = prepare_result!(result);
@@ -223,7 +223,7 @@ pub extern fn indy_sign_request(command_handle: CommandHandle,
             wallet_handle,
             submitter_did,
             request_json,
-            boxed_callback_string!("indy_sign_request", cb, command_handle)
+            boxed_callback_string!("indy_sign_request", cb, command_handle, CommandMetric::LedgerCommandSignRequest)
         )));
 
     let res = prepare_result!(result);
@@ -273,7 +273,7 @@ pub extern fn indy_multi_sign_request(command_handle: CommandHandle,
             wallet_handle,
             submitter_did,
             request_json,
-            boxed_callback_string!("indy_multi_sign_request", cb, command_handle)
+            boxed_callback_string!("indy_multi_sign_request", cb, command_handle, CommandMetric::LedgerCommandMultiSignRequest)
         )));
 
     let res = prepare_result!(result);
@@ -316,7 +316,7 @@ pub extern fn indy_build_get_ddo_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildGetDdoRequest(
             submitter_did,
             target_did,
-            boxed_callback_string!("indy_build_get_ddo_request", cb, command_handle)
+            boxed_callback_string!("indy_build_get_ddo_request", cb, command_handle, CommandMetric::LedgerCommandBuildGetDdoRequest)
         )));
 
     let res = prepare_result!(result);
@@ -381,7 +381,7 @@ pub extern fn indy_build_nym_request(command_handle: CommandHandle,
             verkey,
             alias,
             role,
-            boxed_callback_string!("indy_build_nym_request", cb, command_handle)
+            boxed_callback_string!("indy_build_nym_request", cb, command_handle, CommandMetric::LedgerCommandBuildNymRequest)
         )));
 
     let res = prepare_result!(result);
@@ -423,7 +423,7 @@ pub extern fn indy_build_get_nym_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildGetNymRequest(
             submitter_did,
             target_did,
-            boxed_callback_string!("indy_build_get_nym_request", cb, command_handle)
+            boxed_callback_string!("indy_build_get_nym_request", cb, command_handle, CommandMetric::LedgerCommandBuildGetNymRequest)
         )));
 
     let res = prepare_result!(result);
@@ -473,7 +473,7 @@ pub extern fn indy_parse_get_nym_response(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::ParseGetNymResponse(
             get_nym_response,
-            boxed_callback_string!("indy_parse_get_nym_response", cb, command_handle)
+            boxed_callback_string!("indy_parse_get_nym_response", cb, command_handle, CommandMetric::LedgerCommandParseGetNymResponse)
         )));
 
     let res = prepare_result!(result);
@@ -536,7 +536,7 @@ pub extern fn indy_build_attrib_request(command_handle: CommandHandle,
             hash,
             raw,
             enc,
-            boxed_callback_string!("indy_build_attrib_request", cb, command_handle)
+            boxed_callback_string!("indy_build_attrib_request", cb, command_handle, CommandMetric::LedgerCommandBuildAttribRequest)
         )));
 
     let res = prepare_result!(result);
@@ -598,7 +598,7 @@ pub extern fn indy_build_get_attrib_request(command_handle: CommandHandle,
             raw,
             hash,
             enc,
-            boxed_callback_string!("indy_build_get_attrib_request", cb, command_handle)
+            boxed_callback_string!("indy_build_get_attrib_request", cb, command_handle, CommandMetric::LedgerCommandBuildGetAttribRequest)
         )));
 
     let res = prepare_result!(result);
@@ -648,7 +648,7 @@ pub extern fn indy_build_schema_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildSchemaRequest(
             submitter_did,
             data,
-            boxed_callback_string!("indy_build_schema_request", cb, command_handle)
+            boxed_callback_string!("indy_build_schema_request", cb, command_handle, CommandMetric::LedgerCommandBuildSchemaRequest)
         )));
 
     let res = prepare_result!(result);
@@ -690,7 +690,7 @@ pub extern fn indy_build_get_schema_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildGetSchemaRequest(
             submitter_did,
             id,
-            boxed_callback_string!("indy_build_get_schema_request", cb, command_handle)
+            boxed_callback_string!("indy_build_get_schema_request", cb, command_handle, CommandMetric::LedgerCommandBuildGetSchemaRequest)
         )));
 
     let res = prepare_result!(result);
@@ -801,7 +801,7 @@ pub extern fn indy_build_cred_def_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildCredDefRequest(
             submitter_did,
             data,
-            boxed_callback_string!("indy_build_cred_def_request", cb, command_handle)
+            boxed_callback_string!("indy_build_cred_def_request", cb, command_handle, CommandMetric::LedgerCommandBuildCredDefRequest)
         )));
 
     let res = prepare_result!(result);
@@ -844,7 +844,7 @@ pub extern fn indy_build_get_cred_def_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildGetCredDefRequest(
             submitter_did,
             id,
-            boxed_callback_string!("indy_build_get_cred_def_request", cb, command_handle)
+            boxed_callback_string!("indy_build_get_cred_def_request", cb, command_handle, CommandMetric::LedgerCommandBuildGetCredDefRequest)
         )));
 
     let res = prepare_result!(result);
@@ -960,7 +960,7 @@ pub extern fn indy_build_node_request(command_handle: CommandHandle,
             submitter_did,
             target_did,
             data,
-            boxed_callback_string!("indy_build_node_request", cb, command_handle)
+            boxed_callback_string!("indy_build_node_request", cb, command_handle, CommandMetric::LedgerCommandBuildNodeRequest)
         )));
 
     let res = prepare_result!(result);
@@ -993,7 +993,7 @@ pub extern fn indy_build_get_validator_info_request(command_handle: CommandHandl
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetValidatorInfoRequest(
             submitter_did,
-            boxed_callback_string!("indy_build_get_validator_info_request", cb, command_handle)
+            boxed_callback_string!("indy_build_get_validator_info_request", cb, command_handle, CommandMetric::LedgerCommandBuildGetValidatorInfoRequest)
         )));
 
     prepare_result!(result)
@@ -1038,7 +1038,7 @@ pub extern fn indy_build_get_txn_request(command_handle: CommandHandle,
             submitter_did,
             ledger_type,
             seq_no,
-            boxed_callback_string!("indy_build_get_txn_request", cb, command_handle)
+            boxed_callback_string!("indy_build_get_txn_request", cb, command_handle, CommandMetric::LedgerCommandBuildGetTxnRequest)
         )));
 
     let res = prepare_result!(result);
@@ -1085,7 +1085,7 @@ pub extern fn indy_build_pool_config_request(command_handle: CommandHandle,
             submitter_did,
             writes,
             force,
-            boxed_callback_string!("indy_build_pool_config_request", cb, command_handle)
+            boxed_callback_string!("indy_build_pool_config_request", cb, command_handle, CommandMetric::LedgerCommandBuildPoolConfigRequest)
         )));
 
     let res = prepare_result!(result);
@@ -1136,7 +1136,7 @@ pub extern fn indy_build_pool_restart_request(command_handle: CommandHandle,
                 submitter_did,
                 action,
                 datetime,
-                boxed_callback_string!("indy_build_pool_restart_request", cb, command_handle)
+                boxed_callback_string!("indy_build_pool_restart_request", cb, command_handle, CommandMetric::LedgerCommandBuildPoolRestartRequest )
             )));
 
     let res = prepare_result!(result);
@@ -1231,7 +1231,7 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: CommandHandle,
                 reinstall,
                 force,
                 package,
-                boxed_callback_string!("indy_build_pool_upgrade_request", cb, command_handle)
+                boxed_callback_string!("indy_build_pool_upgrade_request", cb, command_handle, CommandMetric::LedgerCommandBuildPoolUpgradeRequest)
             )));
 
     let res = prepare_result!(result);
@@ -1289,7 +1289,7 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildRevocRegDefRequest(
             submitter_did,
             data,
-            boxed_callback_string!("indy_build_revoc_reg_def_request", cb, command_handle)
+            boxed_callback_string!("indy_build_revoc_reg_def_request", cb, command_handle, CommandMetric::LedgerCommandBuildRevocRegDefRequest)
         )));
 
     let res = prepare_result!(result);
@@ -1332,7 +1332,7 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: CommandHandle
         .send(Command::Ledger(LedgerCommand::BuildGetRevocRegDefRequest(
             submitter_did,
             id,
-            boxed_callback_string!("indy_build_get_revoc_reg_def_request", cb, command_handle)
+            boxed_callback_string!("indy_build_get_revoc_reg_def_request", cb, command_handle, CommandMetric::LedgerCommandBuildGetRevocRegDefRequest)
         )));
 
     let res = prepare_result!(result);
@@ -1461,7 +1461,7 @@ pub extern fn indy_build_revoc_reg_entry_request(command_handle: CommandHandle,
             revoc_reg_def_id,
             rev_def_type,
             value,
-            boxed_callback_string!("indy_build_revoc_reg_entry_request", cb, command_handle)
+            boxed_callback_string!("indy_build_revoc_reg_entry_request", cb, command_handle, CommandMetric::LedgerCommandBuildRevocRegEntryRequest)
         )));
 
     let res = prepare_result!(result);
@@ -1507,7 +1507,7 @@ pub extern fn indy_build_get_revoc_reg_request(command_handle: CommandHandle,
             submitter_did,
             revoc_reg_def_id,
             timestamp,
-            boxed_callback_string!("indy_build_get_revoc_reg_request", cb, command_handle)
+            boxed_callback_string!("indy_build_get_revoc_reg_request", cb, command_handle, CommandMetric::LedgerCommandBuildGetRevocRegRequest)
         )));
 
     let res = prepare_result!(result);
@@ -1619,7 +1619,7 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: CommandHand
             revoc_reg_def_id,
             from,
             to,
-            boxed_callback_string!("indy_build_get_revoc_reg_request", cb, command_handle)
+            boxed_callback_string!("indy_build_get_revoc_reg_request", cb, command_handle, CommandMetric::LedgerCommandBuildGetRevocRegDeltaRequest)
         )));
 
     let res = prepare_result!(result);
@@ -1810,7 +1810,7 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::GetResponseMetadata(
             response,
-            boxed_callback_string!("indy_get_response_metadata", cb, command_handle)
+            boxed_callback_string!("indy_get_response_metadata", cb, command_handle, CommandMetric::LedgerCommandGetResponseMetadata)
         )));
 
     let res = prepare_result!(result);
@@ -1897,7 +1897,7 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
             old_value,
             new_value,
             constraint,
-            boxed_callback_string!("indy_build_auth_rule_request", cb, command_handle)
+            boxed_callback_string!("indy_build_auth_rule_request", cb, command_handle, CommandMetric::LedgerCommandBuildAuthRuleRequest)
         )));
 
     let res = prepare_result!(result);
@@ -1959,7 +1959,7 @@ pub extern fn indy_build_auth_rules_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildAuthRulesRequest(
             submitter_did,
             rules,
-            boxed_callback_string!("indy_build_auth_rules_request", cb, command_handle)
+            boxed_callback_string!("indy_build_auth_rules_request", cb, command_handle, CommandMetric::LedgerCommandBuildAuthRulesRequest)
         )));
 
     let res = prepare_result!(result);
@@ -2026,7 +2026,7 @@ pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
             field,
             old_value,
             new_value,
-            boxed_callback_string!("indy_build_get_auth_rule_request", cb, command_handle)
+            boxed_callback_string!("indy_build_get_auth_rule_request", cb, command_handle, CommandMetric::LedgerCommandBuildGetAuthRuleRequest)
         )));
 
     let res = prepare_result!(result);
@@ -2104,7 +2104,7 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
                 version,
                 ratification_ts,
                 retirement_ts,
-                boxed_callback_string!("indy_build_txn_author_agreement_request", cb, command_handle)
+                boxed_callback_string!("indy_build_txn_author_agreement_request", cb, command_handle, CommandMetric::LedgerCommandBuildTxnAuthorAgreementRequest)
             )));
 
     let res = prepare_result!(result);
@@ -2147,7 +2147,7 @@ pub extern fn indy_build_disable_all_txn_author_agreements_request(command_handl
         .send(Command::Ledger(
             LedgerCommand::BuildDisableAllTxnAuthorAgreementsRequest(
                 submitter_did,
-                boxed_callback_string!("indy_build_disable_all_txn_author_agreements_request", cb, command_handle)
+                boxed_callback_string!("indy_build_disable_all_txn_author_agreements_request", cb, command_handle, CommandMetric::LedgerCommandBuildDisableAllTxnAuthorAgreementsRequest)
             )));
 
     let res = prepare_result!(result);
@@ -2200,7 +2200,7 @@ pub extern fn indy_build_get_txn_author_agreement_request(command_handle: Comman
             LedgerCommand::BuildGetTxnAuthorAgreementRequest(
                 submitter_did,
                 data,
-                boxed_callback_string!("indy_build_get_txn_author_agreement_request", cb, command_handle)
+                boxed_callback_string!("indy_build_get_txn_author_agreement_request", cb, command_handle, CommandMetric::LedgerCommandBuildGetTxnAuthorAgreementRequest)
             )));
 
     let res = prepare_result!(result);
@@ -2262,7 +2262,7 @@ pub extern fn indy_build_acceptance_mechanisms_request(command_handle: CommandHa
                 aml,
                 version,
                 aml_context,
-                boxed_callback_string!("indy_build_acceptance_mechanisms_request", cb, command_handle)
+                boxed_callback_string!("indy_build_acceptance_mechanisms_request", cb, command_handle, CommandMetric::LedgerCommandBuildAcceptanceMechanismRequests)
             )));
 
     let res = prepare_result!(result);
@@ -2315,7 +2315,7 @@ pub extern fn indy_build_get_acceptance_mechanisms_request(command_handle: Comma
                 submitter_did,
                 timestamp,
                 version,
-                boxed_callback_string!("indy_build_get_acceptance_mechanisms_request", cb, command_handle)
+                boxed_callback_string!("indy_build_get_acceptance_mechanisms_request", cb, command_handle, CommandMetric::LedgerCommandBuildGetAcceptanceMechanismsRequest)
             )));
 
     let res = prepare_result!(result);
@@ -2387,7 +2387,7 @@ pub extern fn indy_append_txn_author_agreement_acceptance_to_request(command_han
                 taa_digest,
                 mechanism,
                 time,
-                boxed_callback_string!("indy_append_txn_author_agreement_acceptance_to_request", cb, command_handle)
+                boxed_callback_string!("indy_append_txn_author_agreement_acceptance_to_request", cb, command_handle, CommandMetric::LedgerCommandAppendTxnAuthorAgreementAcceptanceToRequest)
             )));
 
     let res = prepare_result!(result);
@@ -2437,7 +2437,7 @@ pub extern fn indy_append_request_endorser(command_handle: CommandHandle,
             LedgerCommand::AppendRequestEndorser(
                 request_json,
                 endorser_did,
-                boxed_callback_string!("indy_append_request_endorser", cb, command_handle)
+                boxed_callback_string!("indy_append_request_endorser", cb, command_handle, CommandMetric::LedgerCommandAppendRequestEndorser)
             )));
 
     let res = prepare_result!(result);

@@ -499,7 +499,7 @@ pub extern fn indy_create_payment_address(command_handle: CommandHandle,
                     wallet_handle,
                     payment_method,
                     config,
-                    boxed_callback_string!("indy_create_payment_address", cb, command_handle)
+                    boxed_callback_string!("indy_create_payment_address", cb, command_handle, CommandMetric::PaymentsCommandCreateAddress)
                 )
             ));
 
@@ -535,7 +535,7 @@ pub extern fn indy_list_payment_addresses(command_handle: CommandHandle,
             Command::Payments(
                 PaymentsCommand::ListAddresses(
                     wallet_handle,
-                    boxed_callback_string!("indy_list_payment_address", cb, command_handle)
+                    boxed_callback_string!("indy_list_payment_address", cb, command_handle, CommandMetric::PaymentsCommandListAddresses)
                 )
             )
         );
@@ -664,7 +664,7 @@ pub extern fn indy_parse_response_with_fees(command_handle: CommandHandle,
                 PaymentsCommand::ParseResponseWithFees(
                     payment_method,
                     resp_json,
-                    boxed_callback_string!("indy_parse_response_with_fees", cb, command_handle))));
+                    boxed_callback_string!("indy_parse_response_with_fees", cb, command_handle, CommandMetric::PaymentsCommandParseResponseWithFees))));
     let res = prepare_result!(result);
 
     trace!("indy_parse_response_with_fees: <<< res: {:?}", res);
@@ -889,7 +889,7 @@ pub extern fn indy_parse_payment_response(command_handle: CommandHandle,
                 PaymentsCommand::ParsePaymentResponse(
                     payment_method,
                     resp_json,
-                    boxed_callback_string!("indy_parse_payment_response", cb, command_handle))));
+                    boxed_callback_string!("indy_parse_payment_response", cb, command_handle, CommandMetric::PaymentsCommandParsePaymentResponse))));
 
     let res = prepare_result!(result);
 
@@ -958,7 +958,7 @@ pub extern fn indy_prepare_payment_extra_with_acceptance_data(command_handle: Co
                 taa_digest,
                 mechanism,
                 time,
-                boxed_callback_string!("indy_prepare_payment_extra_with_acceptance_data", cb, command_handle)
+                boxed_callback_string!("indy_prepare_payment_extra_with_acceptance_data", cb, command_handle, CommandMetric::PaymentsCommandAppendTxnAuthorAgreementAcceptanceToExtra)
             )));
 
     let res = prepare_result!(result);
@@ -1069,7 +1069,7 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: CommandHandle,
                     submitter_did,
                     payment_method,
                     fees_json,
-                    boxed_callback_string!("indy_build_set_txn_fees_req", cb, command_handle))));
+                    boxed_callback_string!("indy_build_set_txn_fees_req", cb, command_handle, CommandMetric::PaymentsCommandBuildSetTxnFeesReq))));
 
     let res = prepare_result!(result);
 
@@ -1110,7 +1110,7 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: CommandHandle,
                     wallet_handle,
                     submitter_did,
                     payment_method,
-                    boxed_callback_string!("indy_build_get_txn_fees_req", cb, command_handle))));
+                    boxed_callback_string!("indy_build_get_txn_fees_req", cb, command_handle, CommandMetric::PaymentsCommandBuildGetTxnFeesReq))));
 
     let res = prepare_result!(result);
 
@@ -1153,7 +1153,7 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: CommandHandle,
                 PaymentsCommand::ParseGetTxnFeesResponse(
                     payment_method,
                     resp_json,
-                    boxed_callback_string!("indy_parse_get_txn_fees_response", cb, command_handle))));
+                    boxed_callback_string!("indy_parse_get_txn_fees_response", cb, command_handle, CommandMetric::PaymentsCommandParseGetTxnFeesResponse))));
 
     let res = prepare_result!(result);
 
@@ -1249,7 +1249,7 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
             PaymentsCommand::ParseVerifyPaymentResponse(
                 payment_method,
                 resp_json,
-                boxed_callback_string!("indy_parse_verify_payment_response", cb, command_handle)
+                boxed_callback_string!("indy_parse_verify_payment_response", cb, command_handle, CommandMetric::PaymentsCommandParseVerifyPaymentResponse)
             )));
 
     let result = prepare_result!(result);
@@ -1314,7 +1314,7 @@ pub extern fn indy_get_request_info(command_handle: CommandHandle,
                 get_auth_rule_response_json,
                 requester_info_json,
                 fees_json,
-                boxed_callback_string!("indy_get_request_info", cb, command_handle)
+                boxed_callback_string!("indy_get_request_info", cb, command_handle, CommandMetric::PaymentsCommandGetRequestInfo)
             )));
 
     let result = prepare_result!(result);

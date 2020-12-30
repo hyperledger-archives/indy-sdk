@@ -6,6 +6,7 @@ use libc::c_char;
 use crate::services::metrics::MetricsService;
 use std::rc::Rc;
 use crate::utils::time::get_cur_time;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 /// Collect metrics.
 ///
@@ -23,10 +24,9 @@ pub extern fn indy_collect_metrics(command_handle: CommandHandle,
            command_handle, cb);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
-//get_cur_time();
     let result = CommandExecutor::instance()
         .send(Command::Metrics(MetricsCommand::CollectMetrics(
-            boxed_callback_string!("indy_collect_metrics", cb, command_handle)
+            boxed_callback_string!("indy_collect_metrics", cb, command_handle, CommandMetric::MetricsCommandCollectMetrics)
         )));
     let res = prepare_result!(result);
     trace!("indy_collect_metrics: <<< res: {:?}", res);

@@ -546,7 +546,7 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: CommandHandle,
                 IssuerCommand::CreateCredentialOffer(
                     wallet_handle,
                     cred_def_id,
-                    boxed_callback_string!("indy_issuer_create_credential_offer", cb, command_handle)
+                    boxed_callback_string!("indy_issuer_create_credential_offer", cb, command_handle, CommandMetric::IssuerCommandCreateCredentialOffer)
                 ))));
 
     let res = prepare_result!(result);
@@ -728,7 +728,7 @@ pub extern fn indy_issuer_revoke_credential(command_handle: CommandHandle,
                     blob_storage_reader_cfg_handle,
                     rev_reg_id,
                     cred_revoc_id,
-                    boxed_callback_string!("indy_issuer_revoke_credential", cb, command_handle)
+                    boxed_callback_string!("indy_issuer_revoke_credential", cb, command_handle, CommandMetric::IssuerCommandRevokeCredential)
                 ))));
 
     let res = prepare_result!(result);
@@ -857,7 +857,7 @@ pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: Comma
                 IssuerCommand::MergeRevocationRegistryDeltas(
                     rev_reg_delta_json,
                     other_rev_reg_delta_json,
-                    boxed_callback_string!("indy_issuer_merge_revocation_registry_deltas", cb, command_handle)
+                    boxed_callback_string!("indy_issuer_merge_revocation_registry_deltas", cb, command_handle, CommandMetric::IssuerCommandMergeRevocationRegistryDeltas)
                 ))));
 
     let res = prepare_result!(result);
@@ -901,7 +901,7 @@ pub extern fn indy_prover_create_master_secret(command_handle: CommandHandle,
                 ProverCommand::CreateMasterSecret(
                     wallet_handle,
                     master_secret_id,
-                    boxed_callback_string!("indy_prover_create_master_secret", cb, command_handle)
+                    boxed_callback_string!("indy_prover_create_master_secret", cb, command_handle, CommandMetric::ProverCommandCreateMasterSecret)
                 ))));
 
     let res = prepare_result!(result);
@@ -1122,7 +1122,7 @@ pub extern fn indy_prover_get_credential_attr_tag_policy(command_handle: Command
                 ProverCommand::GetCredentialAttrTagPolicy(
                     wallet_handle,
                     cred_def_id,
-                    boxed_callback_string!("indy_prover_get_credential_attr_tag_policy", cb, command_handle)
+                    boxed_callback_string!("indy_prover_get_credential_attr_tag_policy", cb, command_handle, CommandMetric::ProverCommandGetCredentialAttrTagPolicy)
                 ))));
 
     let res = prepare_result!(result);
@@ -1212,7 +1212,7 @@ pub extern fn indy_prover_store_credential(command_handle: CommandHandle,
                     cred_json,
                     cred_def_json,
                     rev_reg_def_json,
-                    boxed_callback_string!("indy_prover_store_credential", cb, command_handle)
+                    boxed_callback_string!("indy_prover_store_credential", cb, command_handle, CommandMetric::ProverCommandStoreCredential)
                 ))));
 
     let res = prepare_result!(result);
@@ -1264,7 +1264,7 @@ pub extern fn indy_prover_get_credential(command_handle: CommandHandle,
                 ProverCommand::GetCredential(
                     wallet_handle,
                     cred_id,
-                    boxed_callback_string!("indy_prover_get_credential", cb, command_handle)
+                    boxed_callback_string!("indy_prover_get_credential", cb, command_handle, CommandMetric::ProverCommandGetCredential)
                 ))));
 
     let res = prepare_result!(result);
@@ -1377,7 +1377,7 @@ pub extern fn indy_prover_get_credentials(command_handle: CommandHandle,
                 ProverCommand::GetCredentials(
                     wallet_handle,
                     filter_json,
-                    boxed_callback_string!("indy_prover_get_credentials", cb, command_handle)
+                    boxed_callback_string!("indy_prover_get_credentials", cb, command_handle, CommandMetric::ProverCommandGetCredentials)
                 ))));
 
     let res = prepare_result!(result);
@@ -1487,7 +1487,7 @@ pub  extern fn indy_prover_fetch_credentials(command_handle: CommandHandle,
                 ProverCommand::FetchCredentials(
                     search_handle,
                     count,
-                    boxed_callback_string!("indy_prover_fetch_credentials", cb, command_handle)
+                    boxed_callback_string!("indy_prover_fetch_credentials", cb, command_handle, CommandMetric::ProverCommandFetchCredentials)
                 ))));
 
     let res = prepare_result!(result);
@@ -1657,7 +1657,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
                 ProverCommand::GetCredentialsForProofReq(
                     wallet_handle,
                     proof_request_json,
-                    boxed_callback_string!("indy_prover_get_credentials_for_proof_req", cb, command_handle)
+                    boxed_callback_string!("indy_prover_get_credentials_for_proof_req", cb, command_handle, CommandMetric::ProverCommandGetCredentialsForProofReq)
                 ))));
 
     let res = prepare_result!(result);
@@ -1855,7 +1855,7 @@ pub  extern fn indy_prover_fetch_credentials_for_proof_req(command_handle: Comma
                     search_handle,
                     item_referent,
                     count,
-                    boxed_callback_string!("indy_prover_fetch_credentials_for_proof_request", cb, command_handle)
+                    boxed_callback_string!("indy_prover_fetch_credentials_for_proof_request", cb, command_handle, CommandMetric::ProverCommandFetchCredentialForProofReq)
                 ))));
 
     let res = prepare_result!(result);
@@ -2108,7 +2108,7 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
             schemas_json,
             credential_defs_json,
             rev_states_json,
-            boxed_callback_string!("indy_prover_create_proof", cb, command_handle)
+            boxed_callback_string!("indy_prover_create_proof", cb, command_handle, CommandMetric::ProverCommandCreateProof)
         ))));
 
     let res = prepare_result!(result);
@@ -2376,7 +2376,7 @@ pub extern fn indy_create_revocation_state(command_handle: CommandHandle,
             rev_reg_delta_json,
             timestamp,
             cred_rev_id,
-            boxed_callback_string!("indy_create_revocation_state", cb, command_handle)
+            boxed_callback_string!("indy_create_revocation_state", cb, command_handle, CommandMetric::ProverCommandCreateRevocationState)
         ))));
 
     let res = prepare_result!(result);
@@ -2448,7 +2448,7 @@ pub extern fn indy_update_revocation_state(command_handle: CommandHandle,
             rev_reg_delta_json,
             timestamp,
             cred_rev_id,
-            boxed_callback_string!("indy_update_revocation_state", cb, command_handle)
+            boxed_callback_string!("indy_update_revocation_state", cb, command_handle, CommandMetric::ProverCommandUpdateRevocationState)
         ))));
 
     let res = prepare_result!(result);
@@ -2480,7 +2480,7 @@ pub extern fn indy_generate_nonce(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Verifier(
             VerifierCommand::GenerateNonce(
-                boxed_callback_string!("indy_generate_nonce", cb, command_handle)
+                boxed_callback_string!("indy_generate_nonce", cb, command_handle, CommandMetric::VerifierCommandGenerateNonce)
             ))));
 
     let res = prepare_result!(result);

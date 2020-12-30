@@ -57,7 +57,7 @@ pub extern fn indy_create_key(command_handle: CommandHandle,
         .send(Command::Crypto(CryptoCommand::CreateKey(
             wallet_handle,
             key_json,
-            boxed_callback_string!("indy_create_key", cb, command_handle)
+            boxed_callback_string!("indy_create_key", cb, command_handle, CommandMetric::CryptoCommandCreateKey)
         )));
 
     let res = prepare_result!(result);
@@ -161,7 +161,7 @@ pub  extern fn indy_get_key_metadata(command_handle: CommandHandle,
         .send(Command::Crypto(CryptoCommand::GetKeyMetadata(
             wallet_handle,
             verkey,
-            boxed_callback_string!("indy_get_key_metadata", cb, command_handle)
+            boxed_callback_string!("indy_get_key_metadata", cb, command_handle, CommandMetric::CryptoCommandGetKeyMetadata)
         )));
 
     let res = prepare_result!(result);

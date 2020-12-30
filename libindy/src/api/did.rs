@@ -143,7 +143,7 @@ pub  extern fn indy_replace_keys_start(command_handle: CommandHandle,
             wallet_handle,
             key_info,
             did,
-            boxed_callback_string!("indy_replace_keys_start", cb, command_handle)
+            boxed_callback_string!("indy_replace_keys_start", cb, command_handle, CommandMetric::DidCommandReplaceKeysStart)
         )));
 
     let res = prepare_result!(result);
@@ -318,7 +318,7 @@ pub extern fn indy_key_for_did(command_handle: CommandHandle,
             pool_handle,
             wallet_handle,
             did,
-            boxed_callback_string!("indy_key_for_did", cb, command_handle)
+            boxed_callback_string!("indy_key_for_did", cb, command_handle, CommandMetric::DidCommandKeyForDid)
         )));
 
     let res = prepare_result!(result);
@@ -374,7 +374,7 @@ pub extern fn indy_key_for_local_did(command_handle: CommandHandle,
         .send(Command::Did(DidCommand::KeyForLocalDid(
             wallet_handle,
             did,
-            boxed_callback_string!("indy_key_for_local_did", cb, command_handle)
+            boxed_callback_string!("indy_key_for_local_did", cb, command_handle, CommandMetric::DidCommandKeyForLocalDid)
         )));
 
     let res = prepare_result!(result);
@@ -603,7 +603,7 @@ pub extern fn indy_get_did_metadata(command_handle: CommandHandle,
         .send(Command::Did(DidCommand::GetDidMetadata(
             wallet_handle,
             did,
-            boxed_callback_string!("indy_get_did_metadata", cb, command_handle))));
+            boxed_callback_string!("indy_get_did_metadata", cb, command_handle, CommandMetric::DidCommandGetDidMetadata))));
 
     let res = prepare_result!(result);
 
@@ -655,7 +655,7 @@ pub extern fn indy_get_my_did_with_meta(command_handle: CommandHandle,
         .send(Command::Did(DidCommand::GetMyDidWithMeta(
             wallet_handle,
             my_did,
-            boxed_callback_string!("indy_get_my_did_with_meta", cb, command_handle)
+            boxed_callback_string!("indy_get_my_did_with_meta", cb, command_handle, CommandMetric::DidCommandGetMyDidWithMeta)
         )));
 
     let res = prepare_result!(result);
@@ -702,7 +702,7 @@ pub extern fn indy_list_my_dids_with_meta(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::ListMyDidsWithMeta(
             wallet_handle,
-            boxed_callback_string!("indy_list_my_dids_with_meta", cb, command_handle)
+            boxed_callback_string!("indy_list_my_dids_with_meta", cb, command_handle, CommandMetric::DidCommandListMyDidsWithMeta)
         )));
 
     let res = prepare_result!(result);
@@ -749,7 +749,7 @@ pub  extern fn indy_abbreviate_verkey(command_handle: CommandHandle,
         .send(Command::Did(DidCommand::AbbreviateVerkey(
             did,
             full_verkey,
-            boxed_callback_string!("indy_abbreviate_verkey", cb, command_handle)
+            boxed_callback_string!("indy_abbreviate_verkey", cb, command_handle, CommandMetric::DidCommandAbbreviateVerkey)
         )));
 
     let res = prepare_result!(result);
@@ -802,7 +802,7 @@ pub extern fn indy_qualify_did(command_handle: CommandHandle,
             wallet_handle,
             did,
             method,
-            boxed_callback_string!("indy_qualify_did", cb, command_handle)
+            boxed_callback_string!("indy_qualify_did", cb, command_handle, CommandMetric::DidCommandQualifyDid)
         )));
 
     let res = prepare_result!(result);
