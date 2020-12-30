@@ -163,15 +163,6 @@ dependencies = [
 
 [[package]]
 name = "base64"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b25d992356d2eb0ed82172f5248873db5560c4721f564b13cb5193bda5e668e"
-dependencies = [
- "byteorder",
-]
-
-[[package]]
-name = "base64"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
@@ -758,12 +749,6 @@ dependencies = [
 
 [[package]]
 name = "hex"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"
-
-[[package]]
-name = "hex"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "644f9158b2f133fd50f5fb3242878846d9eb792e445c893805ff0e3824006e35"
@@ -825,6 +810,7 @@ dependencies = [
 name = "indy-api-types"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "failure",
  "libc",
  "log",
@@ -854,7 +840,7 @@ dependencies = [
 name = "indy-utils"
 version = "0.1.0"
 dependencies = [
- "base64 0.10.1",
+ "base64",
  "dirs",
  "failure",
  "indy-api-types",
@@ -873,7 +859,9 @@ dependencies = [
 name = "indy-wallet"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "byteorder",
+ "failure",
  "indy-api-types",
  "indy-utils",
  "libc",
@@ -933,6 +921,7 @@ version = "1.15.0"
 dependencies = [
  "android_logger",
  "backtrace",
+ "base64",
  "byteorder",
  "convert_case",
  "criterion",
@@ -942,7 +931,7 @@ dependencies = [
  "etcommon-rlp",
  "failure",
  "futures",
- "hex 0.3.2",
+ "hex",
  "indy",
  "indy-api-types",
  "indy-sys",
@@ -1581,7 +1570,7 @@ version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4b18820d944b33caa75a71378964ac46f58517c92b6ae5f762636247c09e78fb"
 dependencies = [
- "base64 0.13.0",
+ "base64",
  "blake2b_simd",
  "constant_time_eq",
  "crossbeam-utils",
@@ -1930,7 +1919,7 @@ dependencies = [
  "ed25519-dalek",
  "env_logger",
  "failure",
- "hex 0.4.2",
+ "hex",
  "hmac",
  "int_traits",
  "lazy_static",
