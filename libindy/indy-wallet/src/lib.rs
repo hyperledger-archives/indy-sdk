@@ -7,24 +7,20 @@ use std::{
     unimplemented,
 };
 
+use futures::lock::Mutex;
 use indy_api_types::{
     domain::wallet::{Config, Credentials, ExportConfig, Tags},
     errors::prelude::*,
     wallet::*,
     WalletHandle,
 };
-
 use indy_utils::{
     crypto::chacha20poly1305_ietf::{self, Key as MasterKey},
     secret,
 };
-
 use log::trace;
-
 use serde::{Deserialize, Serialize};
 use serde_json::Value as SValue;
-
-pub use crate::encryption::KeyDerivationData;
 
 use crate::{
     export_import::{export_continue, finish_import, preparse_file_to_import},
@@ -33,7 +29,7 @@ use crate::{
     },
     wallet::{Keys, Wallet},
 };
-use futures::lock::Mutex;
+pub use crate::encryption::KeyDerivationData;
 
 //use crate::storage::plugged::PluggedStorageType; FXIME:
 
@@ -50,7 +46,7 @@ mod wallet;
 
 pub struct WalletService {
     storage_types: Mutex<HashMap<String, Box<dyn WalletStorageType>>>,
-    wallets: Mutex<HashMap<WalletHandle, Box<Wallet>>>,
+    wallets: Mutex<HashMap<WalletHandle, Arc<Wallet>>>,
     wallet_ids: Mutex<HashSet<String>>,
     pending_for_open: Mutex<
         HashMap<
@@ -320,11 +316,15 @@ impl WalletService {
 
         let wallet = Wallet::new(id.clone(), storage, Arc::new(keys));
 
-        let mut wallets = self.wallets.lock().await;
-        wallets.insert(wallet_handle, Box::new(wallet));
+        {
+            let mut wallets = self.wallets.lock().await;
+            wallets.insert(wallet_handle, Arc::new(wallet));
+        }
 
-        let mut wallet_ids = self.wallet_ids.lock().await;
-        wallet_ids.insert(id.to_string());
+        {
+            let mut wallet_ids = self.wallet_ids.lock().await;
+            wallet_ids.insert(id.to_string());
+        }
 
         trace!("open_wallet <<< res: {:?}", wallet_handle);
         Ok(wallet_handle)
@@ -358,7 +358,7 @@ impl WalletService {
 
         let wallet = self.wallets.lock().await.remove(&handle);
 
-        let mut wallet = if let Some(wallet) = wallet {
+        let wallet = if let Some(wallet) = wallet {
             wallet
         } else {
             return Err(err_msg(
@@ -368,7 +368,6 @@ impl WalletService {
         };
 
         self.wallet_ids.lock().await.remove(wallet.get_id());
-        wallet.close().await?;
 
         trace!("close_wallet <<<");
         Ok(())
@@ -399,16 +398,9 @@ impl WalletService {
         value: &str,
         tags: &Tags,
     ) -> IndyResult<()> {
-        match self.wallets.lock().await.get_mut(&wallet_handle) {
-            Some(wallet) => wallet
-                .add(type_, name, value, tags)
-                .await
-                .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name)),
-            None => Err(err_msg(
-                IndyErrorKind::InvalidWalletHandle,
-                "Unknown wallet handle",
-            )),
-        }
+        let wallet = self.get_wallet(wallet_handle).await?;
+        wallet.add(type_, name, value, tags).await
+            .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name))
     }
 
     pub async fn add_indy_record<T>(
@@ -461,16 +453,9 @@ impl WalletService {
         name: &str,
         value: &str,
     ) -> IndyResult<()> {
-        match self.wallets.lock().await.get(&wallet_handle) {
-            Some(wallet) => wallet
-                .update(type_, name, value)
-                .await
-                .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name)),
-            None => Err(err_msg(
-                IndyErrorKind::InvalidWalletHandle,
-                "Unknown wallet handle",
-            )),
-        }
+        let wallet = self.get_wallet(wallet_handle).await?;
+        wallet.update(type_, name, value).await
+            .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name))
     }
 
     pub async fn update_indy_object<T>(
@@ -484,24 +469,16 @@ impl WalletService {
     {
         let type_ = short_type_name::<T>();
 
-        match self.wallets.lock().await.get(&wallet_handle) {
-            Some(wallet) => {
-                let object_json = serde_json::to_string(object).to_indy(
-                    IndyErrorKind::InvalidState,
-                    format!("Cannot serialize {:?}", type_),
-                )?;
+        let wallet = self.get_wallet(wallet_handle).await?;
 
-                wallet
-                    .update(&self.add_prefix(type_), name, &object_json)
-                    .await?;
+        let object_json = serde_json::to_string(object).to_indy(
+            IndyErrorKind::InvalidState,
+            format!("Cannot serialize {:?}", type_),
+        )?;
 
-                Ok(object_json)
-            }
-            None => Err(err_msg(
-                IndyErrorKind::InvalidWalletHandle,
-                "Unknown wallet handle",
-            )),
-        }
+        wallet.update(&self.add_prefix(type_), name, &object_json).await?;
+
+        Ok(object_json)
     }
 
     pub async fn add_record_tags(
@@ -511,16 +488,9 @@ impl WalletService {
         name: &str,
         tags: &Tags,
     ) -> IndyResult<()> {
-        match self.wallets.lock().await.get_mut(&wallet_handle) {
-            Some(wallet) => wallet
-                .add_tags(type_, name, tags)
-                .await
-                .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name)),
-            None => Err(err_msg(
-                IndyErrorKind::InvalidWalletHandle,
-                "Unknown wallet handle",
-            )),
-        }
+        let wallet = self.get_wallet(wallet_handle).await?;
+        wallet.add_tags(type_, name, tags).await
+            .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name))
     }
 
     pub async fn update_record_tags(
@@ -530,16 +500,9 @@ impl WalletService {
         name: &str,
         tags: &Tags,
     ) -> IndyResult<()> {
-        match self.wallets.lock().await.get_mut(&wallet_handle) {
-            Some(wallet) => wallet
-                .update_tags(type_, name, tags)
-                .await
-                .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name)),
-            None => Err(err_msg(
-                IndyErrorKind::InvalidWalletHandle,
-                "Unknown wallet handle",
-            )),
-        }
+        let wallet = self.get_wallet(wallet_handle).await?;
+        wallet.update_tags(type_, name, tags).await
+            .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name))
     }
 
     pub async fn delete_record_tags(
@@ -549,16 +512,9 @@ impl WalletService {
         name: &str,
         tag_names: &[&str],
     ) -> IndyResult<()> {
-        match self.wallets.lock().await.get(&wallet_handle) {
-            Some(wallet) => wallet
-                .delete_tags(type_, name, tag_names)
-                .await
-                .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name)),
-            None => Err(err_msg(
-                IndyErrorKind::InvalidWalletHandle,
-                "Unknown wallet handle",
-            )),
-        }
+        let wallet = self.get_wallet(wallet_handle).await?;
+        wallet.delete_tags(type_, name, tag_names).await
+            .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name))
     }
 
     pub async fn delete_record(
@@ -567,16 +523,9 @@ impl WalletService {
         type_: &str,
         name: &str,
     ) -> IndyResult<()> {
-        match self.wallets.lock().await.get(&wallet_handle) {
-            Some(wallet) => wallet
-                .delete(type_, name)
-                .await
-                .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name)),
-            None => Err(err_msg(
-                IndyErrorKind::InvalidWalletHandle,
-                "Unknown wallet handle",
-            )),
-        }
+        let wallet = self.get_wallet(wallet_handle).await?;
+        wallet.delete(type_, name).await
+            .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name))
     }
 
     pub async fn delete_indy_record<T>(
@@ -604,16 +553,9 @@ impl WalletService {
         name: &str,
         options_json: &str,
     ) -> IndyResult<WalletRecord> {
-        match self.wallets.lock().await.get(&wallet_handle) {
-            Some(wallet) => wallet
-                .get(type_, name, options_json)
-                .await
-                .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name)),
-            None => Err(err_msg(
-                IndyErrorKind::InvalidWalletHandle,
-                "Unknown wallet handle",
-            )),
-        }
+        let wallet = self.get_wallet(wallet_handle).await?;
+        wallet.get(type_, name, options_json).await
+            .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name))
     }
 
     pub async fn get_indy_record<T>(
@@ -645,17 +587,8 @@ impl WalletService {
     {
         let type_ = short_type_name::<T>();
 
-        let record = match self.wallets.lock().await.get(&wallet_handle) {
-            Some(wallet) => {
-                wallet
-                    .get(&self.add_prefix(type_), name, options_json)
-                    .await
-            }
-            None => Err(err_msg(
-                IndyErrorKind::InvalidWalletHandle,
-                "Unknown wallet handle",
-            )),
-        }?;
+        let wallet = self.get_wallet(wallet_handle).await?;
+        let record = wallet.get(&self.add_prefix(type_), name, options_json).await?;
 
         let record_value = record
             .get_value()
@@ -717,15 +650,10 @@ impl WalletService {
         query_json: &str,
         options_json: &str,
     ) -> IndyResult<WalletSearch> {
-        match self.wallets.lock().await.get(&wallet_handle) {
-            Some(wallet) => Ok(WalletSearch {
-                iter: wallet.search(type_, query_json, Some(options_json)).await?,
-            }),
-            None => Err(err_msg(
-                IndyErrorKind::InvalidWalletHandle,
-                "Unknown wallet handle",
-            )),
-        }
+        let wallet = self.get_wallet(wallet_handle).await?;
+        Ok(WalletSearch {
+            iter: wallet.search(type_, query_json, Some(options_json)).await?,
+        })
     }
 
     pub async fn search_indy_records<T>(
@@ -781,34 +709,19 @@ impl WalletService {
     where
         T: Sized,
     {
-        match self.wallets.lock().await.get(&wallet_handle) {
-            Some(wallet) => match wallet
-                .get(
-                    &self.add_prefix(short_type_name::<T>()),
-                    name,
-                    &RecordOptions::id(),
-                )
-                .await
-            {
-                Ok(_) => Ok(true),
-                Err(ref err) if err.kind() == IndyErrorKind::WalletItemNotFound => Ok(false),
-                Err(err) => Err(err),
-            },
-            None => Err(err_msg(
-                IndyErrorKind::InvalidWalletHandle,
-                "Unknown wallet handle",
-            )),
+        let wallet = self.get_wallet(wallet_handle).await?;
+        match wallet.get(&self.add_prefix(short_type_name::<T>()),
+                         name,
+                         &RecordOptions::id()).await {
+            Ok(_) => Ok(true),
+            Err(ref err) if err.kind() == IndyErrorKind::WalletItemNotFound => Ok(false),
+            Err(err) => Err(err),
         }
     }
 
     pub async fn check(&self, handle: WalletHandle) -> IndyResult<()> {
-        match self.wallets.lock().await.get(&handle) {
-            Some(_) => Ok(()),
-            None => Err(err_msg(
-                IndyErrorKind::InvalidWalletHandle,
-                "Unknown wallet handle",
-            )),
-        }
+        self.get_wallet(handle).await?;
+        Ok(())
     }
 
     pub async fn export_wallet(
@@ -831,11 +744,7 @@ impl WalletService {
 
         let (key_data, key) = key;
 
-        let wallets = self.wallets.lock().await;
-
-        let wallet = wallets
-            .get(&wallet_handle)
-            .ok_or_else(|| err_msg(IndyErrorKind::InvalidWalletHandle, "Unknown wallet handle"))?;
+        let wallet = self.get_wallet(wallet_handle).await?;
 
         let path = PathBuf::from(&export_config.path);
 
@@ -1079,6 +988,19 @@ impl WalletService {
     pub fn add_prefix(&self, type_: &str) -> String {
         format!("{}::{}", WalletService::PREFIX, type_)
     }
+
+    async fn get_wallet(&self, wallet_handle: WalletHandle) -> IndyResult<Arc<Wallet>> {
+        let wallets = self.wallets.lock().await;
+        let w = wallets.get(&wallet_handle);
+        if let Some(w) = w {
+            Ok(w.clone())
+        } else {
+            Err(err_msg(
+                IndyErrorKind::InvalidWalletHandle,
+                "Unknown wallet handle",
+            ))
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -1276,18 +1198,17 @@ fn short_type_name<T>() -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use std::{collections::HashMap, fs, path::Path};
 
     use indy_api_types::{domain::wallet::KeyDerivationMethod, INVALID_WALLET_HANDLE};
-
     use indy_utils::{
         assert_kind, assert_match, environment, inmem_wallet::InmemWallet, next_wallet_handle, test,
     };
+    use serde_json::json;
 
     use lazy_static::lazy_static;
-    use serde_json::json;
+
+    use super::*;
 
     impl WalletService {
         async fn open_wallet(

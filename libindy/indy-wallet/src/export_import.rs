@@ -19,6 +19,7 @@ use indy_utils::crypto::{
 use serde::{Deserialize, Serialize};
 
 use crate::{encryption::KeyDerivationData, Wallet, WalletRecord};
+use std::sync::Arc;
 
 const CHUNK_SIZE: usize = 1024;
 
@@ -76,7 +77,7 @@ pub struct Header {
 // }
 
 pub(super) async fn export_continue(
-    wallet: &Wallet,
+    wallet: Arc<Wallet>,
     writer: &mut (dyn Write + Send + Sync),
     version: u32,
     key: chacha20poly1305_ietf::Key,

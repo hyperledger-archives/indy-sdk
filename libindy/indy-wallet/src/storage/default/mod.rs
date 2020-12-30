@@ -678,7 +678,7 @@ impl WalletStorage for SQLiteStorage {
         Ok(Box::new(SQLiteStorageIterator::new(records, total_count)?))
     }
 
-    async fn close(&mut self) -> IndyResult<()> {
+    fn close(&mut self) -> IndyResult<()> {
         Ok(())
     }
 }
