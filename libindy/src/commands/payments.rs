@@ -425,7 +425,6 @@ impl PaymentsCommandExecutor {
         match method {
             Ok(type_) => {
                 let type_copy = type_.to_string();
-                let metrics_service = self.metrics_service.clone();
                 self._process_method_str(
                     Box::new(move |result, metrics_service| cb(result.map(|e| (e, type_.to_string())), metrics_service)),
                     &|i| self.payments_service.add_request_fees(i, &type_copy, wallet_handle, submitter_did, req, inputs, outputs, extra),

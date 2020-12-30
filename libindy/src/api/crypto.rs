@@ -11,6 +11,8 @@ use serde_json;
 use libc::c_char;
 use crate::services::metrics::MetricsService;
 use std::rc::Rc;
+use crate::utils::time::get_cur_time;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 
 /// Creates keys pair and stores in the wallet.
@@ -107,7 +109,11 @@ pub  extern fn indy_set_key_metadata(command_handle: CommandHandle,
             Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_set_key_metadata: ");
-                cb(command_handle, err)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err);
+                metrics_service.cmd_callback(CommandMetric::CryptoCommandSetKeyMetadata,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -214,7 +220,11 @@ pub  extern fn indy_crypto_sign(command_handle: CommandHandle,
                 let (err, signature) = prepare_result_1!(result, Vec::new());
                 trace!("indy_crypto_sign: signature: {:?}", signature);
                 let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
-                cb(command_handle, err, signature_raw, signature_len)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, signature_raw, signature_len);
+                metrics_service.cmd_callback(CommandMetric::CryptoCommandCryptoSign,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -276,7 +286,11 @@ pub  extern fn indy_crypto_verify(command_handle: CommandHandle,
             Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, valid) = prepare_result_1!(result, false);
                 trace!("indy_crypto_verify: valid: {:?}", valid);
-                cb(command_handle, err, valid)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, valid);
+                metrics_service.cmd_callback(CommandMetric::CryptoCommandCryptoVerify,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -348,7 +362,11 @@ pub  extern fn indy_crypto_auth_crypt(command_handle: CommandHandle,
                 let (err, encrypted_msg) = prepare_result_1!(result, Vec::new());
                 trace!("indy_crypto_auth_crypt: encrypted_msg: {:?}", encrypted_msg);
                 let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
-                cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len);
+                metrics_service.cmd_callback(CommandMetric::CryptoCommandAuthenticatedEncrypt,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -417,7 +435,11 @@ pub  extern fn indy_crypto_auth_decrypt(command_handle: CommandHandle,
                 trace!("indy_crypto_auth_decrypt: sender_vk: {:?}, msg: {:?}", sender_vk, msg);
                 let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
                 let sender_vk = ctypes::string_to_cstring(sender_vk);
-                cb(command_handle, err, sender_vk.as_ptr(), msg_data, msg_len)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, sender_vk.as_ptr(), msg_data, msg_len);
+                metrics_service.cmd_callback(CommandMetric::CryptoCommandAuthenticatedDecrypt,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -479,7 +501,11 @@ pub  extern fn indy_crypto_anon_crypt(command_handle: CommandHandle,
                 let (err, encrypted_msg) = prepare_result_1!(result, Vec::new());
                 trace!("indy_crypto_anon_crypt: encrypted_msg: {:?}", encrypted_msg);
                 let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
-                cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len);
+                metrics_service.cmd_callback(CommandMetric::CryptoCommandAnonymousEncrypt,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -545,7 +571,11 @@ pub  extern fn indy_crypto_anon_decrypt(command_handle: CommandHandle,
                 let (err, msg) = prepare_result_1!(result, Vec::new());
                 trace!("indy_crypto_anon_decrypt: msg: {:?}", msg);
                 let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
-                cb(command_handle, err, msg_data, msg_len)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, msg_data, msg_len);
+                metrics_service.cmd_callback(CommandMetric::CryptoCommandAnonymousDecrypt,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -665,7 +695,11 @@ pub extern fn indy_pack_message(
             let (err, jwe) = prepare_result_1!(result, Vec::new());
             trace!("indy_auth_pack_message: jwe: {:?}", jwe);
             let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
-            cb(command_handle, err, jwe_data, jwe_len)
+            let start_execution_ts = get_cur_time();
+            let result = cb(command_handle, err, jwe_data, jwe_len);
+            metrics_service.cmd_callback(CommandMetric::CryptoCommandPackMessage,get_cur_time() - start_execution_ts);
+
+            result
         }),
     )));
 
@@ -755,7 +789,11 @@ pub extern fn indy_unpack_message(
                 command_handle, err, res_json
             );
             let (res_json_data, res_json_len) = ctypes::vec_to_pointer(&res_json);
-            cb(command_handle, err, res_json_data, res_json_len)
+            let start_execution_ts = get_cur_time();
+            let result = cb(command_handle, err, res_json_data, res_json_len);
+            metrics_service.cmd_callback(CommandMetric::CryptoCommandUnpackMessage,get_cur_time() - start_execution_ts);
+
+            result
         }),
     )));
 

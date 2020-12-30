@@ -14,6 +14,8 @@ use std::ptr;
 use crate::domain::ledger::attrib::Endpoint;
 use std::rc::Rc;
 use crate::services::metrics::MetricsService;
+use crate::utils::time::get_cur_time;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 
 /// Creates keys (signing and encryption keys) for a new
@@ -77,7 +79,11 @@ pub  extern fn indy_create_and_store_my_did(command_handle: CommandHandle,
                 trace!("indy_create_and_store_my_did: did: {:?}, verkey: {:?}", did, verkey);
                 let did = ctypes::string_to_cstring(did);
                 let verkey = ctypes::string_to_cstring(verkey);
-                cb(command_handle, err, did.as_ptr(), verkey.as_ptr())
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, did.as_ptr(), verkey.as_ptr());
+                metrics_service.cmd_callback(CommandMetric::DidCommandCreateAndStoreMyDid,get_cur_time() - start_execution_ts);
+
+                result
             }),
         )));
 
@@ -185,7 +191,11 @@ pub  extern fn indy_replace_keys_apply(command_handle: CommandHandle,
             Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_replace_keys_apply:");
-                cb(command_handle, err)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err);
+                metrics_service.cmd_callback(CommandMetric::DidCommandReplaceKeysApply,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -242,7 +252,11 @@ pub  extern fn indy_store_their_did(command_handle: CommandHandle,
             Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_store_their_did:");
-                cb(command_handle, err)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err);
+                metrics_service.cmd_callback(CommandMetric::DidCommandStoreTheirDid,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -418,7 +432,11 @@ pub extern fn indy_set_endpoint_for_did(command_handle: CommandHandle,
             Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_set_endpoint_for_did:");
-                cb(command_handle, err)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err);
+                metrics_service.cmd_callback(CommandMetric::DidCommandSetEndpointForDid,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -475,8 +493,12 @@ pub extern fn indy_get_endpoint_for_did(command_handle: CommandHandle,
                 trace!("indy_get_endpoint_for_did: address: {:?}, transport_vk: {:?}", address, transport_vk);
                 let address = ctypes::string_to_cstring(address);
                 let transport_vk = transport_vk.map(ctypes::string_to_cstring);
-                cb(command_handle, err, address.as_ptr(),
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, address.as_ptr(),
                    transport_vk.as_ref().map(|vk| vk.as_ptr()).unwrap_or(ptr::null()));
+                metrics_service.cmd_callback(CommandMetric::DidCommandGetEndpointForDid,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -529,7 +551,11 @@ pub extern fn indy_set_did_metadata(command_handle: CommandHandle,
             Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_set_did_metadata:");
-                cb(command_handle, err)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err);
+                metrics_service.cmd_callback(CommandMetric::DidCommandSetDidMetadata,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 

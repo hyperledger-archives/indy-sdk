@@ -6,9 +6,10 @@ use indy_api_types::errors::prelude::*;
 use indy_utils::ctypes;
 
 use libc::c_char;
-use indy_wallet::Metadata;
 use crate::services::metrics::MetricsService;
 use std::rc::Rc;
+use crate::utils::time::get_cur_time;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 #[no_mangle]
 pub extern fn indy_open_blob_storage_reader(command_handle: CommandHandle,
@@ -32,7 +33,11 @@ pub extern fn indy_open_blob_storage_reader(command_handle: CommandHandle,
             Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, handle) = prepare_result_1!(result, 0);
                 trace!("indy_open_blob_storage_reader: handle: {:?}", handle);
-                cb(command_handle, err, handle)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, handle);
+                metrics_service.cmd_callback(CommandMetric::BlobStorageCommandOpenReader,get_cur_time() - start_execution_ts);
+
+                result
             }),
         )));
 
@@ -62,10 +67,14 @@ pub extern fn indy_open_blob_storage_writer(command_handle: CommandHandle,
         .send(Command::BlobStorage(BlobStorageCommand::OpenWriter(
             type_,
             config_json,
-            Box::new(move |result, metrics_servic: Rc<MetricsService>| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, handle) = prepare_result_1!(result, 0);
                 trace!("indy_open_blob_storage_writer: handle: {:?}", handle);
-                cb(command_handle, err, handle)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, handle);
+                metrics_service.cmd_callback(CommandMetric::BlobStorageCommandOpenWriter,get_cur_time() - start_execution_ts);
+
+                result
             }),
         )));
 

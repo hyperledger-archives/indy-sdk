@@ -1274,7 +1274,7 @@ impl LedgerCommandExecutor {
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
         let id = id.clone();
 
-        self.submit_request(pool_handle, &request_json, Box::new(move |response, metrics_service: Rc<MetricsService>| {
+        self.submit_request(pool_handle, &request_json, Box::new(move |response, _| {
             CommandExecutor::instance().send(
                 Command::Ledger(
                     LedgerCommand::GetSchemaContinue(
@@ -1300,7 +1300,7 @@ impl LedgerCommandExecutor {
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
         let id = id.clone();
 
-        self.submit_request(pool_handle, &request_json, Box::new(move |response, metrics_service: Rc<MetricsService>| {
+        self.submit_request(pool_handle, &request_json, Box::new(move |response, _| {
             CommandExecutor::instance().send(
                 Command::Ledger(
                     LedgerCommand::GetCredDefContinue(

@@ -28,8 +28,7 @@ use crate::indy_api_types::validation::Validatable;
 use crate::services::metrics::MetricsService;
 use std::rc::Rc;
 use crate::services::metrics::command_metrics::CommandMetric;
-use std::time::{SystemTime, UNIX_EPOCH};
-
+use crate::utils::time::get_cur_time;
 /*
 These functions wrap the Ursa algorithm as documented in this paper:
 https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
@@ -103,7 +102,11 @@ pub extern fn indy_issuer_create_schema(command_handle: CommandHandle,
                         trace!("ursa_cl_credential_public_key_to_json: id: {:?}, schema_json: {:?}", id, schema_json);
                         let id = ctypes::string_to_cstring(id);
                         let schema_json = ctypes::string_to_cstring(schema_json);
-                        cb(command_handle, err, id.as_ptr(), schema_json.as_ptr())
+                        let start_execution_ts = get_cur_time();
+                        let result = cb(command_handle, err, id.as_ptr(), schema_json.as_ptr());
+                        metrics_service.cmd_callback(CommandMetric::IssuerCommandCreateSchema,get_cur_time() - start_execution_ts);
+
+                        result
                     })
                 ))));
 
@@ -213,7 +216,11 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: Comman
                         trace!("indy_issuer_create_and_store_credential_def: cred_def_id: {:?}, cred_def_json: {:?}", cred_def_id, cred_def_json);
                         let cred_def_id = ctypes::string_to_cstring(cred_def_id);
                         let cred_def_json = ctypes::string_to_cstring(cred_def_json);
-                        cb(command_handle, err, cred_def_id.as_ptr(), cred_def_json.as_ptr())
+                        let start_execution_ts = get_cur_time();
+                        let result = cb(command_handle, err, cred_def_id.as_ptr(), cred_def_json.as_ptr());
+                        metrics_service.cmd_callback(CommandMetric::IssuerCommandCreateAndStoreCredentialDefinition,get_cur_time() - start_execution_ts);
+
+                        result
                     })
                 ))));
 
@@ -278,11 +285,6 @@ pub extern fn indy_issuer_rotate_credential_def_start(command_handle: CommandHan
 
     trace!("indy_issuer_rotate_credential_def_start: entities >>> wallet_handle: {:?}, cred_def_id: {:?}, config_json: {:?}",
            wallet_handle, cred_def_id, config_json);
-
-    fn get_cur_time() -> u128 {
-        let since_epoch = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time has gone backwards");
-        since_epoch.as_millis()
-    }
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
@@ -349,7 +351,11 @@ pub extern fn indy_issuer_rotate_credential_def_apply(command_handle: CommandHan
                     Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let err = prepare_result!(result);
                         trace!("indy_issuer_rotate_credential_def_apply:");
-                        cb(command_handle, err)
+                        let start_execution_ts = get_cur_time();
+                        let result = cb(command_handle, err);
+                        metrics_service.cmd_callback(CommandMetric::IssuerCommandRotateCredentialDefinitionApply,get_cur_time() - start_execution_ts);
+
+                        result
                     })
                 ))));
 
@@ -480,7 +486,11 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: CommandHand
                         let revoc_reg_id = ctypes::string_to_cstring(revoc_reg_id);
                         let revoc_reg_def_json = ctypes::string_to_cstring(revoc_reg_def_json);
                         let revoc_reg_json = ctypes::string_to_cstring(revoc_reg_json);
-                        cb(command_handle, err, revoc_reg_id.as_ptr(), revoc_reg_def_json.as_ptr(), revoc_reg_json.as_ptr())
+                        let start_execution_ts = get_cur_time();
+                        let result = cb(command_handle, err, revoc_reg_id.as_ptr(), revoc_reg_def_json.as_ptr(), revoc_reg_json.as_ptr());
+                        metrics_service.cmd_callback(CommandMetric::IssuerCommandCreateAndStoreRevocationRegistry,get_cur_time() - start_execution_ts);
+
+                        result
                     })
                 ))));
 
@@ -644,9 +654,13 @@ pub extern fn indy_issuer_create_credential(command_handle: CommandHandle,
                         let cred_json = ctypes::string_to_cstring(cred_json);
                         let revoc_id = revoc_id.map(ctypes::string_to_cstring);
                         let revoc_reg_delta_json = revoc_reg_delta_json.map(ctypes::string_to_cstring);
-                        cb(command_handle, err, cred_json.as_ptr(),
+                        let start_execution_ts = get_cur_time();
+                        let result = cb(command_handle, err, cred_json.as_ptr(),
                            revoc_id.as_ref().map(|id| id.as_ptr()).unwrap_or(ptr::null()),
-                           revoc_reg_delta_json.as_ref().map(|delta| delta.as_ptr()).unwrap_or(ptr::null()))
+                           revoc_reg_delta_json.as_ref().map(|delta| delta.as_ptr()).unwrap_or(ptr::null()));
+
+                        metrics_service.cmd_callback(CommandMetric::IssuerCommandCreateCredential,get_cur_time() - start_execution_ts);
+                        result
                     })
                 ))));
 
@@ -977,7 +991,11 @@ pub extern fn indy_prover_create_credential_req(command_handle: CommandHandle,
                         trace!("indy_prover_create_credential_req: cred_req_json: {:?}, cred_req_metadata_json: {:?}", cred_req_json, cred_req_metadata_json);
                         let cred_req_json = ctypes::string_to_cstring(cred_req_json);
                         let cred_req_metadata_json = ctypes::string_to_cstring(cred_req_metadata_json);
-                        cb(command_handle, err, cred_req_json.as_ptr(), cred_req_metadata_json.as_ptr())
+                        let start_execution_ts = get_cur_time();
+                        let result = cb(command_handle, err, cred_req_json.as_ptr(), cred_req_metadata_json.as_ptr());
+                        metrics_service.cmd_callback(CommandMetric::ProverCommandCreateCredentialRequest,get_cur_time() - start_execution_ts);
+
+                        result
                     })
                 ))));
 
@@ -1051,7 +1069,11 @@ pub extern fn indy_prover_set_credential_attr_tag_policy(command_handle: Command
                     Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let err = prepare_result!(result);
                         trace!("indy_prover_set_credential_attr_tag_policy: ");
-                        cb(command_handle, err)
+                        let start_execution_ts = get_cur_time();
+                        let result = cb(command_handle, err);
+                        metrics_service.cmd_callback(CommandMetric::ProverCommandSetCredentialAttrTagPolicy,get_cur_time() - start_execution_ts);
+
+                        result
                     })
                 ))));
 
@@ -1284,7 +1306,11 @@ pub extern fn indy_prover_delete_credential(command_handle: CommandHandle,
                     Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let err = prepare_result!(result);
                         trace!("indy_prover_delete_credential: ");
-                        cb(command_handle, err)
+                        let start_execution_ts = get_cur_time();
+                        let result = cb(command_handle, err);
+                        metrics_service.cmd_callback(CommandMetric::ProverCommandDeleteCredential,get_cur_time() - start_execution_ts);
+
+                        result
                     })
                 ))));
 
@@ -1405,7 +1431,11 @@ pub extern fn indy_prover_search_credentials(command_handle: CommandHandle,
                     query_json,
                     Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let (err, handle, total_count) = prepare_result_2!(result, INVALID_SEARCH_HANDLE, 0);
-                        cb(command_handle, err, handle, total_count)
+                        let start_execution_ts = get_cur_time();
+                        let result = cb(command_handle, err, handle, total_count);
+                        metrics_service.cmd_callback(CommandMetric::ProverCommandSearchCredentials,get_cur_time() - start_execution_ts);
+
+                        result
                     })
                 ))));
 
@@ -1494,7 +1524,11 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: CommandHandl
                     Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let err = prepare_result!(result);
                         trace!("indy_prover_close_credentials_search:");
-                        cb(command_handle, err)
+                        let start_execution_ts = get_cur_time();
+                        let result = cb(command_handle, err);
+                        metrics_service.cmd_callback(CommandMetric::ProverCommandCloseCredentialsSearch,get_cur_time() - start_execution_ts);
+
+                        result
                     })
                 ))));
 
@@ -1748,7 +1782,11 @@ pub extern fn indy_prover_search_credentials_for_proof_req(command_handle: Comma
                     Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let (err, search_handle) = prepare_result_1!(result, INVALID_SEARCH_HANDLE);
                         trace!("indy_prover_search_credentials_for_proof_req: search_handle: {:?}", search_handle);
-                        cb(command_handle, err, search_handle)
+                        let start_execution_ts = get_cur_time();
+                        let result = cb(command_handle, err, search_handle);
+                        metrics_service.cmd_callback(CommandMetric::ProverCommandSearchCredentialsForProofReq,get_cur_time() - start_execution_ts);
+
+                        result
                     }),
                 ))));
 
@@ -1854,7 +1892,11 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
                     Box::new(move |result, metrics_service: Rc<MetricsService>| {
                         let err = prepare_result!(result);
                         trace!("indy_prover_close_credentials_search:");
-                        cb(command_handle, err)
+                        let start_execution_ts = get_cur_time();
+                        let result = cb(command_handle, err);
+                        metrics_service.cmd_callback(CommandMetric::ProverCommandCloseCredentialsSearchForProofReq,get_cur_time() - start_execution_ts);
+
+                        result
                     }),
                 ))));
 
@@ -2260,8 +2302,11 @@ pub extern fn indy_verifier_verify_proof(command_handle: CommandHandle,
             Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, valid) = prepare_result_1!(result, false);
                 trace!("indy_verifier_verify_proof: valid: {:?}", valid);
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, valid);
+                metrics_service.cmd_callback(CommandMetric::VerifierCommandVerifyProof,get_cur_time() - start_execution_ts);
 
-                cb(command_handle, err, valid)
+                result
             })
         ))));
 
@@ -2488,7 +2533,11 @@ pub  extern fn indy_to_unqualified(command_handle: CommandHandle,
                 let (err, res) = prepare_result_1!(result, String::new());
                 trace!("indy_to_unqualified: did: {:?}", res);
                 let res = ctypes::string_to_cstring(res);
-                cb(command_handle, err, res.as_ptr())
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, res.as_ptr());
+                metrics_service.cmd_callback(CommandMetric::AnoncredsCommandToUnqualified,get_cur_time() - start_execution_ts);
+
+                result
             }),
         )));
 

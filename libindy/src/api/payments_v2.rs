@@ -11,6 +11,8 @@ use crate::domain::crypto::did::DidValue;
 use indy_api_types::validation::Validatable;
 use std::rc::Rc;
 use crate::services::metrics::MetricsService;
+use crate::utils::time::get_cur_time;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 /// Builds Indy request for getting sources list for payment address
 /// according to this payment method.
@@ -57,7 +59,9 @@ pub extern fn indy_build_get_payment_sources_with_from_request(command_handle: C
                         trace!("indy_build_get_payment_sources_with_from_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
                         let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);
                         let payment_method = ctypes::string_to_cstring(payment_method);
+                        let start_execution_ts = get_cur_time();
                         cb(command_handle, err, get_sources_txn_json.as_ptr(), payment_method.as_ptr());
+                        metrics_service.cmd_callback(CommandMetric::PaymentsCommandBuildGetPaymentSourcesRequest,get_cur_time() - start_execution_ts);
                     }))
             ));
 
@@ -109,7 +113,9 @@ pub extern fn indy_parse_get_payment_sources_with_from_response(command_handle: 
                         let (err, sources_json, next) = prepare_result_2!(result, String::new(), -1);
                         trace!("indy_parse_get_payment_sources_with_from_response: sources_json: {:?}", sources_json);
                         let sources_json = ctypes::string_to_cstring(sources_json);
+                        let start_execution_ts = get_cur_time();
                         cb(command_handle, err, sources_json.as_ptr(), next);
+                        metrics_service.cmd_callback(CommandMetric::PaymentsCommandParseGetPaymentSourcesResponse,get_cur_time() - start_execution_ts);
                     }))
             ));
 

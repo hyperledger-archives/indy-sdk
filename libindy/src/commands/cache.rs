@@ -147,7 +147,7 @@ impl CacheCommandExecutor {
                     pool_handle,
                     Some(submitter_did.clone()),
                     id.clone(),
-                    Box::new(move |ledger_response, metrics_service: Rc<MetricsService>| {
+                    Box::new(move |ledger_response, _| {
                         CommandExecutor::instance().send(
                             Command::Cache(
                                 CacheCommand::GetSchemaContinue(
@@ -229,7 +229,7 @@ impl CacheCommandExecutor {
                     pool_handle,
                     Some(submitter_did.clone()),
                     id.clone(),
-                    Box::new(move |ledger_response, metrics_service: Rc<MetricsService>| {
+                    Box::new(move |ledger_response, _| {
                         CommandExecutor::instance().send(
                             Command::Cache(
                                 CacheCommand::GetCredDefContinue(

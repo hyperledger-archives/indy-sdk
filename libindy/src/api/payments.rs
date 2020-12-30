@@ -10,6 +10,8 @@ use crate::domain::crypto::did::DidValue;
 use indy_api_types::validation::Validatable;
 use std::rc::Rc;
 use crate::services::metrics::MetricsService;
+use crate::utils::time::get_cur_time;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 /// Create the payment address for this payment method.
 ///
@@ -440,7 +442,9 @@ pub extern fn indy_register_payment_method(command_handle: CommandHandle,
                     payment_method,
                     cbs,
                     Box::new(move |result, metrics_service: Rc<MetricsService>| {
+                        let start_execution_ts = get_cur_time();
                         cb(command_handle, result.into());
+                        metrics_service.cmd_callback(CommandMetric::PaymentsCommandRegisterMethod, get_cur_time() - start_execution_ts);
                     }))
             ));
 
@@ -612,7 +616,9 @@ pub extern fn indy_add_request_fees(command_handle: CommandHandle,
                         trace!("indy_add_request_fees: req_with_fees_json: {:?}, payment_method: {:?}", req_with_fees_json, payment_method);
                         let req_with_fees_json = ctypes::string_to_cstring(req_with_fees_json);
                         let payment_method = ctypes::string_to_cstring(payment_method);
+                        let start_execution_ts = get_cur_time();
                         cb(command_handle, err, req_with_fees_json.as_ptr(), payment_method.as_ptr());
+                        metrics_service.cmd_callback(CommandMetric::PaymentsCommandAddRequestFees,get_cur_time() - start_execution_ts);
                     }))
             ));
 
@@ -708,7 +714,9 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: CommandHand
                         trace!("indy_build_get_payment_sources_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
                         let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);
                         let payment_method = ctypes::string_to_cstring(payment_method);
+                        let start_execution_ts = get_cur_time();
                         cb(command_handle, err, get_sources_txn_json.as_ptr(), payment_method.as_ptr());
+                        metrics_service.cmd_callback(CommandMetric::PaymentsCommandBuildGetPaymentSourcesRequest, get_cur_time() - start_execution_ts);
                     }))
             ));
 
@@ -759,7 +767,9 @@ pub extern fn indy_parse_get_payment_sources_response(command_handle: CommandHan
                         let (err, sources_json, _) = prepare_result_2!(result, String::new(), -1);
                         trace!("indy_parse_get_payment_sources_response: sources_json: {:?}", sources_json);
                         let sources_json = ctypes::string_to_cstring(sources_json);
+                        let start_execution_ts = get_cur_time();
                         cb(command_handle, err, sources_json.as_ptr());
+                        metrics_service.cmd_callback(CommandMetric::PaymentsCommandParseGetPaymentSourcesResponse, get_cur_time() - start_execution_ts);
                     }))
             ));
 
@@ -831,7 +841,9 @@ pub extern fn indy_build_payment_req(command_handle: CommandHandle,
                         trace!("indy_build_payment_req: payment_req_json: {:?}, payment_method: {:?}", payment_req_json, payment_method);
                         let payment_req_json = ctypes::string_to_cstring(payment_req_json);
                         let payment_method = ctypes::string_to_cstring(payment_method);
+                        let start_execution_ts = get_cur_time();
                         cb(command_handle, err, payment_req_json.as_ptr(), payment_method.as_ptr());
+                        metrics_service.cmd_callback(CommandMetric::PaymentsCommandBuildPaymentReq,get_cur_time() - start_execution_ts);
                     }))
             ));
 
@@ -1004,7 +1016,9 @@ pub extern fn indy_build_mint_req(command_handle: CommandHandle,
                         trace!("indy_build_mint_req: mint_req_json: {:?}, payment_method: {:?}", mint_req_json, payment_method);
                         let mint_req_json = ctypes::string_to_cstring(mint_req_json);
                         let payment_method = ctypes::string_to_cstring(payment_method);
+                        let start_execution_ts = get_cur_time();
                         cb(command_handle, err, mint_req_json.as_ptr(), payment_method.as_ptr());
+                        metrics_service.cmd_callback(CommandMetric::PaymentsCommandBuildMintReq,get_cur_time() - start_execution_ts);
                     }))
             ));
 
@@ -1186,7 +1200,9 @@ pub extern fn indy_build_verify_payment_req(command_handle: CommandHandle,
                     trace!("indy_build_verify_payment_req: verify_txn_json: {:?}, payment_method: {:?}", verify_txn_json, payment_method);
                     let verify_txn_json = ctypes::string_to_cstring(verify_txn_json);
                     let payment_method = ctypes::string_to_cstring(payment_method);
+                    let start_execution_ts = get_cur_time();
                     cb(command_handle, err, verify_txn_json.as_ptr(), payment_method.as_ptr());
+                    metrics_service.cmd_callback(CommandMetric::PaymentsCommandBuildVerifyPaymentReq,get_cur_time() - start_execution_ts);
                 })
             )));
 
@@ -1353,7 +1369,11 @@ pub extern fn indy_sign_with_address(command_handle: CommandHandle,
                                                     let (err, signature) = prepare_result_1!(result, Vec::new());
                                                     trace!("indy_sign_with_address: signature: {:?}", signature);
                                                     let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
-                                                    cb(command_handle, err, signature_raw, signature_len)
+                                                    let start_execution_ts = get_cur_time();
+                                                    let result = cb(command_handle, err, signature_raw, signature_len);
+                                                    metrics_service.cmd_callback(CommandMetric::PaymentsCommandSignWithAddressReq,get_cur_time() - start_execution_ts);
+
+                                                    result
                                         }))
         ));
 
@@ -1413,7 +1433,11 @@ pub extern fn indy_verify_with_address(command_handle: CommandHandle,
             Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let (err, valid) = prepare_result_1!(result, false);
                 trace!("indy_verify_with_address: valid: {:?}", valid);
-                cb(command_handle, err, valid)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, valid);
+                metrics_service.cmd_callback(CommandMetric::PaymentsCommandVerifyWithAddressReq,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 

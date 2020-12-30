@@ -726,7 +726,7 @@ impl DidCommandExecutor {
             .send(Command::Ledger(LedgerCommand::SubmitRequest(
                 pool_handle,
                 get_nym_request,
-                Box::new(move |result, metrics_service: Rc<MetricsService>| {
+                Box::new(move |result, _| {
                     CommandExecutor::instance()
                         .send(Command::Did(DidCommand::GetNymAck(
                             wallet_handle,
@@ -752,7 +752,7 @@ impl DidCommandExecutor {
             .send(Command::Ledger(LedgerCommand::SubmitRequest(
                 pool_handle,
                 get_attrib_request,
-                Box::new(move |result, metrics_service: Rc<MetricsService>| {
+                Box::new(move |result, _| {
                     CommandExecutor::instance()
                         .send(Command::Did(DidCommand::GetAttribAck(
                             wallet_handle,

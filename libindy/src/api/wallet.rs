@@ -12,6 +12,8 @@ use serde_json;
 use libc::c_char;
 use std::rc::Rc;
 use crate::services::metrics::MetricsService;
+use crate::utils::time::get_cur_time;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 
 /// Register custom wallet storage implementation.
@@ -136,7 +138,11 @@ pub extern fn indy_register_wallet_storage(command_handle: CommandHandle,
                 Box::new(move |result, metrics_service: Rc<MetricsService>| {
                     let err = prepare_result!(result);
                     trace!("indy_register_wallet_type: cb command_handle: {:?}, err: {:?}", command_handle, err);
-                    cb(command_handle, err)
+                    let start_execution_ts = get_cur_time();
+                    let result = cb(command_handle, err);
+                    metrics_service.cmd_callback(CommandMetric::WalletCommandRegisterWalletType, get_cur_time() - start_execution_ts);
+
+                    result
                 })
             )));
 
@@ -207,7 +213,11 @@ pub extern fn indy_create_wallet(command_handle: CommandHandle,
             Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_create_wallet: cb command_handle: {:?}, err: {:?}", command_handle, err);
-                cb(command_handle, err)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err);
+                metrics_service.cmd_callback(CommandMetric::WalletCommandCreate,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -290,7 +300,11 @@ pub extern fn indy_open_wallet(command_handle: CommandHandle,
                 let (err, handle) = prepare_result_1!(result, INVALID_WALLET_HANDLE);
                 trace!("indy_open_wallet: cb command_handle: {:?} err: {:?}, handle: {:?}",
                        command_handle, err, handle);
-                cb(command_handle, err, handle)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, handle);
+                metrics_service.cmd_callback(CommandMetric::WalletCommandOpen, get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -341,7 +355,11 @@ pub extern fn indy_export_wallet(command_handle: CommandHandle,
             Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_export_wallet: cb command_handle: {:?} err: {:?}", command_handle, err);
-                cb(command_handle, err)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err);
+                metrics_service.cmd_callback(CommandMetric::WalletCommandExport, get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -423,7 +441,11 @@ pub extern fn indy_import_wallet(command_handle: CommandHandle,
             Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_import_wallet: cb command_handle: {:?}, err: {:?}", command_handle, err);
-                cb(command_handle, err)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err);
+                metrics_service.cmd_callback(CommandMetric::WalletCommandImport, get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -462,7 +484,11 @@ pub extern fn indy_close_wallet(command_handle: CommandHandle,
             Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_close_wallet: cb command_handle: {:?}, err: {:?}", command_handle, err);
-                cb(command_handle, err)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err);
+                metrics_service.cmd_callback(CommandMetric::WalletCommandClose, get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -532,7 +558,11 @@ pub extern fn indy_delete_wallet(command_handle: CommandHandle,
             Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_delete_wallet: cb command_handle: {:?}, err: {:?}", command_handle, err);
-                cb(command_handle, err)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err);
+                metrics_service.cmd_callback(CommandMetric::WalletCommandDelete, get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 

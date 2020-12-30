@@ -98,7 +98,7 @@ impl MetricsService {
 
                 commands_duration_ms_bucket.push(self.get_metric_json(executed_bucket as usize, tags_executed.clone())?);
                 commands_duration_ms_bucket.push(self.get_metric_json(queued_bucket as usize, tags_queued.clone())?);
-                commands_callback.push(self.get_metric_json(callback_bucket as usize, tags_queued.clone())?);
+                commands_duration_ms_bucket.push(self.get_metric_json(callback_bucket as usize, tags_callback.clone())?);
             }
         }
 

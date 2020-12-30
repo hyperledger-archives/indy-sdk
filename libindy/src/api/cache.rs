@@ -11,6 +11,8 @@ use indy_api_types::validation::Validatable;
 use libc::c_char;
 use crate::services::metrics::MetricsService;
 use std::rc::Rc;
+use crate::utils::time::get_cur_time;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 
 /// Gets credential definition json data for specified credential definition id.
@@ -157,10 +159,14 @@ pub extern fn indy_purge_cred_def_cache(command_handle: CommandHandle,
         .send(Command::Cache(CacheCommand::PurgeCredDefCache(
             wallet_handle,
             options_json,
-            Box::new(move |result, mtetrics_service: Rc<MetricsService>| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_purge_cred_def_cache:");
-                cb(command_handle, err)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err);
+                metrics_service.cmd_callback(CommandMetric::CacheCommandPurgeCredDefCache,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -202,10 +208,14 @@ pub extern fn indy_purge_schema_cache(command_handle: CommandHandle,
         .send(Command::Cache(CacheCommand::PurgeSchemaCache(
             wallet_handle,
             options_json,
-            Box::new(move |result, metrics_sercvice: Rc<MetricsService>| {
+            Box::new(move |result, metrics_service: Rc<MetricsService>| {
                 let err = prepare_result!(result);
                 trace!("indy_purge_schema_cache:");
-                cb(command_handle, err)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err);
+                metrics_service.cmd_callback(CommandMetric::CacheCommandPurgeSchemaCache,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 

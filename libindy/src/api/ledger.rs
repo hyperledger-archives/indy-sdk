@@ -18,6 +18,8 @@ use crate::domain::ledger::node::NodeOperationData;
 use crate::domain::ledger::pool::Schedule;
 use crate::services::metrics::MetricsService;
 use std::rc::Rc;
+use crate::utils::time::get_cur_time;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 /// Signs and submits request message to validator pool.
 ///
@@ -739,7 +741,11 @@ pub extern fn indy_parse_get_schema_response(command_handle: CommandHandle,
                 trace!("indy_parse_get_schema_response: schema_id: {:?}, schema_json: {:?}", schema_id, schema_json);
                 let schema_id = ctypes::string_to_cstring(schema_id);
                 let schema_json = ctypes::string_to_cstring(schema_json);
-                cb(command_handle, err, schema_id.as_ptr(), schema_json.as_ptr())
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, schema_id.as_ptr(), schema_json.as_ptr());
+                metrics_service.cmd_callback(CommandMetric::LedgerCommandParseGetSchemaResponse,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -893,7 +899,11 @@ pub extern fn indy_parse_get_cred_def_response(command_handle: CommandHandle,
                 trace!("indy_parse_get_cred_def_response: cred_def_id: {:?}, cred_def_json: {:?}", cred_def_id, cred_def_json);
                 let cred_def_id = ctypes::string_to_cstring(cred_def_id);
                 let cred_def_json = ctypes::string_to_cstring(cred_def_json);
-                cb(command_handle, err, cred_def_id.as_ptr(), cred_def_json.as_ptr())
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, cred_def_id.as_ptr(), cred_def_json.as_ptr());
+                metrics_service.cmd_callback(CommandMetric::LedgerCommandParseGetCredDefResponse,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -1382,7 +1392,11 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: CommandHandl
 
                 let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
                 let revoc_reg_def_json = ctypes::string_to_cstring(revoc_reg_def_json);
-                cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_def_json.as_ptr())
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_def_json.as_ptr());
+                metrics_service.cmd_callback(CommandMetric::LedgerCommandParseGetRevocRegDefResponse,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -1546,7 +1560,11 @@ pub extern fn indy_parse_get_revoc_reg_response(command_handle: CommandHandle,
 
                 let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
                 let revoc_reg_json = ctypes::string_to_cstring(revoc_reg_json);
-                cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_json.as_ptr(), timestamp)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_json.as_ptr(), timestamp);
+                metrics_service.cmd_callback(CommandMetric::LedgerCommandParseGetRevocRegResponse,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -1657,7 +1675,11 @@ pub extern fn indy_parse_get_revoc_reg_delta_response(command_handle: CommandHan
 
                 let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
                 let revoc_reg_delta_json = ctypes::string_to_cstring(revoc_reg_delta_json);
-                cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_delta_json.as_ptr(), timestamp)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_delta_json.as_ptr(), timestamp);
+                metrics_service.cmd_callback(CommandMetric::LedgerCommandParseGetRevocRegDeltaResponse,get_cur_time() - start_execution_ts);
+
+                result
             })
         )));
 
@@ -1723,7 +1745,11 @@ pub extern fn indy_register_transaction_parser_for_sp(command_handle: CommandHan
             Box::new(move |res, metrics_service: Rc<MetricsService>| {
                 let res = prepare_result!(res);
                 trace!("indy_register_transaction_parser_for_sp: res: {:?}", res);
-                cb(command_handle, res)
+                let start_execution_ts = get_cur_time();
+                let result = cb(command_handle, res);
+                metrics_service.cmd_callback(CommandMetric::LedgerCommandRegisterSPParser,get_cur_time() - start_execution_ts);
+
+                result
             }),
         )));
 
