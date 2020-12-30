@@ -33,6 +33,9 @@ use crate::services::pool::{set_freshness_threshold, PoolService};
 use indy_wallet::WalletService;
 
 use self::threadpool::ThreadPool;
+use anoncreds::{
+    issuer::IssuerCommandExecutor, prover::ProverCommandExecutor, verifier::VerifierCommandExecutor,
+};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub mod anoncreds;
@@ -90,13 +93,13 @@ pub fn indy_set_runtime_config(config: IndyConfig) {
             .unwrap()
             .set_num_threads(crypto_thread_pool_size);
     }
-  
+
     match config.collect_backtrace {
         Some(true) => env::set_var("RUST_BACKTRACE", "1"),
         Some(false) => env::set_var("RUST_BACKTRACE", "0"),
         _ => {}
     }
- 
+
     if let Some(threshold) = config.freshness_threshold {
         set_freshness_threshold(threshold);
     }
@@ -112,6 +115,9 @@ fn get_cur_time() -> u128 {
 
 pub struct CommandExecutor {
     pub anoncreds_command_executor: Arc<AnoncredsCommandExecutor>,
+    pub issuer_command_cxecutor: Arc<IssuerCommandExecutor>,
+    pub prover_command_cxecutor: Arc<ProverCommandExecutor>,
+    pub verifier_command_cxecutor: Arc<VerifierCommandExecutor>,
     pub crypto_command_executor: Arc<CryptoCommandExecutor>,
     pub ledger_command_executor: Arc<LedgerCommandExecutor>,
     pub pool_command_executor: Arc<PoolCommandExecutor>,
@@ -158,6 +164,24 @@ impl CommandExecutor {
             wallet_service.clone(),
             crypto_service.clone(),
         ));
+
+        let issuer_command_cxecutor = Arc::new(IssuerCommandExecutor::new(
+            anoncreds_service.clone(),
+            pool_service.clone(),
+            blob_storage_service.clone(),
+            wallet_service.clone(),
+            crypto_service.clone(),
+        ));
+
+        let prover_command_cxecutor = Arc::new(ProverCommandExecutor::new(
+            anoncreds_service.clone(),
+            wallet_service.clone(),
+            crypto_service.clone(),
+            blob_storage_service.clone(),
+        ));
+
+        let verifier_command_cxecutor =
+            Arc::new(VerifierCommandExecutor::new(anoncreds_service.clone()));
 
         let crypto_command_executor = Arc::new(CryptoCommandExecutor::new(
             wallet_service.clone(),
@@ -208,7 +232,10 @@ impl CommandExecutor {
 
         CommandExecutor {
             anoncreds_command_executor: anoncreds_command_executor.clone(),
-            crypto_command_executor: crypto_command_executor.clone(),
+            issuer_command_cxecutor: issuer_command_cxecutor.clone(),
+            prover_command_cxecutor: prover_command_cxecutor.clone(),
+            verifier_command_cxecutor: verifier_command_cxecutor.clone(),
+            crypto_command_executor: crypto_command_executor,
             ledger_command_executor: ledger_command_executor.clone(),
             pool_command_executor: pool_command_executor.clone(),
             did_command_executor: did_command_executor.clone(),
@@ -228,7 +255,6 @@ impl CommandExecutor {
                             instrumented_cmd: InstrumentedCommand,
                             //metrics_service:Arc<MetricsService>, FIXME:
                             anoncreds_command_executor: Arc<AnoncredsCommandExecutor>,
-                            crypto_command_executor: Arc<CryptoCommandExecutor>,
                             ledger_command_executor: Arc<LedgerCommandExecutor>,
                             pool_command_executor: Arc<PoolCommandExecutor>,
                             did_command_executor: Arc<DidCommandExecutor>,
@@ -321,7 +347,6 @@ impl CommandExecutor {
                                 cmd,
                                 /*metrics_service.clone(),*/
                                 anoncreds_command_executor.clone(),
-                                crypto_command_executor.clone(),
                                 ledger_command_executor.clone(),
                                 pool_command_executor.clone(),
                                 did_command_executor.clone(),

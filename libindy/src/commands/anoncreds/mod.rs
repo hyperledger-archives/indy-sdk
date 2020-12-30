@@ -1,61 +1,58 @@
 pub mod issuer;
 pub mod prover;
-pub mod verifier;
 mod tails;
+pub mod verifier;
 
-use crate::commands::anoncreds::issuer::{IssuerCommand, IssuerCommandExecutor};
+use crate::commands::anoncreds::issuer::IssuerCommandExecutor;
 use crate::commands::anoncreds::prover::{ProverCommand, ProverCommandExecutor};
 use crate::commands::anoncreds::verifier::{VerifierCommand, VerifierCommandExecutor};
 
+use crate::services::anoncreds::helpers::to_unqualified;
 use crate::services::anoncreds::AnoncredsService;
 use crate::services::blob_storage::BlobStorageService;
+use crate::services::crypto::CryptoService;
 use crate::services::pool::PoolService;
 use indy_wallet::WalletService;
-use crate::services::crypto::CryptoService;
-use crate::services::anoncreds::helpers::to_unqualified;
 
 use indy_api_types::errors::prelude::*;
 
 use std::sync::Arc;
 
 pub enum AnoncredsCommand {
-    Issuer(IssuerCommand),
     Prover(ProverCommand),
     Verifier(VerifierCommand),
     ToUnqualified(
         String, // entity
-        Box<dyn Fn(IndyResult<String>) + Send + Sync>)
+        Box<dyn Fn(IndyResult<String>) + Send + Sync>,
+    ),
 }
 
 pub struct AnoncredsCommandExecutor {
-    issuer_command_cxecutor: IssuerCommandExecutor,
     prover_command_cxecutor: ProverCommandExecutor,
-    verifier_command_cxecutor: VerifierCommandExecutor
+    verifier_command_cxecutor: VerifierCommandExecutor,
 }
 
 impl AnoncredsCommandExecutor {
-    pub fn new(anoncreds_service:Arc<AnoncredsService>,
-               blob_storage_service:Arc<BlobStorageService>,
-               pool_service:Arc<PoolService>,
-               wallet_service:Arc<WalletService>,
-               crypto_service:Arc<CryptoService>) -> AnoncredsCommandExecutor {
+    pub fn new(
+        anoncreds_service: Arc<AnoncredsService>,
+        blob_storage_service: Arc<BlobStorageService>,
+        pool_service: Arc<PoolService>,
+        wallet_service: Arc<WalletService>,
+        crypto_service: Arc<CryptoService>,
+    ) -> AnoncredsCommandExecutor {
         AnoncredsCommandExecutor {
-            issuer_command_cxecutor: IssuerCommandExecutor::new(
-                anoncreds_service.clone(), pool_service.clone(),
-                blob_storage_service.clone(), wallet_service.clone(), crypto_service.clone()),
             prover_command_cxecutor: ProverCommandExecutor::new(
-                anoncreds_service.clone(), wallet_service.clone(), crypto_service.clone(), blob_storage_service.clone()),
-            verifier_command_cxecutor: VerifierCommandExecutor::new(
-                anoncreds_service.clone()),
+                anoncreds_service.clone(),
+                wallet_service.clone(),
+                crypto_service.clone(),
+                blob_storage_service.clone(),
+            ),
+            verifier_command_cxecutor: VerifierCommandExecutor::new(anoncreds_service.clone()),
         }
     }
 
     pub async fn execute(&self, command: AnoncredsCommand) {
         match command {
-            AnoncredsCommand::Issuer(cmd) => {
-                debug!(target: "anoncreds_command_executor", "Issuer command received");
-                self.issuer_command_cxecutor.execute(cmd).await;
-            }
             AnoncredsCommand::Prover(cmd) => {
                 debug!(target: "anoncreds_command_executor", "Prover command received");
                 self.prover_command_cxecutor.execute(cmd).await;

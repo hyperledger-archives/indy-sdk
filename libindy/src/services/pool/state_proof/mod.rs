@@ -28,7 +28,7 @@ use crate::services::pool::Nodes;
 
 mod node;
 
-pub fn parse_generic_reply_for_proof_checking(json_msg: &SJsonValue, raw_msg: &str, sp_key: Option<&[u8]>) -> Option<Vec<ParsedSP>> {
+pub fn parse_generic_reply_for_proof_checking(json_msg: &SJsonValue, _raw_msg: &str, sp_key: Option<&[u8]>) -> Option<Vec<ParsedSP>> {
     let type_ = if let Some(type_) = json_msg["type"].as_str() {
         trace!("TransactionHandler::parse_generic_reply_for_proof_checking: type_: {:?}", type_);
         type_
