@@ -31,7 +31,7 @@ pub mod pairwise;
 pub mod pool;
 pub mod wallet;
 pub mod cache;
-pub mod metrics;
+// pub mod metrics;
 mod utils;
 
 use std::ffi::CString;

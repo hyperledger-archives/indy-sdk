@@ -17,7 +17,7 @@ WORKDIR=${PWD}
 LIBINDY_WORKDIR=${WORKDIR}
 CI_DIR="${LIBINDY_WORKDIR}/ci"
 export ANDROID_BUILD_FOLDER="/tmp/android_build"
-DOWNLOAD_PREBUILTS="0"
+DOWNLOAD_PREBUILTS="1"
 
 while getopts ":d" opt; do
     case ${opt} in
@@ -57,49 +57,47 @@ normalize_dir(){
 setup_dependencies(){
     if [ "${DOWNLOAD_PREBUILTS}" == "1" ]; then
         setup_dependencies_env_vars ${ABSOLUTE_ARCH}
-        else
-            echo "${BLUE}Not downloading prebuilt dependencies. Dependencies locations have to be passed${RESET}"
-            if [ -z "${OPENSSL_DIR}" ]; then
+    else
+        echo "${BLUE}Not downloading prebuilt dependencies. Dependencies locations have to be passed${RESET}"
+        if [ -z "${OPENSSL_DIR}" ]; then
 
-                OPENSSL_DIR=$(normalize_dir "openssl_${ABSOLUTE_ARCH}")
-                if [ -d "${OPENSSL_DIR}" ]; then
-                    echo "${GREEN}Found ${OPENSSL_DIR}${RESET}"
-                elif [ -z "$2" ]; then
-                    echo STDERR "${RED}Missing OPENSSL_DIR argument and environment variable${RESET}"
-                    echo STDERR "${BLUE}e.g. set OPENSSL_DIR=<path> for environment or openssl_${ABSOLUTE_ARCH}${RESET}"
-                    exit 1
-                else
-                    OPENSSL_DIR=$2
-                fi
+            OPENSSL_DIR=$(normalize_dir "openssl_${ABSOLUTE_ARCH}")
+            if [ -d "${OPENSSL_DIR}" ]; then
+                echo "${GREEN}Found ${OPENSSL_DIR}${RESET}"
+            elif [ -z "$2" ]; then
+                echo STDERR "${RED}Missing OPENSSL_DIR argument and environment variable${RESET}"
+                echo STDERR "${BLUE}e.g. set OPENSSL_DIR=<path> for environment or openssl_${ABSOLUTE_ARCH}${RESET}"
+                exit 1
+            else
+                OPENSSL_DIR=$2
             fi
+        fi
 
-            if [ -z "${SODIUM_DIR}" ]; then
-                SODIUM_DIR=$(normalize_dir "libsodium_${ABSOLUTE_ARCH}")
-                if [ -d "${SODIUM_DIR}" ] ; then
-                    echo "${GREEN}Found ${SODIUM_DIR}${RESET}"
-                elif [ -z "$3" ]; then
-                    echo STDERR "${RED}Missing SODIUM_DIR argument and environment variable${RESET}"
-                    echo STDERR "${BLUE}e.g. set SODIUM_DIR=<path> for environment or libsodium_${ABSOLUTE_ARCH}${RESET}"
-                    exit 1
-                else
-                    SODIUM_DIR=$3
-                fi
+        if [ -z "${SODIUM_DIR}" ]; then
+            SODIUM_DIR=$(normalize_dir "libsodium_${ABSOLUTE_ARCH}")
+            if [ -d "${SODIUM_DIR}" ] ; then
+                echo "${GREEN}Found ${SODIUM_DIR}${RESET}"
+            elif [ -z "$3" ]; then
+                echo STDERR "${RED}Missing SODIUM_DIR argument and environment variable${RESET}"
+                echo STDERR "${BLUE}e.g. set SODIUM_DIR=<path> for environment or libsodium_${ABSOLUTE_ARCH}${RESET}"
+                exit 1
+            else
+                SODIUM_DIR=$3
             fi
+        fi
 
-            if [ -z "${LIBZMQ_DIR}" ] ; then
-                LIBZMQ_DIR=$(normalize_dir  "libzmq_${ABSOLUTE_ARCH}")
-                if [ -d "${LIBZMQ_DIR}" ] ; then
-                    echo "${GREEN}Found ${LIBZMQ_DIR}${RESET}"
-                elif [ -z "$4" ] ; then
-                    echo STDERR "${RED}Missing LIBZMQ_DIR argument and environment variable${RESET}"
-                    echo STDERR "${BLUE}e.g. set LIBZMQ_DIR=<path> for environment or libzmq_${ABSOLUTE_ARCH}${RESET}"
-                    exit 1
-                else
-                    LIBZMQ_DIR=$4
-                fi
+        if [ -z "${LIBZMQ_DIR}" ] ; then
+            LIBZMQ_DIR=$(normalize_dir  "libzmq_${ABSOLUTE_ARCH}")
+            if [ -d "${LIBZMQ_DIR}" ] ; then
+                echo "${GREEN}Found ${LIBZMQ_DIR}${RESET}"
+            elif [ -z "$4" ] ; then
+                echo STDERR "${RED}Missing LIBZMQ_DIR argument and environment variable${RESET}"
+                echo STDERR "${BLUE}e.g. set LIBZMQ_DIR=<path> for environment or libzmq_${ABSOLUTE_ARCH}${RESET}"
+                exit 1
+            else
+                LIBZMQ_DIR=$4
             fi
-
-
+        fi
     fi
 }
 
@@ -119,8 +117,10 @@ statically_link_dependencies_with_libindy(){
 package_library(){
 
    export PACKAGE_DIR=${ANDROID_BUILD_FOLDER}/libindy_${ABSOLUTE_ARCH}
+   export ZIP_DIR=/tmp/artifacts/libindy
 
     mkdir -p ${PACKAGE_DIR}/lib
+    mkdir -p ${ZIP_DIR}
 
     cp -rf "${WORKDIR}/include" ${PACKAGE_DIR}
     cp "${WORKDIR}/target/${TRIPLET}/release/libindy.a" ${PACKAGE_DIR}/lib
@@ -132,14 +132,16 @@ package_library(){
     pushd ${LIBINDY_WORKDIR}
         rm -f libindy_android_${ABSOLUTE_ARCH}.zip
         cp -rf ${PACKAGE_DIR} .
-        if [ -z "${LIBINDY_VERSION}" ]; then
-            zip -r libindy_android_${ABSOLUTE_ARCH}.zip libindy_${ABSOLUTE_ARCH} &&
-            echo "${BLUE}Zip file available at ${PWD}/libindy_android_${ABSOLUTE_ARCH}.zip ${RESET}"
+        if [ -n "${LIBINDY_VERSION}" ]; then
+            zip -r ${ZIP_DIR}/libindy_android_${ABSOLUTE_ARCH}_${LIBINDY_VERSION}.zip libindy_${ABSOLUTE_ARCH} &&
+            echo "${BLUE}Zip file available at ${ZIP_DIR}/libindy_android_${ABSOLUTE_ARCH}_${LIBINDY_VERSION}.zip ${RESET}"
+        elif [ -n "${FULL_VERSION_NAME}" ]; then
+            zip -r ${ZIP_DIR}/${FULL_VERSION_NAME}.zip libindy_${ABSOLUTE_ARCH} &&
+            echo "${BLUE}Zip file available at ${ZIP_DIR}/${FULL_VERSION_NAME}.zip ${RESET}"
         else
-            zip -r libindy_android_${ABSOLUTE_ARCH}_${LIBINDY_VERSION}.zip libindy_${ABSOLUTE_ARCH} &&
-            echo "${BLUE}Zip file available at ${PWD}/libindy_android_${ABSOLUTE_ARCH}_${LIBINDY_VERSION}.zip ${RESET}"
+            zip -r ${ZIP_DIR}/libindy_android_${ABSOLUTE_ARCH}.zip libindy_${ABSOLUTE_ARCH} &&
+            echo "${BLUE}Zip file available at ${ZIP_DIR}/libindy_android_${ABSOLUTE_ARCH}.zip ${RESET}"
         fi
-
     popd
 }
 
@@ -157,7 +159,10 @@ build(){
         cargo clean
         RUSTFLAGS="-C link-args=-Wl -lc++_shared" \
         cargo build --release --target=${TRIPLET}
-
+        rm -rf target/${TRIPLET}/release/deps
+        rm -rf target/${TRIPLET}/release/build
+        rm -rf target/release/deps
+        rm -rf target/release/build
     popd
 }
 

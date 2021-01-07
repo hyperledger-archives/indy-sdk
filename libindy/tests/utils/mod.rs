@@ -26,7 +26,7 @@ pub mod payments;
 pub mod rand_utils;
 pub mod logger;
 pub mod cache;
-pub mod metrics;
+// pub mod metrics;
 
 #[macro_use]
 #[allow(unused_macros)]

@@ -12,13 +12,31 @@ package="$1"
 
 [ -z ${package} ] && exit 1
 
-export PKG_CONFIG_ALLOW_CROSS=1
-export POD_FILE_NAME=${package}.tar.gz
-export LIBINDY_POD_VERSION=1.8.2
+if [ -z "${LIBINDY_POD_VERSION}" ]; then
+    echo "ERROR: LIBINDY_POD_VERSION environment variable must be specified"
+fi
+
+if [ -z "${RUST_VER}" ]; then
+    export RUST_VER=1.45.2
+    echo "ERROR: RUST_VER environment variable not specified, using $RUST_VER"
+fi
 
 if [ -z "${OPENSSL_DIR}" ]; then
-    export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2q
+    export OPENSSL_DIR=$(brew --prefix openssl)
+    echo "OPENSSL_DIR not specified, using $OPENSSL_DIR"
 fi
+
+export PKG_CONFIG_ALLOW_CROSS=1
+export CARGO_INCREMENTAL=1
+export POD_FILE_NAME=${package}.tar.gz
+
+rustup default ${RUST_VER}
+rustup target add aarch64-apple-ios x86_64-apple-ios
+cargo install cargo-lipo
+
+brew list libsodium &>/dev/null || brew install libsodium
+brew list zeromq &>/dev/null || brew install zeromq
+brew list openssl &>/dev/null || brew install openssl
 
 echo "Build IOS POD started..."
 

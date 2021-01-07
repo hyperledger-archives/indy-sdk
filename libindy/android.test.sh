@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-
-
 WORKDIR=${PWD}
 LIBINDY_WORKDIR=${WORKDIR}
 CI_DIR="${LIBINDY_WORKDIR}/ci"
