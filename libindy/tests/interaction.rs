@@ -512,11 +512,12 @@ impl Verifier {
 }
 
 #[cfg(feature = "revocation_tests")]
+#[ignore]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     anoncreds_revocation_interaction_test_one_prover(r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_ON_DEMAND"}"#);
 }
-
+ 
 #[cfg(feature = "revocation_tests")]
 #[cfg(any(feature = "force_full_interaction_tests", not(target_os = "android")))]
 #[cfg(not(feature = "only_high_cases"))]
@@ -816,6 +817,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 }
 
 #[cfg(feature = "revocation_tests")]
+#[ignore]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_did() {
     let setup = Setup::empty();
@@ -961,6 +963,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_did(
 }
 
 #[cfg(feature = "revocation_tests")]
+#[ignore]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_issuer_unqualified_prover() {
     let setup = Setup::empty();

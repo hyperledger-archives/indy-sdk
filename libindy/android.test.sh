@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-
-
+set -x
 
 WORKDIR=${PWD}
 LIBINDY_WORKDIR=${WORKDIR}
@@ -14,6 +13,11 @@ if [ -z "${TARGET_ARCH}" ]; then
     echo STDERR "Missing TARGET_ARCH argument"
     echo STDERR "e.g. x86 or arm"
     exit 1
+fi
+
+if [ -z "${TEST_POOL_IP}" ]; then
+    echo "Missing TEST_POOL_IP value, setting default value of 10.0.0.2"
+    export TEST_POOL_IP="10.0.0.2"
 fi
 
 set -e
@@ -89,13 +93,11 @@ execute_on_device(){
         adb -e shell "chmod 755 /data/local/tmp/$EXE_NAME"
         OUT="$(mktemp)"
         MARK="ADB_SUCCESS!"
-        time adb -e shell "TEST_POOL_IP=10.0.0.2 LD_LIBRARY_PATH=/data/local/tmp RUST_TEST_THREADS=1 RUST_BACKTRACE=1 RUST_LOG=debug /data/local/tmp/$EXE_NAME && echo $MARK" 2>&1 | tee $OUT
+        time adb -e shell "TEST_POOL_IP=$TEST_POOL_IP LD_LIBRARY_PATH=/data/local/tmp RUST_TEST_THREADS=1 RUST_BACKTRACE=1 RUST_LOG=debug /data/local/tmp/$EXE_NAME && echo $MARK" 2>&1 | tee $OUT
         grep $MARK $OUT
     done
 
 }
-
-
 
 recreate_avd
 setup_dependencies_env_vars ${ABSOLUTE_ARCH}

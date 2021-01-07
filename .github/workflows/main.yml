@@ -1,0 +1,1119 @@
+name: indy-sdk-build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - "**"
+
+env:
+  RUST_VER: 1.45.2
+  POOL_IP: "127.0.0.1"
+  DEVICE_ABIS: "arm arm64"
+  EMULATOR_ABIS: "x86 x86_64"
+
+jobs:
+
+  ####################################################
+  # INITIALIZATION
+  ####################################################
+ 
+  workflow-setup:
+    runs-on: ubuntu-latest
+    outputs:
+      CACHE_KEY_POOL: ${{ steps.mainstep.outputs.CACHE_KEY_POOL }}
+      CACHE_KEY_LIBINDY: ${{ steps.mainstep.outputs.CACHE_KEY_LIBINDY }}
+      CACHE_KEY_ANDROID: ${{ steps.mainstep.outputs.CACHE_KEY_ANDROID }}
+      CACHE_KEY_PYTHON: ${{ steps.mainstep.outputs.CACHE_KEY_PYTHON }}
+      CACHE_KEY_WRAPPER_BASE: ${{ steps.mainstep.outputs.CACHE_KEY_WRAPPER_BASE }}
+      DOCKER_IMG_NAME_POOL: ${{ steps.mainstep.outputs.DOCKER_IMG_NAME_POOL }}
+      DOCKER_IMG_NAME_LIBINDY: ${{ steps.mainstep.outputs.DOCKER_IMG_NAME_LIBINDY }}
+      DOCKER_IMG_NAME_ANDROID: ${{ steps.mainstep.outputs.DOCKER_IMG_NAME_ANDROID }}
+      DOCKER_IMG_NAME_PYTHON: ${{ steps.mainstep.outputs.DOCKER_IMG_NAME_PYTHON }}
+      DOCKER_IMG_NAME_WRAPPER_BASE: ${{ steps.mainstep.outputs.DOCKER_IMG_NAME_WRAPPER_BASE }}
+      PUBLISH_VERSION: ${{ steps.mainstep.outputs.PUBLISH_VERSION }}
+      RELEASE: ${{ steps.mainstep.outputs.RELEASE }}
+      PRERELEASE: ${{ steps.mainstep.outputs.PRERELEASE }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VER }}
+      - name: Set outputs
+        id: mainstep
+        run: |
+          if [[ -z "$GITHUB_HEAD_REF" ]]; then # is set only if pipeline run is triggered as pull request
+            BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+            echo "Setting BRANCH_NAME=$BRANCH_NAME because this pipeline is run as Push"
+          else
+            BRANCH_NAME=$GITHUB_HEAD_REF
+            echo "Setting BRANCH_NAME=$BRANCH_NAME because this pipeline is run as Pull Request"
+          fi
+
+          BRANCH_NAME=`echo $BRANCH_NAME | sed "s/[^[:alnum:]-]//g" | tr '[:upper:]' '[:lower:]'` # lowercase, only alphanumeric and dash
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "PR Labels: ${{ toJson(github.event.pull_request.labels.*.name) }}"
+
+            REPO_HEAD="${{ github.event.pull_request.head.repo.full_name }}" # source repository
+            REPO_BASE="${{ github.event.pull_request.head.base.full_name }}" # target repository
+            echo "This is pull request from $REPO_HEAD to $REPO_BASE"
+
+            if [[ "$REPO_HEAD" == "${{ github.repository }}" ]]; then
+              echo "This CI run is PR from non-forked repository."
+              IS_FORK="false";
+            else
+              echo "This is fork."
+              IS_FORK="true";
+            fi;
+          else
+            echo "Not PR so this is not fork."
+            IS_FORK="false";
+          fi;
+
+          REPO_VERSION_MOST_RECENT=$(git describe --tags --always --abbrev=0)
+          REPO_VERSION_MOST_RECENT=${REPO_VERSION_MOST_RECENT:1} # The tags start as v1.2.3
+          REPO_VERSION_DESIRED=$(cargo pkgid --manifest-path libindy/Cargo.toml | cut -d# -f2 | cut -d: -f2)
+          echo "Highest released version was: $REPO_VERSION_MOST_RECENT, desired version (specified in libindy/Cargo.toml) is $REPO_VERSION_DESIRED"
+
+          RELEASE="false"
+          PRERELEASE="false"
+
+          if [[ "$IS_FORK" == "false" ]]; then
+            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+              if [[ "${{ contains(github.event.pull_request.labels.*.name, 'pre-release') }}" == "true" ]]; then
+                PRERELEASE="true"
+              fi;
+            elif [[ "${{ github.event_name }}" == "push" ]]; then
+              if [[ "$BRANCH_NAME" == "master" && "$REPO_VERSION_DESIRED" != "$REPO_VERSION_MOST_RECENT" ]]; then
+                PUBLISH_VERSION="$REPO_VERSION_DESIRED"
+                RELEASE="true"
+                echo "This is push to master, and version was bumped from $REPO_VERSION_MOST_RECENT to $REPO_VERSION_DESIRED. Will publish a release of $REPO_VERSION_DESIRED."
+              fi;
+            fi;
+
+            if [[ -z "$PUBLISH_VERSION" ]]; then
+              PUBLISH_VERSION="$REPO_VERSION_MOST_RECENT-post-${{ github.run_number }}" 
+            fi;
+
+            echo "CI will publish artifacts at version: $PUBLISH_VERSION"
+          else
+            echo "This PR is from fork, nothing will be published because the CI wouldn't be able to access repo secrets to perform publish."
+            PUBLISH_VERSION=""
+          fi;
+
+          LIBINDY_SOURCE_HASH=${{ hashFiles('libindy') }}
+          LIBNULLPAY_SOURCE_HASH=${{ hashFiles('libnullpay') }}
+          POSTGRES_SOURCE_HASH=${{ hashFiles('experimental/plugins/postgres') }}
+
+          JAVA_WRAPPER_HASH=${{ hashFiles('wrappers/java') }}
+          PYTHON_WRAPPER_HASH=${{ hashFiles('wrappers/python') }}
+
+          POOL_DOCKERFILE_HASH=${{ hashFiles('ci/indy-pool.dockerfile') }}-${{ env.POOL_IP }}
+          ALPINE_DOCKERFILE_HASH=${{ hashFiles('libindy/ci/alpine.dockerfile') }}
+          WRAPPER_BASE_DOCKERFILE_HASH=${{ hashFiles('libindy/ci/wrappers/wrapper-base.dockerfile') }}
+          ANDROID_DOCKERFILE_HASH=${{ hashFiles('libindy/ci/wrappers/android.dockerfile') }}
+          PYTHON_DOCKERFILE_HASH=${{ hashFiles('libindy/ci/wrappers/python.dockerfile') }}
+
+          LIBINDY_HASH=${LIBINDY_SOURCE_HASH:0:11}-${LIBNULLPAY_SOURCE_HASH:0:11}-${POSTGRES_SOURCE_HASH:0:11}-${ALPINE_DOCKERFILE_HASH:0:11}
+          ANDROID_HASH=${ANDROID_DOCKERFILE_HASH:0:31}
+          PYTHON_HASH=${PYTHON_DOCKERFILE_HASH:0:31}
+          WRAPPER_BASE_HASH=${WRAPPER_BASE_DOCKERFILE_HASH:0:31}
+
+          echo "::set-output name=PUBLISH_VERSION::$PUBLISH_VERSION"
+          echo "::set-output name=RELEASE::$RELEASE"
+          echo "::set-output name=PRERELEASE::$PRERELEASE"
+
+          echo "::set-output name=CACHE_KEY_POOL::$POOL_DOCKERFILE_HASH"
+          echo "::set-output name=CACHE_KEY_LIBINDY::$LIBINDY_HASH"
+          echo "::set-output name=CACHE_KEY_WRAPPER_BASE::$WRAPPER_BASE_HASH"
+          echo "::set-output name=CACHE_KEY_ANDROID::$ANDROID_HASH"
+          echo "::set-output name=CACHE_KEY_PYTHON::$PYTHON_HASH"
+
+          echo "::set-output name=DOCKER_IMG_NAME_POOL::indypool:$POOL_DOCKERFILE_HASH"
+          echo "::set-output name=DOCKER_IMG_NAME_LIBINDY::libindy:$LIBINDY_HASH"
+          echo "::set-output name=DOCKER_IMG_NAME_WRAPPER_BASE::wrapper-base:$WRAPPER_BASE_HASH"
+          echo "::set-output name=DOCKER_IMG_NAME_ANDROID::android:$ANDROID_HASH"
+          echo "::set-output name=DOCKER_IMG_NAME_PYTHON::python:$PYTHON_HASH"
+          echo ${{ env.POOL_IP }}
+
+  ####################################################
+  # IMAGE BUILDS
+  ####################################################
+
+  build-image-indypool:
+    needs: workflow-setup
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_POOL: ${{ needs.workflow-setup.outputs.CACHE_KEY_POOL }}
+      DOCKER_IMG_NAME_POOL: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_POOL }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+      - name: Try load from cache.
+        id: cache-image-pool
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_POOL }}
+
+      - name: Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: docker.pkg.github.com
+          username: $GITHUB_ACTOR
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: If NOT found in cache, build and cache image.
+        if: steps.cache-image-pool.outputs.cache-hit != 'true'
+        run: |
+          docker build -t "$DOCKER_IMG_NAME_POOL" --build-arg=pool_ip=${{ env.POOL_IP }} -f ci/indy-pool.dockerfile ci
+          mkdir -p /tmp/imgcache
+          docker save "$DOCKER_IMG_NAME_POOL" > /tmp/imgcache/img_indypool.rar
+      - name: Load image from cache
+        run: |
+          docker load < /tmp/imgcache/img_indypool.rar
+      - name: Verify indypool image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_POOL" || { echo "Image $DOCKER_IMG_NAME_POOL was not found!" ; exit 1; }
+
+  build-image-libindy:
+    needs: workflow-setup
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_LIBINDY: ${{ needs.workflow-setup.outputs.CACHE_KEY_LIBINDY }}
+      DOCKER_IMG_NAME_LIBINDY: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_LIBINDY }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+      - name: Try load from cache.
+        id: cache-image-libindy
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_LIBINDY }}
+      - name: If NOT found in cache, build and cache image.
+        if: steps.cache-image-libindy.outputs.cache-hit != 'true'
+        run: |
+          docker build --build-arg "RUST_VER=${{ env.RUST_VER }}" \
+                       -f libindy/ci/alpine.dockerfile \
+                       -t "$DOCKER_IMG_NAME_LIBINDY" \
+                        .
+          mkdir -p /tmp/imgcache
+          docker save "$DOCKER_IMG_NAME_LIBINDY" > /tmp/imgcache/img_libindy.rar
+      - name: Load image from cache
+        run: |
+          docker load < /tmp/imgcache/img_libindy.rar
+      - name: Verify libindy image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_LIBINDY" || { echo "Image $DOCKER_IMG_NAME_LIBINDY was not found!" ; exit 1; }
+
+  build-image-wrapper-base:
+    needs: workflow-setup
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_WRAPPER_BASE: ${{ needs.workflow-setup.outputs.CACHE_KEY_WRAPPER_BASE }}
+      DOCKER_IMG_NAME_WRAPPER_BASE: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_WRAPPER_BASE }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+      - name: Try load from cache.
+        id: cache-image-wrapper-base
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_WRAPPER_BASE }}
+      - name: If NOT found in cache, build and cache image.
+        if: steps.cache-image-wrapper-base.outputs.cache-hit != 'true'
+        run: |
+          docker build --build-arg "RUST_VER=${{ env.RUST_VER }}" \
+                       -f libindy/ci/wrappers/wrapper-base.dockerfile \
+                       -t "$DOCKER_IMG_NAME_WRAPPER_BASE" \
+                        .
+          mkdir -p /tmp/imgcache
+          docker save "$DOCKER_IMG_NAME_WRAPPER_BASE" > /tmp/imgcache/img_wrapper_base.rar
+      - name: Load image from cache
+        run: |
+          docker load < /tmp/imgcache/img_wrapper_base.rar
+      - name: Verify wrapper base image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_WRAPPER_BASE" || { echo "Image $DOCKER_IMG_NAME_WRAPPER_BASE was not found!" ; exit 1; }
+
+  build-image-android:
+    runs-on: ubuntu-latest
+    needs: 
+      - workflow-setup
+      - build-image-wrapper-base
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_ANDROID: ${{ needs.workflow-setup.outputs.CACHE_KEY_ANDROID }}
+      DOCKER_IMG_NAME_ANDROID: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_ANDROID }}
+      CACHE_KEY_WRAPPER_BASE: ${{ needs.workflow-setup.outputs.CACHE_KEY_WRAPPER_BASE }}
+      DOCKER_IMG_NAME_WRAPPER_BASE: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_WRAPPER_BASE }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+      - name: Load wrapper base image cache
+        id: load-cached-wrapper-base-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_WRAPPER_BASE }}
+      - name: If no cached image found
+        if: steps.load-cached-wrapper-base-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_WRAPPER_BASE"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_wrapper_base.rar
+
+      - name: Try load from cache.
+        id: cache-image-android
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_ANDROID }}
+      - name: If NOT found in cache, build and cache image.
+        if: steps.cache-image-libindy.outputs.cache-hit != 'true'
+        run: |
+          docker build --build-arg "WRAPPER_BASE_IMAGE=${{ env.DOCKER_IMG_NAME_WRAPPER_BASE }}" \
+                       -f libindy/ci/wrappers/android.dockerfile \
+                       -t "$DOCKER_IMG_NAME_ANDROID" \
+                        libindy/ci
+          mkdir -p /tmp/imgcache
+          docker save "$DOCKER_IMG_NAME_ANDROID" > /tmp/imgcache/img_android.rar
+      - name: Load image from cache
+        run: |
+          docker load < /tmp/imgcache/img_android.rar
+      - name: Verify android image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_ANDROID" || { echo "Image $DOCKER_IMG_NAME_ANDROID was not found!" ; exit 1; }
+
+  build-image-python:
+    runs-on: ubuntu-latest
+    needs: 
+      - workflow-setup
+      - build-image-wrapper-base
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_PYTHON: ${{ needs.workflow-setup.outputs.CACHE_KEY_PYTHON }}
+      DOCKER_IMG_NAME_PYTHON: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_PYTHON }}
+      CACHE_KEY_WRAPPER_BASE: ${{ needs.workflow-setup.outputs.CACHE_KEY_WRAPPER_BASE }}
+      DOCKER_IMG_NAME_WRAPPER_BASE: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_WRAPPER_BASE }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+      - name: Load wrapper base image cache
+        id: load-cached-wrapper-base-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_WRAPPER_BASE }}
+      - name: If no cached image found
+        if: steps.load-cached-wrapper-base-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_WRAPPER_BASE"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_wrapper_base.rar
+      - name: Verify base image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_WRAPPER_BASE" || { echo "Image $DOCKER_IMG_NAME_WRAPPER_BASE was not found!" ; exit 1; }
+      - name: Try load from cache.
+        id: cache-image-python
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_PYTHON }}
+      - name: If NOT found in cache, build and cache image.
+        if: steps.cache-image-python.outputs.cache-hit != 'true'
+        run: |
+          docker build --build-arg "WRAPPER_BASE_IMAGE=${{ env.DOCKER_IMG_NAME_WRAPPER_BASE }}" \
+                       -f libindy/ci/wrappers/python.dockerfile \
+                       -t "$DOCKER_IMG_NAME_PYTHON" \
+                        libindy/ci
+          mkdir -p /tmp/imgcache
+          docker save "$DOCKER_IMG_NAME_PYTHON" > /tmp/imgcache/img_python.rar
+      - name: Load image from cache
+        run: |
+          docker load < /tmp/imgcache/img_python.rar
+      - name: Verify python image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_PYTHON" || { echo "Image $DOCKER_IMG_NAME_PYTHON was not found!" ; exit 1; }
+
+  ####################################################
+  # INDYPOOL DOCKER IMAGE
+  ####################################################
+
+  publish-pool-image:
+    runs-on: ubuntu-latest
+    needs: 
+      - workflow-setup
+      - build-image-indypool
+    if: needs.workflow-setup.outputs.PUBLISH_VERSION != ''
+    env:
+      CACHE_KEY_POOL: ${{needs.workflow-setup.outputs.CACHE_KEY_POOL}}
+      DOCKER_IMG_NAME_POOL: ${{needs.workflow-setup.outputs.DOCKER_IMG_NAME_POOL}}
+      PUBLISH_VERSION: ${{needs.workflow-setup.outputs.PUBLISH_VERSION}}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Load indypool image cache
+        id: load-cached-pool-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_POOL }}
+      - name: If no cached image found
+        if: steps.load-cached-pool-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_POOL"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_indypool.rar
+      - name: Verify indypool image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_POOL" || { echo "Image $DOCKER_IMG_NAME_POOL was not found!" ; exit 1; }
+      - name: Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: docker.pkg.github.com
+          username: $GITHUB_ACTOR
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish image
+        run: |
+          IFS=$':' read -a arr <<< $DOCKER_IMG_NAME_POOL
+          DOCKER_IMG_NAME_TAGLESS=${arr[0]}
+          GITHUB_REPOSITORY_LOWERCASE=`echo $GITHUB_REPOSITORY | awk '{print tolower($0)}'`
+          REMOTE_DOCKER_IMG_NAME_POOL="docker.pkg.github.com/${GITHUB_REPOSITORY_LOWERCASE}/${DOCKER_IMG_NAME_TAGLESS}:${PUBLISH_VERSION}"
+          echo "Releasing pool docker image version $PUBLISH_VERSION, tagged $REMOTE_DOCKER_IMG_NAME_POOL"
+          docker tag "$DOCKER_IMG_NAME_POOL" "$REMOTE_DOCKER_IMG_NAME_POOL"
+          docker push "$REMOTE_DOCKER_IMG_NAME_POOL" || true
+
+  ####################################################
+  # LIBINDY DOCKER IMAGE
+  ####################################################
+
+  test-libindy:
+    runs-on: ubuntu-latest
+    needs: 
+      - workflow-setup
+      - build-image-libindy
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_LIBINDY: ${{ needs.workflow-setup.outputs.CACHE_KEY_LIBINDY }}
+      CACHE_KEY_POOL: ${{ needs.workflow-setup.outputs.CACHE_KEY_POOL }}
+      DOCKER_IMG_NAME_LIBINDY: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_LIBINDY }}
+      DOCKER_IMG_NAME_POOL: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_POOL }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+      - name: Load indypool image
+        id: load-cached-pool-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_POOL }}
+      - name: If no cached image found
+        if: steps.load-cached-pool-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_POOL"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_indypool.rar
+      - name: Load libindy image cache
+        id: load-cached-libindy-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_LIBINDY }}
+      - name: If no cached image found
+        if: steps.load-cached-libindy-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_LIBINDY"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_libindy.rar
+
+      - name: Run indy tests
+        run: |
+          docker run --rm -d --name indypool --network host $DOCKER_IMG_NAME_POOL
+          docker run --rm -i --name libindy --network host \
+                              -e TEST_POOL_IP=${{ env.POOL_IP }} \
+                              $DOCKER_IMG_NAME_LIBINDY \
+                              bash -c '(cd $HOME/indy-sdk/libindy && RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 cargo test --release)'
+
+  publish-libindy-image:
+    runs-on: ubuntu-latest
+    needs: 
+      - workflow-setup
+      - build-image-libindy
+      - test-libindy
+    if: needs.workflow-setup.outputs.PUBLISH_VERSION != ''
+    env:
+      CACHE_KEY_LIBINDY: ${{needs.workflow-setup.outputs.CACHE_KEY_LIBINDY}}
+      DOCKER_IMG_NAME_LIBINDY: ${{needs.workflow-setup.outputs.DOCKER_IMG_NAME_LIBINDY}}
+      PUBLISH_VERSION: ${{needs.workflow-setup.outputs.PUBLISH_VERSION}}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Load libindy image cache
+        id: load-cached-libindy-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_LIBINDY }}
+      - name: If no cached image found
+        if: steps.load-cached-libindy-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_LIBINDY"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_libindy.rar
+      - name: Verify libindy image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_LIBINDY" || { echo "Image $DOCKER_IMG_NAME_LIBINDY was not found!" ; exit 1; }
+      - name: Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: docker.pkg.github.com
+          username: $GITHUB_ACTOR
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish image
+        run: |
+          IFS=$':' read -a arr <<< $DOCKER_IMG_NAME_LIBINDY
+          DOCKER_IMG_NAME_TAGLESS=${arr[0]}
+          GITHUB_REPOSITORY_LOWERCASE=`echo $GITHUB_REPOSITORY | awk '{print tolower($0)}'`
+          REMOTE_DOCKER_IMG_NAME_LIBINDY="docker.pkg.github.com/${GITHUB_REPOSITORY_LOWERCASE}/${DOCKER_IMG_NAME_TAGLESS}:${PUBLISH_VERSION}"
+          echo "Releasing libindy docker image version $PUBLISH_VERSION, tagged $REMOTE_DOCKER_IMG_NAME_LIBINDY"
+          docker tag "$DOCKER_IMG_NAME_LIBINDY" "$REMOTE_DOCKER_IMG_NAME_LIBINDY"
+          docker push "$REMOTE_DOCKER_IMG_NAME_LIBINDY" || true
+
+  ####################################################
+  # RUST WRAPPER
+  ####################################################
+
+  test-rust-wrapper:
+    runs-on: ubuntu-latest
+    needs: 
+      - workflow-setup
+      - build-image-indypool
+      - build-image-wrapper-base
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_WRAPPER_BASE: ${{ needs.workflow-setup.outputs.CACHE_KEY_WRAPPER_BASE }}
+      CACHE_KEY_POOL: ${{ needs.workflow-setup.outputs.CACHE_KEY_POOL }}
+      DOCKER_IMG_NAME_WRAPPER_BASE: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_WRAPPER_BASE }}
+      DOCKER_IMG_NAME_POOL: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_POOL }}
+      PUBLISH_VERSION: ${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Load indy-pool image
+        id: load-cached-pool-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_POOL }}
+      - name: If no cached image found
+        if: steps.load-cached-pool-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_POOL"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_indypool.rar
+      - name: Verify pool image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_POOL" || { echo "Image $DOCKER_IMG_NAME_POOL was not found!" ; exit 1; }
+      - name: Load libindy image cache
+        id: load-cached-wrapper-base-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_WRAPPER_BASE }}
+      - name: If no cached image found
+        if: steps.load-cached-wrapper-base-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_WRAPPER_BASE"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_wrapper_base.rar
+      - name: Verify wrapper base image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_WRAPPER_BASE" || { echo "Image $DOCKER_IMG_NAME_WRAPPER_BASE was not found!" ; exit 1; }
+      - name: Run rust wrapper tests
+        run: |
+          sudo rm -rf "/usr/local/share/boost" "$AGENT_TOOLSDIRECTORY"
+          docker run --rm -d --name indypool --network host $DOCKER_IMG_NAME_POOL
+          docker run --rm -i -v $PWD:/root/indy-sdk --name libindy --network host \
+                              -e TEST_POOL_IP=${{ env.POOL_IP }} \
+                              $DOCKER_IMG_NAME_WRAPPER_BASE \
+                              bash -c '(cd $HOME/indy-sdk/wrappers/rust/indy-sys && cargo build --release && cd $HOME/indy-sdk/wrappers/rust && RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 cargo test --release)'
+
+  publish-rust-wrapper:
+    runs-on: ubuntu-latest
+    needs: 
+      - workflow-setup
+      - build-image-wrapper-base
+      - test-rust-wrapper
+    if: needs.workflow-setup.outputs.PUBLISH_VERSION != '' 
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_WRAPPER_BASE: ${{ needs.workflow-setup.outputs.CACHE_KEY_WRAPPER_BASE }}
+      DOCKER_IMG_NAME_WRAPPER_BASE: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_WRAPPER_BASE }}
+      PUBLISH_VERSION: ${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Load libindy image cache
+        id: load-cached-wrapper-base-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_WRAPPER_BASE }}
+      - name: If no cached image found
+        if: steps.load-cached-wrapper-base-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_WRAPPER_BASE"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_wrapper_base.rar
+      - name: Verify wrapper base image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_WRAPPER_BASE" || { echo "Image $DOCKER_IMG_NAME_WRAPPER_BASE was not found!" ; exit 1; }
+      - name: Publish rust wrapper to crates.io
+        run: |
+          docker run --rm -i -v $PWD:/root/indy-sdk --name libindy $DOCKER_IMG_NAME_WRAPPER_BASE \
+                              bash -c '(cd $HOME/indy-sdk/wrappers/rust/indy-sys && \
+                                        cargo login ${{ secrets.CRATESIO_TOKEN }} && \
+                                        cargo bump ${{ env.PUBLISH_VERSION }} && \
+                                        cargo package --allow-dirty && \
+                                        cargo publish --allow-dirty && \
+                                        cd .. && \
+                                        sed -i -E "s/indy-sys = \{ path =\"indy-sys\", version = \"=([0-9,.]+)\" \}/indy-sys = \{ path =\"indy-sys\", version = \"=${{ env.PUBLISH_VERSION }}\" \}/g" Cargo.toml && \
+                                        cargo bump ${{ env.PUBLISH_VERSION }} && \
+                                        sleep 30 && \
+                                        cargo update && \
+                                        cargo package --allow-dirty && \
+                                        cargo publish --allow-dirty)'
+  
+  ####################################################
+  # ANDROID WRAPPER
+  ####################################################
+
+#   test-android-wrapper-arm64:
+#     runs-on: ubuntu-latest
+#     needs: 
+#       - workflow-setup
+#       - build-image-indypool
+#       - build-image-wrapper-base
+#       - build-image-android
+#     env:
+#       DOCKER_BUILDKIT: 1
+#       CACHE_KEY_ANDROID: ${{ needs.workflow-setup.outputs.CACHE_KEY_ANDROID }}
+#       CACHE_KEY_POOL: ${{ needs.workflow-setup.outputs.CACHE_KEY_POOL }}
+#       DOCKER_IMG_NAME_ANDROID: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_ANDROID }}
+#       DOCKER_IMG_NAME_POOL: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_POOL }}
+#       DEVICE_ABI: "arm64"
+#     steps:
+#       - name: Git checkout
+#         uses: actions/checkout@v2
+#       - name: Load android wrapper image
+#         id: load-android-image
+#         uses: actions/cache@v2
+#         with:
+#           path: /tmp/imgcache
+#           key: ${{ env.CACHE_KEY_ANDROID }}
+#       - name: If no cached image found
+#         if: steps.load-android-image.outputs.cache-hit != 'true'
+#         run: echo "ERROR == Expected to find image from cache $CACHE_KEY_ANDROID"; exit -1
+#       - name: Load image from cache
+#         run: docker load < /tmp/imgcache/img_android.rar
+#       - name: Verify android image was loaded
+#         run: |
+#           docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_ANDROID" || { echo "Image $DOCKER_IMG_NAME_ANDROID was not found!" ; exit 1; }
+#       # NOTE: This is done because currently, the android image is too large to be loaded along with indypool and the archives,
+#       # but can be loaded  by itself and the archive
+#       - name: Remove archived android image
+#         run: rm /tmp/imgcache/img_android.rar
+#       - name: Load indypool image
+#         id: load-cached-pool-image
+#         uses: actions/cache@v2
+#         with:
+#           path: /tmp/imgcache
+#           key: ${{ env.CACHE_KEY_POOL }}
+#       - name: If no cached image found
+#         if: steps.load-cached-pool-image.outputs.cache-hit != 'true'
+#         run: echo "ERROR == Expected to find image from cache $CACHE_KEY_POOL"; exit -1
+#       - name: Load image from cache
+#         run: docker load < /tmp/imgcache/img_indypool.rar
+#       - name: Verify pool image was loaded
+#         run: |
+#           docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_POOL" || { echo "Image $DOCKER_IMG_NAME_POOL was not found!" ; exit 1; }
+#       - name: Remove archived indypool image
+#         run: rm /tmp/imgcache/img_indypool.rar
+#       - name: Run tests for ${{ env.DEVICE_ABI }} architecture
+#         uses: ./.github/actions/test-android
+#         with:
+#           abi: ${{ env.DEVICE_ABI }}
+#           android-docker-img-name: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_ANDROID }}
+#           pool-docker-img-name: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_POOL }}
+ 
+  test-android-wrapper-armv7:
+    runs-on: ubuntu-latest
+    needs: 
+      - workflow-setup
+      - build-image-indypool
+      - build-image-wrapper-base
+      - build-image-android
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_ANDROID: ${{ needs.workflow-setup.outputs.CACHE_KEY_ANDROID }}
+      CACHE_KEY_POOL: ${{ needs.workflow-setup.outputs.CACHE_KEY_POOL }}
+      DOCKER_IMG_NAME_ANDROID: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_ANDROID }}
+      DOCKER_IMG_NAME_POOL: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_POOL }}
+      DEVICE_ABI: "arm"
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+      - name: Load android wrapper image
+        id: load-android-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_ANDROID }}
+      - name: If no cached image found
+        if: steps.load-android-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_ANDROID"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_android.rar
+      - name: Verify android image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_ANDROID" || { echo "Image $DOCKER_IMG_NAME_ANDROID was not found!" ; exit 1; }
+      - name: Remove archived android image
+        run: rm /tmp/imgcache/img_android.rar
+      - name: Load indypool image
+        id: load-cached-pool-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_POOL }}
+      - name: If no cached image found
+        if: steps.load-cached-pool-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_POOL"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_indypool.rar
+      - name: Verify pool image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_POOL" || { echo "Image $DOCKER_IMG_NAME_POOL was not found!" ; exit 1; }
+      - name: Remove archived indypool image
+        run: rm /tmp/imgcache/img_indypool.rar
+      - name: Run tests for ${{ env.DEVICE_ABI }} architecture
+        uses: ./.github/actions/test-android
+        with:
+          abi: ${{ env.DEVICE_ABI }}
+          pool_ip: ${{ env.POOL_IP }}
+          android-docker-img-name: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_ANDROID }}
+          pool-docker-img-name: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_POOL }}
+
+  test-android-wrapper-emulator:
+    runs-on: ubuntu-latest
+    needs: 
+      - workflow-setup
+      - build-image-indypool
+      - build-image-wrapper-base
+      - build-image-android
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_ANDROID: ${{ needs.workflow-setup.outputs.CACHE_KEY_ANDROID }}
+      CACHE_KEY_POOL: ${{ needs.workflow-setup.outputs.CACHE_KEY_POOL }}
+      DOCKER_IMG_NAME_ANDROID: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_ANDROID }}
+      DOCKER_IMG_NAME_POOL: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_POOL }}
+      DEVICE_ABI: "x86_64"
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+      - name: Load android wrapper image
+        id: load-android-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_ANDROID }}
+      - name: If no cached image found
+        if: steps.load-android-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_ANDROID"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_android.rar
+      - name: Verify android image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_ANDROID" || { echo "Image $DOCKER_IMG_NAME_ANDROID was not found!" ; exit 1; }
+      - name: Remove archived android image
+        run: rm /tmp/imgcache/img_android.rar
+      - name: Load indypool image
+        id: load-cached-pool-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_POOL }}
+      - name: If no cached image found
+        if: steps.load-cached-pool-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_POOL"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_indypool.rar
+      - name: Verify pool image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_POOL" || { echo "Image $DOCKER_IMG_NAME_POOL was not found!" ; exit 1; }
+      - name: Remove archived indypool image
+        run: rm /tmp/imgcache/img_indypool.rar
+      - name: Run tests for ${{ env.DEVICE_ABI }} architecture
+        uses: ./.github/actions/test-android
+        with:
+          abi: ${{ env.DEVICE_ABI }}
+          pool_ip: ${{ env.POOL_IP }}
+          android-docker-img-name: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_ANDROID }}
+          pool-docker-img-name: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_POOL }}
+
+  publish-android-wrapper-device:
+    runs-on: ubuntu-latest
+    needs: 
+      - workflow-setup
+      - build-image-wrapper-base
+      - test-android-wrapper-armv7
+      # - test-android-wrapper-arm64
+    if: needs.workflow-setup.outputs.PUBLISH_VERSION != ''
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_ANDROID: ${{ needs.workflow-setup.outputs.CACHE_KEY_ANDROID }}
+      DOCKER_IMG_NAME_ANDROID: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_ANDROID }}
+      FULL_VERSION_NAME: libindy-android-${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}-device
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+      - name: Load android wrapper image
+        id: load-android-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_ANDROID }}
+      - name: If no cached image found
+        if: steps.load-android-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_ANDROID"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_android.rar
+      - name: Verify android image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_ANDROID" || { echo "Image $DOCKER_IMG_NAME_ANDROID was not found!" ; exit 1; }
+      - name: Build and publish android artifacts
+        uses: ./.github/actions/publish-android
+        with:
+          abis: ${{ env.DEVICE_ABIS }}
+          docker-img-name: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_ANDROID }}
+          full-version-name: ${{ env.FULL_VERSION_NAME }}
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.FULL_VERSION_NAME }}
+          path: /tmp/artifacts/libindy/${{ env.FULL_VERSION_NAME }}.zip
+
+  publish-android-wrapper-emulator:
+    runs-on: ubuntu-latest
+    needs: 
+      - workflow-setup
+      - build-image-wrapper-base
+      - build-image-android
+      - test-android-wrapper-emulator
+    if: needs.workflow-setup.outputs.PUBLISH_VERSION != ''
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_ANDROID: ${{ needs.workflow-setup.outputs.CACHE_KEY_ANDROID }}
+      DOCKER_IMG_NAME_ANDROID: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_ANDROID }}
+      FULL_VERSION_NAME: libindy-android-${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}-emulator
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+      - name: Load android wrapper image
+        id: load-android-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_ANDROID }}
+      - name: If no cached image found
+        if: steps.load-android-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_ANDROID"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_android.rar
+      - name: Verify android image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_ANDROID" || { echo "Image $DOCKER_IMG_NAME_ANDROID was not found!" ; exit 1; }
+      - name: Build and publish android artifacts
+        uses: ./.github/actions/publish-android
+        with:
+          abis: ${{ env.EMULATOR_ABIS }}
+          docker-img-name: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_ANDROID }}
+          full-version-name: ${{ env.FULL_VERSION_NAME }}
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.FULL_VERSION_NAME }}
+          path: /tmp/artifacts/libindy/${{ env.FULL_VERSION_NAME }}.zip
+ 
+ 
+  ####################################################
+  # PYTHON WRAPPER
+  ####################################################
+
+  test-python-wrapper:
+    runs-on: ubuntu-latest
+    needs: 
+      - workflow-setup
+      - build-image-indypool
+      - build-image-python
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_PYTHON: ${{ needs.workflow-setup.outputs.CACHE_KEY_PYTHON }}
+      CACHE_KEY_POOL: ${{ needs.workflow-setup.outputs.CACHE_KEY_POOL }}
+      DOCKER_IMG_NAME_PYTHON: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_PYTHON }}
+      DOCKER_IMG_NAME_POOL: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_POOL }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+      - name: Load indy-pool image
+        id: load-cached-pool-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_POOL }}
+      - name: If no cached image found
+        if: steps.load-cached-pool-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_POOL"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_indypool.rar
+      - name: Verify pool image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_POOL" || { echo "Image $DOCKER_IMG_NAME_POOL was not found!" ; exit 1; }
+      - name: Load python wrapper image
+        id: load-python-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_PYTHON }}
+      - name: If no cached image found
+        if: steps.load-python-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_PYTHON"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_python.rar
+      - name: Verify android image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_ANDROID" || { echo "Image $DOCKER_IMG_NAME_ANDROID was not found!" ; exit 1; }
+      - name: Run wrapper tests
+        run: |
+          sudo rm -rf "/usr/local/share/boost" "$AGENT_TOOLSDIRECTORY"
+          docker run --rm -d --name indypool --network host $DOCKER_IMG_NAME_POOL
+          docker run --rm -i -v $PWD:/root/indy-sdk --name python-test --network host \
+                              -e TEST_POOL_IP="${{ env.POOL_IP }}" \
+                              $DOCKER_IMG_NAME_PYTHON \
+                              bash -c '(cd $HOME/indy-sdk/wrappers/python && \
+                                pip install --user -e .[test] && \
+                                RUST_LOG=indy=debug python3.6 -m pytest)'
+
+  publish-python-wrapper:
+    runs-on: ubuntu-latest
+    needs: 
+      - workflow-setup
+      - build-image-python
+      - test-python-wrapper
+    if: needs.workflow-setup.outputs.PUBLISH_VERSION != ''
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_PYTHON: ${{ needs.workflow-setup.outputs.CACHE_KEY_PYTHON }}
+      DOCKER_IMG_NAME_PYTHON: ${{ needs.workflow-setup.outputs.DOCKER_IMG_NAME_PYTHON }}
+      PUBLISH_VERSION: ${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+      - name: Load wrapper base image cache
+        id: load-cached-python-image
+        uses: actions/cache@v2
+        with:
+          path: /tmp/imgcache
+          key: ${{ env.CACHE_KEY_PYTHON }}
+      - name: If no cached image found
+        if: steps.load-cached-python-image.outputs.cache-hit != 'true'
+        run: echo "ERROR == Expected to find image from cache $CACHE_KEY_PYTHON"; exit -1
+      - name: Load image from cache
+        run: docker load < /tmp/imgcache/img_python.rar
+      - name: Verify python image was loaded
+        run: |
+          docker image ls --format "{{.Repository}}:{{.Tag}}" | grep "$DOCKER_IMG_NAME_PYTHON" || { echo "Image $DOCKER_IMG_NAME_PYTHON was not found!" ; exit 1; }
+      - name: Publish Python wrapper
+        run: |
+          docker run --rm -i -v $PWD:/root/indy-sdk --name libindy $DOCKER_IMG_NAME_PYTHON \
+                              bash -c '(cd $HOME/indy-sdk/wrappers/python && \
+                              PACKAGE_VERSION=${{ env.PUBLISH_VERSION }} python3.6 setup.py sdist && \
+                              python3.6 -m twine upload dist/* -u __token__ -p ${{ secrets.PYPI_PYTHON3_INDY }})'
+
+  ####################################################
+  # IOS WRAPPER
+  ####################################################
+
+  publish-ios-wrapper-universal:
+    runs-on: macos-10.15
+    needs:
+      - workflow-setup
+    if: needs.workflow-setup.outputs.PUBLISH_VERSION != ''
+    env:
+      PUBLISH_VERSION: ${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}
+      RUST_VER: ${{ needs.workflow-setup.outputs.RUST_VER }}
+    steps:
+    - name: Git checkout
+      uses: actions/checkout@v2
+    - name: Build iOS wrapper
+      run: |
+          LIBINDY_POD_VERSION=${{ env.PUBLISH_VERSION }} RUST_VER=${{ env.RUST_VER }} ./ci/ga-ios-build.sh libindy aarch64-apple-ios x86_64-apple-ios
+    - uses: actions/upload-artifact@v2
+      with:
+        name: libindy-ios-${{ env.PUBLISH_VERSION }}-universal
+        path: ./libindy/out_pod/libindy.tar.gz
+
+  ####################################################
+  # RELEASE
+  ####################################################
+
+  make-release:
+    runs-on: ubuntu-latest
+    needs: 
+      - workflow-setup
+      - build-image-libindy
+      - test-libindy
+      - test-rust-wrapper
+      - test-android-wrapper-armv7
+      - test-android-wrapper-emulator
+      - test-python-wrapper
+      - publish-libindy-image
+      - publish-rust-wrapper
+      - publish-android-wrapper-device
+      - publish-android-wrapper-emulator
+    if: ${{ needs.workflow-setup.outputs.RELEASE == 'true' || needs.workflow-setup.outputs.PRERELEASE == 'true' }}
+    outputs:
+      RELEASE_UPLOAD_URL: ${{ steps.create-release.outputs.upload_url }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+
+      - name: Generate changelog
+        uses: heinrichreimer/github-changelog-generator-action@v2.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          futureRelease: ${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}
+          releaseBranch: master
+          pullRequests: true
+          unreleased: true
+          unreleasedOnly: true
+          issuesWoLabels: true
+          prWoLabels: true
+          stripGeneratorNotice: true
+          stripHeaders: false
+          maxIssues: 50
+          excludeLabels: duplicate,question,invalid,wontfix,changelog-excluded
+          breakingLabels: backwards-incompatible,breaking
+          deprecatedLabels: deprecated
+          headerLabel: "# Changelog"
+          breakingLabel: '### Breaking changes'
+          enhancementLabel: '### Enhancements'
+          bugsLabel: '### Bug fixes'
+          deprecatedLabel: '###  Deprecations'
+          removedLabel: '### Removals'
+          securityLabel: '### Security fixes'
+          issuesLabel: '### Other issues'
+          prLabel: '### Other pull requests'
+          addSections: '{"ci":{"prefix":"### CI changes","labels":["ci"]},"wrappers":{"prefix":"### Wrapper changes","labels":["wrappers"]}}'
+          excludeTagsRegex: '^((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))+)?)$'
+
+      - name: Create a new release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}
+          release_name: Release ${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}
+          body_path: ./CHANGELOG.md
+          draft: false
+          prerelease: ${{ needs.workflow-setup.outputs.PRERELEASE == 'true' }}
+
+  release-android-device:
+    runs-on: ubuntu-latest
+    needs:
+      - workflow-setup
+      - build-image-libindy
+      - test-libindy
+      - test-rust-wrapper
+      # - test-android-wrapper-arm64
+      - test-android-wrapper-armv7
+      - test-android-wrapper-emulator
+      - test-python-wrapper
+      - publish-libindy-image
+      - publish-rust-wrapper
+      - publish-android-wrapper-device
+      - publish-android-wrapper-emulator
+      - make-release
+    steps:
+      - name: Fetch android device build from artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: libindy-android-${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}-device
+      - name: Upload release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.make-release.outputs.RELEASE_UPLOAD_URL }}
+          asset_path: ./libindy-android-${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}-device.zip
+          asset_name: libindy-android-${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}-device.zip
+          asset_content_type: application/zip
+
+  release-android-emulator:
+    runs-on: ubuntu-latest
+    needs:
+      - workflow-setup
+      - build-image-libindy
+      - test-libindy
+      - test-rust-wrapper
+      # - test-android-wrapper-arm64
+      - test-android-wrapper-armv7
+      - test-android-wrapper-emulator
+      - test-python-wrapper
+      - publish-libindy-image
+      - publish-rust-wrapper
+      - publish-android-wrapper-device
+      - publish-android-wrapper-emulator
+      - make-release
+    steps:
+      - name: Fetch android device build from artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: libindy-android-${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}-emulator
+      - name: Upload release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.make-release.outputs.RELEASE_UPLOAD_URL }}
+          asset_path: ./libindy-android-${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}-emulator.zip
+          asset_name: libindy-android-${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}-emulator.zip
+          asset_content_type: application/zip
+
+  release-ios-universal:
+    runs-on: ubuntu-latest
+    needs:
+      - workflow-setup
+      - build-image-libindy
+      - test-libindy
+      - test-rust-wrapper
+      # - test-android-wrapper-arm64
+      - test-android-wrapper-armv7
+      - test-android-wrapper-emulator
+      - test-python-wrapper
+      - publish-libindy-image
+      - publish-rust-wrapper
+      - publish-android-wrapper-device
+      - publish-android-wrapper-emulator
+      - make-release
+    steps:
+      - name: Fetch iOS device build from artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: libindy-ios-${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}-universal
+      - name: Upload release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.make-release.outputs.RELEASE_UPLOAD_URL }}
+          asset_path: ./libindy-ios-${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}-universal.zip
+          asset_name: libindy-ios-${{ needs.workflow-setup.outputs.PUBLISH_VERSION }}-universal.zip # TODO: This may not be correct asset name
+          asset_content_type: application/zip
