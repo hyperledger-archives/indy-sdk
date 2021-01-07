@@ -1,5 +1,12 @@
-FROM libindy-test
-# to see base image for this one see this file: libindy/ci/ubuntu.dockerfile. It is build in CI/CD pipelines
+ARG WRAPPER_BASE_IMAGE
+FROM ${WRAPPER_BASE_IMAGE}
+
+USER root
+RUN apt-get update && apt-get install openjdk-8-jdk -y
+ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
+RUN apt-get update && apt-get install -y maven
+USER indy
+
 ENV ANDROID_BUILD_FOLDER=/tmp/android_build
 ENV ANDROID_SDK=${ANDROID_BUILD_FOLDER}/sdk
 ENV ANDROID_SDK_ROOT=${ANDROID_SDK}
