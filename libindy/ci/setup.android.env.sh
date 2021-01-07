@@ -70,6 +70,7 @@ create_avd(){
         mv /home/indy/emu.zip emu.zip
         mv emulator emulator_backup
         unzip emu.zip
+        rm emu.zip
     else
         echo "Skipping sdkmanager activity"
     fi
