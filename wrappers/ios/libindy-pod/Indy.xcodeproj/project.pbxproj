@@ -49,14 +49,12 @@
 		ADF5FFAD8BF145CFC7C57C28 /* IndyBlobStorage.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF5F0289053914846F15C3E /* IndyBlobStorage.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		DDEE2A6421C14062009BDDA8 /* IndyLogger.m in Sources */ = {isa = PBXBuildFile; fileRef = DDEE2A6321C14062009BDDA8 /* IndyLogger.m */; };
 		DDEE2A6521C144E3009BDDA8 /* IndyLogger.h in Headers */ = {isa = PBXBuildFile; fileRef = DDEE2A6221C1404A009BDDA8 /* IndyLogger.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		E32B103AE817115C80F0142F /* libPods-Indy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 788BE98286C5622244B9A7F5 /* libPods-Indy.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		053FA7E61FB32097006CEC35 /* IndyCrypto.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyCrypto.h; sourceTree = "<group>"; };
 		053FA7E71FB32097006CEC35 /* IndyCrypto.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyCrypto.mm; sourceTree = "<group>"; };
 		3E08C01B1EB3336A000A73BA /* Indy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Indy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		3E7A1C4BE17271AC1BB4E256 /* Pods-Indy.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Indy/Pods-Indy.debug.xcconfig"; sourceTree = "<group>"; };
 		3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.0.tbd; path = usr/lib/libsqlite3.0.tbd; sourceTree = SDKROOT; };
 		5D57DEC21F853A9600CD63FE /* DictionaryExtension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DictionaryExtension.swift; sourceTree = "<group>"; };
 		5D57DEC31F853A9600CD63FE /* NSDictionary+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+JSON.h"; sourceTree = "<group>"; };
@@ -86,7 +84,6 @@
 		5DB57A371F711EE600EB4C90 /* IndyTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyTypes.h; sourceTree = "<group>"; };
 		5DB57A381F711EE600EB4C90 /* IndyWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWallet.h; sourceTree = "<group>"; };
 		5DB57A391F711EE600EB4C90 /* IndyWallet.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyWallet.mm; sourceTree = "<group>"; };
-		788BE98286C5622244B9A7F5 /* libPods-Indy.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Indy.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		78E844E9229306030069FF36 /* IndyCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyCache.h; sourceTree = "<group>"; };
 		78E844EA229306030069FF36 /* IndyCache.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyCache.mm; sourceTree = "<group>"; };
 		ADF5F0289053914846F15C3E /* IndyBlobStorage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyBlobStorage.h; sourceTree = "<group>"; };
@@ -97,7 +94,6 @@
 		ADF5FAE758484DA836DF08D1 /* IndyPayment.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyPayment.mm; sourceTree = "<group>"; };
 		ADF5FBF2E10538C7610F30CC /* IndyUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyUtils.h; sourceTree = "<group>"; };
 		ADF5FD56969EAF15313B3399 /* IndyNonSecrets.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyNonSecrets.mm; sourceTree = "<group>"; };
-		CB6A56DBDD1F10585C90ECA8 /* Pods-Indy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy/Pods-Indy.release.xcconfig"; sourceTree = "<group>"; };
 		DDEE2A6221C1404A009BDDA8 /* IndyLogger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyLogger.h; sourceTree = "<group>"; };
 		DDEE2A6321C14062009BDDA8 /* IndyLogger.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IndyLogger.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -108,7 +104,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				3E8809E51EB88AED00E0AA5F /* libsqlite3.0.tbd in Frameworks */,
-				E32B103AE817115C80F0142F /* libPods-Indy.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,7 +114,6 @@
 			isa = PBXGroup;
 			children = (
 				3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */,
-				788BE98286C5622244B9A7F5 /* libPods-Indy.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -129,7 +123,6 @@
 			children = (
 				5DB57A0E1F711EE600EB4C90 /* Indy */,
 				3E08C01C1EB3336A000A73BA /* Products */,
-				7AA078817B8C2B22C808AE50 /* Pods */,
 				2C11A2035B94F34DF5CCDB2A /* Frameworks */,
 			);
 			sourceTree = "<group>";
@@ -215,15 +208,6 @@
 			path = Wrapper;
 			sourceTree = "<group>";
 		};
-		7AA078817B8C2B22C808AE50 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				3E7A1C4BE17271AC1BB4E256 /* Pods-Indy.debug.xcconfig */,
-				CB6A56DBDD1F10585C90ECA8 /* Pods-Indy.release.xcconfig */,
-			);
-			name = Pods;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -262,7 +246,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3E08C0231EB3336A000A73BA /* Build configuration list for PBXNativeTarget "Indy" */;
 			buildPhases = (
-				D6BFF417833531D0F48BA45D /* [CP] Check Pods Manifest.lock */,
 				3E08C0161EB3336A000A73BA /* Sources */,
 				3E08C0171EB3336A000A73BA /* Frameworks */,
 				3E08C0181EB3336A000A73BA /* Headers */,
@@ -320,27 +303,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		D6BFF417833531D0F48BA45D /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-Indy-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		3E08C0161EB3336A000A73BA /* Sources */ = {
@@ -490,7 +452,6 @@
 		};
 		3E08C0241EB3336A000A73BA /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3E7A1C4BE17271AC1BB4E256 /* Pods-Indy.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
 				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
@@ -538,7 +499,6 @@
 		};
 		3E08C0251EB3336A000A73BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = CB6A56DBDD1F10585C90ECA8 /* Pods-Indy.release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
 				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;

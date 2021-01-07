@@ -17,8 +17,6 @@
 		5DB57A731F71201200EB4C90 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5DB57A6A1F71201200EB4C90 /* Main.storyboard */; };
 		5DB57A751F71201200EB4C90 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A6D1F71201200EB4C90 /* main.m */; };
 		5DB57A761F71201200EB4C90 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A6F1F71201200EB4C90 /* ViewController.m */; };
-		5DB57B0C1F7120DE00EB4C90 /* Indy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DB57B0B1F7120DE00EB4C90 /* Indy.framework */; };
-		5DB57B0D1F7120DE00EB4C90 /* Indy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5DB57B0B1F7120DE00EB4C90 /* Indy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5DB57B501F712A5200EB4C90 /* Base58Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B0F1F712A5100EB4C90 /* Base58Test.m */; };
 		5DB57B591F712A5200EB4C90 /* AnoncredsHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1C1F712A5100EB4C90 /* AnoncredsHighCases.m */; };
 		5DB57B5B1F712A5200EB4C90 /* AnoncredsMediumCasesDemos.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1E1F712A5100EB4C90 /* AnoncredsMediumCasesDemos.m */; };
@@ -41,7 +39,6 @@
 		5DB57B761F712A5200EB4C90 /* NSArray+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B4B1F712A5200EB4C90 /* NSArray+JSON.m */; };
 		5DB57B771F712A5200EB4C90 /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B4D1F712A5200EB4C90 /* NSDictionary+JSON.m */; };
 		5DB57B781F712A5200EB4C90 /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B4F1F712A5200EB4C90 /* NSString+Validation.m */; };
-		80DCB08582AE3D8C572032E5 /* libPods-Indy-demoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D78D0155F3E8AF26D9FBE34 /* libPods-Indy-demoTests.a */; };
 		ADF5F31684A1388E1F7CB46A /* PaymentHighCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FA949F9686E3339531DA /* PaymentHighCases.mm */; };
 		ADF5F3C392290ACE150082E2 /* NonSecretsUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FE4E35A02E854FF1C94F /* NonSecretsUtils.m */; };
 		ADF5F3E33D950E83636B32E8 /* PaymentUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = ADF5F3114D20F3CFCE1A17BA /* PaymentUtils.m */; };
@@ -49,7 +46,6 @@
 		ADF5F67A3F994466D5D58BD8 /* BlobStorageUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FB263C0C3F9BD6F57037 /* BlobStorageUtils.m */; };
 		ADF5F84EF0911B211FE4FEC3 /* NonSecretsHighCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5F5209566924DEB625F31 /* NonSecretsHighCases.mm */; };
 		ADF5FAA7813FC4B983F82948 /* Interaction.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5F0F5B189065464F202AF /* Interaction.mm */; };
-		C1BA94778E40060E56814C61 /* libPods-Indy-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 49682051B863F7784F1A8CAE /* libPods-Indy-demo.a */; };
 		DDF8B28E21C3A7FE00796DEE /* LoggerDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = DDF8B28D21C3A7FE00796DEE /* LoggerDemo.mm */; };
 		ECDB9419253F4FA9006DCBC9 /* ProverDeleteCredentialCases.m in Sources */ = {isa = PBXBuildFile; fileRef = ECDB9418253F4FA9006DCBC9 /* ProverDeleteCredentialCases.m */; };
 /* End PBXBuildFile section */
@@ -80,7 +76,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				5DB57B0D1F7120DE00EB4C90 /* Indy.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -88,18 +83,14 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		0C1A2D3B2C8FD407BD6E5F9D /* Pods-Indy-demoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demoTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demoTests/Pods-Indy-demoTests.debug.xcconfig"; sourceTree = "<group>"; };
 		109A3175B4C98968FFC53095 /* CryptoUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CryptoUtils.h; sourceTree = "<group>"; };
 		109A31B3C9BF73CF89715E0B /* CryptoUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CryptoUtils.mm; sourceTree = "<group>"; };
 		109A39CE2AC2D8A744609543 /* CryptoHighCases.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CryptoHighCases.mm; sourceTree = "<group>"; };
-		2EF9598E5D9881BADD8E4EB7 /* Pods-libindy-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.release.xcconfig"; sourceTree = "<group>"; };
 		3E2A7F851EC36186006194EC /* Indy-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Indy-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2A7F9E1EC36187006194EC /* Indy-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Indy-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		49682051B863F7784F1A8CAE /* libPods-Indy-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Indy-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5D413F1F1F850DFF00E04D7D /* PairwiseHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PairwiseHighCases.m; sourceTree = "<group>"; };
 		5D413F211F850F2E00E04D7D /* PairwiseUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PairwiseUtils.h; sourceTree = "<group>"; };
 		5D413F221F850F2E00E04D7D /* PairwiseUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PairwiseUtils.m; sourceTree = "<group>"; };
-		5D78D0155F3E8AF26D9FBE34 /* libPods-Indy-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Indy-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DB57A651F71201200EB4C90 /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		5DB57A661F71201200EB4C90 /* AppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
 		5DB57A671F71201200EB4C90 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -109,7 +100,6 @@
 		5DB57A6D1F71201200EB4C90 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		5DB57A6E1F71201200EB4C90 /* ViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		5DB57A6F1F71201200EB4C90 /* ViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
-		5DB57B0B1F7120DE00EB4C90 /* Indy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Indy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DB57B0F1F712A5100EB4C90 /* Base58Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base58Test.m; sourceTree = "<group>"; };
 		5DB57B1C1F712A5100EB4C90 /* AnoncredsHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsHighCases.m; sourceTree = "<group>"; };
 		5DB57B1E1F712A5100EB4C90 /* AnoncredsMediumCasesDemos.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCasesDemos.m; sourceTree = "<group>"; };
@@ -145,8 +135,6 @@
 		5DB57B4D1F712A5200EB4C90 /* NSDictionary+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+JSON.m"; sourceTree = "<group>"; };
 		5DB57B4E1F712A5200EB4C90 /* NSString+Validation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Validation.h"; sourceTree = "<group>"; };
 		5DB57B4F1F712A5200EB4C90 /* NSString+Validation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Validation.m"; sourceTree = "<group>"; };
-		7BCBA93D72AE3588DDAD9D49 /* Pods-Indy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demoTests/Pods-Indy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
-		8301CE9D60BE235EB8E50A72 /* libPods-libindy-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADF5F0F5B189065464F202AF /* Interaction.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Interaction.mm; sourceTree = "<group>"; };
 		ADF5F3114D20F3CFCE1A17BA /* PaymentUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PaymentUtils.m; sourceTree = "<group>"; };
 		ADF5F3613A78A60DBE7F1AB9 /* LedgerBuildRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerBuildRequest.mm; sourceTree = "<group>"; };
@@ -157,14 +145,8 @@
 		ADF5FCDBADC2C8FC6B308105 /* NonSecretsUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NonSecretsUtils.h; sourceTree = "<group>"; };
 		ADF5FE4E35A02E854FF1C94F /* NonSecretsUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NonSecretsUtils.m; sourceTree = "<group>"; };
 		ADF5FF3AD9B649B92478CEF7 /* PaymentUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PaymentUtils.h; sourceTree = "<group>"; };
-		B87BB39216A2B13E57165BF9 /* libPods-libindy-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.debug.xcconfig"; sourceTree = "<group>"; };
 		DDF8B28D21C3A7FE00796DEE /* LoggerDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LoggerDemo.mm; sourceTree = "<group>"; };
 		ECDB9418253F4FA9006DCBC9 /* ProverDeleteCredentialCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProverDeleteCredentialCases.m; sourceTree = "<group>"; };
-		ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
-		EE41F07D6A899FDD613605CE /* Pods-Indy-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demo/Pods-Indy-demo.release.xcconfig"; sourceTree = "<group>"; };
-		F54627AA7BB604ED15A77C6E /* Pods-Indy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demo/Pods-Indy-demo.debug.xcconfig"; sourceTree = "<group>"; };
-		F7BEB2FC0AAA0900574E5794 /* Pods-libindy-demoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -172,8 +154,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5DB57B0C1F7120DE00EB4C90 /* Indy.framework in Frameworks */,
-				C1BA94778E40060E56814C61 /* libPods-Indy-demo.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -181,7 +161,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				80DCB08582AE3D8C572032E5 /* libPods-Indy-demoTests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -200,11 +179,8 @@
 			isa = PBXGroup;
 			children = (
 				5DB57B0E1F712A5100EB4C90 /* Indy-demoTests */,
-				5DB57B0B1F7120DE00EB4C90 /* Indy.framework */,
 				5DB57A641F71201200EB4C90 /* Indy-demo */,
 				3E2A7F861EC36186006194EC /* Products */,
-				FFB35C33119165C4896C64A8 /* Pods */,
-				84DF55ECAD03C4B4CEE16BD1 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -373,17 +349,6 @@
 			path = Utils;
 			sourceTree = "<group>";
 		};
-		84DF55ECAD03C4B4CEE16BD1 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				B87BB39216A2B13E57165BF9 /* libPods-libindy-demo.a */,
-				8301CE9D60BE235EB8E50A72 /* libPods-libindy-demoTests.a */,
-				49682051B863F7784F1A8CAE /* libPods-Indy-demo.a */,
-				5D78D0155F3E8AF26D9FBE34 /* libPods-Indy-demoTests.a */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		ADF5F1181FDDD3C1CE3FC13F /* NonSecrets */ = {
 			isa = PBXGroup;
 			children = (
@@ -400,21 +365,6 @@
 			path = Payment;
 			sourceTree = "<group>";
 		};
-		FFB35C33119165C4896C64A8 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */,
-				F7BEB2FC0AAA0900574E5794 /* Pods-libindy-demoTests.debug.xcconfig */,
-				ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */,
-				2EF9598E5D9881BADD8E4EB7 /* Pods-libindy-demo.release.xcconfig */,
-				F54627AA7BB604ED15A77C6E /* Pods-Indy-demo.debug.xcconfig */,
-				EE41F07D6A899FDD613605CE /* Pods-Indy-demo.release.xcconfig */,
-				0C1A2D3B2C8FD407BD6E5F9D /* Pods-Indy-demoTests.debug.xcconfig */,
-				7BCBA93D72AE3588DDAD9D49 /* Pods-Indy-demoTests.release.xcconfig */,
-			);
-			name = Pods;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -422,7 +372,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3E2A7FA71EC36187006194EC /* Build configuration list for PBXNativeTarget "Indy-demo" */;
 			buildPhases = (
-				3DAF44B115C578F44367F9F0 /* [CP] Check Pods Manifest.lock */,
 				3E2A7F811EC36186006194EC /* Sources */,
 				3E2A7F821EC36186006194EC /* Frameworks */,
 				3E2A7F831EC36186006194EC /* Resources */,
@@ -441,7 +390,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3E2A7FAA1EC36187006194EC /* Build configuration list for PBXNativeTarget "Indy-demoTests" */;
 			buildPhases = (
-				8007C6588FAD71A50046F589 /* [CP] Check Pods Manifest.lock */,
 				3E2A7F9A1EC36187006194EC /* Sources */,
 				3E2A7F9B1EC36187006194EC /* Frameworks */,
 				3E2A7F9C1EC36187006194EC /* Resources */,
@@ -518,45 +466,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		3DAF44B115C578F44367F9F0 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-Indy-demo-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		8007C6588FAD71A50046F589 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-Indy-demoTests-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		3E2A7F811EC36186006194EC /* Sources */ = {
@@ -737,7 +646,6 @@
 		};
 		3E2A7FA81EC36187006194EC /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F54627AA7BB604ED15A77C6E /* Pods-Indy-demo.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -772,7 +680,6 @@
 		};
 		3E2A7FA91EC36187006194EC /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = EE41F07D6A899FDD613605CE /* Pods-Indy-demo.release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -800,7 +707,6 @@
 		};
 		3E2A7FAB1EC36187006194EC /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0C1A2D3B2C8FD407BD6E5F9D /* Pods-Indy-demoTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
@@ -817,7 +723,6 @@
 		};
 		3E2A7FAC1EC36187006194EC /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7BCBA93D72AE3588DDAD9D49 /* Pods-Indy-demoTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;

@@ -13,7 +13,9 @@ download_sdk
 download_and_setup_toolchain
 download_emulator
 
-for arch in "${archs[@]}"
-do
-  prepare_dependencies "${arch}"
-done
+# for arch in "${archs[@]}"
+# do
+#   prepare_dependencies "${arch}"
+# done
+
+prepare_dependencies $TARGET_ARCH

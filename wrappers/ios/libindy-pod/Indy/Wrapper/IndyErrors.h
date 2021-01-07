@@ -53,7 +53,7 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     CommonInvalidParam13 = 115,
 
     // Caller passed invalid value as param 14 (null, invalid json and etc..)
-    CommonInvalidParam14 = 116
+    CommonInvalidParam14 = 116,
 
     // Wallet errors
     // Caller passed invalid wallet handle
