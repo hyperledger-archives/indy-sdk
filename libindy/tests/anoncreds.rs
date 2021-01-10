@@ -3799,12 +3799,6 @@ mod high_cases {
     }
 }
 
-#[test]
-fn collect_metrics_callback() {
-    let setup = Setup::empty();
-    let res = anoncreds::issuer_rotate_credential_def_start(setup.wallet_handle, &anoncreds::issuer_1_gvt_cred_def_id(), None);
-}
-
 #[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;

@@ -82,14 +82,7 @@ impl MetricsService {
 
             commands_duration_ms.push(self.get_metric_json(self.executed_counters.borrow()[index].duration_ms_sum as usize, tags_executed.clone())?);
             commands_duration_ms.push(self.get_metric_json(self.queued_counters.borrow()[index].duration_ms_sum as usize,tags_queued.clone())?);
-
-            commands_callback.push(
-                serde_json::to_value(MetricsValue::new(
-                    self.callback_counters.borrow()[index].duration_ms_sum as usize,
-                    tags_executed.clone(),
-                ))
-                    .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-            );
+            commands_callback.push(self.get_metric_json(self.callback_counters.borrow()[index].duration_ms_sum as usize,tags_callback.clone())?);
 
             for index_bucket in (0..self.executed_counters.borrow()[index].duration_ms_bucket.len()).rev() {
                 let executed_bucket = self.executed_counters.borrow()[index].duration_ms_bucket[index_bucket];
@@ -215,97 +208,6 @@ mod test {
     }
 
     #[test]
-    fn test_append_command_metrics() {
-        let metrics_service = MetricsService::new();
-        let mut metrics_map = serde_json::Map::new();
-
-        metrics_service.append_command_metrics(&mut metrics_map);
-
-        assert!(metrics_map.contains_key("commands_count"));
-        assert!(metrics_map.contains_key("commands_duration_ms"));
-        assert!(metrics_map.contains_key("commands_duration_ms_bucket"));
-
-        assert_eq!(
-            metrics_map
-                .get("commands_count")
-                .unwrap()
-                .as_array()
-                .unwrap()
-                .len(),
-            COMMANDS_COUNT * 2
-        );
-        assert_eq!(
-            metrics_map
-                .get("commands_duration_ms")
-                .unwrap()
-                .as_array()
-                .unwrap()
-                .len(),
-            COMMANDS_COUNT * 2
-        );
-        assert_eq!(
-            metrics_map
-                .get("commands_duration_ms_bucket")
-                .unwrap()
-                .as_array()
-                .unwrap()
-                .len(),
-            COMMANDS_COUNT * 32
-        );
-
-        let commands_count = metrics_map
-            .get("commands_count")
-            .unwrap()
-            .as_array()
-            .unwrap();
-        let commands_duration_ms = metrics_map
-            .get("commands_duration_ms")
-            .unwrap()
-            .as_array()
-            .unwrap();
-        let commands_duration_ms_bucket = metrics_map
-            .get("commands_duration_ms_bucket")
-            .unwrap()
-            .as_array()
-            .unwrap();
-
-        let expected_commands_count = [
-            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
-            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
-            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
-            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0)
-        ];
-
-        let expected_commands_duration_ms = [
-            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
-            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
-            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
-            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0)
-        ];
-
-        let expected_commands_duration_ms_bucket = [
-            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
-            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
-            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
-            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0)
-        ];
-
-        for command in &expected_commands_count {
-            assert!(commands_count.contains(&command));
-        }
-
-        for command in &expected_commands_duration_ms {
-            assert!(commands_duration_ms.contains(&command));
-        }
-
-        for command in &expected_commands_duration_ms_bucket {
-            assert!(commands_duration_ms_bucket.contains(&command));
-        }
-    }
-
-    fn generate_json(command: String, stage: String, value: usize) -> Value {
-        json!({"tags":{"command": command, "stage": stage} ,"value": value})
-    #[test]
     fn test_append_command_count_metrics() {
         let metrics_service = MetricsService::new();
         let mut metrics_map = serde_json::Map::new();
@@ -336,9 +238,10 @@ mod test {
             json!({"tags":{"command": "non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
         ];
 
-        for command in &expected_commands_count {
-            assert!(commands_count.contains(&command));
-        }
+        assert!(commands_count.contains(&expected_commands_count[0]));
+        assert!(commands_count.contains(&expected_commands_count[1]));
+        assert!(commands_count.contains(&expected_commands_count[2]));
+        assert!(commands_count.contains(&expected_commands_count[3]));
     }
 
     #[test]
@@ -372,9 +275,10 @@ mod test {
             json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
         ];
 
-        for command in &expected_commands_duration_ms {
-            assert!(commands_duration_ms.contains(&command));
-        }
+        assert!(commands_duration_ms.contains(&expected_commands_duration_ms[0]));
+        assert!(commands_duration_ms.contains(&expected_commands_duration_ms[1]));
+        assert!(commands_duration_ms.contains(&expected_commands_duration_ms[2]));
+        assert!(commands_duration_ms.contains(&expected_commands_duration_ms[3]));
     }
 
     #[test]
@@ -392,7 +296,7 @@ mod test {
                 .as_array()
                 .unwrap()
                 .len(),
-            COMMANDS_COUNT * 32
+            COMMANDS_COUNT * 48
         );
 
         let commands_duration_ms_bucket = metrics_map
@@ -408,9 +312,10 @@ mod test {
             json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
         ];
 
-        for command in &expected_commands_duration_ms_bucket {
-            assert!(commands_duration_ms_bucket.contains(&command));
-        }
+        assert!(commands_duration_ms_bucket.contains(&expected_commands_duration_ms_bucket[0]));
+        assert!(commands_duration_ms_bucket.contains(&expected_commands_duration_ms_bucket[1]));
+        assert!(commands_duration_ms_bucket.contains(&expected_commands_duration_ms_bucket[2]));
+        assert!(commands_duration_ms_bucket.contains(&expected_commands_duration_ms_bucket[3]));
     }
 
     #[test]
@@ -428,7 +333,7 @@ mod test {
                 .as_array()
                 .unwrap()
                 .len(),
-            COMMANDS_COUNT * 2
+            COMMANDS_COUNT
         );
 
         let commands_callback = metrics_map
@@ -436,16 +341,16 @@ mod test {
             .unwrap()
             .as_array()
             .unwrap();
-
         let expected_commands_callback = [
-            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"queued"},"value":0}),
-            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
+            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"callback"},"value":0}),
+            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"callback"},"value":0}),
+            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"callback"},"value":0}),
+            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"callback"},"value":0}),
         ];
 
-        for command in &expected_commands_callback {
-            assert!(commands_callback.contains(&command));
-        }
+        assert!(commands_callback.contains(&expected_commands_callback[0]));
+        assert!(commands_callback.contains(&expected_commands_callback[1]));
+        assert!(commands_callback.contains(&expected_commands_callback[2]));
+        assert!(commands_callback.contains(&expected_commands_callback[3]));
     }
 }
