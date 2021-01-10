@@ -661,11 +661,11 @@ pub fn issuer_credential_create(cred_def_handle: u32,
     trace!("issuer_credential_create >>> cred_def_handle: {}, source_id: {}, issuer_did: {}, credential_name: {}, credential_data: {}, price: {}",
            cred_def_handle, source_id, issuer_did, credential_name, secret!(&credential_data), price);
 
-//    // Initiate connection of new format -- redirect to v3 folder
-//    if settings::is_aries_protocol_set() {
-//        let issuer = v3::handlers::issuance::Issuer::create(cred_def_handle, &credential_data, &source_id)?;
-//        return ISSUER_CREDENTIAL_MAP.add(IssuerCredentials::V3(issuer));
-//    }
+    // Initiate connection of new format -- redirect to v3 folder
+    if settings::is_strict_aries_protocol_set() {
+        let issuer = Issuer::create(cred_def_handle, &credential_data, &source_id)?;
+        return ISSUER_CREDENTIAL_MAP.add(IssuerCredentials::V3(issuer));
+    }
 
     let issuer_credential = IssuerCredential::create(cred_def_handle, source_id, issuer_did, credential_name, credential_data, price)?;
 
@@ -812,7 +812,7 @@ pub fn revoke_credential(handle: u32) -> VcxResult<()> {
         match obj {
             IssuerCredentials::Pending(ref mut obj) => obj.revoke_cred(),
             IssuerCredentials::V1(ref mut obj) => obj.revoke_cred(),
-            IssuerCredentials::V3(_) => Err(VcxError::from(VcxErrorKind::NotReady)), // TODO: implement
+            IssuerCredentials::V3(ref mut obj) => obj.revoke_credential()
         }
     })
 }

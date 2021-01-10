@@ -347,6 +347,24 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
 }
 
+- (int)updateWebhookUrl:(NSString *) notification_webhook_url {
+    const char *notification_webhook_url_char = [notification_webhook_url cStringUsingEncoding:NSUTF8StringEncoding];
+    
+    return vcx_update_webhook_url(notification_webhook_url_char);
+}
+
+- (NSString *)errorCMessage:(NSInteger) errorCode {
+    const char * ret = vcx_error_c_message(errorCode);
+    
+    NSString *message = nil;
+    
+    if (ret) {
+        message = [NSString stringWithUTF8String:ret];
+    }
+    
+    return message;
+}
+
 - (void)connectionCreateWithInvite:(NSString *)invitationId
                 inviteDetails:(NSString *)inviteDetails
              completion:(void (^)(NSError *error, NSInteger connectionHandle)) completion
@@ -386,6 +404,36 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    }
 }
 
+- (void)connectionGetState:(NSInteger)connectionHandle
+                completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_connection_get_state(handle, connectionHandle, VcxWrapperCommonNumberCallback);
+    
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
+}
+
+- (void)connectionUpdateState:(NSInteger) connectionHandle
+                   completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_connection_update_state(handle, connectionHandle, VcxWrapperCommonNumberCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
+}
+
 - (void)connectionSerialize:(NSInteger)connectionHandle
                   completion:(void (^)(NSError *error, NSString *serializedConnection))completion{
     vcx_error_t ret;
@@ -420,6 +468,10 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    }
 }
 
+- (int)connectionRelease:(NSInteger) connectionHandle {
+    return vcx_connection_release(connectionHandle);
+}
+
 - (void)deleteConnection:(VcxHandle)connectionHandle
           withCompletion:(void (^)(NSError *error))completion
 {
@@ -434,6 +486,42 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
             completion([NSError errorFromVcxError: ret]);
         });
     }
+}
+
+- (void)connectionGetPwDid:(NSInteger)connectionHandle
+                   completion:(void (^)(NSError *error, NSString *pwDid))completion
+{
+   vcx_error_t ret;
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_connection_get_pw_did(handle,connectionHandle, VcxWrapperCommonStringCallback);
+
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret],nil);
+       });
+   }
+}
+
+- (void)connectionGetTheirPwDid:(NSInteger)connectionHandle
+                   completion:(void (^)(NSError *error, NSString *theirPwDid))completion
+{
+   vcx_error_t ret;
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_connection_get_their_pw_did(handle,connectionHandle, VcxWrapperCommonStringCallback);
+
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret],nil);
+       });
+   }
 }
 
 - (void)connectionSendMessage:(VcxHandle)connectionHandle
@@ -503,6 +591,61 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
         dispatch_async(dispatch_get_main_queue(), ^{
             completion([NSError errorFromVcxError: ret], false);
         });
+    }
+}
+
+
+- (void)connectionUpdateState:(VcxHandle) connectionHandle
+               withCompletion:(void (^)(NSError *error, NSInteger state))completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_connection_update_state(handle, connectionHandle, VcxWrapperCommonNumberCallback);
+
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
+    }
+}
+
+
+- (void)connectionUpdateStateWithMessage:(VcxHandle) connectionHandle
+                                 message:(NSString *)message
+                          withCompletion:(void (^)(NSError *error, NSInteger state))completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * cMessage = [message cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_connection_update_state_with_message(handle, connectionHandle, cMessage, VcxWrapperCommonNumberCallback);
+
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
+    }
+}
+
+- (void)connectionGetState:(VcxHandle) connectionHandle
+            withCompletion:(void (^)(NSError *error, NSInteger state))completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_credential_update_state(handle, connectionHandle, VcxWrapperCommonNumberCallback);
+
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
     }
 }
 
@@ -629,6 +772,24 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     }
 }
 
+- (void)credentialUpdateStateWithMessage:(VcxHandle) credentialHandle
+                                 message:(NSString *)message
+                          withCompletion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * cMessage = [message cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_credential_update_state_with_message(handle, credentialHandle, cMessage, VcxWrapperCommonNumberCallback);
+
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
+    }
+}
+
 - (void)credentialGetOffers:(VcxHandle)connectionHandle
                    completion:(void (^)(NSError *error, NSString *offers))completion{
    vcx_error_t ret;
@@ -702,6 +863,10 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
            completion([NSError errorFromVcxError: ret], 0);
        });
     }
+}
+
+- (int)credentialRelease:(NSInteger) credentialHandle {
+    return vcx_credential_release(credentialHandle);
 }
 
 - (void)exportWallet:(NSString *)exportPath
@@ -828,6 +993,23 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     }
 }
 
+- (void)proofGetRequests:(NSInteger)connectionHandle
+                   completion:(void (^)(NSError *error, NSString *requests))completion{
+   vcx_error_t ret;
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_disclosed_proof_get_requests(handle,connectionHandle, VcxWrapperCommonStringCallback);
+
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret],nil);
+       });
+   }
+}
+
 - (void) proofCreateWithMsgId:(NSString *)sourceId
          withConnectionHandle:(vcx_connection_handle_t)connectionHandle
                     withMsgId:(NSString *)msgId
@@ -901,6 +1083,36 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 
         dispatch_async(dispatch_get_main_queue(), ^{
             completion([NSError errorFromVcxError: ret]);
+        });
+    }
+}
+
+- (void)proofGetState:(NSInteger)proofHandle
+                completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_disclosed_proof_get_state(handle, proofHandle, VcxWrapperCommonNumberCallback);
+    
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
+}
+
+- (void)proofUpdateState:(NSInteger) proofHandle
+                   completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_disclosed_proof_update_state(handle, proofHandle, VcxWrapperCommonNumberCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
         });
     }
 }
@@ -1045,6 +1257,26 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     }
 }
 
+- (int)proofRelease:(NSInteger) proofHandle {
+    return vcx_disclosed_proof_release(proofHandle);
+}
+- (void)proofUpdateStateWithMessage:(VcxHandle) proofHandle
+                            message:(NSString *)message
+                     withCompletion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * cMessage = [message cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_disclosed_proof_update_state_with_message(handle, proofHandle, cMessage, VcxWrapperCommonNumberCallback);
+
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
+    }
+}
 
 - (void)createPaymentAddress:(NSString *)seed
               withCompletion:(void (^)(NSError *error, NSString *address))completion {

@@ -7,7 +7,7 @@ use time;
 use settings;
 use utils::constants::{LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, PROOF_REQUESTED_PREDICATES, ATTRS, REV_STATE_JSON};
 use utils::libindy::{wallet::get_wallet_handle, LibindyMock};
-use utils::libindy::payments::{pay_for_txn, PaymentTxn};
+use utils::libindy::payments::{send_transaction, PaymentTxn};
 use utils::libindy::ledger::*;
 use utils::constants::{SCHEMA_ID, SCHEMA_JSON, SCHEMA_TXN, CREATE_SCHEMA_ACTION, CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_REQ, CREATE_CRED_DEF_ACTION, CREATE_REV_REG_DEF_ACTION, CREATE_REV_REG_DELTA_ACTION, REVOC_REG_TYPE, rev_def_json, REV_REG_ID, REV_REG_DELTA_JSON, REV_REG_JSON};
 use error::prelude::*;
@@ -248,6 +248,14 @@ pub fn libindy_prover_store_credential(cred_id: Option<&str>,
         .map_err(VcxError::from)
 }
 
+pub fn libindy_prover_delete_credential(cred_id: &str) -> VcxResult<()>{
+
+    anoncreds::prover_delete_credential(get_wallet_handle(),
+                                        cred_id)
+        .wait()
+        .map_err(VcxError::from)
+}
+
 pub fn libindy_prover_create_master_secret(master_secret_id: &str) -> VcxResult<String> {
     if settings::indy_mocks_enabled() { return Ok(settings::DEFAULT_LINK_SECRET_ALIAS.to_string()); }
 
@@ -377,7 +385,7 @@ pub fn publish_schema(schema: &str) -> VcxResult<Option<PaymentTxn>> {
 
     let request = build_schema_request(schema)?;
 
-    let (payment, response) = pay_for_txn(&request, CREATE_SCHEMA_ACTION)?;
+    let (payment, response) = send_transaction(&request, CREATE_SCHEMA_ACTION)?;
 
     _check_schema_response(&response)?;
 
@@ -433,7 +441,7 @@ pub fn publish_cred_def(issuer_did: &str, cred_def_json: &str) -> VcxResult<Opti
 
     let cred_def_req = build_cred_def_request(issuer_did, &cred_def_json)?;
 
-    let (payment, _) = pay_for_txn(&cred_def_req, CREATE_CRED_DEF_ACTION)?;
+    let (payment, _) = send_transaction(&cred_def_req, CREATE_CRED_DEF_ACTION)?;
 
     Ok(payment)
 }
@@ -471,7 +479,7 @@ pub fn publish_rev_reg_def(issuer_did: &str, rev_reg_def_json: &str) -> VcxResul
     if settings::indy_mocks_enabled() { return Ok(None); }
 
     let rev_reg_def_req = build_rev_reg_request(issuer_did, &rev_reg_def_json)?;
-    let (payment, _) = pay_for_txn(&rev_reg_def_req, CREATE_REV_REG_DEF_ACTION)?;
+    let (payment, _) = send_transaction(&rev_reg_def_req, CREATE_REV_REG_DEF_ACTION)?;
     Ok(payment)
 }
 
@@ -495,7 +503,7 @@ pub fn build_rev_reg_delta_request(issuer_did: &str, rev_reg_id: &str, rev_reg_e
 pub fn publish_rev_reg_delta(issuer_did: &str, rev_reg_id: &str, rev_reg_entry_json: &str)
                              -> VcxResult<(Option<PaymentTxn>, String)> {
     let request = build_rev_reg_delta_request(issuer_did, rev_reg_id, rev_reg_entry_json)?;
-    pay_for_txn(&request, CREATE_REV_REG_DELTA_ACTION)
+    send_transaction(&request, CREATE_REV_REG_DELTA_ACTION)
 }
 
 pub fn get_rev_reg_delta_json(rev_reg_id: &str, from: Option<u64>, to: Option<u64>)
@@ -594,7 +602,7 @@ pub mod tests {
     pub fn create_and_write_test_schema(attr_list: &str) -> (String, String) {
         let (schema_id, schema_json) = create_schema(attr_list);
         let req = create_schema_req(&schema_json);
-        ::utils::libindy::payments::pay_for_txn(&req, CREATE_SCHEMA_ACTION).unwrap();
+        ::utils::libindy::payments::send_transaction(&req, CREATE_SCHEMA_ACTION).unwrap();
         thread::sleep(Duration::from_millis(1000));
         (schema_id, schema_json)
     }

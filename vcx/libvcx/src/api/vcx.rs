@@ -56,6 +56,7 @@ pub extern fn vcx_init_with_config(command_handle: CommandHandle,
 ///
 /// An example file is at libvcx/sample_config/config.json
 /// The list of available options see here: https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+/// NOTE: If a webhook url is present in the config, an agent is expected to have been provisioned
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -86,14 +87,9 @@ pub extern fn vcx_init(command_handle: CommandHandle,
             settings::set_defaults();
         } else {
             match settings::process_config_file(&config_path) {
+                Ok(_) => (),
                 Err(_) => {
                     return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot initialize with given config path.").into();
-                }
-                Ok(_) => {
-                    match settings::validate_payment_method() {
-                        Ok(_) => (),
-                        Err(e) => return e.into()
-                    }
                 }
             };
         }
@@ -144,18 +140,32 @@ fn _finish_init(command_handle: CommandHandle, cb: extern fn(xcommand_handle: Co
 
         match wallet::open_wallet(&wallet_name, wallet_type.as_ref().map(String::as_str),
                                   storage_config.as_ref().map(String::as_str), storage_creds.as_ref().map(String::as_str)) {
-            Ok(_) => {
-                debug!("Init Wallet Successful");
-                cb(command_handle, error::SUCCESS.code_num);
-            }
+            Ok(_) => debug!("Init Wallet Successful"),
             Err(e) => {
                 error!("Init Wallet Error {}.", e);
                 cb(command_handle, e.into());
+                return Ok(());
+            }
+        }
+
+        match settings::get_config_value(settings::CONFIG_WEBHOOK_URL) {
+            Ok(webhook_url) => match ::messages::agent_utils::update_agent_webhook(&webhook_url) {
+                Ok(()) => {
+                    info!("Agent webhook url updated on init, webhook_url={}", webhook_url);
+                    cb(command_handle, error::SUCCESS.code_num);
+                }
+                Err(e) => {
+                    error!("Error updating agent webhook on init (did you provision an agent?): {}", e);
+                    cb(command_handle, e.into());
+                }
+            }
+            Err(e) => {
+                debug!("webhook_url was not updated in agency: {}", e);
+                cb(command_handle, error::SUCCESS.code_num);
             }
         }
         Ok(())
     });
-
     error::SUCCESS.code_num
 }
 
@@ -308,14 +318,49 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
     error::SUCCESS.code_num
 }
 
+/// Update agency webhook url setting
+///
+/// #Params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// notification_webhook_url: URL to which the notifications should be sent
+///
+/// cb: Callback that provides error code of the result
+///
+/// #Returns
+/// Error code as u32
 #[no_mangle]
-pub extern fn vcx_update_webhook_url(notification_webhook_url: *const c_char) -> u32 {
-    info!("vcx_update_webhook >>>");
+pub extern fn vcx_update_webhook_url(command_handle: CommandHandle,
+                                     notification_webhook_url: *const c_char,
+                                     cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
+    info!("vcx_update_webhook {:?} >>>", notification_webhook_url);
 
-    check_useful_c_str!(notification_webhook_url, VcxErrorKind::InvalidConfiguration);
+    check_useful_c_str!(notification_webhook_url, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
     trace!("vcx_update_webhook(webhook_url: {})", notification_webhook_url);
 
     settings::set_config_value(::settings::CONFIG_WEBHOOK_URL, &notification_webhook_url);
+
+    spawn(move || {
+        match ::messages::agent_utils::update_agent_webhook(&notification_webhook_url[..]) {
+            Ok(()) => {
+                trace!("vcx_update_webhook_url_cb(command_handle: {}, rc: {})",
+                        command_handle, error::SUCCESS.message);
+
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(err) => {
+                warn!("vcx_update_webhook_url_cb(command_handle: {}, rc: {})",
+                        command_handle, err);
+
+                cb(command_handle, err.into());
+            }
+        };
+
+        Ok(())
+    });
 
     error::SUCCESS.code_num
 }
@@ -496,6 +541,8 @@ mod tests {
 
     fn _vcx_init_c_closure(path: &str) -> Result<(), u32> {
         let cb = return_types_u32::Return_U32::new().unwrap();
+
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "agency");
         let rc = vcx_init(cb.command_handle,
                           CString::new(path.to_string()).unwrap().into_raw(),
                           Some(cb.get_callback()));
@@ -507,6 +554,8 @@ mod tests {
 
     fn _vcx_init_with_config_c_closure(config: &str) -> Result<(), u32> {
         let cb = return_types_u32::Return_U32::new().unwrap();
+
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "agency");
         let rc = vcx_init_with_config(cb.command_handle,
                                       CString::new(config.to_string()).unwrap().into_raw(),
                                       Some(cb.get_callback()));
@@ -532,7 +581,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_file_no_payment_method() {
-        let _setup = SetupEmpty::init();
+        let _setup = SetupWalletAndPool::init();
 
         let config = json!({
             "wallet_name": settings::DEFAULT_WALLET_NAME,
@@ -542,8 +591,7 @@ mod tests {
 
         let config = TempFile::create_with_data("test_init.json", &config);
 
-        let rc = _vcx_init_c_closure(&config.path).unwrap_err();
-        assert_eq!(rc, error::MISSING_PAYMENT_METHOD.code_num);
+        _vcx_init_c_closure(&config.path).unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
@@ -850,7 +898,10 @@ mod tests {
         let webhook_url = "http://www.evernym.com";
         assert_ne!(webhook_url, &settings::get_config_value(::settings::CONFIG_WEBHOOK_URL).unwrap());
 
-        assert_eq!(error::SUCCESS.code_num, vcx_update_webhook_url(CString::new(webhook_url.to_string()).unwrap().into_raw()));
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(error::SUCCESS.code_num, vcx_update_webhook_url(cb.command_handle,
+                                                                   CString::new(webhook_url.to_string()).unwrap().into_raw(),
+                                                                   Some(cb.get_callback())));
 
         assert_eq!(webhook_url, &settings::get_config_value(::settings::CONFIG_WEBHOOK_URL).unwrap());
     }

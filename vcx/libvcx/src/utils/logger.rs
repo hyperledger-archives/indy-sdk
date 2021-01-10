@@ -21,8 +21,12 @@ use self::android_logger::Filter;
 use utils::cstring::CStringUtils;
 use error::prelude::*;
 
-
 use utils::libindy;
+
+#[cfg(debug_assertions)]
+const DEFAULT_MAX_LEVEL: LevelFilter = LevelFilter::Trace;
+#[cfg(not(debug_assertions))]
+const DEFAULT_MAX_LEVEL: LevelFilter = LevelFilter::Info;
 
 pub static mut LOGGER_STATE: LoggerState = LoggerState::Default;
 static mut CONTEXT: *const CVoid = ptr::null();
@@ -57,7 +61,7 @@ impl LibvcxLogger {
         LibvcxLogger { context, enabled, log, flush }
     }
 
-    pub fn init(context: *const CVoid, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> VcxResult<()> {
+    pub fn init(context: *const CVoid, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>, max_lvl: Option<u32>) -> VcxResult<()> {
         trace!("LibvcxLogger::init >>>");
         let logger = LibvcxLogger::new(context, enabled, log, flush);
         log::set_boxed_logger(Box::new(logger))
@@ -65,6 +69,12 @@ impl LibvcxLogger {
         log::set_max_level(LevelFilter::Trace);
         libindy::logger::set_logger(log::logger())
             .map_err(|err| err.map(VcxErrorKind::LoggingError, "Setting logger failed"))?;
+
+        let max_lvl = match max_lvl {
+            Some(max_lvl) => LibvcxLogger::map_u32_lvl_to_filter(max_lvl)?,
+            None => DEFAULT_MAX_LEVEL,
+        };
+        log::set_max_level(max_lvl);
 
         unsafe {
             LOGGER_STATE = LoggerState::Custom;
@@ -75,6 +85,27 @@ impl LibvcxLogger {
         }
 
         Ok(())
+    }
+
+    fn map_u32_lvl_to_filter(max_level: u32) -> VcxResult<LevelFilter> {
+        let max_level = match max_level {
+            0 => LevelFilter::Off,
+            1 => LevelFilter::Error,
+            2 => LevelFilter::Warn,
+            3 => LevelFilter::Info,
+            4 => LevelFilter::Debug,
+            5 => LevelFilter::Trace,
+            _ => return Err(VcxError::from(VcxErrorKind::LoggingError)),
+        };
+        Ok(max_level)
+    }
+
+    pub fn set_max_level(max_level: u32) -> VcxResult<LevelFilter> {
+        let max_level_filter = LibvcxLogger::map_u32_lvl_to_filter(max_level)?;
+
+        log::set_max_level(max_level_filter);
+
+        Ok(max_level_filter)
     }
 }
 
@@ -291,7 +322,8 @@ mod tests {
         LibvcxLogger::init(get_custom_context(),
                            Some(custom_enabled),
                            custom_log,
-                           Some(custom_flush)).unwrap();
+                           Some(custom_flush),
+                            None).unwrap();
         error!("error level message"); // first call of log function
         unsafe {
             assert_eq!(COUNT, 2) // second-time log function was called inside libindy
