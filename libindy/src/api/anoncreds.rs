@@ -1,7 +1,4 @@
-use crate::commands::anoncreds::prover::ProverCommand;
-use crate::commands::anoncreds::verifier::VerifierCommand;
-use crate::commands::anoncreds::AnoncredsCommand;
-use crate::commands::{Command, CommandExecutor};
+use crate::commands::CommandExecutor;
 use crate::domain::anoncreds::credential::{Credential, CredentialValues};
 use crate::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
 use crate::domain::anoncreds::credential_definition::{
@@ -124,7 +121,7 @@ pub extern "C" fn indy_issuer_create_schema(
         let (err, id, schema_json) = prepare_result_2!(res, String::new(), String::new());
 
         trace!(
-            "indy_issuer_create_schema ? err {:?} id: {:?} schema_json {:?}",
+            "indy_issuer_create_schema ? err {:?} id {:?} schema_json {:?}",
             err,
             id,
             schema_json
@@ -220,8 +217,8 @@ pub extern "C" fn indy_issuer_create_and_store_credential_def(
 ) -> ErrorCode {
     trace!(
         "indy_issuer_create_and_store_credential_def > wallet_handle {:?} \
-                issuer_did: {:?} schema_json {:?} tag {:?} \
-                signature_type: {:?} config_json: {:?}",
+            issuer_did {:?} schema_json {:?} tag {:?} \
+            signature_type {:?} config_json {:?}",
         wallet_handle,
         issuer_did,
         schema_json,
@@ -244,9 +241,9 @@ pub extern "C" fn indy_issuer_create_and_store_credential_def(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     trace!(
-        "indy_issuer_create_and_store_credential_def ? wallet_handle: {:?} \
-                issuer_did: {:?} schema_json {:?} tag: {:?} \
-                signature_type {:?} config_json {:?}",
+        "indy_issuer_create_and_store_credential_def ? wallet_handle {:?} \
+            issuer_did {:?} schema_json {:?} tag {:?} \
+            signature_type {:?} config_json {:?}",
         wallet_handle,
         issuer_did,
         schema_json,
@@ -279,7 +276,7 @@ pub extern "C" fn indy_issuer_create_and_store_credential_def(
 
         trace!(
             "indy_issuer_create_and_store_credential_def ? err {:?} \
-                        cred_def_id {:?} cred_def_json: {:?}",
+                cred_def_id {:?} cred_def_json {:?}",
             err,
             cred_def_id,
             cred_def_json
@@ -559,8 +556,18 @@ pub extern "C" fn indy_issuer_create_and_store_revoc_reg(
         ),
     >,
 ) -> ErrorCode {
-    trace!("indy_issuer_create_and_store_credential_def: >>> wallet_handle: {:?}, issuer_did: {:?}, revoc_def_type: {:?}, tag: {:?}, \
-    cred_def_id: {:?}, config_json: {:?}, tails_writer_handle: {:?}", wallet_handle, issuer_did, revoc_def_type, tag, cred_def_id, config_json, tails_writer_handle);
+    trace!(
+        "indy_issuer_create_and_store_credential_def > wallet_handle {:?} \
+            issuer_did {:?} revoc_def_type {:?} tag {:?} \
+            cred_def_id {:?} config_json {:?} tails_writer_handle {:?}",
+        wallet_handle,
+        issuer_did,
+        revoc_def_type,
+        tag,
+        cred_def_id,
+        config_json,
+        tails_writer_handle
+    );
 
     check_useful_validatable_string!(issuer_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_opt_c_str!(revoc_def_type, ErrorCode::CommonInvalidParam4);
@@ -581,9 +588,9 @@ pub extern "C" fn indy_issuer_create_and_store_revoc_reg(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
     trace!(
-        "indy_issuer_create_and_store_credential_def > wallet_handle {:?} \
-                issuer_did {:?} revoc_def_type {:?} tag {:?} \
-                cred_def_id {:?} config_json {:?} tails_writer_handle {:?}",
+        "indy_issuer_create_and_store_credential_def ? wallet_handle {:?} \
+            issuer_did {:?} revoc_def_type {:?} tag {:?} \
+            cred_def_id {:?} config_json {:?} tails_writer_handle {:?}",
         wallet_handle,
         issuer_did,
         revoc_def_type,
@@ -618,7 +625,7 @@ pub extern "C" fn indy_issuer_create_and_store_revoc_reg(
 
         trace!(
             "indy_issuer_create_and_store_credential_def > revoc_reg_id {:?} \
-                        revoc_reg_def_json {:?} revoc_reg_json {:?}",
+                revoc_reg_def_json {:?} revoc_reg_json {:?}",
             revoc_reg_id,
             revoc_reg_def_json,
             revoc_reg_json
@@ -806,9 +813,9 @@ pub extern "C" fn indy_issuer_create_credential(
 ) -> ErrorCode {
     trace!(
         "indy_issuer_create_credential > wallet_handle {:?} \
-                cred_offer_json {:?} cred_req_json {:?} \
-                cred_values_json {:?} rev_reg_id {:?} \
-                blob_storage_reader_handle: {:?}",
+            cred_offer_json {:?} cred_req_json {:?} \
+            cred_values_json {:?} rev_reg_id {:?} \
+            blob_storage_reader_handle {:?}",
         wallet_handle,
         cred_offer_json,
         cred_req_json,
@@ -853,7 +860,7 @@ pub extern "C" fn indy_issuer_create_credential(
         "indy_issuer_create_credential ? wallet_handle {:?} \
             cred_offer_json {:?} cred_req_json {:?} \
             cred_values_json {:?} rev_reg_id {:?} \
-        blob_storage_reader_handle: {:?}",
+            blob_storage_reader_handle {:?}",
         wallet_handle,
         cred_offer_json,
         secret!(&cred_req_json),
@@ -886,7 +893,7 @@ pub extern "C" fn indy_issuer_create_credential(
 
         trace!(
             "indy_issuer_create_credential ? err {:?} \
-                        cred_json {:?} revoc_id {:?} revoc_reg_delta_json {:?}",
+                cred_json {:?} revoc_id {:?} revoc_reg_delta_json {:?}",
             err,
             secret!(cred_json.as_str()),
             secret!(&revoc_id),
@@ -965,8 +972,8 @@ pub extern "C" fn indy_issuer_revoke_credential(
 ) -> ErrorCode {
     trace!(
         "indy_issuer_revoke_credential > wallet_handle {:?} \
-                blob_storage_reader_cfg_handle {:?} rev_reg_id {:?} \
-                cred_revoc_id {:?}",
+            blob_storage_reader_cfg_handle {:?} rev_reg_id {:?} \
+            cred_revoc_id {:?}",
         wallet_handle,
         blob_storage_reader_cfg_handle,
         rev_reg_id,
@@ -984,8 +991,8 @@ pub extern "C" fn indy_issuer_revoke_credential(
 
     trace!(
         "indy_issuer_revoke_credential ? wallet_handle {:?} \
-                blob_storage_reader_cfg_handle {:?} rev_reg_id {:?} \
-                cred_revoc_id {:?}",
+            blob_storage_reader_cfg_handle {:?} rev_reg_id {:?} \
+            cred_revoc_id {:?}",
         wallet_handle,
         blob_storage_reader_cfg_handle,
         rev_reg_id,
@@ -1012,8 +1019,8 @@ pub extern "C" fn indy_issuer_revoke_credential(
         let (err, revoc_reg_delta_json) = prepare_result_1!(res, String::new());
 
         trace!(
-            "indy_issuer_revoke_credential ? err: {:?} \
-                    revoc_reg_delta_json {:?}",
+            "indy_issuer_revoke_credential ? err {:?} \
+                revoc_reg_delta_json {:?}",
             err,
             revoc_reg_delta_json
         );
@@ -1139,7 +1146,7 @@ pub extern "C" fn indy_issuer_merge_revocation_registry_deltas(
 ) -> ErrorCode {
     trace!(
         "indy_issuer_merge_revocation_registry_deltas > \
-                rev_reg_delta_json {:?} other_rev_reg_delta_json {:?}",
+            rev_reg_delta_json {:?} other_rev_reg_delta_json {:?}",
         rev_reg_delta_json,
         other_rev_reg_delta_json
     );
@@ -1160,7 +1167,7 @@ pub extern "C" fn indy_issuer_merge_revocation_registry_deltas(
 
     trace!(
         "indy_issuer_merge_revocation_registry_deltas ? \
-                rev_reg_delta_json {:?} other_rev_reg_delta_json {:?}",
+            rev_reg_delta_json {:?} other_rev_reg_delta_json {:?}",
         rev_reg_delta_json,
         other_rev_reg_delta_json
     );
@@ -1179,8 +1186,8 @@ pub extern "C" fn indy_issuer_merge_revocation_registry_deltas(
         let (err, merged_rev_reg_delta) = prepare_result_1!(res, String::new());
 
         trace!(
-            "indy_issuer_merge_revocation_registry_deltas ? err: {:?} \
-            merged_rev_reg_delta {:?}",
+            "indy_issuer_merge_revocation_registry_deltas ? err {:?} \
+                merged_rev_reg_delta {:?}",
             err,
             merged_rev_reg_delta
         );
@@ -1223,7 +1230,8 @@ pub extern "C" fn indy_prover_create_master_secret(
     >,
 ) -> ErrorCode {
     trace!(
-        "indy_prover_create_master_secret: >>> wallet_handle: {:?}, master_secret_id: {:?}",
+        "indy_prover_create_master_secret > wallet_handle {:?} \
+            master_secret_id {:?}",
         wallet_handle,
         master_secret_id
     );
@@ -1231,20 +1239,39 @@ pub extern "C" fn indy_prover_create_master_secret(
     check_useful_opt_c_str!(master_secret_id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_prover_create_master_secret: entities >>> wallet_handle: {:?}, master_secret_id: {:?}", wallet_handle, master_secret_id);
+    trace!(
+        "indy_prover_create_master_secret ? wallet_handle {:?} \
+            master_secret_id {:?}",
+        wallet_handle,
+        master_secret_id
+    );
 
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::CreateMasterSecret(
-            wallet_handle,
-            master_secret_id,
-            boxed_callback_string!("indy_prover_create_master_secret", cb, command_handle),
-        ),
-    )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .create_master_secret(wallet_handle, master_secret_id)
+            .await;
 
-    trace!("indy_prover_create_master_secret: <<< res: {:?}", res);
+        let (err, master_secret_id) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_prover_create_master_secret ? err {:?} master_secret_id {:?}",
+            err,
+            master_secret_id
+        );
+
+        let master_secret_id = ctypes::string_to_cstring(master_secret_id);
+        cb(command_handle, err, master_secret_id.as_ptr());
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_prover_create_master_secret < {:?}", res);
     res
 }
 
@@ -1309,48 +1336,79 @@ pub extern "C" fn indy_prover_create_credential_req(
         ),
     >,
 ) -> ErrorCode {
-    trace!("indy_prover_create_credential_req: >>> wallet_handle: {:?}, prover_did: {:?}, cred_offer_json: {:?}, cred_def_json: {:?}, master_secret_id: {:?}",
-           wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id);
+    trace!(
+        "indy_prover_create_credential_req > wallet_handle {:?} \
+            prover_did {:?} cred_offer_json {:?} cred_def_json {:?} \
+            master_secret_id {:?}",
+        wallet_handle,
+        prover_did,
+        cred_offer_json,
+        cred_def_json,
+        master_secret_id
+    );
 
     check_useful_validatable_string!(prover_did, ErrorCode::CommonInvalidParam3, DidValue);
+
     check_useful_validatable_json!(
         cred_offer_json,
         ErrorCode::CommonInvalidParam4,
         CredentialOffer
     );
+
     check_useful_validatable_json!(
         cred_def_json,
         ErrorCode::CommonInvalidParam5,
         CredentialDefinition
     );
+
     check_useful_c_str!(master_secret_id, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_prover_create_credential_req: entities >>> wallet_handle: {:?}, prover_did: {:?}, cred_offer_json: {:?}, cred_def_json: {:?}, master_secret_id: {:?}",
+    trace!("indy_prover_create_credential_req ? wallet_handle {:?} prover_did {:?} cred_offer_json {:?} cred_def_json {:?} master_secret_id {:?}",
            wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(
-            AnoncredsCommand::Prover(
-                ProverCommand::CreateCredentialRequest(
-                    wallet_handle,
-                    prover_did,
-                    cred_offer_json,
-                    cred_def_json,
-                    master_secret_id,
-                    Box::new(move |result| {
-                        let (err, cred_req_json, cred_req_metadata_json) = prepare_result_2!(result, String::new(), String::new());
-                        trace!("indy_prover_create_credential_req: cred_req_json: {:?}, cred_req_metadata_json: {:?}", cred_req_json, cred_req_metadata_json);
-                        let cred_req_json = ctypes::string_to_cstring(cred_req_json);
-                        let cred_req_metadata_json = ctypes::string_to_cstring(cred_req_metadata_json);
-                        cb(command_handle, err, cred_req_json.as_ptr(), cred_req_metadata_json.as_ptr())
-                    })
-                ))));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .create_credential_request(
+                wallet_handle,
+                prover_did,
+                cred_offer_json,
+                cred_def_json,
+                master_secret_id,
+            )
+            .await;
 
-    trace!("indy_prover_create_credential_req: <<< res: {:?}", res);
+        let (err, cred_req_json, cred_req_metadata_json) =
+            prepare_result_2!(res, String::new(), String::new());
 
+        trace!(
+            "indy_prover_create_credential_req ? err {:?} \
+                cred_req_json {:?} cred_req_metadata_json {:?}",
+            err,
+            cred_req_json,
+            cred_req_metadata_json,
+        );
+
+        let cred_req_json = ctypes::string_to_cstring(cred_req_json);
+        let cred_req_metadata_json = ctypes::string_to_cstring(cred_req_metadata_json);
+
+        cb(
+            command_handle,
+            err,
+            cred_req_json.as_ptr(),
+            cred_req_metadata_json.as_ptr(),
+        )
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_prover_create_credential_req < {:?}", res);
     res
 }
 
@@ -1399,44 +1457,62 @@ pub extern "C" fn indy_prover_set_credential_attr_tag_policy(
     retroactive: bool,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!("indy_prover_set_credential_attr_tag_policy: >>> wallet_handle: {:?}, cred_def_id: {:?}, tag_attrs_json: {:?}, retroactive: {:?}", wallet_handle, cred_def_id, tag_attrs_json, retroactive);
+    trace!(
+        "indy_prover_set_credential_attr_tag_policy > wallet_handle {:?} \
+            cred_def_id {:?} tag_attrs_json {:?} retroactive {:?}",
+        wallet_handle,
+        cred_def_id,
+        tag_attrs_json,
+        retroactive
+    );
 
     check_useful_validatable_string!(
         cred_def_id,
         ErrorCode::CommonInvalidParam3,
         CredentialDefinitionId
     );
+
     check_useful_opt_json!(
         tag_attrs_json,
         ErrorCode::CommonInvalidParam4,
         CredentialAttrTagPolicy
     );
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("indy_prover_set_credential_attr_tag_policy: entities >>> wallet_handle: {:?}, cred_def_id: {:?}, tag_attrs_json: {:?}, retroactive: {:?}",
-           wallet_handle, cred_def_id, tag_attrs_json, retroactive);
-
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::SetCredentialAttrTagPolicy(
-            wallet_handle,
-            cred_def_id,
-            tag_attrs_json,
-            retroactive,
-            Box::new(move |result| {
-                let err = prepare_result!(result);
-                trace!("indy_prover_set_credential_attr_tag_policy: ");
-                cb(command_handle, err)
-            }),
-        ),
-    )));
-
-    let res = prepare_result!(result);
-
     trace!(
-        "indy_prover_set_credential_attr_tag_policy: <<< res: {:?}",
-        res
+        "indy_prover_set_credential_attr_tag_policy ? wallet_handle {:?} \
+            cred_def_id {:?} tag_attrs_json {:?} retroactive {:?}",
+        wallet_handle,
+        cred_def_id,
+        tag_attrs_json,
+        retroactive
     );
 
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
+
+    executor.spawn_ok(async move {
+        let res = controller
+            .set_credential_attr_tag_policy(wallet_handle, cred_def_id, tag_attrs_json, retroactive)
+            .await;
+
+        let err = prepare_result!(res);
+
+        trace!(
+            "indy_prover_set_credential_attr_tag_policy ? err {:?} ",
+            err
+        );
+
+        cb(command_handle, err)
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_prover_set_credential_attr_tag_policy < {:?}", res);
     res
 }
 
@@ -1468,7 +1544,7 @@ pub extern "C" fn indy_prover_get_credential_attr_tag_policy(
     >,
 ) -> ErrorCode {
     trace!(
-        "indy_prover_get_credential_attr_tag_policy: >>> wallet_handle: {:?}, cred_def_id: {:?}",
+        "indy_prover_get_credential_attr_tag_policy > wallet_handle {:?} cred_def_id {:?}",
         wallet_handle,
         cred_def_id
     );
@@ -1478,29 +1554,42 @@ pub extern "C" fn indy_prover_get_credential_attr_tag_policy(
         ErrorCode::CommonInvalidParam3,
         CredentialDefinitionId
     );
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_prover_get_credential_attr_tag_policy: entities >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
-
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::GetCredentialAttrTagPolicy(
-            wallet_handle,
-            cred_def_id,
-            boxed_callback_string!(
-                "indy_prover_get_credential_attr_tag_policy",
-                cb,
-                command_handle
-            ),
-        ),
-    )));
-
-    let res = prepare_result!(result);
-
     trace!(
-        "indy_prover_get_credential_attr_tag_policy: <<< res: {:?}",
-        res
+        "indy_prover_get_credential_attr_tag_policy ? wallet_handle {:?} \
+            cred_def_id {:?}",
+        wallet_handle,
+        cred_def_id
     );
 
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
+
+    executor.spawn_ok(async move {
+        let res = controller
+            .get_credential_attr_tag_policy(wallet_handle, cred_def_id)
+            .await;
+
+        let (err, catpol) = prepare_result_1!(res, String::new());
+
+        trace!(
+            "indy_prover_set_credential_attr_tag_policy ? err {:?} catpol {:?}",
+            err,
+            catpol
+        );
+
+        let catpol = ctypes::string_to_cstring(catpol);
+        cb(command_handle, err, catpol.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_prover_get_credential_attr_tag_policy < {:?}", res);
     res
 }
 
@@ -1564,47 +1653,89 @@ pub extern "C" fn indy_prover_store_credential(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, out_cred_id: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!("indy_prover_store_credential: >>> wallet_handle: {:?}, cred_id: {:?}, cred_req_metadata_json: {:?}, cred_json: {:?}, cred_def_json: {:?}, \
-    cred_def_json: {:?}", wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json);
+    trace!(
+        "indy_prover_store_credential > wallet_handle {:?} \
+            cred_id {:?} cred_req_metadata_json {:?} \
+            cred_json {:?} cred_def_json {:?} \
+            cred_def_json {:?}",
+        wallet_handle,
+        cred_id,
+        cred_req_metadata_json,
+        cred_json,
+        cred_def_json,
+        rev_reg_def_json
+    );
 
     check_useful_opt_c_str!(cred_id, ErrorCode::CommonInvalidParam3);
+
     check_useful_validatable_json!(
         cred_req_metadata_json,
         ErrorCode::CommonInvalidParam4,
         CredentialRequestMetadata
     );
+
     check_useful_validatable_json!(cred_json, ErrorCode::CommonInvalidParam5, Credential);
+
     check_useful_validatable_json!(
         cred_def_json,
         ErrorCode::CommonInvalidParam6,
         CredentialDefinition
     );
+
     check_useful_opt_validatable_json!(
         rev_reg_def_json,
         ErrorCode::CommonInvalidParam7,
         RevocationRegistryDefinition
     );
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!("indy_prover_store_credential: entities >>> wallet_handle: {:?}, cred_id: {:?}, cred_req_metadata_json: {:?}, cred_json: {:?}, cred_def_json: {:?}, \
-    rev_reg_def_json: {:?}", wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json);
+    trace!(
+        "indy_prover_store_credential ? wallet_handle {:?} \
+            cred_id {:?} cred_req_metadata_json {:?} cred_json {:?} \
+            cred_def_json {:?} \
+            rev_reg_def_json {:?}",
+        wallet_handle,
+        cred_id,
+        cred_req_metadata_json,
+        cred_json,
+        cred_def_json,
+        rev_reg_def_json
+    );
 
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::StoreCredential(
-            wallet_handle,
-            cred_id,
-            cred_req_metadata_json,
-            cred_json,
-            cred_def_json,
-            rev_reg_def_json,
-            boxed_callback_string!("indy_prover_store_credential", cb, command_handle),
-        ),
-    )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .store_credential(
+                wallet_handle,
+                cred_id,
+                cred_req_metadata_json,
+                cred_json,
+                cred_def_json,
+                rev_reg_def_json,
+            )
+            .await;
 
-    trace!("indy_prover_store_credential: <<< res: {:?}", res);
+        let (err, cred_id) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_prover_store_credential ? err {:?} cred_id {:?}",
+            err,
+            cred_id
+        );
+
+        let cred_id = ctypes::string_to_cstring(cred_id);
+        cb(command_handle, err, cred_id.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_prover_store_credential < {:?}", res);
     res
 }
 
@@ -1644,7 +1775,7 @@ pub extern "C" fn indy_prover_get_credential(
     >,
 ) -> ErrorCode {
     trace!(
-        "indy_prover_get_credential: >>> wallet_handle: {:?}, cred_id: {:?}",
+        "indy_prover_get_credential > wallet_handle {:?} cred_id {:?}",
         wallet_handle,
         cred_id
     );
@@ -1653,23 +1784,34 @@ pub extern "C" fn indy_prover_get_credential(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!(
-        "indy_prover_get_credential: entities >>> wallet_handle: {:?}, cred_id: {:?}",
+        "indy_prover_get_credential ? wallet_handle {:?} cred_id {:?}",
         wallet_handle,
         cred_id
     );
 
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::GetCredential(
-            wallet_handle,
-            cred_id,
-            boxed_callback_string!("indy_prover_get_credential", cb, command_handle),
-        ),
-    )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.get_credential(wallet_handle, cred_id).await;
+        let (err, credential) = prepare_result_1!(res, String::new());
 
-    trace!("indy_prover_get_credential: <<< res: {:?}", res);
+        trace!(
+            "indy_prover_get_credential ? err {:?} credential {:?}",
+            err,
+            credential
+        );
 
+        let credential = ctypes::string_to_cstring(credential);
+        cb(command_handle, err, credential.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_prover_get_credential < {:?}", res);
     res
 }
 
@@ -1692,7 +1834,7 @@ pub extern "C" fn indy_prover_delete_credential(
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
     trace!(
-        "indy_prover_delete_credential: >>> wallet_handle: {:?}, cred_id: {:?}",
+        "indy_prover_delete_credential > wallet_handle {:?} cred_id {:?}",
         wallet_handle,
         cred_id
     );
@@ -1700,22 +1842,22 @@ pub extern "C" fn indy_prover_delete_credential(
     check_useful_c_str!(cred_id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::DeleteCredential(
-            wallet_handle,
-            cred_id,
-            Box::new(move |result| {
-                let err = prepare_result!(result);
-                trace!("indy_prover_delete_credential: ");
-                cb(command_handle, err)
-            }),
-        ),
-    )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.delete_credential(wallet_handle, cred_id).await;
+        let err = prepare_result!(res);
+        trace!("indy_prover_delete_credential ? err {:?} ", err);
+        cb(command_handle, err)
+    });
 
-    trace!("indy_prover_delete_credential: <<< res: {:?}", res);
-
+    let res = ErrorCode::Success;
+    trace!("indy_prover_delete_credential < {:?}", res);
     res
 }
 
@@ -1772,7 +1914,7 @@ pub extern "C" fn indy_prover_get_credentials(
     >,
 ) -> ErrorCode {
     trace!(
-        "indy_prover_get_credentials: >>> wallet_handle: {:?}, filter_json: {:?}",
+        "indy_prover_get_credentials > wallet_handle {:?} filter_json {:?}",
         wallet_handle,
         filter_json
     );
@@ -1781,23 +1923,34 @@ pub extern "C" fn indy_prover_get_credentials(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!(
-        "indy_prover_get_credentials: entities >>> wallet_handle: {:?}, filter_json: {:?}",
+        "indy_prover_get_credentials ? wallet_handle {:?} filter_json {:?}",
         wallet_handle,
         filter_json
     );
 
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::GetCredentials(
-            wallet_handle,
-            filter_json,
-            boxed_callback_string!("indy_prover_get_credentials", cb, command_handle),
-        ),
-    )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.get_credentials(wallet_handle, filter_json).await;
+        let (err, credentials) = prepare_result_1!(res, String::new());
 
-    trace!("indy_prover_get_credentials: <<< res: {:?}", res);
+        trace!(
+            "indy_prover_get_credentials ? err {:?} credentials {:?}",
+            err,
+            credentials
+        );
 
+        let credentials = ctypes::string_to_cstring(credentials);
+        cb(command_handle, err, credentials.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_prover_get_credentials < {:?}", res);
     res
 }
 
@@ -1837,7 +1990,7 @@ pub extern "C" fn indy_prover_search_credentials(
     >,
 ) -> ErrorCode {
     trace!(
-        "indy_prover_search_credentials: >>> wallet_handle: {:?}, query_json: {:?}",
+        "indy_prover_search_credentials > wallet_handle {:?} query_json {:?}",
         wallet_handle,
         query_json
     );
@@ -1846,27 +1999,37 @@ pub extern "C" fn indy_prover_search_credentials(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!(
-        "indy_prover_search_credentials: entities >>> wallet_handle: {:?}, query_json: {:?}",
+        "indy_prover_search_credentials ? wallet_handle {:?} query_json {:?}",
         wallet_handle,
         query_json
     );
 
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::SearchCredentials(
-            wallet_handle,
-            query_json,
-            Box::new(move |result| {
-                let (err, handle, total_count) =
-                    prepare_result_2!(result, INVALID_SEARCH_HANDLE, 0);
-                cb(command_handle, err, handle, total_count)
-            }),
-        ),
-    )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .search_credentials(wallet_handle, query_json)
+            .await;
 
-    trace!("indy_prover_search_credentials: <<< res: {:?}", res);
+        let (err, handle, total_count) = prepare_result_2!(res, INVALID_SEARCH_HANDLE, 0);
 
+        trace!(
+            "indy_prover_search_credentials ? err {:?} handle {:?} total_count {:?}",
+            err,
+            handle,
+            total_count
+        );
+
+        cb(command_handle, err, handle, total_count);
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_prover_search_credentials < {:?}", res);
     res
 }
 
@@ -1907,7 +2070,7 @@ pub extern "C" fn indy_prover_fetch_credentials(
     >,
 ) -> ErrorCode {
     trace!(
-        "indy_prover_fetch_credentials: >>> search_handle: {:?}, count: {:?}",
+        "indy_prover_fetch_credentials > search_handle {:?} count {:?}",
         search_handle,
         count
     );
@@ -1915,23 +2078,34 @@ pub extern "C" fn indy_prover_fetch_credentials(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!(
-        "indy_prover_fetch_credentials: entities >>> search_handle: {:?}, count: {:?}",
+        "indy_prover_fetch_credentials ? search_handle {:?} count:{:?}",
         search_handle,
         count
     );
 
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::FetchCredentials(
-            search_handle,
-            count,
-            boxed_callback_string!("indy_prover_fetch_credentials", cb, command_handle),
-        ),
-    )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.fetch_credentials(search_handle, count).await;
+        let (err, credentials) = prepare_result_1!(res, String::new());
 
-    trace!("indy_prover_fetch_credentials: <<< res: {:?}", res);
+        trace!(
+            "indy_prover_fetch_credentials ? err {:?} credentials {:?}",
+            err,
+            credentials
+        );
 
+        let credentials = ctypes::string_to_cstring(credentials);
+        cb(command_handle, err, credentials.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_prover_fetch_credentials < {:?}", res);
     res
 }
 
@@ -1951,32 +2125,33 @@ pub extern "C" fn indy_prover_close_credentials_search(
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
     trace!(
-        "indy_prover_close_credentials_search: >>> search_handle: {:?}",
+        "indy_prover_close_credentials_search > search_handle {:?}",
         search_handle
     );
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!(
-        "indy_prover_close_credentials_search: entities >>> search_handle: {:?}",
+        "indy_prover_close_credentials_search ? search_handle {:?}",
         search_handle
     );
 
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::CloseCredentialsSearch(
-            search_handle,
-            Box::new(move |result| {
-                let err = prepare_result!(result);
-                trace!("indy_prover_close_credentials_search:");
-                cb(command_handle, err)
-            }),
-        ),
-    )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.close_credentials_search(search_handle).await;
+        let err = prepare_result!(res);
+        trace!("indy_prover_close_credentials_search ? err {:?}", err);
+        cb(command_handle, err)
+    });
 
-    trace!("indy_prover_close_credentials_search: <<< res: {:?}", res);
-
+    let res = ErrorCode::Success;
+    trace!("indy_prover_close_credentials_search < {:?}", res);
     res
 }
 
@@ -2093,37 +2268,54 @@ pub extern "C" fn indy_prover_get_credentials_for_proof_req(
         ),
     >,
 ) -> ErrorCode {
-    trace!("indy_prover_get_credentials_for_proof_req: >>> wallet_handle: {:?}, proof_request_json: {:?}", wallet_handle, proof_request_json);
+    trace!(
+        "indy_prover_get_credentials_for_proof_req > wallet_handle {:?} \
+            proof_request_json {:?}",
+        wallet_handle,
+        proof_request_json
+    );
 
     check_useful_validatable_json!(
         proof_request_json,
         ErrorCode::CommonInvalidParam3,
         ProofRequest
     );
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_prover_get_credentials_for_proof_req: entities >>> wallet_handle: {:?}, proof_request_json: {:?}",
-           wallet_handle, proof_request_json);
-
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::GetCredentialsForProofReq(
-            wallet_handle,
-            proof_request_json,
-            boxed_callback_string!(
-                "indy_prover_get_credentials_for_proof_req",
-                cb,
-                command_handle
-            ),
-        ),
-    )));
-
-    let res = prepare_result!(result);
-
     trace!(
-        "indy_prover_get_credentials_for_proof_req: <<< res: {:?}",
-        res
+        "indy_prover_get_credentials_for_proof_req ? wallet_handle {:?} \
+            proof_request_json {:?}",
+        wallet_handle,
+        proof_request_json
     );
 
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
+
+    executor.spawn_ok(async move {
+        let res = controller
+            .get_credentials_for_proof_req(wallet_handle, proof_request_json)
+            .await;
+
+        let (err, credentials) = prepare_result_1!(res, String::new());
+
+        trace!(
+            "indy_prover_get_credentials_for_proof_req ? err {:?} credentials {:?}",
+            err,
+            credentials
+        );
+
+        let credentials = ctypes::string_to_cstring(credentials);
+        cb(command_handle, err, credentials.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_prover_get_credentials_for_proof_req < {:?}", res);
     res
 }
 
@@ -2225,46 +2417,61 @@ pub extern "C" fn indy_prover_search_credentials_for_proof_req(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, search_handle: SearchHandle),
     >,
 ) -> ErrorCode {
-    trace!("indy_prover_search_credentials_for_proof_req: >>> wallet_handle: {:?}, proof_request_json: {:?}, extra_query_json: {:?}", wallet_handle, proof_request_json, extra_query_json);
+    trace!(
+        "indy_prover_search_credentials_for_proof_req > wallet_handle {:?} \
+            proof_request_json {:?} extra_query_json {:?}",
+        wallet_handle,
+        proof_request_json,
+        extra_query_json
+    );
 
     check_useful_validatable_json!(
         proof_request_json,
         ErrorCode::CommonInvalidParam3,
         ProofRequest
     );
+
     check_useful_opt_json!(
         extra_query_json,
         ErrorCode::CommonInvalidParam4,
         ProofRequestExtraQuery
     );
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_prover_search_credentials_for_proof_req: entities >>> wallet_handle: {:?}, proof_request_json: {:?}, extra_query_json: {:?}",
-           wallet_handle, proof_request_json, extra_query_json);
-
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::SearchCredentialsForProofReq(
-            wallet_handle,
-            proof_request_json,
-            extra_query_json,
-            Box::new(move |result| {
-                let (err, search_handle) = prepare_result_1!(result, INVALID_SEARCH_HANDLE);
-                trace!(
-                    "indy_prover_search_credentials_for_proof_req: search_handle: {:?}",
-                    search_handle
-                );
-                cb(command_handle, err, search_handle)
-            }),
-        ),
-    )));
-
-    let res = prepare_result!(result);
-
     trace!(
-        "indy_prover_search_credentials_for_proof_req: <<< res: {:?}",
-        res
+        "indy_prover_search_credentials_for_proof_req ? wallet_handle {:?} \
+            proof_request_json {:?} extra_query_json {:?}",
+        wallet_handle,
+        proof_request_json,
+        extra_query_json
     );
 
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
+
+    executor.spawn_ok(async move {
+        let res = controller
+            .search_credentials_for_proof_req(wallet_handle, proof_request_json, extra_query_json)
+            .await;
+
+        let (err, search_handle) = prepare_result_1!(res, INVALID_SEARCH_HANDLE);
+
+        trace!(
+            "indy_prover_search_credentials_for_proof_req ? err {:?} search_handle {:?}",
+            err,
+            search_handle
+        );
+
+        cb(command_handle, err, search_handle)
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_prover_search_credentials_for_proof_req < {:?}", res);
     res
 }
 
@@ -2320,7 +2527,7 @@ pub extern "C" fn indy_prover_fetch_credentials_for_proof_req(
     >,
 ) -> ErrorCode {
     trace!(
-        "indy_prover_fetch_credentials_for_proof_req: >>> search_handle: {:?}, count: {:?}",
+        "indy_prover_fetch_credentials_for_proof_req > search_handle {:?} count {:?}",
         search_handle,
         count
     );
@@ -2328,28 +2535,40 @@ pub extern "C" fn indy_prover_fetch_credentials_for_proof_req(
     check_useful_c_str!(item_referent, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_prover_fetch_credentials_for_proof_req: entities >>> search_handle: {:?}, count: {:?}", search_handle, count);
-
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::FetchCredentialForProofReq(
-            search_handle,
-            item_referent,
-            count,
-            boxed_callback_string!(
-                "indy_prover_fetch_credentials_for_proof_request",
-                cb,
-                command_handle
-            ),
-        ),
-    )));
-
-    let res = prepare_result!(result);
-
     trace!(
-        "indy_prover_fetch_credentials_for_proof_req: <<< res: {:?}",
-        res
+        "indy_prover_fetch_credentials_for_proof_req ? search_handle {:?} \
+            item_referent {:?} count {:?}",
+        search_handle,
+        item_referent,
+        count
     );
 
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
+
+    executor.spawn_ok(async move {
+        let res = controller
+            .fetch_credential_for_proof_request(search_handle, item_referent, count)
+            .await;
+
+        let (err, credentials) = prepare_result_1!(res, String::new());
+
+        trace!(
+            "indy_prover_fetch_credentials_for_proof_request ? err {:?} credentials {:?}",
+            err,
+            credentials
+        );
+
+        let credentials = ctypes::string_to_cstring(credentials);
+        cb(command_handle, err, credentials.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_prover_fetch_credentials_for_proof_req < {:?}", res);
     res
 }
 
@@ -2369,32 +2588,41 @@ pub extern "C" fn indy_prover_close_credentials_search_for_proof_req(
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
     trace!(
-        "indy_prover_close_credentials_search_for_proof_req: >>> search_handle: {:?}",
+        "indy_prover_close_credentials_search_for_proof_req > search_handle {:?}",
         search_handle
     );
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!(
-        "indy_prover_close_credentials_search_for_proof_req: entities >>> search_handle: {:?}",
+        "indy_prover_close_credentials_search_for_proof_req ? search_handle {:?}",
         search_handle
     );
 
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::CloseCredentialsSearchForProofReq(
-            search_handle,
-            Box::new(move |result| {
-                let err = prepare_result!(result);
-                trace!("indy_prover_close_credentials_search:");
-                cb(command_handle, err)
-            }),
-        ),
-    )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .close_credentials_search_for_proof_req(search_handle)
+            .await;
+
+        let err = prepare_result!(res);
+        trace!(
+            "indy_prover_close_credentials_search_for_proof_req ? err {:?}",
+            err
+        );
+        cb(command_handle, err)
+    });
+
+    let res = ErrorCode::Success;
 
     trace!(
-        "indy_prover_close_credentials_search_for_proof_req: <<< res: {:?}",
+        "indy_prover_close_credentials_search_for_proof_req < {:?}",
         res
     );
 
@@ -2580,51 +2808,87 @@ pub extern "C" fn indy_prover_create_proof(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, proof_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!("indy_prover_create_proof: >>> wallet_handle: {:?}, proof_req_json: {:?}, requested_credentials_json: {:?}, master_secret_id: {:?}, \
-    schemas_json: {:?}, credential_defs_json: {:?}, rev_states_json: {:?}",
-           wallet_handle, proof_req_json, requested_credentials_json, master_secret_id, schemas_json, credential_defs_json, rev_states_json);
+    trace!(
+        "indy_prover_create_proof > wallet_handle {:?} \
+            proof_req_json {:?} requested_credentials_json {:?} \
+            master_secret_id {:?} schemas_json {:?} \
+            credential_defs_json {:?} rev_states_json {:?}",
+        wallet_handle,
+        proof_req_json,
+        requested_credentials_json,
+        master_secret_id,
+        schemas_json,
+        credential_defs_json,
+        rev_states_json
+    );
 
     check_useful_validatable_json!(proof_req_json, ErrorCode::CommonInvalidParam3, ProofRequest);
+
     check_useful_validatable_json!(
         requested_credentials_json,
         ErrorCode::CommonInvalidParam4,
         RequestedCredentials
     );
+
     check_useful_c_str!(master_secret_id, ErrorCode::CommonInvalidParam5);
     check_useful_json!(schemas_json, ErrorCode::CommonInvalidParam6, Schemas);
+
     check_useful_json!(
         credential_defs_json,
         ErrorCode::CommonInvalidParam7,
         CredentialDefinitions
     );
+
     check_useful_json!(
         rev_states_json,
         ErrorCode::CommonInvalidParam8,
         RevocationStates
     );
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
-    trace!("indy_prover_create_proof: entities >>> wallet_handle: {:?}, proof_req_json: {:?}, requested_credentials_json: {:?}, master_secret_id: {:?}, \
-    schemas_json: {:?}, credential_defs_json: {:?}, rev_states_json: {:?}",
-           wallet_handle, proof_req_json, requested_credentials_json, master_secret_id, schemas_json, credential_defs_json, rev_states_json);
+    trace!(
+        "indy_prover_create_proof ? wallet_handle {:?} \
+            proof_req_json {:?} requested_credentials_json {:?} \
+            master_secret_id {:?} schemas_json {:?} \
+            credential_defs_json {:?} rev_states_json {:?}",
+        wallet_handle,
+        proof_req_json,
+        requested_credentials_json,
+        master_secret_id,
+        schemas_json,
+        credential_defs_json,
+        rev_states_json
+    );
 
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::CreateProof(
-            wallet_handle,
-            proof_req_json,
-            requested_credentials_json,
-            master_secret_id,
-            schemas_json,
-            credential_defs_json,
-            rev_states_json,
-            boxed_callback_string!("indy_prover_create_proof", cb, command_handle),
-        ),
-    )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .create_proof(
+                wallet_handle,
+                proof_req_json,
+                requested_credentials_json,
+                master_secret_id,
+                schemas_json,
+                credential_defs_json,
+                rev_states_json,
+            )
+            .await;
 
-    trace!("indy_prover_create_proof: <<< res: {:?}", res);
+        let (err, proof) = prepare_result_1!(res, String::new());
+        trace!("indy_prover_create_proof ? err {:?} proof {:?}", err, proof);
+        let proof = ctypes::string_to_cstring(proof);
+        cb(command_handle, err, proof.as_ptr())
+    });
 
+    let res = ErrorCode::Success;
+    trace!("indy_prover_create_proof < {:?}", res);
     res
 }
 
@@ -2788,57 +3052,89 @@ pub extern "C" fn indy_verifier_verify_proof(
     rev_regs_json: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, valid: bool)>,
 ) -> ErrorCode {
-    trace!("indy_verifier_verify_proof: >>> proof_request_json: {:?}, proof_json: {:?}, schemas_json: {:?}, credential_defs_json: {:?}, \
-    rev_reg_defs_json: {:?}, rev_regs_json: {:?}", proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json);
+    trace!(
+        "indy_verifier_verify_proof > proof_request_json {:?} \
+            proof_json {:?} schemas_json {:?} credential_defs_json {:?} \
+            rev_reg_defs_json {:?} rev_regs_json {:?}",
+        proof_request_json,
+        proof_json,
+        schemas_json,
+        credential_defs_json,
+        rev_reg_defs_json,
+        rev_regs_json
+    );
 
     check_useful_validatable_json!(
         proof_request_json,
         ErrorCode::CommonInvalidParam2,
         ProofRequest
     );
+
     check_useful_validatable_json!(proof_json, ErrorCode::CommonInvalidParam3, Proof);
     check_useful_json!(schemas_json, ErrorCode::CommonInvalidParam4, Schemas);
+
     check_useful_json!(
         credential_defs_json,
         ErrorCode::CommonInvalidParam5,
         CredentialDefinitions
     );
+
     check_useful_json!(
         rev_reg_defs_json,
         ErrorCode::CommonInvalidParam6,
         RevocationRegistryDefinitions
     );
+
     check_useful_json!(
         rev_regs_json,
         ErrorCode::CommonInvalidParam7,
         RevocationRegistries
     );
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!("indy_verifier_verify_proof: entities >>> proof_request_json: {:?}, proof_json: {:?}, schemas_json: {:?}, credential_defs_json: {:?}, \
-    rev_reg_defs_json: {:?}, rev_regs_json: {:?}", proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json);
+    trace!(
+        "indy_verifier_verify_proof ? proof_request_json {:?} \
+            proof_json {:?} schemas_json {:?} credential_defs_json {:?} \
+            rev_reg_defs_json {:?} rev_regs_json {:?}",
+        proof_request_json,
+        proof_json,
+        schemas_json,
+        credential_defs_json,
+        rev_reg_defs_json,
+        rev_regs_json
+    );
 
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Verifier(
-        VerifierCommand::VerifyProof(
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.verifier_command_cxecutor.clone();
+        (executor, controller)
+    };
+
+    executor.spawn_ok(async move {
+        let res = controller.verify_proof(
             proof_request_json,
             proof_json,
             schemas_json,
             credential_defs_json,
             rev_reg_defs_json,
             rev_regs_json,
-            Box::new(move |result| {
-                let (err, valid) = prepare_result_1!(result, false);
-                trace!("indy_verifier_verify_proof: valid: {:?}", valid);
+        );
 
-                cb(command_handle, err, valid)
-            }),
-        ),
-    )));
+        let (err, valid) = prepare_result_1!(res, false);
 
-    let res = prepare_result!(result);
+        trace!(
+            "indy_verifier_verify_proof ? err {:?} valid {:?}",
+            err,
+            valid
+        );
 
-    trace!("indy_verifier_verify_proof: <<< res: {:?}", res);
+        cb(command_handle, err, valid)
+    });
 
+    let res = ErrorCode::Success;
+    trace!("indy_verifier_verify_proof < {:?}", res);
     res
 }
 
@@ -2889,40 +3185,75 @@ pub extern "C" fn indy_create_revocation_state(
         ),
     >,
 ) -> ErrorCode {
-    trace!("indy_create_revocation_state: >>> blob_storage_reader_handle: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, \
-    cred_rev_id: {:?}", blob_storage_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id);
+    trace!(
+        "indy_create_revocation_state > blob_storage_reader_handle {:?} \
+            rev_reg_def_json {:?} rev_reg_delta_json {:?} timestamp {:?} \
+            cred_rev_id {:?}",
+        blob_storage_reader_handle,
+        rev_reg_def_json,
+        rev_reg_delta_json,
+        timestamp,
+        cred_rev_id
+    );
 
     check_useful_validatable_json!(
         rev_reg_def_json,
         ErrorCode::CommonInvalidParam3,
         RevocationRegistryDefinition
     );
+
     check_useful_validatable_json!(
         rev_reg_delta_json,
         ErrorCode::CommonInvalidParam4,
         RevocationRegistryDelta
     );
+
     check_useful_c_str!(cred_rev_id, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_create_revocation_state: entities >>> blob_storage_reader_handle: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, \
-    cred_rev_id: {:?}", blob_storage_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id);
+    trace!(
+        "indy_create_revocation_state ? blob_storage_reader_handle {:?} \
+            rev_reg_def_json {:?} rev_reg_delta_json {:?} timestamp {:?} \
+            cred_rev_id {:?}",
+        blob_storage_reader_handle,
+        rev_reg_def_json,
+        rev_reg_delta_json,
+        timestamp,
+        cred_rev_id
+    );
 
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::CreateRevocationState(
-            blob_storage_reader_handle,
-            rev_reg_def_json,
-            rev_reg_delta_json,
-            timestamp,
-            cred_rev_id,
-            boxed_callback_string!("indy_create_revocation_state", cb, command_handle),
-        ),
-    )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .create_revocation_state(
+                blob_storage_reader_handle,
+                rev_reg_def_json,
+                rev_reg_delta_json,
+                timestamp,
+                cred_rev_id,
+            )
+            .await;
 
-    trace!("indy_create_revocation_state: <<< res: {:?}", res);
+        let (err, rev_state) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_create_revocation_state ? err {:?} rev_state {:?}",
+            err,
+            rev_state
+        );
+
+        let rev_state = ctypes::string_to_cstring(rev_state);
+        cb(command_handle, err, rev_state.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_create_revocation_state < {:?}", res);
     res
 }
 
@@ -2974,46 +3305,84 @@ pub extern "C" fn indy_update_revocation_state(
         ),
     >,
 ) -> ErrorCode {
-    trace!("indy_update_revocation_state: >>> blob_storage_reader_handle: {:?}, rev_state_json: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, \
-    timestamp: {:?}, cred_rev_id: {:?}", blob_storage_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id);
+    trace!(
+        "indy_update_revocation_state > blob_storage_reader_handle {:?} \
+            rev_state_json {:?} rev_reg_def_json {:?} rev_reg_delta_json {:?} \
+            timestamp {:?} cred_rev_id {:?}",
+        blob_storage_reader_handle,
+        rev_state_json,
+        rev_reg_def_json,
+        rev_reg_delta_json,
+        timestamp,
+        cred_rev_id
+    );
 
     check_useful_validatable_json!(
         rev_state_json,
         ErrorCode::CommonInvalidParam3,
         RevocationState
     );
+
     check_useful_validatable_json!(
         rev_reg_def_json,
         ErrorCode::CommonInvalidParam4,
         RevocationRegistryDefinition
     );
+
     check_useful_validatable_json!(
         rev_reg_delta_json,
         ErrorCode::CommonInvalidParam5,
         RevocationRegistryDelta
     );
+
     check_useful_c_str!(cred_rev_id, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!("indy_update_revocation_state: entities >>> blob_storage_reader_handle: {:?}, rev_state_json: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, \
-    timestamp: {:?}, cred_rev_id: {:?}", blob_storage_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id);
+    trace!(
+        "indy_update_revocation_state ? blob_storage_reader_handle {:?} \
+            rev_state_json {:?} rev_reg_def_json {:?} rev_reg_delta_json {:?} \
+            timestamp {:?} cred_rev_id {:?}",
+        blob_storage_reader_handle,
+        rev_state_json,
+        rev_reg_def_json,
+        rev_reg_delta_json,
+        timestamp,
+        cred_rev_id
+    );
 
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Prover(
-        ProverCommand::UpdateRevocationState(
-            blob_storage_reader_handle,
-            rev_state_json,
-            rev_reg_def_json,
-            rev_reg_delta_json,
-            timestamp,
-            cred_rev_id,
-            boxed_callback_string!("indy_update_revocation_state", cb, command_handle),
-        ),
-    )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.prover_command_cxecutor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .update_revocation_state(
+                blob_storage_reader_handle,
+                rev_state_json,
+                rev_reg_def_json,
+                rev_reg_delta_json,
+                timestamp,
+                cred_rev_id,
+            )
+            .await;
 
-    trace!("indy_update_revocation_state: <<< res: {:?}", res);
+        let (err, rev_state) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_update_revocation_state ? err {:?} rev_state {:?}",
+            err,
+            rev_state
+        );
+
+        let rev_state = ctypes::string_to_cstring(rev_state);
+        cb(command_handle, err, rev_state.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_update_revocation_state < {:?}", res);
     res
 }
 
@@ -3031,22 +3400,29 @@ pub extern "C" fn indy_generate_nonce(
     command_handle: CommandHandle,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, nonce: *const c_char)>,
 ) -> ErrorCode {
-    trace!("indy_generate_nonce: >>> ");
+    trace!("indy_generate_nonce >");
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
 
-    let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Verifier(
-        VerifierCommand::GenerateNonce(boxed_callback_string!(
-            "indy_generate_nonce",
-            cb,
-            command_handle
-        )),
-    )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.verifier_command_cxecutor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.generate_nonce();
+        let (err, nonce) = prepare_result_1!(res, String::new());
 
-    trace!("indy_generate_nonce: <<< res: {:?}", res);
+        trace!("indy_generate_nonce ? err {:?} nonce {:?}", err, nonce);
 
+        let nonce = ctypes::string_to_cstring(nonce);
+        cb(command_handle, err, nonce.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_generate_nonce < {:?}", res);
     res
 }
 
@@ -3079,27 +3455,30 @@ pub extern "C" fn indy_to_unqualified(
     entity: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, res: *const c_char)>,
 ) -> ErrorCode {
-    trace!("indy_to_unqualified: >>> entity: {:?}", entity);
+
+    trace!("indy_to_unqualified > entity {:?}", entity);
 
     check_useful_c_str!(entity, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_to_unqualified: entities >>> entity: {:?}", entity);
+    trace!("indy_to_unqualified ? entity {:?}", entity);
 
-    let result =
-        CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::ToUnqualified(
-            entity,
-            Box::new(move |result| {
-                let (err, res) = prepare_result_1!(result, String::new());
-                trace!("indy_to_unqualified: did: {:?}", res);
-                let res = ctypes::string_to_cstring(res);
-                cb(command_handle, err, res.as_ptr())
-            }),
-        )));
+    let executor = CommandExecutor::instance().executor.clone();
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        use crate::services::anoncreds::helpers::to_unqualified;
 
-    trace!("indy_to_unqualified: <<< res: {:?}", res);
+        // FIXME: Ideally it should be dedicated controller call
+        let res = to_unqualified(&entity);
+        let (err, did) = prepare_result_1!(res, String::new());
 
+        trace!("indy_to_unqualified ? err {:?} did {:?}", err, did);
+
+        let did = ctypes::string_to_cstring(did);
+        cb(command_handle, err, did.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_to_unqualified < {:?}", res);
     res
 }

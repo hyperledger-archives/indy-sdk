@@ -1,70 +1,8 @@
-pub mod issuer;
-pub mod prover;
+mod issuer;
+mod prover;
 mod tails;
-pub mod verifier;
+mod verifier;
 
-use crate::commands::anoncreds::issuer::IssuerCommandExecutor;
-use crate::commands::anoncreds::prover::{ProverCommand, ProverCommandExecutor};
-use crate::commands::anoncreds::verifier::{VerifierCommand, VerifierCommandExecutor};
-
-use crate::services::anoncreds::helpers::to_unqualified;
-use crate::services::anoncreds::AnoncredsService;
-use crate::services::blob_storage::BlobStorageService;
-use crate::services::crypto::CryptoService;
-use crate::services::pool::PoolService;
-use indy_wallet::WalletService;
-
-use indy_api_types::errors::prelude::*;
-
-use std::sync::Arc;
-
-pub enum AnoncredsCommand {
-    Prover(ProverCommand),
-    Verifier(VerifierCommand),
-    ToUnqualified(
-        String, // entity
-        Box<dyn Fn(IndyResult<String>) + Send + Sync>,
-    ),
-}
-
-pub struct AnoncredsCommandExecutor {
-    prover_command_cxecutor: ProverCommandExecutor,
-    verifier_command_cxecutor: VerifierCommandExecutor,
-}
-
-impl AnoncredsCommandExecutor {
-    pub fn new(
-        anoncreds_service: Arc<AnoncredsService>,
-        blob_storage_service: Arc<BlobStorageService>,
-        pool_service: Arc<PoolService>,
-        wallet_service: Arc<WalletService>,
-        crypto_service: Arc<CryptoService>,
-    ) -> AnoncredsCommandExecutor {
-        AnoncredsCommandExecutor {
-            prover_command_cxecutor: ProverCommandExecutor::new(
-                anoncreds_service.clone(),
-                wallet_service.clone(),
-                crypto_service.clone(),
-                blob_storage_service.clone(),
-            ),
-            verifier_command_cxecutor: VerifierCommandExecutor::new(anoncreds_service.clone()),
-        }
-    }
-
-    pub async fn execute(&self, command: AnoncredsCommand) {
-        match command {
-            AnoncredsCommand::Prover(cmd) => {
-                debug!(target: "anoncreds_command_executor", "Prover command received");
-                self.prover_command_cxecutor.execute(cmd).await;
-            }
-            AnoncredsCommand::Verifier(cmd) => {
-                debug!(target: "anoncreds_command_executor", "Verifier command received");
-                self.verifier_command_cxecutor.execute(cmd);
-            }
-            AnoncredsCommand::ToUnqualified(entity, cb) => {
-                debug!("ToUnqualified command received");
-                cb(to_unqualified(&entity));
-            }
-        };
-    }
-}
+pub(crate) use issuer::IssuerCommandExecutor;
+pub(crate) use prover::ProverCommandExecutor;
+pub(crate) use verifier::VerifierCommandExecutor;

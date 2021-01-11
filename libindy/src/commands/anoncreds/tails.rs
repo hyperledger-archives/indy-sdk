@@ -1,24 +1,29 @@
-use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
-use crate::services::blob_storage::BlobStorageService;
+use std::sync::Arc;
+
 use indy_api_types::errors::prelude::*;
 
-use ursa::cl::{RevocationTailsAccessor, RevocationTailsGenerator, Tail};
-use ursa::errors::prelude::{UrsaCryptoError, UrsaCryptoErrorKind};
+use ursa::{
+    cl::{RevocationTailsAccessor, RevocationTailsGenerator, Tail},
+    errors::prelude::{UrsaCryptoError, UrsaCryptoErrorKind},
+};
 
 use rust_base58::{FromBase58, ToBase58};
 
-use std::sync::Arc;
+use crate::{
+    domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1,
+    services::blob_storage::BlobStorageService,
+};
 
 const TAILS_BLOB_TAG_SZ: u8 = 2;
 const TAIL_SIZE: usize = Tail::BYTES_REPR_SIZE;
 
-pub struct SDKTailsAccessor {
+pub(crate) struct SDKTailsAccessor {
     tails_service: Arc<BlobStorageService>,
     tails_reader_handle: i32,
 }
 
 impl SDKTailsAccessor {
-    pub async fn new(
+    pub(crate) async fn new(
         tails_service: Arc<BlobStorageService>,
         tails_reader_handle: i32,
         rev_reg_def: &RevocationRegistryDefinitionV1,
@@ -59,39 +64,37 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
         tail_id: u32,
         accessor: &mut dyn FnMut(&Tail),
     ) -> Result<(), UrsaCryptoError> {
-        debug!("access_tail >>> tail_id: {:?}", tail_id);
+        debug!("access_tail > tail_id {:?}", tail_id);
 
         // FIXME: Potentially it is significant lock
-        let tail_bytes = futures::executor::block_on(
-            self
-                .tails_service
-             .read(
-                self.tails_reader_handle,
-                TAIL_SIZE,
-                TAIL_SIZE * tail_id as usize + TAILS_BLOB_TAG_SZ as usize,
-                ))
-            .map_err(|_| {
-                UrsaCryptoError::from_msg(
-                    UrsaCryptoErrorKind::InvalidState,
-                    "Can't read tail bytes from blob storage",
-                )
-            })?; // FIXME: IO error should be returned
+        let tail_bytes = futures::executor::block_on(self.tails_service.read(
+            self.tails_reader_handle,
+            TAIL_SIZE,
+            TAIL_SIZE * tail_id as usize + TAILS_BLOB_TAG_SZ as usize,
+        ))
+        .map_err(|_| {
+            UrsaCryptoError::from_msg(
+                UrsaCryptoErrorKind::InvalidState,
+                "Can't read tail bytes from blob storage",
+            )
+        })?; // FIXME: IO error should be returned
 
         let tail = Tail::from_bytes(tail_bytes.as_slice())?;
         accessor(&tail);
 
-        debug!("access_tail <<< res: ()");
-        Ok(())
+        let res = Ok(());
+        debug!("access_tail < {:?}", res);
+        res
     }
 }
 
-pub async fn store_tails_from_generator(
+pub(crate) async fn store_tails_from_generator(
     service: Arc<BlobStorageService>,
     writer_handle: i32,
     rtg: &mut RevocationTailsGenerator,
 ) -> IndyResult<(String, String)> {
     debug!(
-        "store_tails_from_generator >>> writer_handle: {:?}",
+        "store_tails_from_generator > writer_handle {:?}",
         writer_handle
     );
 
@@ -105,11 +108,12 @@ pub async fn store_tails_from_generator(
         service.append(blob_handle, tail_bytes.as_slice()).await?;
     }
 
-    let res = service
+    let tails_info = service
         .finalize(blob_handle)
         .await
         .map(|(location, hash)| (location, hash.to_base58()))?;
 
-    debug!("store_tails_from_generator <<< res: {:?}", res);
-    Ok(res)
+    let res = Ok(tails_info);
+    debug!("store_tails_from_generator < {:?}", res);
+    res
 }
