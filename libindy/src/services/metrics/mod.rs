@@ -73,7 +73,7 @@ impl MetricsService {
                 String::from("queued"),
             );
             let tags_callback = MetricsService::get_command_tags(
-                command.clone(),
+                command_name.clone(),
                 String::from("callback"),
             );
 
@@ -82,12 +82,14 @@ impl MetricsService {
 
             commands_duration_ms.push(self.get_metric_json(self.executed_counters.borrow()[index].duration_ms_sum as usize, tags_executed.clone())?);
             commands_duration_ms.push(self.get_metric_json(self.queued_counters.borrow()[index].duration_ms_sum as usize,tags_queued.clone())?);
-            commands_callback.push(self.get_metric_json(self.callback_counters.borrow()[index].duration_ms_sum as usize,tags_callback.clone())?);
+            commands_duration_ms.push(self.get_metric_json(self.callback_counters.borrow()[index].duration_ms_sum as usize,tags_callback.clone())?);
+
+            commands_callback.push(self.get_metric_json(self.callback_counters.borrow()[index].count as usize, tags_callback.clone())?);
 
             for index_bucket in (0..self.executed_counters.borrow()[index].duration_ms_bucket.len()).rev() {
                 let executed_bucket = self.executed_counters.borrow()[index].duration_ms_bucket[index_bucket];
                 let queued_bucket = self.queued_counters.borrow()[index].duration_ms_bucket[index_bucket];
-                let callback_bucket = self.callback_counters.borrow()[index as usize].duration_ms_bucket[index_bucket];
+                let callback_bucket = self.callback_counters.borrow()[index].duration_ms_bucket[index_bucket];
 
                 commands_duration_ms_bucket.push(self.get_metric_json(executed_bucket as usize, tags_executed.clone())?);
                 commands_duration_ms_bucket.push(self.get_metric_json(queued_bucket as usize, tags_queued.clone())?);
@@ -232,10 +234,10 @@ mod test {
             .unwrap();
 
         let expected_commands_count = [
-            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"queued"},"value":0}),
-            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
-            json!({"tags":{"command": "non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
+            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
+            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
+            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
+            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0),
         ];
 
         assert!(commands_count.contains(&expected_commands_count[0]));
@@ -259,7 +261,7 @@ mod test {
                 .as_array()
                 .unwrap()
                 .len(),
-            COMMANDS_COUNT * 2
+            COMMANDS_COUNT * 3
         );
 
         let commands_duration_ms = metrics_map
@@ -269,10 +271,10 @@ mod test {
             .unwrap();
 
         let expected_commands_duration_ms = [
-            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"queued"},"value":0}),
-            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
+            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
+            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
+            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
+            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0),
         ];
 
         assert!(commands_duration_ms.contains(&expected_commands_duration_ms[0]));
@@ -306,10 +308,10 @@ mod test {
             .unwrap();
 
         let expected_commands_duration_ms_bucket = [
-            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"queued"},"value":0}),
-            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
+            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
+            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
+            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
+            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0),
         ];
 
         assert!(commands_duration_ms_bucket.contains(&expected_commands_duration_ms_bucket[0]));
@@ -342,15 +344,19 @@ mod test {
             .as_array()
             .unwrap();
         let expected_commands_callback = [
-            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"callback"},"value":0}),
-            json!({"tags":{"command":"metrics_command_collect_metrics","stage":"callback"},"value":0}),
-            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"callback"},"value":0}),
-            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"callback"},"value":0}),
+            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "callback".to_owned(), 0),
+            generate_json("metrics_command_collect_metrics".to_owned(), "callback".to_owned(), 0),
+            generate_json("cache_command_purge_cred_def_cache".to_owned(), "callback".to_owned(), 0),
+            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "callback".to_owned(), 0),
         ];
 
         assert!(commands_callback.contains(&expected_commands_callback[0]));
         assert!(commands_callback.contains(&expected_commands_callback[1]));
         assert!(commands_callback.contains(&expected_commands_callback[2]));
         assert!(commands_callback.contains(&expected_commands_callback[3]));
+    }
+
+    fn generate_json(command: String, stage: String, value: usize) -> Value {
+        json!({"tags":{"command": command, "stage": stage} ,"value": value})
     }
 }
