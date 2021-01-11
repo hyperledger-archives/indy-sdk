@@ -9,7 +9,7 @@ use futures::channel::mpsc::{unbounded, UnboundedSender};
 use futures::StreamExt;
 
 use crate::commands::blob_storage::BlobStorageCommandExecutor;
-use crate::commands::cache::{CacheCommand, CacheCommandExecutor};
+use crate::commands::cache::CacheCommandExecutor;
 use crate::commands::crypto::CryptoCommandExecutor;
 use crate::commands::did::{DidCommand, DidCommandExecutor};
 use crate::commands::ledger::{LedgerCommand, LedgerCommandExecutor};
@@ -59,7 +59,6 @@ pub enum Command {
     Pairwise(PairwiseCommand),
     NonSecrets(NonSecretsCommand),
     //Payments(PaymentsCommand),
-    Cache(CacheCommand),
     //Metrics(MetricsCommand),
 }
 
@@ -253,7 +252,6 @@ impl CommandExecutor {
                             pairwise_command_executor: Arc<PairwiseCommandExecutor>,
                             non_secret_command_executor: Arc<NonSecretsCommandExecutor>,
                             //payments_command_executor:Arc<PaymentsCommandExecutor>,
-                            cache_command_executor: Arc<CacheCommandExecutor>,
                             //metrics_command_executor:Arc<MetricsCommandExecutor>, FIXME:
                         ) {
                             // FIXME:
@@ -292,10 +290,6 @@ impl CommandExecutor {
                                 //     debug!("PaymentsCommand command received");
                                 //     payments_command_executor.execute(cmd).await;
                                 // }
-                                Command::Cache(cmd) => {
-                                    debug!("CacheCommand command received");
-                                    cache_command_executor.execute(cmd).await;
-                                }
                                 // Command::Metrics(cmd) => {
                                 //     debug!("MetricsCommand command received");
                                 //     metrics_command_executor.execute(cmd).await;
@@ -335,7 +329,7 @@ impl CommandExecutor {
                                 pairwise_command_executor.clone(),
                                 non_secret_command_executor.clone(),
                                 /*payments_command_executor.clone(),*/
-                                cache_command_executor.clone(), /*metrics_command_executor.clone()*/
+                                /*metrics_command_executor.clone()*/
                             ));
                             trace!("CommandExecutor main loop <<");
                         }
