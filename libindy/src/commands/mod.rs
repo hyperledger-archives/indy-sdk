@@ -8,7 +8,6 @@ use std::thread;
 use futures::channel::mpsc::{unbounded, UnboundedSender};
 use futures::StreamExt;
 
-use crate::commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use crate::commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
 use crate::commands::cache::{CacheCommand, CacheCommandExecutor};
 use crate::commands::crypto::CryptoCommandExecutor;
@@ -33,9 +32,7 @@ use crate::services::pool::{set_freshness_threshold, PoolService};
 use indy_wallet::WalletService;
 
 use self::threadpool::ThreadPool;
-use anoncreds::{
-    issuer::IssuerCommandExecutor, prover::ProverCommandExecutor, verifier::VerifierCommandExecutor,
-};
+use anoncreds::{IssuerCommandExecutor, ProverCommandExecutor, VerifierCommandExecutor};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub mod anoncreds;
@@ -55,7 +52,6 @@ type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>) + 
 
 pub enum Command {
     Exit,
-    Anoncreds(AnoncredsCommand),
     BlobStorage(BlobStorageCommand),
     Ledger(LedgerCommand),
     Pool(PoolCommand),
@@ -113,21 +109,20 @@ fn get_cur_time() -> u128 {
     since_epoch.as_millis()
 }
 
-pub struct CommandExecutor {
-    pub anoncreds_command_executor: Arc<AnoncredsCommandExecutor>,
-    pub issuer_command_cxecutor: Arc<IssuerCommandExecutor>,
-    pub prover_command_cxecutor: Arc<ProverCommandExecutor>,
-    pub verifier_command_cxecutor: Arc<VerifierCommandExecutor>,
-    pub crypto_command_executor: Arc<CryptoCommandExecutor>,
-    pub ledger_command_executor: Arc<LedgerCommandExecutor>,
-    pub pool_command_executor: Arc<PoolCommandExecutor>,
-    pub did_command_executor: Arc<DidCommandExecutor>,
-    pub wallet_command_executor: Arc<WalletCommandExecutor>,
-    pub pairwise_command_executor: Arc<PairwiseCommandExecutor>,
-    pub blob_storage_command_executor: Arc<BlobStorageCommandExecutor>,
-    pub non_secret_command_executor: Arc<NonSecretsCommandExecutor>,
-    pub cache_command_executor: Arc<CacheCommandExecutor>,
-    pub executor: futures::executor::ThreadPool,
+pub(crate) struct CommandExecutor {
+    pub(crate) issuer_command_cxecutor: Arc<IssuerCommandExecutor>,
+    pub(crate) prover_command_cxecutor: Arc<ProverCommandExecutor>,
+    pub(crate) verifier_command_cxecutor: Arc<VerifierCommandExecutor>,
+    pub(crate) crypto_command_executor: Arc<CryptoCommandExecutor>,
+    pub(crate) ledger_command_executor: Arc<LedgerCommandExecutor>,
+    pub(crate) pool_command_executor: Arc<PoolCommandExecutor>,
+    pub(crate) did_command_executor: Arc<DidCommandExecutor>,
+    pub(crate) wallet_command_executor: Arc<WalletCommandExecutor>,
+    pub(crate) pairwise_command_executor: Arc<PairwiseCommandExecutor>,
+    pub(crate) blob_storage_command_executor: Arc<BlobStorageCommandExecutor>,
+    pub(crate) non_secret_command_executor: Arc<NonSecretsCommandExecutor>,
+    pub(crate) cache_command_executor: Arc<CacheCommandExecutor>,
+    pub(crate) executor: futures::executor::ThreadPool,
 
     worker: Option<thread::JoinHandle<()>>,
     sender: UnboundedSender<InstrumentedCommand>,
@@ -156,14 +151,6 @@ impl CommandExecutor {
         let pool_service = Arc::new(PoolService::new());
         let wallet_service = Arc::new(WalletService::new());
         //let metrics_service = Arc::new(MetricsService::new());
-
-        let anoncreds_command_executor = Arc::new(AnoncredsCommandExecutor::new(
-            anoncreds_service.clone(),
-            blob_storage_service.clone(),
-            pool_service.clone(),
-            wallet_service.clone(),
-            crypto_service.clone(),
-        ));
 
         let issuer_command_cxecutor = Arc::new(IssuerCommandExecutor::new(
             anoncreds_service.clone(),
@@ -231,14 +218,13 @@ impl CommandExecutor {
         // FIXME: let metrics_command_executor = Arc::new(MetricsCommandExecutor::new(wallet_service.clone(), metrics_service.clone()));
 
         std::panic::set_hook(Box::new(|pi| {
-                error!("Custom panic hook");
-                error!("Custom panic hook: {:?}", pi);
+            error!("Custom panic hook");
+            error!("Custom panic hook: {:?}", pi);
             let bt = backtrace::Backtrace::new();
             error!("Custom panic hook: {:?}", bt);
-            }));
+        }));
 
         CommandExecutor {
-            anoncreds_command_executor: anoncreds_command_executor.clone(),
             issuer_command_cxecutor: issuer_command_cxecutor.clone(),
             prover_command_cxecutor: prover_command_cxecutor.clone(),
             verifier_command_cxecutor: verifier_command_cxecutor.clone(),
@@ -261,7 +247,6 @@ impl CommandExecutor {
                         async fn _exec_cmd(
                             instrumented_cmd: InstrumentedCommand,
                             //metrics_service:Arc<MetricsService>, FIXME:
-                            anoncreds_command_executor: Arc<AnoncredsCommandExecutor>,
                             ledger_command_executor: Arc<LedgerCommandExecutor>,
                             pool_command_executor: Arc<PoolCommandExecutor>,
                             did_command_executor: Arc<DidCommandExecutor>,
@@ -280,10 +265,6 @@ impl CommandExecutor {
                             //                                start_execution_ts - instrumented_cmd.enqueue_ts);
 
                             match instrumented_cmd.command {
-                                Command::Anoncreds(cmd) => {
-                                    debug!("AnoncredsCommand command received");
-                                    anoncreds_command_executor.execute(cmd).await;
-                                }
                                 Command::BlobStorage(cmd) => {
                                     debug!("BlobStorageCommand command received");
                                     blob_storage_command_executor.execute(cmd).await;
@@ -353,7 +334,6 @@ impl CommandExecutor {
                             executor.spawn_ok(_exec_cmd(
                                 cmd,
                                 /*metrics_service.clone(),*/
-                                anoncreds_command_executor.clone(),
                                 ledger_command_executor.clone(),
                                 pool_command_executor.clone(),
                                 did_command_executor.clone(),

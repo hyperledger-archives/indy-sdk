@@ -1362,16 +1362,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "indexmap"
-version = "1.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fb1fa934250de4de8aef298d81c729a7d33d8c239daa3a7575e6b92bfc7313b"
-dependencies = [
- "autocfg 1.0.0",
- "hashbrown",
-]
-
-[[package]]
 name = "indy"
 version = "1.15.0"
 dependencies = [
@@ -2635,7 +2625,6 @@ version = "1.0.60"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1500e84d27fe482ed1dc791a56eddc2f230046a040fa908c08bda1d9fb615779"
 dependencies = [
- "indexmap",
  "itoa",
  "ryu",
  "serde",
@@ -2779,8 +2768,7 @@ dependencies = [
 [[package]]
 name = "sqlx"
 version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1a98f9bf17b690f026b6fec565293a995b46dfbd6293debcb654dcffd2d1b34"
+source = "git+https://github.com/jovfer/sqlx?branch=feature/json_no_preserve_order#0f58bd756ecdd2e683c6e866a322ce22c5719561"
 dependencies = [
  "sqlx-core",
  "sqlx-macros",
@@ -2789,8 +2777,7 @@ dependencies = [
 [[package]]
 name = "sqlx-core"
 version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36bb6a2ca3345a86493bc3b71eabc2c6c16a8bb1aa476cf5303bee27f67627d7"
+source = "git+https://github.com/jovfer/sqlx?branch=feature/json_no_preserve_order#0f58bd756ecdd2e683c6e866a322ce22c5719561"
 dependencies = [
  "ahash 0.6.2",
  "atoi",
@@ -2837,8 +2824,7 @@ dependencies = [
 [[package]]
 name = "sqlx-macros"
 version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b5ada8b3b565331275ce913368565a273a74faf2a34da58c4dc010ce3286844"
+source = "git+https://github.com/jovfer/sqlx?branch=feature/json_no_preserve_order#0f58bd756ecdd2e683c6e866a322ce22c5719561"
 dependencies = [
  "cargo_metadata",
  "dotenv",
@@ -2859,8 +2845,7 @@ dependencies = [
 [[package]]
 name = "sqlx-rt"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63fc5454c9dd7aaea3a0eeeb65ca40d06d0d8e7413a8184f7c3a3ffa5056190b"
+source = "git+https://github.com/jovfer/sqlx?branch=feature/json_no_preserve_order#0f58bd756ecdd2e683c6e866a322ce22c5719561"
 dependencies = [
  "async-native-tls",
  "async-std",

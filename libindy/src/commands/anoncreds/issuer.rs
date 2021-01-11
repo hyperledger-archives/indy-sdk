@@ -44,7 +44,7 @@ use crate::{
 
 use super::tails::{store_tails_from_generator, SDKTailsAccessor};
 
-pub struct IssuerCommandExecutor {
+pub(crate) struct IssuerCommandExecutor {
     pub anoncreds_service: Arc<AnoncredsService>,
     pub blob_storage_service: Arc<BlobStorageService>,
     pub pool_service: Arc<PoolService>,
