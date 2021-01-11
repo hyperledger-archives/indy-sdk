@@ -4,6 +4,7 @@ use std::{
     sync::Arc,
 };
 
+use futures::lock::Mutex;
 use indy_api_types::{errors::prelude::*, SearchHandle, WalletHandle};
 use indy_utils::next_search_handle;
 use indy_wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
@@ -50,7 +51,6 @@ use crate::{
 };
 
 use super::tails::SDKTailsAccessor;
-use futures::lock::Mutex;
 
 struct SearchForProofRequest {
     search: WalletSearch,

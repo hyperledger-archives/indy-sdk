@@ -1,60 +1,43 @@
-use crate::services::blob_storage::BlobStorageService;
 use std::sync::Arc;
 
 use indy_api_types::errors::prelude::*;
 
-pub enum BlobStorageCommand {
-    OpenReader(
-        String, // type
-        String, // config
-        Box<dyn Fn(IndyResult<i32 /* handle */>) + Send + Sync>),
-    OpenWriter(
-        String, // writer type
-        String, // writer config JSON
-        Box<dyn Fn(IndyResult<i32 /* handle */>) + Send + Sync>),
-}
+use crate::services::blob_storage::BlobStorageService;
 
-pub struct BlobStorageCommandExecutor {
-    blob_storage_service: Arc<BlobStorageService>
+pub(crate) struct BlobStorageCommandExecutor {
+    blob_storage_service: Arc<BlobStorageService>,
 }
 
 impl BlobStorageCommandExecutor {
-    pub fn new(blob_storage_service:Arc<BlobStorageService>) -> BlobStorageCommandExecutor {
+    pub(crate) fn new(blob_storage_service: Arc<BlobStorageService>) -> BlobStorageCommandExecutor {
         BlobStorageCommandExecutor {
-            blob_storage_service
+            blob_storage_service,
         }
     }
 
-    pub async fn execute(&self, command: BlobStorageCommand) {
-        match command {
-            BlobStorageCommand::OpenReader(type_, config, cb) => {
-                debug!("OpenReader command received");
-                cb(self.open_reader(&type_, &config).await);
-            }
-            BlobStorageCommand::OpenWriter(writer_type, writer_config, cb) => {
-                debug!("OpenWriter command received");
-                cb(self.open_writer(&writer_type, &writer_config).await);
-            }
-        }
-    }
+    pub(crate) async fn open_reader(&self, type_: String, config: String) -> IndyResult<i32> {
+        debug!("open_reader > type_ {:?} config {:?}", type_, config);
 
-    async fn open_reader(&self, type_: &str, config: &str) -> IndyResult<i32> {
-        debug!("open_reader >>> type_: {:?}, config: {:?}", type_, config);
+        let handle = self
+            .blob_storage_service
+            .open_reader(&type_, &config)
+            .await?;
 
-        let res = self.blob_storage_service.open_reader(type_, config).await.map_err(IndyError::from);
-
-        debug!("open_reader << res: {:?}", res);
-
+        let res = Ok(handle);
+        debug!("open_reader < {:?}", res);
         res
     }
 
-    async fn open_writer(&self, type_: &str, config: &str) -> IndyResult<i32> {
-        debug!("open_writer >>> type_: {:?}, config: {:?}", type_, config);
+    pub(crate) async fn open_writer(&self, type_: String, config: String) -> IndyResult<i32> {
+        debug!("open_writer > type_ {:?} config {:?}", type_, config);
 
-        let res = self.blob_storage_service.open_writer(type_, config).await.map_err(IndyError::from);
+        let handle = self
+            .blob_storage_service
+            .open_writer(&type_, &config)
+            .await?;
 
-        debug!("open_writer << res: {:?}", res);
-
+        let res = Ok(handle);
+        debug!("open_writer < {:?}", res);
         res
     }
 }

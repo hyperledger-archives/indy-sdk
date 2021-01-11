@@ -8,7 +8,7 @@ use std::thread;
 use futures::channel::mpsc::{unbounded, UnboundedSender};
 use futures::StreamExt;
 
-use crate::commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
+use crate::commands::blob_storage::BlobStorageCommandExecutor;
 use crate::commands::cache::{CacheCommand, CacheCommandExecutor};
 use crate::commands::crypto::CryptoCommandExecutor;
 use crate::commands::did::{DidCommand, DidCommandExecutor};
@@ -52,7 +52,6 @@ type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>) + 
 
 pub enum Command {
     Exit,
-    BlobStorage(BlobStorageCommand),
     Ledger(LedgerCommand),
     Pool(PoolCommand),
     Did(DidCommand),
@@ -252,7 +251,6 @@ impl CommandExecutor {
                             did_command_executor: Arc<DidCommandExecutor>,
                             wallet_command_executor: Arc<WalletCommandExecutor>,
                             pairwise_command_executor: Arc<PairwiseCommandExecutor>,
-                            blob_storage_command_executor: Arc<BlobStorageCommandExecutor>,
                             non_secret_command_executor: Arc<NonSecretsCommandExecutor>,
                             //payments_command_executor:Arc<PaymentsCommandExecutor>,
                             cache_command_executor: Arc<CacheCommandExecutor>,
@@ -265,10 +263,6 @@ impl CommandExecutor {
                             //                                start_execution_ts - instrumented_cmd.enqueue_ts);
 
                             match instrumented_cmd.command {
-                                Command::BlobStorage(cmd) => {
-                                    debug!("BlobStorageCommand command received");
-                                    blob_storage_command_executor.execute(cmd).await;
-                                }
                                 Command::Ledger(cmd) => {
                                     debug!("LedgerCommand command received");
                                     ledger_command_executor.execute(cmd).await;
@@ -339,7 +333,6 @@ impl CommandExecutor {
                                 did_command_executor.clone(),
                                 wallet_command_executor.clone(),
                                 pairwise_command_executor.clone(),
-                                blob_storage_command_executor.clone(),
                                 non_secret_command_executor.clone(),
                                 /*payments_command_executor.clone(),*/
                                 cache_command_executor.clone(), /*metrics_command_executor.clone()*/
