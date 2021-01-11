@@ -16,6 +16,27 @@ mod collect {
     use serde_json::Value;
 
     #[test]
+    fn test_metrics_schema() {
+        let setup = Setup::empty();
+        let config = config(&setup.name);
+        wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+
+        let result_metrics = metrics::collect_metrics().unwrap();
+        let metrics_map = serde_json::from_str::<HashMap<String, Value>>(&result_metrics)
+            .expect("Top level object should be a dictionary");
+
+        for metrics_set in metrics_map.values() {
+            let metrics_set = metrics_set.as_array().expect("Metrics set should be an array");
+
+            for metric in metrics_set.iter() {
+                let metrics = metric.as_object().expect("Metrics should be an object");
+                metrics.contains_key("value");
+                metrics.contains_key("tags");
+            }
+        }
+    }
+
+    #[test]
     fn collect_metrics_contains_wallet_service_statistics() {
         let result_metrics = metrics::collect_metrics().unwrap();
         let metrics_map = serde_json::from_str::<HashMap<String, Value>>(&result_metrics).unwrap();
@@ -29,10 +50,10 @@ mod collect {
             .unwrap();
 
         let expected_wallet_count = [
-            json!({"tags":{"label":"opened_wallets_count"},"value":0}),
-            json!({"tags":{"label":"opened_wallet_ids_count"},"value":0}),
-            json!({"tags":{"label":"pending_for_import_wallets_count"},"value":0}),
-            json!({"tags":{"label":"pending_for_open_wallets_count"},"value":0}),
+            json!({"tags":{"label":"opened"},"value":0}),
+            json!({"tags":{"label":"opened_ids"},"value":0}),
+            json!({"tags":{"label":"pending_for_import"},"value":0}),
+            json!({"tags":{"label":"pending_for_open"},"value":0}),
         ];
 
         assert!(wallet_count.contains(&expected_wallet_count[0]));
@@ -55,9 +76,9 @@ mod collect {
             .unwrap();
 
         let expected_threadpool_threads_count = [
-            json!({"tags":{"label":"threadpool_active_count"},"value":0}),
-            json!({"tags":{"label":"threadpool_queued_count"},"value":0}),
-            json!({"tags":{"label":"threadpool_panic_count"},"value":0}),
+            json!({"tags":{"label":"active"},"value":0}),
+            json!({"tags":{"label":"queued"},"value":0}),
+            json!({"tags":{"label":"panic"},"value":0}),
         ];
 
         assert!(threadpool_threads_count.contains(&expected_threadpool_threads_count[0]));
@@ -83,10 +104,10 @@ mod collect {
             .unwrap();
 
         let expected_commands_count = [
-            generate_command_json("pairwise_command_pairwise_exists".to_owned(), "executed".to_owned(), 0),
-            generate_command_json("pairwise_command_pairwise_exists".to_owned(), "queued".to_owned(), 0),
-            generate_command_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
-            generate_command_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "queued".to_owned(), 0)
+            generate_command_json("pairwise_command_pairwise_exists", "executed", 0),
+            generate_command_json("pairwise_command_pairwise_exists", "queued", 0),
+            generate_command_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
+            generate_command_json("payments_command_build_set_txn_fees_req_ack", "queued", 0)
         ];
 
         assert!(commands_count.contains(&expected_commands_count[0]));
@@ -113,10 +134,10 @@ mod collect {
             .unwrap();
 
         let expected_commands_duration_ms = [
-            generate_command_json("pairwise_command_pairwise_exists".to_owned(), "executed".to_owned(), 0),
-            generate_command_json("pairwise_command_pairwise_exists".to_owned(), "queued".to_owned(), 0),
-            generate_command_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
-            generate_command_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "queued".to_owned(), 0)
+            generate_command_json("pairwise_command_pairwise_exists", "executed", 0),
+            generate_command_json("pairwise_command_pairwise_exists", "queued", 0),
+            generate_command_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
+            generate_command_json("payments_command_build_set_txn_fees_req_ack", "queued", 0)
         ];
 
         assert!(commands_duration_ms.contains(&expected_commands_duration_ms[0]));
@@ -143,10 +164,10 @@ mod collect {
             .unwrap();
 
         let expected_commands_duration_ms_bucket = [
-            generate_command_json("pairwise_command_pairwise_exists".to_owned(), "executed".to_owned(), 0),
-            generate_command_json("pairwise_command_pairwise_exists".to_owned(), "queued".to_owned(), 0),
-            generate_command_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
-            generate_command_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "queued".to_owned(), 0)
+            generate_command_json("pairwise_command_pairwise_exists", "executed", 0),
+            generate_command_json("pairwise_command_pairwise_exists", "queued", 0),
+            generate_command_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
+            generate_command_json("payments_command_build_set_txn_fees_req_ack", "queued", 0)
         ];
 
         assert!(commands_duration_ms_bucket.contains(&expected_commands_duration_ms_bucket[0]));
@@ -155,7 +176,7 @@ mod collect {
         assert!(commands_duration_ms_bucket.contains(&expected_commands_duration_ms_bucket[3]));
     }
 
-    fn generate_command_json(command: String, stage: String, value: usize) -> Value {
+    fn generate_command_json(command: &str, stage: &str, value: usize) -> Value {
         json!({"tags":{"command": command, "stage": stage} ,"value": value})
     }
 

@@ -24,8 +24,8 @@ pub struct CommandCounters {
 }
 
 impl CommandCounters {
-    pub fn new(count: u128, duration_ms_sum: u128, duration_ms_bucket: [u128; BUCKET_COUNT]) -> Self {
-        CommandCounters {count, duration_ms_sum, duration_ms_bucket}
+    pub fn new() -> Self {
+        CommandCounters {count: 0, duration_ms_sum: 0, duration_ms_bucket: [0; BUCKET_COUNT]}
     }
 
     pub fn add(&mut self, duration: u128) {

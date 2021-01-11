@@ -19,8 +19,8 @@ pub struct MetricsService {
 impl MetricsService {
     pub fn new() -> Self {
         MetricsService {
-            queued_counters: RefCell::new([CommandCounters::new(0,0,[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]); COMMANDS_COUNT]),
-            executed_counters: RefCell::new([CommandCounters::new(0,0,[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]); COMMANDS_COUNT]),
+            queued_counters: RefCell::new([CommandCounters::new(); COMMANDS_COUNT]),
+            executed_counters: RefCell::new([CommandCounters::new(); COMMANDS_COUNT]),
         }
     }
 
@@ -120,8 +120,10 @@ mod test {
         for index in (0..MetricsService::commands_count()).rev() {
             assert_eq!(metrics_service.queued_counters.borrow()[index as usize].count, 0);
             assert_eq!(metrics_service.queued_counters.borrow()[index as usize].duration_ms_sum, 0);
+            assert_eq!(metrics_service.queued_counters.borrow()[index as usize].duration_ms_bucket, [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
             assert_eq!(metrics_service.executed_counters.borrow()[index as usize].count, 0);
             assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_sum, 0);
+            assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_bucket, [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
         }
     }
 
@@ -193,7 +195,7 @@ mod test {
         let metrics_service = MetricsService::new();
         let mut metrics_map = serde_json::Map::new();
 
-        metrics_service.append_command_metrics(&mut metrics_map);
+        metrics_service.append_command_metrics(&mut metrics_map).unwrap();
 
         assert!(metrics_map.contains_key("commands_count"));
         assert!(metrics_map.contains_key("commands_duration_ms"));
@@ -244,24 +246,24 @@ mod test {
             .unwrap();
 
         let expected_commands_count = [
-            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
-            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
-            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
-            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0)
+            generate_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
+            generate_json("metrics_command_collect_metrics", "queued", 0),
+            generate_json("cache_command_purge_cred_def_cache", "executed", 0),
+            generate_json("non_secrets_command_fetch_search_next_records", "queued", 0)
         ];
 
         let expected_commands_duration_ms = [
-            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
-            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
-            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
-            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0)
+            generate_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
+            generate_json("metrics_command_collect_metrics", "queued", 0),
+            generate_json("cache_command_purge_cred_def_cache", "executed", 0),
+            generate_json("non_secrets_command_fetch_search_next_records", "queued", 0)
         ];
 
         let expected_commands_duration_ms_bucket = [
-            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
-            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
-            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
-            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0)
+            generate_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
+            generate_json("metrics_command_collect_metrics", "queued", 0),
+            generate_json("cache_command_purge_cred_def_cache", "executed", 0),
+            generate_json("non_secrets_command_fetch_search_next_records", "queued", 0)
         ];
 
         for command in &expected_commands_count {
@@ -277,7 +279,7 @@ mod test {
         }
     }
 
-    fn generate_json(command: String, stage: String, value: usize) -> Value {
+    fn generate_json(command: &str, stage: &str, value: usize) -> Value {
         json!({"tags":{"command": command, "stage": stage} ,"value": value})
     }
 }
