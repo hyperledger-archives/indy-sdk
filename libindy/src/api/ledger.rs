@@ -1,21 +1,29 @@
-use indy_api_types::{CommandHandle, ErrorCode, PoolHandle, WalletHandle};
-use indy_api_types::errors::prelude::*;
-use indy_api_types::validation::Validatable;
+use indy_api_types::{
+    errors::prelude::*, validation::Validatable, CommandHandle, ErrorCode, PoolHandle, WalletHandle,
+};
+
 use indy_utils::ctypes;
 use libc::c_char;
 use serde_json;
 
-use crate::commands::{Command, CommandExecutor};
-use crate::commands::ledger::LedgerCommand;
-use crate::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionId};
-use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryId};
-use crate::domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
-use crate::domain::anoncreds::schema::{Schema, SchemaId};
-use crate::domain::crypto::did::DidValue;
-use crate::domain::ledger::auth_rule::{AuthRules, Constraint};
-use crate::domain::ledger::author_agreement::{AcceptanceMechanisms, GetTxnAuthorAgreementData};
-use crate::domain::ledger::node::NodeOperationData;
-use crate::domain::ledger::pool::Schedule;
+use crate::{
+    commands::CommandExecutor,
+    domain::{
+        anoncreds::{
+            credential_definition::{CredentialDefinition, CredentialDefinitionId},
+            revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryId},
+            revocation_registry_delta::RevocationRegistryDelta,
+            schema::{Schema, SchemaId},
+        },
+        crypto::did::DidValue,
+        ledger::{
+            auth_rule::{AuthRules, Constraint},
+            author_agreement::{AcceptanceMechanisms, GetTxnAuthorAgreementData},
+            node::NodeOperationData,
+            pool::Schedule,
+        },
+    },
+};
 
 /// Signs and submits request message to validator pool.
 ///
@@ -40,37 +48,63 @@ use crate::domain::ledger::pool::Schedule;
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_sign_and_submit_request(command_handle: CommandHandle,
-                                           pool_handle: PoolHandle,
-                                           wallet_handle: WalletHandle,
-                                           submitter_did: *const c_char,
-                                           request_json: *const c_char,
-                                           cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                err: ErrorCode,
-                                                                request_result_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_sign_and_submit_request: >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}",
-           pool_handle, wallet_handle, submitter_did, request_json);
+pub extern "C" fn indy_sign_and_submit_request(
+    command_handle: CommandHandle,
+    pool_handle: PoolHandle,
+    wallet_handle: WalletHandle,
+    submitter_did: *const c_char,
+    request_json: *const c_char,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            request_result_json: *const c_char,
+        ),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_sign_and_submit_request > pool_handle {:?} \
+            wallet_handle {:?} submitter_did {:?} request_json {:?}",
+        pool_handle,
+        wallet_handle,
+        submitter_did,
+        request_json
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_sign_and_submit_request: entities >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}",
-           pool_handle, wallet_handle, submitter_did, request_json);
+    trace!(
+        "indy_sign_and_submit_request? pool_handle {:?} \
+            wallet_handle {:?} submitter_did {:?} request_json {:?}",
+        pool_handle,
+        wallet_handle,
+        submitter_did,
+        request_json
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::SignAndSubmitRequest(
-            pool_handle,
-            wallet_handle,
-            submitter_did,
-            request_json,
-            boxed_callback_string!("indy_sign_and_submit_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .sign_and_submit_request(pool_handle, wallet_handle, submitter_did, request_json)
+            .await;
 
-    trace!("indy_sign_and_submit_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_sign_and_submit_request ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_sign_and_submit_request < {:?}", res);
     res
 }
 
@@ -91,30 +125,52 @@ pub extern fn indy_sign_and_submit_request(command_handle: CommandHandle,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_submit_request(command_handle: CommandHandle,
-                                  pool_handle: PoolHandle,
-                                  request_json: *const c_char,
-                                  cb: Option<extern fn(command_handle_: CommandHandle,
-                                                       err: ErrorCode,
-                                                       request_result_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_submit_request: >>> pool_handle: {:?}, request_json: {:?}", pool_handle, request_json);
+pub extern "C" fn indy_submit_request(
+    command_handle: CommandHandle,
+    pool_handle: PoolHandle,
+    request_json: *const c_char,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            request_result_json: *const c_char,
+        ),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_submit_request > pool_handle {:?} request_json {:?}",
+        pool_handle,
+        request_json
+    );
 
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_submit_request: entities >>> pool_handle: {:?}, request_json: {:?}", pool_handle, request_json);
+    trace!(
+        "indy_submit_request? pool_handle {:?} request_json {:?}",
+        pool_handle,
+        request_json
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::SubmitRequest(
-            pool_handle,
-            request_json,
-            boxed_callback_string!("indy_submit_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.submit_request(pool_handle, request_json).await;
 
-    trace!("indy_submit_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_submit_request ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_submit_request < {:?}", res);
     res
 }
 
@@ -143,15 +199,28 @@ pub extern fn indy_submit_request(command_handle: CommandHandle,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_submit_action(command_handle: CommandHandle,
-                                 pool_handle: PoolHandle,
-                                 request_json: *const c_char,
-                                 nodes: *const c_char,
-                                 timeout: i32,
-                                 cb: Option<extern fn(command_handle_: CommandHandle,
-                                                      err: ErrorCode,
-                                                      request_result_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_submit_action: >>> pool_handle: {:?}, request_json: {:?}, nodes: {:?}, timeout: {:?}", pool_handle, request_json, nodes, timeout);
+pub extern "C" fn indy_submit_action(
+    command_handle: CommandHandle,
+    pool_handle: PoolHandle,
+    request_json: *const c_char,
+    nodes: *const c_char,
+    timeout: i32,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            request_result_json: *const c_char,
+        ),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_submit_action > pool_handle {:?} request_json {:?} \
+            nodes {:?} timeout {:?}",
+        pool_handle,
+        request_json,
+        nodes,
+        timeout
+    );
 
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(nodes, ErrorCode::CommonInvalidParam4);
@@ -159,22 +228,36 @@ pub extern fn indy_submit_action(command_handle: CommandHandle,
 
     let timeout = if timeout != -1 { Some(timeout) } else { None };
 
-    trace!("indy_submit_action: entities >>> pool_handle: {:?}, request_json: {:?}, nodes: {:?}, timeout: {:?}", pool_handle, request_json, nodes, timeout);
+    trace!(
+        "indy_submit_action? pool_handle {:?} request_json {:?} \
+            nodes {:?} timeout {:?}",
+        pool_handle,
+        request_json,
+        nodes,
+        timeout
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(
-            LedgerCommand::SubmitAction(
-                pool_handle,
-                request_json,
-                nodes,
-                timeout,
-                boxed_callback_string!("indy_submit_action", cb, command_handle)
-            )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .submit_action(pool_handle, request_json, nodes, timeout)
+            .await;
 
-    trace!("indy_submit_action: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_submit_action ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_submit_action < {:?}", res);
     res
 }
 
@@ -199,33 +282,58 @@ pub extern fn indy_submit_action(command_handle: CommandHandle,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_sign_request(command_handle: CommandHandle,
-                                wallet_handle: WalletHandle,
-                                submitter_did: *const c_char,
-                                request_json: *const c_char,
-                                cb: Option<extern fn(command_handle_: CommandHandle,
-                                                     err: ErrorCode,
-                                                     signed_request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_sign_request: >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+pub extern "C" fn indy_sign_request(
+    command_handle: CommandHandle,
+    wallet_handle: WalletHandle,
+    submitter_did: *const c_char,
+    request_json: *const c_char,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            signed_request_json: *const c_char,
+        ),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_sign_request > wallet_handle {:?} submitter_did {:?} request_json {:?}",
+        wallet_handle,
+        submitter_did,
+        request_json
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_sign_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+    trace!(
+        "indy_sign_request? wallet_handle {:?} submitter_did {:?} request_json {:?}",
+        wallet_handle,
+        submitter_did,
+        request_json
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::SignRequest(
-            wallet_handle,
-            submitter_did,
-            request_json,
-            boxed_callback_string!("indy_sign_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .sign_request(wallet_handle, submitter_did, request_json)
+            .await;
 
-    trace!("indy_sign_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_sign_request ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_sign_request < {:?}", res);
     res
 }
 
@@ -250,35 +358,60 @@ pub extern fn indy_sign_request(command_handle: CommandHandle,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_multi_sign_request(command_handle: CommandHandle,
-                                      wallet_handle: WalletHandle,
-                                      submitter_did: *const c_char,
-                                      request_json: *const c_char,
-                                      cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
-                                                           signed_request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_multi_sign_request: >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+pub extern "C" fn indy_multi_sign_request(
+    command_handle: CommandHandle,
+    wallet_handle: WalletHandle,
+    submitter_did: *const c_char,
+    request_json: *const c_char,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            signed_request_json: *const c_char,
+        ),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_multi_sign_request > wallet_handle {:?} submitter_did {:?} request_json {:?}",
+        wallet_handle,
+        submitter_did,
+        request_json
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_multi_sign_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+    trace!(
+        "indy_multi_sign_request? wallet_handle {:?} submitter_did {:?} request_json {:?}",
+        wallet_handle,
+        submitter_did,
+        request_json
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::MultiSignRequest(
-            wallet_handle,
-            submitter_did,
-            request_json,
-            boxed_callback_string!("indy_multi_sign_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .multi_sign_request(wallet_handle, submitter_did, request_json)
+            .await;
 
-    trace!("indy_multi_sign_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_multi_sign_request ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_multi_sign_request < {:?}", res);
     res
 }
-
 
 /// Builds a request to get a DDO.
 ///
@@ -294,34 +427,51 @@ pub extern fn indy_multi_sign_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_ddo_request(command_handle: CommandHandle,
-                                         submitter_did: *const c_char,
-                                         target_did: *const c_char,
-                                         cb: Option<extern fn(command_handle_: CommandHandle,
-                                                              err: ErrorCode,
-                                                              request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_ddo_request: >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
+pub extern "C" fn indy_build_get_ddo_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    target_did: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_get_ddo_request > submitter_did {:?} target_did {:?}",
+        submitter_did,
+        target_did
+    );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_string!(target_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_build_get_ddo_request: entities >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
+    trace!(
+        "indy_build_get_ddo_request? submitter_did {:?} target_did {:?}",
+        submitter_did,
+        target_did
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildGetDdoRequest(
-            submitter_did,
-            target_did,
-            boxed_callback_string!("indy_build_get_ddo_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_get_ddo_request(submitter_did, target_did);
 
-    trace!("indy_build_get_ddo_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_build_get_ddo_request ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_get_ddo_request < {:?}", res);
     res
 }
-
 
 /// Builds a NYM request. Request to create a new NYM record for a specific user.
 ///
@@ -348,17 +498,26 @@ pub extern fn indy_build_get_ddo_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_nym_request(command_handle: CommandHandle,
-                                     submitter_did: *const c_char,
-                                     target_did: *const c_char,
-                                     verkey: *const c_char,
-                                     alias: *const c_char,
-                                     role: *const c_char,
-                                     cb: Option<extern fn(command_handle_: CommandHandle,
-                                                          err: ErrorCode,
-                                                          request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_nym_request: >>> submitter_did: {:?}, target_did: {:?}, verkey: {:?}, alias: {:?}, role: {:?}",
-           submitter_did, target_did, verkey, alias, role);
+pub extern "C" fn indy_build_nym_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    target_did: *const c_char,
+    verkey: *const c_char,
+    alias: *const c_char,
+    role: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_nym_request > submitter_did {:?} \
+            target_did {:?} verkey {:?} alias {:?} role {:?}",
+        submitter_did,
+        target_did,
+        verkey,
+        alias,
+        role
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_string!(target_did, ErrorCode::CommonInvalidParam3, DidValue);
@@ -367,23 +526,37 @@ pub extern fn indy_build_nym_request(command_handle: CommandHandle,
     check_useful_opt_c_str!(role, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_build_nym_request: entities >>> submitter_did: {:?}, target_did: {:?}, verkey: {:?}, alias: {:?}, role: {:?}",
-           submitter_did, target_did, verkey, alias, role);
+    trace!(
+        "indy_build_nym_request? submitter_did {:?} \
+            target_did {:?} verkey {:?} alias {:?} role {:?}",
+        submitter_did,
+        target_did,
+        verkey,
+        alias,
+        role
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildNymRequest(
-            submitter_did,
-            target_did,
-            verkey,
-            alias,
-            role,
-            boxed_callback_string!("indy_build_nym_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .build_nym_request(submitter_did, target_did, verkey, alias, role)
+            .await;
 
-    trace!("indy_build_nym_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_build_nym_request ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_nym_request < {:?}", res);
     res
 }
 
@@ -401,31 +574,49 @@ pub extern fn indy_build_nym_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_nym_request(command_handle: CommandHandle,
-                                         submitter_did: *const c_char,
-                                         target_did: *const c_char,
-                                         cb: Option<extern fn(command_handle_: CommandHandle,
-                                                              err: ErrorCode,
-                                                              request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_nym_request: >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
+pub extern "C" fn indy_build_get_nym_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    target_did: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_get_nym_request > submitter_did {:?} target_did {:?}",
+        submitter_did,
+        target_did
+    );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_string!(target_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_build_get_nym_request: entities >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
+    trace!(
+        "indy_build_get_nym_request? submitter_did {:?} target_did {:?}",
+        submitter_did,
+        target_did
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildGetNymRequest(
-            submitter_did,
-            target_did,
-            boxed_callback_string!("indy_build_get_nym_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_get_nym_request(submitter_did, target_did);
 
-    trace!("indy_build_get_nym_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_build_get_nym_request ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_get_nym_request < {:?}", res);
     res
 }
 
@@ -454,28 +645,45 @@ pub extern fn indy_build_get_nym_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_parse_get_nym_response(command_handle: CommandHandle,
-                                          get_nym_response: *const c_char,
-                                          cb: Option<extern fn(command_handle_: CommandHandle,
-                                                               err: ErrorCode,
-                                                               nym_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_parse_get_nym_response: >>> get_nym_response: {:?}", get_nym_response);
+pub extern "C" fn indy_parse_get_nym_response(
+    command_handle: CommandHandle,
+    get_nym_response: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, nym_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_parse_get_nym_response > get_nym_response {:?}",
+        get_nym_response
+    );
 
     check_useful_c_str!(get_nym_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_parse_get_nym_response: entities >>> get_nym_response: {:?}", get_nym_response);
+    trace!(
+        "indy_parse_get_nym_response? get_nym_response {:?}",
+        get_nym_response
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::ParseGetNymResponse(
-            get_nym_response,
-            boxed_callback_string!("indy_parse_get_nym_response", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.parse_get_nym_response(get_nym_response);
 
-    trace!("indy_parse_get_nym_response: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_parse_get_nym_response ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_parse_get_nym_response < {:?}", res);
     res
 }
 
@@ -499,16 +707,18 @@ pub extern fn indy_parse_get_nym_response(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_attrib_request(command_handle: CommandHandle,
-                                        submitter_did: *const c_char,
-                                        target_did: *const c_char,
-                                        hash: *const c_char,
-                                        raw: *const c_char,
-                                        enc: *const c_char,
-                                        cb: Option<extern fn(command_handle_: CommandHandle,
-                                                             err: ErrorCode,
-                                                             request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_attrib_request: >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
+pub extern "C" fn indy_build_attrib_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    target_did: *const c_char,
+    hash: *const c_char,
+    raw: *const c_char,
+    enc: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!("indy_build_attrib_request > submitter_did {:?} target_did {:?} hash {:?} raw {:?} enc {:?}",
            submitter_did, target_did, hash, raw, enc);
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -518,27 +728,42 @@ pub extern fn indy_build_attrib_request(command_handle: CommandHandle,
     check_useful_opt_c_str!(enc, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_build_attrib_request: entities >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
-           submitter_did, target_did, hash, raw, enc);
+    trace!(
+        "indy_build_attrib_request? submitter_did {:?} target_did {:?} hash {:?} raw {:?} enc {:?}",
+        submitter_did,
+        target_did,
+        hash,
+        raw,
+        enc
+    );
 
     if raw.is_none() && hash.is_none() && enc.is_none() {
-        return IndyError::from_msg(IndyErrorKind::InvalidStructure, "Either raw or hash or enc must be specified").into();
+        return IndyError::from_msg(
+            IndyErrorKind::InvalidStructure,
+            "Either raw or hash or enc must be specified",
+        )
+        .into();
     }
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildAttribRequest(
-            submitter_did,
-            target_did,
-            hash,
-            raw,
-            enc,
-            boxed_callback_string!("indy_build_attrib_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_attrib_request(submitter_did, target_did, hash, raw, enc);
 
-    trace!("indy_build_attrib_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_build_attrib_request ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_attrib_request < {:?}", res);
     res
 }
 
@@ -561,16 +786,18 @@ pub extern fn indy_build_attrib_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_attrib_request(command_handle: CommandHandle,
-                                            submitter_did: *const c_char,
-                                            target_did: *const c_char,
-                                            raw: *const c_char,
-                                            hash: *const c_char,
-                                            enc: *const c_char,
-                                            cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                 err: ErrorCode,
-                                                                 request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_attrib_request: >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
+pub extern "C" fn indy_build_get_attrib_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    target_did: *const c_char,
+    raw: *const c_char,
+    hash: *const c_char,
+    enc: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!("indy_build_get_attrib_request > submitter_did {:?} target_did {:?} hash {:?} raw {:?} enc {:?}",
            submitter_did, target_did, hash, raw, enc);
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -580,27 +807,41 @@ pub extern fn indy_build_get_attrib_request(command_handle: CommandHandle,
     check_useful_opt_c_str!(enc, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_build_get_attrib_request: entities >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
+    trace!("indy_build_get_attrib_request? submitter_did {:?} target_did {:?} hash {:?} raw {:?} enc {:?}",
            submitter_did, target_did, hash, raw, enc);
 
     if raw.is_none() && hash.is_none() && enc.is_none() {
-        return IndyError::from_msg(IndyErrorKind::InvalidStructure, "Either raw or hash or enc must be specified").into();
+        return IndyError::from_msg(
+            IndyErrorKind::InvalidStructure,
+            "Either raw or hash or enc must be specified",
+        )
+        .into();
     }
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildGetAttribRequest(
-            submitter_did,
-            target_did,
-            raw,
-            hash,
-            enc,
-            boxed_callback_string!("indy_build_get_attrib_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_get_attrib_request(submitter_did, target_did, raw, hash, enc);
 
-    trace!("indy_build_get_attrib_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_get_attrib_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_get_attrib_request < {:?}", res);
     res
 }
 
@@ -626,31 +867,49 @@ pub extern fn indy_build_get_attrib_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_schema_request(command_handle: CommandHandle,
-                                        submitter_did: *const c_char,
-                                        data: *const c_char,
-                                        cb: Option<extern fn(command_handle_: CommandHandle,
-                                                             err: ErrorCode,
-                                                             request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_schema_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+pub extern "C" fn indy_build_schema_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    data: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_schema_request > submitter_did {:?} data {:?}",
+        submitter_did,
+        data
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_json!(data, ErrorCode::CommonInvalidParam3, Schema);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_build_schema_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+    trace!(
+        "indy_build_schema_request? submitter_did {:?} data {:?}",
+        submitter_did,
+        data
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildSchemaRequest(
-            submitter_did,
-            data,
-            boxed_callback_string!("indy_build_schema_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_schema_request(submitter_did, data);
 
-    trace!("indy_build_schema_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_build_schema_request ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_schema_request < {:?}", res);
     res
 }
 
@@ -668,31 +927,54 @@ pub extern fn indy_build_schema_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_schema_request(command_handle: CommandHandle,
-                                            submitter_did: *const c_char,
-                                            id: *const c_char,
-                                            cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                 err: ErrorCode,
-                                                                 request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_schema_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
+pub extern "C" fn indy_build_get_schema_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    id: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_get_schema_request > submitter_did {:?} id {:?}",
+        submitter_did,
+        id
+    );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam3, SchemaId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_build_get_schema_request: entities >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
+    trace!(
+        "indy_build_get_schema_request? submitter_did {:?} id {:?}",
+        submitter_did,
+        id
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildGetSchemaRequest(
-            submitter_did,
-            id,
-            boxed_callback_string!("indy_build_get_schema_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_get_schema_request(submitter_did, id);
 
-    trace!("indy_build_get_schema_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_get_schema_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_get_schema_request < {:?}", res);
     res
 }
 
@@ -716,35 +998,64 @@ pub extern fn indy_build_get_schema_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_parse_get_schema_response(command_handle: CommandHandle,
-                                             get_schema_response: *const c_char,
-                                             cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                  err: ErrorCode,
-                                                                  schema_id: *const c_char,
-                                                                  schema_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_parse_get_schema_response: >>> get_schema_response: {:?}", get_schema_response);
+pub extern "C" fn indy_parse_get_schema_response(
+    command_handle: CommandHandle,
+    get_schema_response: *const c_char,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            schema_id: *const c_char,
+            schema_json: *const c_char,
+        ),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_parse_get_schema_response > get_schema_response {:?}",
+        get_schema_response
+    );
 
     check_useful_c_str!(get_schema_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_parse_get_schema_response: entities >>> get_schema_response: {:?}", get_schema_response);
+    trace!(
+        "indy_parse_get_schema_response? get_schema_response {:?}",
+        get_schema_response
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::ParseGetSchemaResponse(
-            get_schema_response,
-            Box::new(move |result| {
-                let (err, schema_id, schema_json) = prepare_result_2!(result, String::new(), String::new());
-                trace!("indy_parse_get_schema_response: schema_id: {:?}, schema_json: {:?}", schema_id, schema_json);
-                let schema_id = ctypes::string_to_cstring(schema_id);
-                let schema_json = ctypes::string_to_cstring(schema_json);
-                cb(command_handle, err, schema_id.as_ptr(), schema_json.as_ptr())
-            })
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.parse_get_schema_response(get_schema_response);
 
-    trace!("indy_parse_get_schema_response: <<< res: {:?}", res);
+        let (err, schema_id, schema_json) = prepare_result_2!(res, String::new(), String::new());
 
+        trace!(
+            "indy_parse_get_schema_response ? err {:?} \
+                schema_id {:?} schema_json {:?}",
+            err,
+            schema_id,
+            schema_json
+        );
+
+        let schema_id = ctypes::string_to_cstring(schema_id);
+        let schema_json = ctypes::string_to_cstring(schema_json);
+
+        cb(
+            command_handle,
+            err,
+            schema_id.as_ptr(),
+            schema_json.as_ptr(),
+        );
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_parse_get_schema_response < {:?}", res);
     res
 }
 
@@ -775,31 +1086,53 @@ pub extern fn indy_parse_get_schema_response(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_cred_def_request(command_handle: CommandHandle,
-                                          submitter_did: *const c_char,
-                                          data: *const c_char,
-                                          cb: Option<extern fn(command_handle_: CommandHandle,
-                                                               err: ErrorCode,
-                                                               request_result_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_cred_def_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+pub extern "C" fn indy_build_cred_def_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    data: *const c_char,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            request_result_json: *const c_char,
+        ),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_cred_def_request > submitter_did {:?} data {:?}",
+        submitter_did,
+        data
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_json!(data, ErrorCode::CommonInvalidParam3, CredentialDefinition);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_build_cred_def_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+    trace!(
+        "indy_build_cred_def_request? submitter_did {:?} data {:?}",
+        submitter_did,
+        data
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildCredDefRequest(
-            submitter_did,
-            data,
-            boxed_callback_string!("indy_build_cred_def_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_cred_def_request(submitter_did, data);
 
-    trace!("indy_build_cred_def_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_build_cred_def_request ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_cred_def_request < {:?}", res);
     res
 }
 
@@ -818,31 +1151,54 @@ pub extern fn indy_build_cred_def_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_cred_def_request(command_handle: CommandHandle,
-                                              submitter_did: *const c_char,
-                                              id: *const c_char,
-                                              cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                   err: ErrorCode,
-                                                                   request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_cred_def_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
+pub extern "C" fn indy_build_get_cred_def_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    id: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_get_cred_def_request > submitter_did {:?} id {:?}",
+        submitter_did,
+        id
+    );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_build_get_cred_def_request: entities >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
+    trace!(
+        "indy_build_get_cred_def_request? submitter_did {:?} id {:?}",
+        submitter_did,
+        id
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildGetCredDefRequest(
-            submitter_did,
-            id,
-            boxed_callback_string!("indy_build_get_cred_def_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_get_cred_def_request(submitter_did, id);
 
-    trace!("indy_build_get_cred_def_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_get_cred_def_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_get_cred_def_request < {:?}", res);
     res
 }
 
@@ -870,35 +1226,64 @@ pub extern fn indy_build_get_cred_def_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_parse_get_cred_def_response(command_handle: CommandHandle,
-                                               get_cred_def_response: *const c_char,
-                                               cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                    err: ErrorCode,
-                                                                    cred_def_id: *const c_char,
-                                                                    cred_def_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_parse_get_cred_def_response: >>> get_cred_def_response: {:?}", get_cred_def_response);
+pub extern "C" fn indy_parse_get_cred_def_response(
+    command_handle: CommandHandle,
+    get_cred_def_response: *const c_char,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            cred_def_id: *const c_char,
+            cred_def_json: *const c_char,
+        ),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_parse_get_cred_def_response > get_cred_def_response {:?}",
+        get_cred_def_response
+    );
 
     check_useful_c_str!(get_cred_def_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_parse_get_cred_def_response: entities >>> get_cred_def_response: {:?}", get_cred_def_response);
+    trace!(
+        "indy_parse_get_cred_def_response? get_cred_def_response {:?}",
+        get_cred_def_response
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::ParseGetCredDefResponse(
-            get_cred_def_response,
-            Box::new(move |result| {
-                let (err, cred_def_id, cred_def_json) = prepare_result_2!(result, String::new(), String::new());
-                trace!("indy_parse_get_cred_def_response: cred_def_id: {:?}, cred_def_json: {:?}", cred_def_id, cred_def_json);
-                let cred_def_id = ctypes::string_to_cstring(cred_def_id);
-                let cred_def_json = ctypes::string_to_cstring(cred_def_json);
-                cb(command_handle, err, cred_def_id.as_ptr(), cred_def_json.as_ptr())
-            })
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.parse_get_cred_def_response(get_cred_def_response);
 
-    trace!("indy_parse_get_cred_def_response: <<< res: {:?}", res);
+        let (err, cred_def_id, cred_def_json) =
+            prepare_result_2!(res, String::new(), String::new());
 
+        trace!(
+            "indy_parse_get_cred_def_response ? err {:?} cred_def_id {:?} cred_def_json {:?}",
+            err,
+            cred_def_id,
+            cred_def_json
+        );
+
+        let cred_def_id = ctypes::string_to_cstring(cred_def_id);
+        let cred_def_json = ctypes::string_to_cstring(cred_def_json);
+
+        cb(
+            command_handle,
+            err,
+            cred_def_id.as_ptr(),
+            cred_def_json.as_ptr(),
+        )
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_parse_get_cred_def_response < {:?}", res);
     res
 }
 
@@ -927,34 +1312,54 @@ pub extern fn indy_parse_get_cred_def_response(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_node_request(command_handle: CommandHandle,
-                                      submitter_did: *const c_char,
-                                      target_did: *const c_char,
-                                      data: *const c_char,
-                                      cb: Option<extern fn(command_handle_: CommandHandle,
-                                                           err: ErrorCode,
-                                                           request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_node_request: >>> submitter_did: {:?}, target_did: {:?}, data: {:?}", submitter_did, target_did, data);
+pub extern "C" fn indy_build_node_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    target_did: *const c_char,
+    data: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_node_request > submitter_did {:?} target_did {:?} data {:?}",
+        submitter_did,
+        target_did,
+        data
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_string!(target_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_json!(data, ErrorCode::CommonInvalidParam4, NodeOperationData);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_build_node_request: entities >>> submitter_did: {:?}, target_did: {:?}, data: {:?}", submitter_did, target_did, data);
+    trace!(
+        "indy_build_node_request? submitter_did {:?} target_did {:?} data {:?}",
+        submitter_did,
+        target_did,
+        data
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildNodeRequest(
-            submitter_did,
-            target_did,
-            data,
-            boxed_callback_string!("indy_build_node_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_node_request(submitter_did, target_did, data);
 
-    trace!("indy_build_node_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!("indy_build_node_request ? err {:?} res {:?}", err, res);
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_node_request < {:?}", res);
     res
 }
 
@@ -971,20 +1376,46 @@ pub extern fn indy_build_node_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_validator_info_request(command_handle: CommandHandle,
-                                                    submitter_did: *const c_char,
-                                                    cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
-                                                                         request_json: *const c_char)>) -> ErrorCode {
+pub extern "C" fn indy_build_get_validator_info_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_get_validator_info_request > submitter_did {:?}",
+        submitter_did,
+    );
+
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildGetValidatorInfoRequest(
-            submitter_did,
-            boxed_callback_string!("indy_build_get_validator_info_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    prepare_result!(result)
+    executor.spawn_ok(async move {
+        let res = controller.build_get_validator_info_request(submitter_did);
+
+        let (err, res) = prepare_result_1!(res, String::new());
+
+        trace!(
+            "indy_build_get_validator_info_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_get_validator_info_request < {:?}", res,);
+    res
 }
 
 /// Builds a GET_TXN request. Request to get any transaction by its seq_no.
@@ -1006,33 +1437,54 @@ pub extern fn indy_build_get_validator_info_request(command_handle: CommandHandl
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_txn_request(command_handle: CommandHandle,
-                                         submitter_did: *const c_char,
-                                         ledger_type: *const c_char,
-                                         seq_no: i32,
-                                         cb: Option<extern fn(command_handle_: CommandHandle,
-                                                              err: ErrorCode,
-                                                              request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_txn_request: >>> submitter_did: {:?}, ledger_type: {:?}, seq_no: {:?}", submitter_did, ledger_type, seq_no);
+pub extern "C" fn indy_build_get_txn_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    ledger_type: *const c_char,
+    seq_no: i32,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_get_txn_request > submitter_did {:?} \
+            ledger_type {:?} seq_no {:?}",
+        submitter_did,
+        ledger_type,
+        seq_no
+    );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_opt_c_str!(ledger_type, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_build_get_txn_request: entities >>> submitter_did: {:?}, ledger_type: {:?}, seq_no: {:?}", submitter_did, ledger_type, seq_no);
+    trace!(
+        "indy_build_get_txn_request ? submitter_did {:?} \
+            ledger_type {:?} seq_no {:?}",
+        submitter_did,
+        ledger_type,
+        seq_no
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildGetTxnRequest(
-            submitter_did,
-            ledger_type,
-            seq_no,
-            boxed_callback_string!("indy_build_get_txn_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_get_txn_request(submitter_did, ledger_type, seq_no);
 
-    trace!("indy_build_get_txn_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_build_get_txn_request ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_get_txn_request < {:?}", res);
     res
 }
 
@@ -1054,32 +1506,58 @@ pub extern fn indy_build_get_txn_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_pool_config_request(command_handle: CommandHandle,
-                                             submitter_did: *const c_char,
-                                             writes: bool,
-                                             force: bool,
-                                             cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                  err: ErrorCode,
-                                                                  request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_pool_config_request: >>> submitter_did: {:?}, writes: {:?}, force: {:?}", submitter_did, writes, force);
+pub extern "C" fn indy_build_pool_config_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    writes: bool,
+    force: bool,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_pool_config_request > submitter_did {:?} \
+            writes {:?} force {:?}",
+        submitter_did,
+        writes,
+        force
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_build_pool_config_request: entities >>> submitter_did: {:?}, writes: {:?}, force: {:?}", submitter_did, writes, force);
+    trace!(
+        "indy_build_pool_config_request? submitter_did {:?} \
+            writes {:?} force {:?}",
+        submitter_did,
+        writes,
+        force
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildPoolConfigRequest(
-            submitter_did,
-            writes,
-            force,
-            boxed_callback_string!("indy_build_pool_config_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_pool_config_request(submitter_did, writes, force);
 
-    trace!("indy_build_pool_config_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_pool_config_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_pool_config_request < {:?}", res);
     res
 }
 
@@ -1098,42 +1576,71 @@ pub extern fn indy_build_pool_config_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_pool_restart_request(command_handle: CommandHandle,
-                                              submitter_did: *const c_char,
-                                              action: *const c_char,
-                                              datetime: *const c_char,
-                                              cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                   err: ErrorCode,
-                                                                   request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_pool_restart_request: >>> submitter_did: {:?}, action: {:?}, datetime: {:?}", submitter_did, action, datetime);
+pub extern "C" fn indy_build_pool_restart_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    action: *const c_char,
+    datetime: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_pool_restart_request > submitter_did {:?} action {:?} datetime {:?}",
+        submitter_did,
+        action,
+        datetime
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_str!(action, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(datetime, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_build_pool_restart_request: entities >>> submitter_did: {:?}, action: {:?}, datetime: {:?}", submitter_did, action, datetime);
+    trace!(
+        "indy_build_pool_restart_request? submitter_did {:?} action {:?} datetime {:?}",
+        submitter_did,
+        action,
+        datetime
+    );
 
     if action != "start" && action != "cancel" {
-        return IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Unsupported action: {}. Must be either `start` or `cancel`", action)).into();
+        return IndyError::from_msg(
+            IndyErrorKind::InvalidStructure,
+            format!(
+                "Unsupported action: {}. Must be either `start` or `cancel`",
+                action
+            ),
+        )
+        .into();
     }
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(
-            LedgerCommand::BuildPoolRestartRequest(
-                submitter_did,
-                action,
-                datetime,
-                boxed_callback_string!("indy_build_pool_restart_request", cb, command_handle)
-            )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_pool_restart_request(submitter_did, action, datetime);
 
-    trace!("indy_build_pool_restart_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_pool_restart_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_pool_restart_request < {:?}", res);
     res
 }
-
 
 /// Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
 /// It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
@@ -1162,24 +1669,39 @@ pub extern fn indy_build_pool_restart_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_pool_upgrade_request(command_handle: CommandHandle,
-                                              submitter_did: *const c_char,
-                                              name: *const c_char,
-                                              version: *const c_char,
-                                              action: *const c_char,
-                                              sha256: *const c_char,
-                                              timeout: i32,
-                                              schedule: *const c_char,
-                                              justification: *const c_char,
-                                              reinstall: bool,
-                                              force: bool,
-                                              package: *const c_char,
-                                              cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                   err: ErrorCode,
-                                                                   request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_pool_upgrade_request: >>> submitter_did: {:?}, name: {:?}, version: {:?}, action: {:?}, sha256: {:?}, timeout: {:?}, \
-    schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}, package: {:?}",
-           submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package);
+pub extern "C" fn indy_build_pool_upgrade_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    name: *const c_char,
+    version: *const c_char,
+    action: *const c_char,
+    sha256: *const c_char,
+    timeout: i32,
+    schedule: *const c_char,
+    justification: *const c_char,
+    reinstall: bool,
+    force: bool,
+    package: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_pool_upgrade_request > submitter_did {:?} \
+            name {:?} version {:?} action {:?} sha256 {:?} timeout {:?} \
+            schedule {:?} justification {:?} reinstall {:?} force {:?} package {:?}",
+        submitter_did,
+        name,
+        version,
+        action,
+        sha256,
+        timeout,
+        schedule,
+        justification,
+        reinstall,
+        force,
+        package
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
@@ -1191,41 +1713,81 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: CommandHandle,
     check_useful_opt_c_str!(package, ErrorCode::CommonInvalidParam12);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam13);
 
-    let timeout = if timeout != -1 { Some(timeout as u32) } else { None };
+    let timeout = if timeout != -1 {
+        Some(timeout as u32)
+    } else {
+        None
+    };
 
-    trace!("indy_build_pool_upgrade_request: entities >>> submitter_did: {:?}, name: {:?}, version: {:?}, action: {:?}, sha256: {:?}, timeout: {:?}, \
-    schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}, package: {:?}",
-           submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package);
+    trace!(
+        "indy_build_pool_upgrade_request? submitter_did {:?} \
+            name {:?} version {:?} action {:?} sha256 {:?} timeout {:?} \
+            schedule {:?} justification {:?} reinstall {:?} force {:?} package {:?}",
+        submitter_did,
+        name,
+        version,
+        action,
+        sha256,
+        timeout,
+        schedule,
+        justification,
+        reinstall,
+        force,
+        package
+    );
 
     if action != "start" && action != "cancel" {
-        return IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Invalid action: {}", action)).into();
+        return IndyError::from_msg(
+            IndyErrorKind::InvalidStructure,
+            format!("Invalid action: {}", action),
+        )
+        .into();
     }
 
     if action == "start" && schedule.is_none() {
-        return IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Schedule is required for `{}` action", action)).into();
+        return IndyError::from_msg(
+            IndyErrorKind::InvalidStructure,
+            format!("Schedule is required for `{}` action", action),
+        )
+        .into();
     }
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(
-            LedgerCommand::BuildPoolUpgradeRequest(
-                submitter_did,
-                name,
-                version,
-                action,
-                sha256,
-                timeout,
-                schedule,
-                justification,
-                reinstall,
-                force,
-                package,
-                boxed_callback_string!("indy_build_pool_upgrade_request", cb, command_handle)
-            )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_pool_upgrade_request(
+            submitter_did,
+            name,
+            version,
+            action,
+            sha256,
+            timeout,
+            schedule,
+            justification,
+            reinstall,
+            force,
+            package,
+        );
 
-    trace!("indy_build_pool_upgrade_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_pool_upgrade_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_pool_upgrade_request < {:?}", res);
     res
 }
 
@@ -1259,31 +1821,62 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_revoc_reg_def_request(command_handle: CommandHandle,
-                                               submitter_did: *const c_char,
-                                               data: *const c_char,
-                                               cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                    err: ErrorCode,
-                                                                    rev_reg_def_req: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_revoc_reg_def_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+pub extern "C" fn indy_build_revoc_reg_def_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    data: *const c_char,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            rev_reg_def_req: *const c_char,
+        ),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_revoc_reg_def_request > submitter_did {:?} data {:?}",
+        submitter_did,
+        data
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
-    check_useful_validatable_json!(data, ErrorCode::CommonInvalidParam3, RevocationRegistryDefinition);
+    check_useful_validatable_json!(
+        data,
+        ErrorCode::CommonInvalidParam3,
+        RevocationRegistryDefinition
+    );
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_build_revoc_reg_def_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+    trace!(
+        "indy_build_revoc_reg_def_request? submitter_did {:?} data {:?}",
+        submitter_did,
+        data
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildRevocRegDefRequest(
-            submitter_did,
-            data,
-            boxed_callback_string!("indy_build_revoc_reg_def_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_revoc_reg_def_request(submitter_did, data);
 
-    trace!("indy_build_revoc_reg_def_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_revoc_reg_def_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_revoc_reg_def_request < {:?}", res);
     res
 }
 
@@ -1302,31 +1895,54 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_revoc_reg_def_request(command_handle: CommandHandle,
-                                                   submitter_did: *const c_char,
-                                                   id: *const c_char,
-                                                   cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                        err: ErrorCode,
-                                                                        request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_revoc_reg_def_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
+pub extern "C" fn indy_build_get_revoc_reg_def_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    id: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_get_revoc_reg_def_request > submitter_did {:?} id {:?}",
+        submitter_did,
+        id
+    );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam3, RevocationRegistryId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_build_get_revoc_reg_def_request: entities>>> submitter_did: {:?}, id: {:?}", submitter_did, id);
+    trace!(
+        "indy_build_get_revoc_reg_def_request ? submitter_did {:?} id {:?}",
+        submitter_did,
+        id
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildGetRevocRegDefRequest(
-            submitter_did,
-            id,
-            boxed_callback_string!("indy_build_get_revoc_reg_def_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_get_revoc_reg_def_request(submitter_did, id);
 
-    trace!("indy_build_get_revoc_reg_def_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_get_revoc_reg_def_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_get_revoc_reg_def_request < {:?}", res);
     res
 }
 
@@ -1358,36 +1974,65 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: CommandHandle
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: CommandHandle,
-                                                    get_revoc_reg_def_response: *const c_char,
-                                                    cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                         err: ErrorCode,
-                                                                         revoc_reg_def_id: *const c_char,
-                                                                         revoc_reg_def_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_parse_get_revoc_reg_def_response: >>> get_revoc_reg_def_response: {:?}", get_revoc_reg_def_response);
+pub extern "C" fn indy_parse_get_revoc_reg_def_response(
+    command_handle: CommandHandle,
+    get_revoc_reg_def_response: *const c_char,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            revoc_reg_def_id: *const c_char,
+            revoc_reg_def_json: *const c_char,
+        ),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_parse_get_revoc_reg_def_response > get_revoc_reg_def_response {:?}",
+        get_revoc_reg_def_response
+    );
 
     check_useful_c_str!(get_revoc_reg_def_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_parse_get_revoc_reg_def_response: entities >>> get_revoc_reg_def_response: {:?}", get_revoc_reg_def_response);
+    trace!(
+        "indy_parse_get_revoc_reg_def_response? get_revoc_reg_def_response {:?}",
+        get_revoc_reg_def_response
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::ParseGetRevocRegDefResponse(
-            get_revoc_reg_def_response,
-            Box::new(move |result| {
-                let (err, revoc_reg_def_id, revoc_reg_def_json) = prepare_result_2!(result, String::new(), String::new());
-                trace!("indy_parse_get_revoc_reg_def_response: revoc_reg_def_id: {:?}, revoc_reg_def_json: {:?}", revoc_reg_def_id, revoc_reg_def_json);
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-                let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
-                let revoc_reg_def_json = ctypes::string_to_cstring(revoc_reg_def_json);
-                cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_def_json.as_ptr())
-            })
-        )));
+    executor.spawn_ok(async move {
+        let res = controller.parse_revoc_reg_def_response(get_revoc_reg_def_response);
 
-    let res = prepare_result!(result);
+        let (err, revoc_reg_def_id, revoc_reg_def_json) =
+            prepare_result_2!(res, String::new(), String::new());
 
-    trace!("indy_parse_get_revoc_reg_def_response: <<< res: {:?}", res);
+        trace!(
+            "indy_parse_get_revoc_reg_def_response ? err {:?} \
+                revoc_reg_def_id {:?} revoc_reg_def_json {:?}",
+            err,
+            revoc_reg_def_id,
+            revoc_reg_def_json
+        );
 
+        let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
+        let revoc_reg_def_json = ctypes::string_to_cstring(revoc_reg_def_json);
+
+        cb(
+            command_handle,
+            err,
+            revoc_reg_def_id.as_ptr(),
+            revoc_reg_def_json.as_ptr(),
+        )
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_parse_get_revoc_reg_def_response < {:?}", res);
     res
 }
 
@@ -1419,39 +2064,81 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: CommandHandl
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_revoc_reg_entry_request(command_handle: CommandHandle,
-                                                 submitter_did: *const c_char,
-                                                 revoc_reg_def_id: *const c_char,
-                                                 rev_def_type: *const c_char,
-                                                 value: *const c_char,
-                                                 cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                      err: ErrorCode,
-                                                                      request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_revoc_reg_entry_request: >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, rev_def_type: {:?}, value: {:?}",
-           submitter_did, revoc_reg_def_id, rev_def_type, value);
+pub extern "C" fn indy_build_revoc_reg_entry_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    revoc_reg_def_id: *const c_char,
+    rev_def_type: *const c_char,
+    value: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_revoc_reg_entry_request > submitter_did {:?} \
+                revoc_reg_def_id {:?} rev_def_type {:?} value {:?}",
+        submitter_did,
+        revoc_reg_def_id,
+        rev_def_type,
+        value
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
-    check_useful_validatable_string!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3, RevocationRegistryId);
+
+    check_useful_validatable_string!(
+        revoc_reg_def_id,
+        ErrorCode::CommonInvalidParam3,
+        RevocationRegistryId
+    );
+
     check_useful_c_str!(rev_def_type, ErrorCode::CommonInvalidParam4);
-    check_useful_json!(value, ErrorCode::CommonInvalidParam5, RevocationRegistryDelta);
+
+    check_useful_json!(
+        value,
+        ErrorCode::CommonInvalidParam5,
+        RevocationRegistryDelta
+    );
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("indy_build_revoc_reg_entry_request: entities >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, rev_def_type: {:?}, value: {:?}",
-           submitter_did, revoc_reg_def_id, rev_def_type, value);
+    trace!(
+        "indy_build_revoc_reg_entry_request ? submitter_did {:?} \
+            revoc_reg_def_id {:?} rev_def_type {:?} value {:?}",
+        submitter_did,
+        revoc_reg_def_id,
+        rev_def_type,
+        value
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildRevocRegEntryRequest(
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
+
+    executor.spawn_ok(async move {
+        let res = controller.build_revoc_reg_entry_request(
             submitter_did,
             revoc_reg_def_id,
             rev_def_type,
             value,
-            boxed_callback_string!("indy_build_revoc_reg_entry_request", cb, command_handle)
-        )));
+        );
 
-    let res = prepare_result!(result);
+        let (err, res) = prepare_result_1!(res, String::new());
 
-    trace!("indy_build_revoc_reg_entry_request: <<< res: {:?}", res);
+        trace!(
+            "indy_build_revoc_reg_entry_request ? err {:?} res {:?}",
+            err,
+            res
+        );
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_revoc_reg_entry_request < {:?}", res);
     res
 }
 
@@ -1471,33 +2158,66 @@ pub extern fn indy_build_revoc_reg_entry_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_revoc_reg_request(command_handle: CommandHandle,
-                                               submitter_did: *const c_char,
-                                               revoc_reg_def_id: *const c_char,
-                                               timestamp: i64,
-                                               cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                    err: ErrorCode,
-                                                                    request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_revoc_reg_request: >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, timestamp: {:?}", submitter_did, revoc_reg_def_id, timestamp);
+pub extern "C" fn indy_build_get_revoc_reg_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    revoc_reg_def_id: *const c_char,
+    timestamp: i64,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_get_revoc_reg_request > submitter_did {:?} \
+            revoc_reg_def_id {:?} timestamp {:?}",
+        submitter_did,
+        revoc_reg_def_id,
+        timestamp
+    );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
-    check_useful_validatable_string!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3, RevocationRegistryId);
+
+    check_useful_validatable_string!(
+        revoc_reg_def_id,
+        ErrorCode::CommonInvalidParam3,
+        RevocationRegistryId
+    );
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_build_get_revoc_reg_request: entities >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, timestamp: {:?}", submitter_did, revoc_reg_def_id, timestamp);
+    trace!(
+        "indy_build_get_revoc_reg_request? submitter_did {:?} \
+            revoc_reg_def_id {:?} timestamp {:?}",
+        submitter_did,
+        revoc_reg_def_id,
+        timestamp
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildGetRevocRegRequest(
-            submitter_did,
-            revoc_reg_def_id,
-            timestamp,
-            boxed_callback_string!("indy_build_get_revoc_reg_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res =
+            controller.build_get_revoc_reg_request(submitter_did, revoc_reg_def_id, timestamp);
 
-    trace!("indy_build_get_revoc_reg_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_get_revoc_reg_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_get_revoc_reg_request < {:?}", res);
     res
 }
 
@@ -1520,38 +2240,67 @@ pub extern fn indy_build_get_revoc_reg_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_parse_get_revoc_reg_response(command_handle: CommandHandle,
-                                                get_revoc_reg_response: *const c_char,
-                                                cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                     err: ErrorCode,
-                                                                     revoc_reg_def_id: *const c_char,
-                                                                     revoc_reg_json: *const c_char,
-                                                                     timestamp: u64)>) -> ErrorCode {
-    trace!("indy_parse_get_revoc_reg_response: >>> get_revoc_reg_response: {:?}", get_revoc_reg_response);
+pub extern "C" fn indy_parse_get_revoc_reg_response(
+    command_handle: CommandHandle,
+    get_revoc_reg_response: *const c_char,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            revoc_reg_def_id: *const c_char,
+            revoc_reg_json: *const c_char,
+            timestamp: u64,
+        ),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_parse_get_revoc_reg_response > get_revoc_reg_response {:?}",
+        get_revoc_reg_response
+    );
 
     check_useful_c_str!(get_revoc_reg_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_parse_get_revoc_reg_response: entities >>> get_revoc_reg_response: {:?}", get_revoc_reg_response);
+    trace!(
+        "indy_parse_get_revoc_reg_response? get_revoc_reg_response {:?}",
+        get_revoc_reg_response
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::ParseGetRevocRegResponse(
-            get_revoc_reg_response,
-            Box::new(move |result| {
-                let (err, revoc_reg_def_id, revoc_reg_json, timestamp) = prepare_result_3!(result, String::new(), String::new(), 0);
-                trace!("indy_parse_get_revoc_reg_response: revoc_reg_def_id: {:?}, revoc_reg_json: {:?}, timestamp: {:?}",
-                       revoc_reg_def_id, revoc_reg_json, timestamp);
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-                let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
-                let revoc_reg_json = ctypes::string_to_cstring(revoc_reg_json);
-                cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_json.as_ptr(), timestamp)
-            })
-        )));
+    executor.spawn_ok(async move {
+        let res = controller.parse_revoc_reg_response(get_revoc_reg_response);
 
-    let res = prepare_result!(result);
+        let (err, revoc_reg_def_id, revoc_reg_json, timestamp) =
+            prepare_result_3!(res, String::new(), String::new(), 0);
 
-    trace!("indy_parse_get_revoc_reg_response: <<< res: {:?}", res);
+        trace!(
+            "indy_parse_get_revoc_reg_response ? revoc_reg_def_id {:?} \
+                revoc_reg_json {:?} timestamp {:?}",
+            revoc_reg_def_id,
+            revoc_reg_json,
+            timestamp
+        );
 
+        let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
+        let revoc_reg_json = ctypes::string_to_cstring(revoc_reg_json);
+
+        cb(
+            command_handle,
+            err,
+            revoc_reg_def_id.as_ptr(),
+            revoc_reg_json.as_ptr(),
+            timestamp,
+        )
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_parse_get_revoc_reg_response < {:?}", res);
     res
 }
 
@@ -1573,39 +2322,71 @@ pub extern fn indy_parse_get_revoc_reg_response(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: CommandHandle,
-                                                     submitter_did: *const c_char,
-                                                     revoc_reg_def_id: *const c_char,
-                                                     from: i64,
-                                                     to: i64,
-                                                     cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                          err: ErrorCode,
-                                                                          request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_revoc_reg_request: >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, from: {:?}, to: {:?}",
-           submitter_did, revoc_reg_def_id, from, to);
+pub extern "C" fn indy_build_get_revoc_reg_delta_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    revoc_reg_def_id: *const c_char,
+    from: i64,
+    to: i64,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_get_revoc_reg_delta_request > submitter_did {:?} \
+                revoc_reg_def_id {:?} from {:?} to {:?}",
+        submitter_did,
+        revoc_reg_def_id,
+        from,
+        to
+    );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
-    check_useful_validatable_string!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3, RevocationRegistryId);
+
+    check_useful_validatable_string!(
+        revoc_reg_def_id,
+        ErrorCode::CommonInvalidParam3,
+        RevocationRegistryId
+    );
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let from = if from != -1 { Some(from) } else { None };
 
-    trace!("indy_build_get_revoc_reg_request: entities >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, from: {:?}, to: {:?}",
-           submitter_did, revoc_reg_def_id, from, to);
+    trace!(
+        "indy_build_get_revoc_reg_delta_request? submitter_did {:?} \
+             revoc_reg_def_id {:?} from {:?} to {:?}",
+        submitter_did,
+        revoc_reg_def_id,
+        from,
+        to
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildGetRevocRegDeltaRequest(
-            submitter_did,
-            revoc_reg_def_id,
-            from,
-            to,
-            boxed_callback_string!("indy_build_get_revoc_reg_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res =
+            controller.build_get_revoc_reg_delta_request(submitter_did, revoc_reg_def_id, from, to);
 
-    trace!("indy_build_get_revoc_reg_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_get_revoc_reg_delta_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_get_revoc_reg_delta_request < {:?}", res);
     res
 }
 
@@ -1631,38 +2412,68 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: CommandHand
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_parse_get_revoc_reg_delta_response(command_handle: CommandHandle,
-                                                      get_revoc_reg_delta_response: *const c_char,
-                                                      cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                           err: ErrorCode,
-                                                                           revoc_reg_def_id: *const c_char,
-                                                                           revoc_reg_delta_json: *const c_char,
-                                                                           timestamp: u64)>) -> ErrorCode {
-    trace!("indy_parse_get_revoc_reg_delta_response: >>> get_revoc_reg_delta_response: {:?}", get_revoc_reg_delta_response);
+pub extern "C" fn indy_parse_get_revoc_reg_delta_response(
+    command_handle: CommandHandle,
+    get_revoc_reg_delta_response: *const c_char,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            revoc_reg_def_id: *const c_char,
+            revoc_reg_delta_json: *const c_char,
+            timestamp: u64,
+        ),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_parse_get_revoc_reg_delta_response > get_revoc_reg_delta_response {:?}",
+        get_revoc_reg_delta_response
+    );
 
     check_useful_c_str!(get_revoc_reg_delta_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_parse_get_revoc_reg_delta_response: entities >>> get_revoc_reg_delta_response: {:?}", get_revoc_reg_delta_response);
+    trace!(
+        "indy_parse_get_revoc_reg_delta_response? get_revoc_reg_delta_response {:?}",
+        get_revoc_reg_delta_response
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::ParseGetRevocRegDeltaResponse(
-            get_revoc_reg_delta_response,
-            Box::new(move |result| {
-                let (err, revoc_reg_def_id, revoc_reg_delta_json, timestamp) = prepare_result_3!(result, String::new(), String::new(), 0);
-                trace!("indy_parse_get_revoc_reg_delta_response: revoc_reg_def_id: {:?}, revoc_reg_delta_json: {:?}, timestamp: {:?}",
-                       revoc_reg_def_id, revoc_reg_delta_json, timestamp);
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-                let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
-                let revoc_reg_delta_json = ctypes::string_to_cstring(revoc_reg_delta_json);
-                cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_delta_json.as_ptr(), timestamp)
-            })
-        )));
+    executor.spawn_ok(async move {
+        let res = controller.parse_revoc_reg_delta_response(get_revoc_reg_delta_response);
 
-    let res = prepare_result!(result);
+        let (err, revoc_reg_def_id, revoc_reg_delta_json, timestamp) =
+            prepare_result_3!(res, String::new(), String::new(), 0);
 
-    trace!("indy_parse_get_revoc_reg_delta_response: <<< res: {:?}", res);
+        trace!(
+            "indy_parse_get_revoc_reg_delta_response ? err {:?} revoc_reg_def_id {:?} \
+                revoc_reg_delta_json {:?} timestamp {:?}",
+            err,
+            revoc_reg_def_id,
+            revoc_reg_delta_json,
+            timestamp
+        );
 
+        let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
+        let revoc_reg_delta_json = ctypes::string_to_cstring(revoc_reg_delta_json);
+
+        cb(
+            command_handle,
+            err,
+            revoc_reg_def_id.as_ptr(),
+            revoc_reg_delta_json.as_ptr(),
+            timestamp,
+        )
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_parse_get_revoc_reg_delta_response < {:?}", res);
     res
 }
 
@@ -1676,11 +2487,11 @@ pub extern fn indy_parse_get_revoc_reg_delta_response(command_handle: CommandHan
 /// result ErrorCode
 ///
 /// Note: this method allocate memory for result string `CustomFree` should be called to deallocate it
-pub type CustomTransactionParser = extern fn(reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode;
+pub type CustomTransactionParser =
+    extern "C" fn(reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode;
 
 /// Callback type to deallocate result buffer `parsed_sp` from `CustomTransactionParser`
-pub type CustomFree = extern fn(data: *const c_char) -> ErrorCode;
-
+pub type CustomFree = extern "C" fn(data: *const c_char) -> ErrorCode;
 
 // FIXME:
 /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
@@ -1703,7 +2514,7 @@ pub type CustomFree = extern fn(data: *const c_char) -> ErrorCode;
 //                                                       parser: Option<CustomTransactionParser>,
 //                                                       free: Option<CustomFree>,
 //                                                       cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode)>) -> ErrorCode {
-//     trace!("indy_register_transaction_parser_for_sp: >>> txn_type {:?}, parser {:?}, free {:?}",
+//     trace!("indy_register_transaction_parser_for_sp > txn_type {:?} parser {:?} free {:?}",
 //            txn_type, parser, free);
 
 //     check_useful_c_str!(txn_type, ErrorCode::CommonInvalidParam2);
@@ -1711,7 +2522,7 @@ pub type CustomFree = extern fn(data: *const c_char) -> ErrorCode;
 //     check_useful_c_callback!(free, ErrorCode::CommonInvalidParam4);
 //     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-//     trace!("indy_register_transaction_parser_for_sp: entities: txn_type {}, parser {:?}, free {:?}",
+//     trace!("indy_register_transaction_parser_for_sp: entities: txn_type {}, parser {:?} free {:?}",
 //            txn_type, parser, free);
 
 //     let res = CommandExecutor::instance()
@@ -1721,14 +2532,14 @@ pub type CustomFree = extern fn(data: *const c_char) -> ErrorCode;
 //             free,
 //             Box::new(move |res| {
 //                 let res = prepare_result!(res);
-//                 trace!("indy_register_transaction_parser_for_sp: res: {:?}", res);
+//                 trace!("indy_register_transaction_parser_for_sp: res {:?}", res);
 //                 cb(command_handle, res)
 //             }),
 //         )));
 
 //     let res = prepare_result!(res);
 
-//     trace!("indy_register_transaction_parser_for_sp: <<< res: {:?}", res);
+//     trace!("indy_register_transaction_parser_for_sp < {:?}", res);
 
 //     res
 // }
@@ -1768,28 +2579,43 @@ pub type CustomFree = extern fn(data: *const c_char) -> ErrorCode;
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
-                                         response: *const c_char,
-                                         cb: Option<extern fn(command_handle_: CommandHandle,
-                                                              err: ErrorCode,
-                                                              response_metadata: *const c_char)>) -> ErrorCode {
-    trace!("indy_get_response_metadata: >>> response: {:?}", response);
+pub extern "C" fn indy_get_response_metadata(
+    command_handle: CommandHandle,
+    response: *const c_char,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            response_metadata: *const c_char,
+        ),
+    >,
+) -> ErrorCode {
+    trace!("indy_get_response_metadata > response {:?}", response);
 
     check_useful_c_str!(response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_get_response_metadata: entities >>> response: {:?}", response);
+    trace!("indy_get_response_metadata? response {:?}", response);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::GetResponseMetadata(
-            response,
-            boxed_callback_string!("indy_get_response_metadata", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.get_response_metadata(response);
 
-    trace!("indy_get_response_metadata: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_get_response_metadata ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_get_response_metadata < {:?}", res);
     res
 }
 
@@ -1833,20 +2659,31 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
-                                           submitter_did: *const c_char,
-                                           txn_type: *const c_char,
-                                           action: *const c_char,
-                                           field: *const c_char,
-                                           old_value: *const c_char,
-                                           new_value: *const c_char,
-                                           constraint: *const c_char,
-                                           cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                err: ErrorCode,
-                                                                request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_auth_rule_request: >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
-    old_value: {:?}, new_value: {:?}, constraint: {:?}",
-           submitter_did, txn_type, action, field, old_value, new_value, constraint);
+pub extern "C" fn indy_build_auth_rule_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    txn_type: *const c_char,
+    action: *const c_char,
+    field: *const c_char,
+    old_value: *const c_char,
+    new_value: *const c_char,
+    constraint: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_auth_rule_request > submitter_did {:?} \
+            txn_type {:?} action {:?} field {:?} \
+            old_value {:?} new_value {:?} constraint {:?}",
+        submitter_did,
+        txn_type,
+        action,
+        field,
+        old_value,
+        new_value,
+        constraint
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_str!(txn_type, ErrorCode::CommonInvalidParam3);
@@ -1857,12 +2694,28 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
     check_useful_json!(constraint, ErrorCode::CommonInvalidParam8, Constraint);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
-    trace!("indy_build_auth_rule_request: entities >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
-    old_value: {:?}, new_value: {:?}, constraint: {:?}",
-           submitter_did, txn_type, action, field, old_value, new_value, constraint);
+    trace!(
+        "indy_build_auth_rule_request ? submitter_did {:?} \
+            txn_type {:?} action {:?} field {:?} \
+            old_value {:?} new_value {:?} constraint {:?}",
+        submitter_did,
+        txn_type,
+        action,
+        field,
+        old_value,
+        new_value,
+        constraint
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildAuthRuleRequest(
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
+
+    executor.spawn_ok(async move {
+        let res = controller.build_auth_rule_request(
             submitter_did,
             txn_type,
             action,
@@ -1870,13 +2723,17 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
             old_value,
             new_value,
             constraint,
-            boxed_callback_string!("indy_build_auth_rule_request", cb, command_handle)
-        )));
+        );
 
-    let res = prepare_result!(result);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_build_auth_rule_request ? err {:?} res {:?}", err, res);
 
-    trace!("indy_build_auth_rule_request: <<< res: {:?}", res);
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
 
+    let res = ErrorCode::Success;
+    trace!("indy_build_auth_rule_request < {:?}", res);
     res
 }
 
@@ -1910,35 +2767,62 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_auth_rules_request(command_handle: CommandHandle,
-                                            submitter_did: *const c_char,
-                                            rules: *const c_char,
-                                            cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                 err: ErrorCode,
-                                                                 request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_auth_rules_request: >>> submitter_did: {:?}, rules: {:?}", submitter_did, rules);
+pub extern "C" fn indy_build_auth_rules_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    rules: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_auth_rules_request > submitter_did {:?} rules {:?}",
+        submitter_did,
+        rules
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_json!(rules, ErrorCode::CommonInvalidParam3, AuthRules);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     if rules.is_empty() {
-        return err_msg(IndyErrorKind::InvalidStructure, "Empty list of Auth Rules has been passed").into();
+        return err_msg(
+            IndyErrorKind::InvalidStructure,
+            "Empty list of Auth Rules has been passed",
+        )
+        .into();
     }
 
-    trace!("indy_build_auth_rules_request: entities >>> submitter_did: {:?}, rules: {:?}", submitter_did, rules);
+    trace!(
+        "indy_build_auth_rules_request ? submitter_did {:?} rules {:?}",
+        submitter_did,
+        rules
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildAuthRulesRequest(
-            submitter_did,
-            rules,
-            boxed_callback_string!("indy_build_auth_rules_request", cb, command_handle)
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_auth_rules_request(submitter_did, rules);
 
-    trace!("indy_build_auth_rules_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_auth_rules_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_auth_rules_request < {:?}", res);
     res
 }
 
@@ -1965,19 +2849,29 @@ pub extern fn indy_build_auth_rules_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
-                                               submitter_did: *const c_char,
-                                               txn_type: *const c_char,
-                                               action: *const c_char,
-                                               field: *const c_char,
-                                               old_value: *const c_char,
-                                               new_value: *const c_char,
-                                               cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                    err: ErrorCode,
-                                                                    request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_auth_rule_request: >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
-    old_value: {:?}, new_value: {:?}",
-           submitter_did, txn_type, action, field, old_value, new_value);
+pub extern "C" fn indy_build_get_auth_rule_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    txn_type: *const c_char,
+    action: *const c_char,
+    field: *const c_char,
+    old_value: *const c_char,
+    new_value: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_get_auth_rule_request > submitter_did {:?} \
+            txn_type {:?} action {:?} field {:?} \
+            old_value {:?} new_value {:?}",
+        submitter_did,
+        txn_type,
+        action,
+        field,
+        old_value,
+        new_value
+    );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_opt_c_str!(txn_type, ErrorCode::CommonInvalidParam3);
@@ -1987,25 +2881,49 @@ pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
     check_useful_opt_c_str!(new_value, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!("indy_build_get_auth_rule_request: entities >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
-    old_value: {:?}, new_value: {:?}",
-           submitter_did, txn_type, action, field, old_value, new_value);
+    trace!(
+        "indy_build_get_auth_rule_request? submitter_did {:?} \
+            txn_type {:?} action {:?} field {:?} \
+            old_value {:?} new_value {:?}",
+        submitter_did,
+        txn_type,
+        action,
+        field,
+        old_value,
+        new_value
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildGetAuthRuleRequest(
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
+
+    executor.spawn_ok(async move {
+        let res = controller.build_get_auth_rule_request(
             submitter_did,
             txn_type,
             action,
             field,
             old_value,
             new_value,
-            boxed_callback_string!("indy_build_get_auth_rule_request", cb, command_handle)
-        )));
+        );
 
-    let res = prepare_result!(result);
+        let (err, res) = prepare_result_1!(res, String::new());
 
-    trace!("indy_build_get_auth_rule_request: <<< res: {:?}", res);
+        trace!(
+            "indy_build_get_auth_rule_request ? err {:?} res {:?}",
+            err,
+            res
+        );
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_get_auth_rule_request < {:?}", res);
     res
 }
 
@@ -2047,17 +2965,26 @@ pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHandle,
-                                                      submitter_did: *const c_char,
-                                                      text: *const c_char,
-                                                      version: *const c_char,
-                                                      ratification_ts: i64,
-                                                      retirement_ts: i64,
-                                                      cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                           err: ErrorCode,
-                                                                           request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_txn_author_agreement_request: >>> submitter_did: {:?}, text: {:?}, version: {:?}, ratification_ts {:?}, retirement_ts {:?}",
-           submitter_did, text, version, ratification_ts, retirement_ts);
+pub extern "C" fn indy_build_txn_author_agreement_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    text: *const c_char,
+    version: *const c_char,
+    ratification_ts: i64,
+    retirement_ts: i64,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_txn_author_agreement_request > submitter_did {:?} \
+            text {:?} version {:?} ratification_ts {:?} retirement_ts {:?}",
+        submitter_did,
+        text,
+        version,
+        ratification_ts,
+        retirement_ts
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_opt_c_str!(text, ErrorCode::CommonInvalidParam3);
@@ -2066,27 +2993,48 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
     check_useful_opt_u64!(retirement_ts, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_build_txn_author_agreement_request: entities >>> submitter_did: {:?}, text: {:?}, version: {:?}, ratification_ts {:?}, retirement_ts {:?}",
-           submitter_did, text, version, ratification_ts, retirement_ts);
+    trace!(
+        "indy_build_txn_author_agreement_request ? submitter_did {:?} text {:?} \
+            version {:?} ratification_ts {:?} retirement_ts {:?}",
+        submitter_did,
+        text,
+        version,
+        ratification_ts,
+        retirement_ts
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(
-            LedgerCommand::BuildTxnAuthorAgreementRequest(
-                submitter_did,
-                text,
-                version,
-                ratification_ts,
-                retirement_ts,
-                boxed_callback_string!("indy_build_txn_author_agreement_request", cb, command_handle)
-            )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_txn_author_agreement_request(
+            submitter_did,
+            text,
+            version,
+            ratification_ts,
+            retirement_ts,
+        );
 
-    trace!("indy_build_txn_author_agreement_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_txn_author_agreement_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_txn_author_agreement_request < {:?}", res);
     res
 }
-
 
 /// Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. Request to disable all Transaction Author Agreement on the ledger.
 ///
@@ -2104,28 +3052,54 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_disable_all_txn_author_agreements_request(command_handle: CommandHandle,
-                                                                   submitter_did: *const c_char,
-                                                                   cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                                        err: ErrorCode,
-                                                                                        request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_disable_all_txn_author_agreements_request: >>> submitter_did: {:?}", submitter_did);
+pub extern "C" fn indy_build_disable_all_txn_author_agreements_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_disable_all_txn_author_agreements_request > submitter_did {:?}",
+        submitter_did
+    );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_build_disable_all_txn_author_agreements_request: entities >>> submitter_did: {:?}", submitter_did);
+    trace!(
+        "indy_build_disable_all_txn_author_agreements_request? submitter_did {:?}",
+        submitter_did
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(
-            LedgerCommand::BuildDisableAllTxnAuthorAgreementsRequest(
-                submitter_did,
-                boxed_callback_string!("indy_build_disable_all_txn_author_agreements_request", cb, command_handle)
-            )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_disable_all_txn_author_agreements_request(submitter_did);
 
-    trace!("indy_build_disable_all_txn_author_agreements_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+
+        trace!(
+            "indy_build_disable_all_txn_author_agreements_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+
+    trace!(
+        "indy_build_disable_all_txn_author_agreements_request < {:?}",
+        res
+    );
 
     res
 }
@@ -2154,32 +3128,60 @@ pub extern fn indy_build_disable_all_txn_author_agreements_request(command_handl
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_txn_author_agreement_request(command_handle: CommandHandle,
-                                                          submitter_did: *const c_char,
-                                                          data: *const c_char,
-                                                          cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                               err: ErrorCode,
-                                                                               request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_txn_author_agreement_request: >>> submitter_did: {:?}, data: {:?}?", submitter_did, data);
+pub extern "C" fn indy_build_get_txn_author_agreement_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    data: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_get_txn_author_agreement_request > submitter_did {:?} data {:?}?",
+        submitter_did,
+        data
+    );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
-    check_useful_opt_validatable_json!(data, ErrorCode::CommonInvalidParam3, GetTxnAuthorAgreementData);
+
+    check_useful_opt_validatable_json!(
+        data,
+        ErrorCode::CommonInvalidParam3,
+        GetTxnAuthorAgreementData
+    );
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_build_get_txn_author_agreement_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+    trace!(
+        "indy_build_get_txn_author_agreement_request? submitter_did {:?} data {:?}",
+        submitter_did,
+        data
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(
-            LedgerCommand::BuildGetTxnAuthorAgreementRequest(
-                submitter_did,
-                data,
-                boxed_callback_string!("indy_build_get_txn_author_agreement_request", cb, command_handle)
-            )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_get_txn_author_agreement_request(submitter_did, data);
 
-    trace!("indy_build_get_txn_author_agreement_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_get_txn_author_agreement_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_get_txn_author_agreement_request < {:?}", res);
     res
 }
 
@@ -2208,15 +3210,17 @@ pub extern fn indy_build_get_txn_author_agreement_request(command_handle: Comman
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_acceptance_mechanisms_request(command_handle: CommandHandle,
-                                                       submitter_did: *const c_char,
-                                                       aml: *const c_char,
-                                                       version: *const c_char,
-                                                       aml_context: *const c_char,
-                                                       cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                            err: ErrorCode,
-                                                                            request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_acceptance_mechanisms_request: >>> submitter_did: {:?}, aml: {:?}, version: {:?}, aml_context: {:?}",
+pub extern "C" fn indy_build_acceptance_mechanisms_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    aml: *const c_char,
+    version: *const c_char,
+    aml_context: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!("indy_build_acceptance_mechanisms_request > submitter_did {:?} aml {:?} version {:?} aml_context {:?}",
            submitter_did, aml, version, aml_context);
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -2225,23 +3229,38 @@ pub extern fn indy_build_acceptance_mechanisms_request(command_handle: CommandHa
     check_useful_opt_c_str!(aml_context, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("indy_build_acceptance_mechanisms_request: entities >>> submitter_did: {:?}, aml: {:?}, version: {:?}, aml_context: {:?}",
+    trace!("indy_build_acceptance_mechanisms_request? submitter_did {:?} aml {:?} version {:?} aml_context {:?}",
            submitter_did, aml, version, aml_context);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(
-            LedgerCommand::BuildAcceptanceMechanismRequests(
-                submitter_did,
-                aml,
-                version,
-                aml_context,
-                boxed_callback_string!("indy_build_acceptance_mechanisms_request", cb, command_handle)
-            )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.build_acceptance_mechanisms_request(
+            submitter_did,
+            aml,
+            version,
+            aml_context,
+        );
 
-    trace!("indy_build_acceptance_mechanisms_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_acceptance_mechanisms_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_acceptance_mechanisms_request < {:?}", res);
     res
 }
 
@@ -2265,36 +3284,66 @@ pub extern fn indy_build_acceptance_mechanisms_request(command_handle: CommandHa
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_acceptance_mechanisms_request(command_handle: CommandHandle,
-                                                           submitter_did: *const c_char,
-                                                           timestamp: i64,
-                                                           version: *const c_char,
-                                                           cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                                err: ErrorCode,
-                                                                                request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_acceptance_mechanisms_request: >>> submitter_did: {:?}, timestamp: {:?}, version: {:?}", submitter_did, timestamp, version);
+pub extern "C" fn indy_build_get_acceptance_mechanisms_request(
+    command_handle: CommandHandle,
+    submitter_did: *const c_char,
+    timestamp: i64,
+    version: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_build_get_acceptance_mechanisms_request > submitter_did {:?} \
+            timestamp {:?} version {:?}",
+        submitter_did,
+        timestamp,
+        version
+    );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_opt_c_str!(version, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    let timestamp = if timestamp != -1 { Some(timestamp as u64) } else { None };
+    let timestamp = if timestamp != -1 {
+        Some(timestamp as u64)
+    } else {
+        None
+    };
 
-    trace!("indy_build_get_acceptance_mechanisms_request: entities >>> submitter_did: {:?}, timestamp: {:?}, version: {:?}", submitter_did, timestamp, version);
+    trace!(
+        "indy_build_get_acceptance_mechanisms_request? submitter_did {:?} \
+            timestamp {:?} version {:?}",
+        submitter_did,
+        timestamp,
+        version
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(
-            LedgerCommand::BuildGetAcceptanceMechanismsRequest(
-                submitter_did,
-                timestamp,
-                version,
-                boxed_callback_string!("indy_build_get_acceptance_mechanisms_request", cb, command_handle)
-            )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res =
+            controller.build_get_acceptance_mechanisms_request(submitter_did, timestamp, version);
 
-    trace!("indy_build_get_acceptance_mechanisms_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
 
+        trace!(
+            "indy_build_get_acceptance_mechanisms_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_build_get_acceptance_mechanisms_request < {:?}", res);
     res
 }
 
@@ -2326,19 +3375,33 @@ pub extern fn indy_build_get_acceptance_mechanisms_request(command_handle: Comma
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_append_txn_author_agreement_acceptance_to_request(command_handle: CommandHandle,
-                                                                     request_json: *const c_char,
-                                                                     text: *const c_char,
-                                                                     version: *const c_char,
-                                                                     taa_digest: *const c_char,
-                                                                     mechanism: *const c_char,
-                                                                     time: u64,
-                                                                     cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                                          err: ErrorCode,
-                                                                                          request_with_meta_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_append_txn_author_agreement_acceptance_to_request: >>> request_json: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, \
-        mechanism: {:?}, time: {:?}",
-           request_json, text, version, taa_digest, mechanism, time);
+pub extern "C" fn indy_append_txn_author_agreement_acceptance_to_request(
+    command_handle: CommandHandle,
+    request_json: *const c_char,
+    text: *const c_char,
+    version: *const c_char,
+    taa_digest: *const c_char,
+    mechanism: *const c_char,
+    time: u64,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            request_with_meta_json: *const c_char,
+        ),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_append_txn_author_agreement_acceptance_to_request > request_json {:?} \
+            text {:?} version {:?} taa_digest {:?} \
+            mechanism {:?} time {:?}",
+        request_json,
+        text,
+        version,
+        taa_digest,
+        mechanism,
+        time
+    );
 
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam2);
     check_useful_opt_c_str!(text, ErrorCode::CommonInvalidParam3);
@@ -2347,25 +3410,53 @@ pub extern fn indy_append_txn_author_agreement_acceptance_to_request(command_han
     check_useful_c_str!(mechanism, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!("indy_append_txn_author_agreement_acceptance_to_request: entities >>> request_json: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, \
-        mechanism: {:?}, time: {:?}",
-           request_json, text, version, taa_digest, mechanism, time);
+    trace!(
+        "indy_append_txn_author_agreement_acceptance_to_request? request_json {:?} \
+            text {:?} version {:?} taa_digest {:?} \
+            mechanism {:?} time {:?}",
+        request_json,
+        text,
+        version,
+        taa_digest,
+        mechanism,
+        time
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(
-            LedgerCommand::AppendTxnAuthorAgreementAcceptanceToRequest(
-                request_json,
-                text,
-                version,
-                taa_digest,
-                mechanism,
-                time,
-                boxed_callback_string!("indy_append_txn_author_agreement_acceptance_to_request", cb, command_handle)
-            )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.append_txn_author_agreement_acceptance_to_request(
+            request_json,
+            text,
+            version,
+            taa_digest,
+            mechanism,
+            time,
+        );
 
-    trace!("indy_append_txn_author_agreement_acceptance_to_request: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+
+        trace!(
+            "indy_append_txn_author_agreement_acceptance_to_request ? err {:?} res {:?}",
+            err,
+            res
+        );
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+
+    trace!(
+        "indy_append_txn_author_agreement_acceptance_to_request < {:?}",
+        res
+    );
 
     res
 }
@@ -2390,32 +3481,52 @@ pub extern fn indy_append_txn_author_agreement_acceptance_to_request(command_han
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_append_request_endorser(command_handle: CommandHandle,
-                                           request_json: *const c_char,
-                                           endorser_did: *const c_char,
-                                           cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                err: ErrorCode,
-                                                                out_request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_append_request_endorser: >>> request_json: {:?}, endorser_did: {:?}",
-           request_json, endorser_did);
+pub extern "C" fn indy_append_request_endorser(
+    command_handle: CommandHandle,
+    request_json: *const c_char,
+    endorser_did: *const c_char,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            out_request_json: *const c_char,
+        ),
+    >,
+) -> ErrorCode {
+    trace!(
+        "indy_append_request_endorser > request_json {:?} endorser_did {:?}",
+        request_json,
+        endorser_did
+    );
 
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam2);
     check_useful_validatable_string!(endorser_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_append_request_endorser: entities >>> request_json: {:?},endorser_did: {:?}", request_json, endorser_did);
+    trace!(
+        "indy_append_request_endorser? request_json {:?}endorser_did {:?}",
+        request_json,
+        endorser_did
+    );
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(
-            LedgerCommand::AppendRequestEndorser(
-                request_json,
-                endorser_did,
-                boxed_callback_string!("indy_append_request_endorser", cb, command_handle)
-            )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.ledger_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller.append_request_endorser(request_json, endorser_did);
 
-    trace!("indy_append_request_endorser: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_append_request_endorser ? err {:?} res {:?}", err, res);
 
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
+    trace!("indy_append_request_endorser < {:?}", res);
     res
 }
