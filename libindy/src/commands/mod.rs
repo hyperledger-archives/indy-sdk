@@ -12,7 +12,7 @@ use crate::commands::blob_storage::BlobStorageCommandExecutor;
 use crate::commands::cache::CacheCommandExecutor;
 use crate::commands::crypto::CryptoCommandExecutor;
 use crate::commands::did::{DidCommand, DidCommandExecutor};
-use crate::commands::ledger::{LedgerCommand, LedgerCommandExecutor};
+use crate::commands::ledger::LedgerCommandExecutor;
 use crate::commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
 use crate::commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 //use crate::commands::payments::{PaymentsCommand, PaymentsCommandExecutor}; FIXME:
@@ -52,7 +52,6 @@ type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>) + 
 
 pub enum Command {
     Exit,
-    Ledger(LedgerCommand),
     Pool(PoolCommand),
     Did(DidCommand),
     Wallet(WalletCommand),
@@ -261,10 +260,6 @@ impl CommandExecutor {
                             //                                start_execution_ts - instrumented_cmd.enqueue_ts);
 
                             match instrumented_cmd.command {
-                                Command::Ledger(cmd) => {
-                                    debug!("LedgerCommand command received");
-                                    ledger_command_executor.execute(cmd).await;
-                                }
                                 Command::Pool(cmd) => {
                                     debug!("PoolCommand command received");
                                     pool_command_executor.execute(cmd).await;

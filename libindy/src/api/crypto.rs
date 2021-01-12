@@ -114,7 +114,7 @@ pub extern "C" fn indy_set_key_metadata(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!(
-        "indy_set_key_metadata ? wallet_handle: {:?} verkey: {:?} metadata: {:?}",
+        "indy_set_key_metadata ? wallet_handle{:?} verkey{:?} metadata{:?}",
         wallet_handle,
         verkey,
         metadata
@@ -134,7 +134,7 @@ pub extern "C" fn indy_set_key_metadata(
 
         let err = prepare_result!(res);
 
-        trace!("indy_set_key_metadata ? err: {:?}", err);
+        trace!("indy_set_key_metadata ? err{:?}", err);
         cb(command_handle, err);
     });
 
@@ -335,7 +335,7 @@ pub extern "C" fn indy_crypto_verify(
     signature_len: u32,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, valid: bool)>,
 ) -> ErrorCode {
-    trace!("indy_crypto_verify > signer_vk {:?} message_raw {:?} message_len {:?} signature_raw {:?} signature_len: {:?}",
+    trace!("indy_crypto_verify > signer_vk {:?} message_raw {:?} message_len {:?} signature_raw {:?} signature_len{:?}",
            signer_vk, message_raw, message_len, signature_raw, signature_len);
 
     check_useful_c_str!(signer_vk, ErrorCode::CommonInvalidParam2);
@@ -357,7 +357,7 @@ pub extern "C" fn indy_crypto_verify(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     trace!(
-        "indy_crypto_verify ? signer_vk {:?}, message_raw {:?} signature_raw {:?}",
+        "indy_crypto_verify ? signer_vk {:?} message_raw {:?} signature_raw {:?}",
         signer_vk,
         message_raw,
         signature_raw
@@ -432,7 +432,7 @@ pub extern "C" fn indy_crypto_auth_crypt(
         ),
     >,
 ) -> ErrorCode {
-    trace!("indy_crypto_auth_crypt > wallet_handle {:?} sender_vk {:?} recipient_vk {:?} msg_data {:?} msg_len: {:?}",
+    trace!("indy_crypto_auth_crypt > wallet_handle {:?} sender_vk {:?} recipient_vk {:?} msg_data {:?} msg_len{:?}",
            wallet_handle, sender_vk, recipient_vk, msg_data, msg_len);
 
     check_useful_c_str!(sender_vk, ErrorCode::CommonInvalidParam3);
@@ -742,7 +742,7 @@ pub extern "C" fn indy_crypto_anon_decrypt(
             .await;
 
         let (err, msg) = prepare_result_1!(res, Vec::new());
-        trace!("indy_crypto_anon_decrypt ? err {:?} msg: {:?}", err, msg);
+        trace!("indy_crypto_anon_decrypt ? err {:?} msg{:?}", err, msg);
 
         let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
         cb(command_handle, err, msg_data, msg_len);
@@ -858,8 +858,8 @@ pub extern "C" fn indy_pack_message(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     trace!(
-        "indy_pack_message ? wallet_handle {:?} message: {:?} \
-            receiver_keys: {:?} sender {:?}",
+        "indy_pack_message ? wallet_handle {:?} message{:?} \
+            receiver_keys{:?} sender {:?}",
         wallet_handle,
         message,
         receiver_keys,
@@ -900,7 +900,7 @@ pub extern "C" fn indy_pack_message(
             .await;
 
         let (err, jwe) = prepare_result_1!(res, Vec::new());
-        trace!("indy_auth_pack_message ? err: {:?} jwe: {:?}", err, jwe);
+        trace!("indy_auth_pack_message ? err{:?} jwe{:?}", err, jwe);
 
         let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
         cb(command_handle, err, jwe_data, jwe_len);
@@ -974,7 +974,7 @@ pub extern "C" fn indy_unpack_message(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!(
-        "indy_unpack_message ? wallet_handle {:?} jwe_data: {:?}",
+        "indy_unpack_message ? wallet_handle {:?} jwe_data{:?}",
         wallet_handle,
         jwe_data,
     );
@@ -997,7 +997,7 @@ pub extern "C" fn indy_unpack_message(
         let (err, res_json) = prepare_result_1!(res, Vec::new());
 
         trace!(
-            "indy_unpack_message ? err: {:?}, res_json: {:?}",
+            "indy_unpack_message ? err{:?} res_json{:?}",
             err,
             res_json
         );
