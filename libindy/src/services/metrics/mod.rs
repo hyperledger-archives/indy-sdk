@@ -115,16 +115,10 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_counters_are_initialized_as_zeros() {
+    fn test_counters_are_initialized() {
         let metrics_service = MetricsService::new();
-        for index in (0..MetricsService::commands_count()).rev() {
-            assert_eq!(metrics_service.queued_counters.borrow()[index as usize].count, 0);
-            assert_eq!(metrics_service.queued_counters.borrow()[index as usize].duration_ms_sum, 0);
-            assert_eq!(metrics_service.queued_counters.borrow()[index as usize].duration_ms_bucket, [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
-            assert_eq!(metrics_service.executed_counters.borrow()[index as usize].count, 0);
-            assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_sum, 0);
-            assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_bucket, [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
-        }
+        assert_eq!(metrics_service.queued_counters.borrow().len(), COMMANDS_COUNT);
+        assert_eq!(metrics_service.executed_counters.borrow().len(), COMMANDS_COUNT);
     }
 
     #[test]

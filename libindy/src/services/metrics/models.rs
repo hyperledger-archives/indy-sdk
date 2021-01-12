@@ -44,3 +44,16 @@ impl CommandCounters {
     }
 
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_counters_are_initialized_as_zeros() {
+        let command_counters = CommandCounters::new();
+        assert_eq!(command_counters.count, 0);
+        assert_eq!(command_counters.duration_ms_sum, 0);
+        assert_eq!(command_counters.duration_ms_bucket, [0; BUCKET_COUNT]);
+    }
+}
