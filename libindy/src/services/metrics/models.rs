@@ -24,8 +24,8 @@ pub struct CommandCounters {
 }
 
 impl CommandCounters {
-    pub fn new(count: u128, duration_ms_sum: u128, duration_ms_bucket: [u128; BUCKET_COUNT]) -> Self {
-        CommandCounters {count, duration_ms_sum, duration_ms_bucket}
+    pub fn new() -> Self {
+        CommandCounters {count: 0, duration_ms_sum: 0, duration_ms_bucket: [0; BUCKET_COUNT]}
     }
 
     pub fn add(&mut self, duration: u128) {
@@ -43,4 +43,17 @@ impl CommandCounters {
         self.duration_ms_bucket[self.duration_ms_bucket.len()-1] += 1;
     }
 
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_counters_are_initialized_as_zeros() {
+        let command_counters = CommandCounters::new();
+        assert_eq!(command_counters.count, 0);
+        assert_eq!(command_counters.duration_ms_sum, 0);
+        assert_eq!(command_counters.duration_ms_bucket, [0; BUCKET_COUNT]);
+    }
 }

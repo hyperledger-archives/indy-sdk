@@ -20,9 +20,9 @@ pub struct MetricsService {
 impl MetricsService {
     pub fn new() -> Self {
         MetricsService {
-            queued_counters: RefCell::new([CommandCounters::new(0,0,[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]); COMMANDS_COUNT]),
-            executed_counters: RefCell::new([CommandCounters::new(0,0,[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]); COMMANDS_COUNT]),
-            callback_counters: RefCell::new([CommandCounters::new(0,0,[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]); COMMANDS_COUNT]),
+            queued_counters: RefCell::new([CommandCounters::new(); COMMANDS_COUNT]),
+            executed_counters: RefCell::new([CommandCounters::new(); COMMANDS_COUNT]),
+            callback_counters: RefCell::new([CommandCounters::new(); COMMANDS_COUNT]),
         }
     }
 
@@ -136,14 +136,10 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_counters_are_initialized_as_zeros() {
+    fn test_counters_are_initialized() {
         let metrics_service = MetricsService::new();
-        for index in (0..MetricsService::commands_count()).rev() {
-            assert_eq!(metrics_service.queued_counters.borrow()[index as usize].count, 0);
-            assert_eq!(metrics_service.queued_counters.borrow()[index as usize].duration_ms_sum, 0);
-            assert_eq!(metrics_service.executed_counters.borrow()[index as usize].count, 0);
-            assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_sum, 0);
-        }
+        assert_eq!(metrics_service.queued_counters.borrow().len(), COMMANDS_COUNT);
+        assert_eq!(metrics_service.executed_counters.borrow().len(), COMMANDS_COUNT);
     }
 
     #[test]
@@ -214,7 +210,7 @@ mod test {
         let metrics_service = MetricsService::new();
         let mut metrics_map = serde_json::Map::new();
 
-        metrics_service.append_command_metrics(&mut metrics_map);
+        metrics_service.append_command_metrics(&mut metrics_map).unwrap();
 
         assert!(metrics_map.contains_key("commands_count"));
         assert_eq!(
@@ -356,7 +352,7 @@ mod test {
         assert!(commands_callback.contains(&expected_commands_callback[3]));
     }
 
-    fn generate_json(command: String, stage: String, value: usize) -> Value {
+    fn generate_json(command: &str, stage: &str, value: usize) -> Value {
         json!({"tags":{"command": command, "stage": stage} ,"value": value})
     }
 }
