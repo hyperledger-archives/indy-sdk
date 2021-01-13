@@ -148,8 +148,8 @@ impl Node {
         use sha3::Digest;
         let encoded = rlp_encode(self);
         let mut hasher = sha3::Sha3_256::default();
-        hasher.input(encoded.to_vec().as_slice());
-        hasher.fixed_result()
+        hasher.update(encoded.to_vec().as_slice());
+        hasher.finalize_fixed()
     }
     pub fn get_str_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> IndyResult<Option<String>> {
         let value = self.get_value(db, path)?;
