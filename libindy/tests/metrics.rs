@@ -49,17 +49,10 @@ mod collect {
             .as_array()
             .unwrap();
 
-        let expected_wallet_count = [
-            json!({"tags":{"label":"opened"},"value":0}),
-            json!({"tags":{"label":"opened_ids"},"value":0}),
-            json!({"tags":{"label":"pending_for_import"},"value":0}),
-            json!({"tags":{"label":"pending_for_open"},"value":0}),
-        ];
-
-        assert!(wallet_count.contains(&expected_wallet_count[0]));
-        assert!(wallet_count.contains(&expected_wallet_count[1]));
-        assert!(wallet_count.contains(&expected_wallet_count[2]));
-        assert!(wallet_count.contains(&expected_wallet_count[3]));
+        assert!(wallet_count.contains(&json!({"tags":{"label":"opened"},"value":0})));
+        assert!(wallet_count.contains(&json!({"tags":{"label":"opened_ids"},"value":0})));
+        assert!(wallet_count.contains(&json!({"tags":{"label":"pending_for_import"},"value":0})));
+        assert!(wallet_count.contains(&json!({"tags":{"label":"pending_for_open"},"value":0})));
     }
 
     #[test]
@@ -75,15 +68,9 @@ mod collect {
             .as_array()
             .unwrap();
 
-        let expected_threadpool_threads_count = [
-            json!({"tags":{"label":"active"},"value":0}),
-            json!({"tags":{"label":"queued"},"value":0}),
-            json!({"tags":{"label":"panic"},"value":0}),
-        ];
-
-        assert!(threadpool_threads_count.contains(&expected_threadpool_threads_count[0]));
-        assert!(threadpool_threads_count.contains(&expected_threadpool_threads_count[1]));
-        assert!(threadpool_threads_count.contains(&expected_threadpool_threads_count[2]));
+        assert!(threadpool_threads_count.contains(&json!({"tags":{"label":"active"},"value":0})));
+        assert!(threadpool_threads_count.contains(&json!({"tags":{"label":"queued"},"value":0})));
+        assert!(threadpool_threads_count.contains(&json!({"tags":{"label":"panic"},"value":0})));
     }
 
     #[test]
