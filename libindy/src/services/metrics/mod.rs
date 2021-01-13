@@ -140,6 +140,7 @@ mod test {
         let metrics_service = MetricsService::new();
         assert_eq!(metrics_service.queued_counters.borrow().len(), COMMANDS_COUNT);
         assert_eq!(metrics_service.executed_counters.borrow().len(), COMMANDS_COUNT);
+        assert_eq!(metrics_service.callback_counters.borrow().len(), COMMANDS_COUNT);
     }
 
     #[test]
@@ -183,6 +184,16 @@ mod test {
                        ],
                     0
         );
+
+        assert_eq!(metrics_service.callback_counters.borrow()[index as usize].count, 0);
+        assert_eq!(metrics_service.callback_counters.borrow()[index as usize].duration_ms_sum, 0);
+        assert_eq!(metrics_service.callback_counters.borrow()[index as usize]
+                       .duration_ms_bucket[
+                       metrics_service.callback_counters.borrow()[index as usize]
+                           .duration_ms_bucket.len()-1
+                       ],
+                   0
+        );
     }
 
     #[test]
@@ -196,13 +207,99 @@ mod test {
 
         assert_eq!(metrics_service.executed_counters.borrow()[index as usize].count, 1);
         assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_sum, duration1);
+        assert_eq!(metrics_service.executed_counters.borrow()[index as usize]
+                       .duration_ms_bucket[
+                       metrics_service.executed_counters.borrow()[index as usize]
+                           .duration_ms_bucket.len()-1
+                       ],
+                   1
+        );
 
         metrics_service.cmd_executed(index, duration2);
 
+        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].count, 1 + 1);
+        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_sum,
+                   duration1 + duration2);
+        assert_eq!(metrics_service.executed_counters.borrow()[index as usize]
+                       .duration_ms_bucket[
+                       metrics_service.executed_counters.borrow()[index as usize]
+                           .duration_ms_bucket.len()-1
+                       ],
+                   2
+        );
+
         assert_eq!(metrics_service.queued_counters.borrow()[index as usize].count, 0);
         assert_eq!(metrics_service.queued_counters.borrow()[index as usize].duration_ms_sum, 0);
-        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].count, 1 + 1);
-        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_sum, duration1 + duration2);
+        assert_eq!(metrics_service.queued_counters.borrow()[index as usize]
+                       .duration_ms_bucket[
+                       metrics_service.queued_counters.borrow()[index as usize]
+                           .duration_ms_bucket.len()-1
+                       ],
+                   0
+        );
+
+        assert_eq!(metrics_service.callback_counters.borrow()[index as usize].count, 0);
+        assert_eq!(metrics_service.callback_counters.borrow()[index as usize].duration_ms_sum, 0);
+        assert_eq!(metrics_service.callback_counters.borrow()[index as usize]
+                       .duration_ms_bucket[
+                       metrics_service.callback_counters.borrow()[index as usize]
+                           .duration_ms_bucket.len()-1
+                       ],
+                   0
+        );
+    }
+
+    #[test]
+    fn test_cmd_callback_increments_relevant_callback_counters() {
+        let metrics_service = MetricsService::new();
+        let index = CommandMetric::IssuerCommandCreateSchema;
+        let duration1 = 5u128;
+        let duration2 = 2u128;
+
+        metrics_service.cmd_callback(index, duration1);
+
+        assert_eq!(metrics_service.callback_counters.borrow()[index as usize].count, 1);
+        assert_eq!(metrics_service.callback_counters.borrow()[index as usize].duration_ms_sum, duration1);
+        assert_eq!(metrics_service.callback_counters.borrow()[index as usize]
+                       .duration_ms_bucket[
+                       metrics_service.callback_counters.borrow()[index as usize]
+                           .duration_ms_bucket.len()-1
+                       ],
+                   1
+        );
+
+        metrics_service.cmd_callback(index, duration2);
+
+        assert_eq!(metrics_service.callback_counters.borrow()[index as usize].count, 1 + 1);
+        assert_eq!(metrics_service.callback_counters.borrow()[index as usize].duration_ms_sum,
+                   duration1 + duration2);
+        assert_eq!(metrics_service.callback_counters.borrow()[index as usize]
+                       .duration_ms_bucket[
+                       metrics_service.callback_counters.borrow()[index as usize]
+                           .duration_ms_bucket.len()-1
+                       ],
+                   2
+        );
+
+        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].count, 0);
+        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_sum, 0);
+        assert_eq!(metrics_service.executed_counters.borrow()[index as usize]
+                       .duration_ms_bucket[
+                       metrics_service.executed_counters.borrow()[index as usize]
+                           .duration_ms_bucket.len()-1
+                       ],
+                   0
+        );
+
+        assert_eq!(metrics_service.queued_counters.borrow()[index as usize].count, 0);
+        assert_eq!(metrics_service.queued_counters.borrow()[index as usize].duration_ms_sum, 0);
+        assert_eq!(metrics_service.queued_counters.borrow()[index as usize]
+                       .duration_ms_bucket[
+                       metrics_service.queued_counters.borrow()[index as usize]
+                           .duration_ms_bucket.len()-1
+                       ],
+                   0
+        );
     }
 
     #[test]
@@ -230,10 +327,10 @@ mod test {
             .unwrap();
 
         let expected_commands_count = [
-            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
-            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
-            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
-            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0),
+            generate_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
+            generate_json("metrics_command_collect_metrics", "queued", 0),
+            generate_json("cache_command_purge_cred_def_cache", "executed", 0),
+            generate_json("non_secrets_command_fetch_search_next_records", "queued", 0),
         ];
 
         assert!(commands_count.contains(&expected_commands_count[0]));
@@ -267,10 +364,10 @@ mod test {
             .unwrap();
 
         let expected_commands_duration_ms = [
-            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
-            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
-            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
-            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0),
+            generate_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
+            generate_json("metrics_command_collect_metrics", "queued", 0),
+            generate_json("cache_command_purge_cred_def_cache", "executed", 0),
+            generate_json("non_secrets_command_fetch_search_next_records", "queued", 0),
         ];
 
         assert!(commands_duration_ms.contains(&expected_commands_duration_ms[0]));
@@ -304,10 +401,10 @@ mod test {
             .unwrap();
 
         let expected_commands_duration_ms_bucket = [
-            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "executed".to_owned(), 0),
-            generate_json("metrics_command_collect_metrics".to_owned(), "queued".to_owned(), 0),
-            generate_json("cache_command_purge_cred_def_cache".to_owned(), "executed".to_owned(), 0),
-            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "queued".to_owned(), 0),
+            generate_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
+            generate_json("metrics_command_collect_metrics", "queued", 0),
+            generate_json("cache_command_purge_cred_def_cache", "executed", 0),
+            generate_json("non_secrets_command_fetch_search_next_records", "queued", 0),
         ];
 
         assert!(commands_duration_ms_bucket.contains(&expected_commands_duration_ms_bucket[0]));
@@ -340,10 +437,10 @@ mod test {
             .as_array()
             .unwrap();
         let expected_commands_callback = [
-            generate_json("payments_command_build_set_txn_fees_req_ack".to_owned(), "callback".to_owned(), 0),
-            generate_json("metrics_command_collect_metrics".to_owned(), "callback".to_owned(), 0),
-            generate_json("cache_command_purge_cred_def_cache".to_owned(), "callback".to_owned(), 0),
-            generate_json("non_secrets_command_fetch_search_next_records".to_owned(), "callback".to_owned(), 0),
+            generate_json("payments_command_build_set_txn_fees_req_ack", "callback", 0),
+            generate_json("metrics_command_collect_metrics", "callback", 0),
+            generate_json("cache_command_purge_cred_def_cache", "callback", 0),
+            generate_json("non_secrets_command_fetch_search_next_records", "callback", 0),
         ];
 
         assert!(commands_callback.contains(&expected_commands_callback[0]));
