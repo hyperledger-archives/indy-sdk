@@ -11,7 +11,7 @@ use futures::StreamExt;
 use crate::commands::blob_storage::BlobStorageCommandExecutor;
 use crate::commands::cache::CacheCommandExecutor;
 use crate::commands::crypto::CryptoCommandExecutor;
-use crate::commands::did::{DidCommand, DidCommandExecutor};
+use crate::commands::did::DidCommandExecutor;
 use crate::commands::ledger::LedgerCommandExecutor;
 use crate::commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
 use crate::commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
@@ -53,7 +53,6 @@ type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>) + 
 pub enum Command {
     Exit,
     Pool(PoolCommand),
-    Did(DidCommand),
     Wallet(WalletCommand),
     Pairwise(PairwiseCommand),
     NonSecrets(NonSecretsCommand),
@@ -263,10 +262,6 @@ impl CommandExecutor {
                                 Command::Pool(cmd) => {
                                     debug!("PoolCommand command received");
                                     pool_command_executor.execute(cmd).await;
-                                }
-                                Command::Did(cmd) => {
-                                    debug!("DidCommand command received");
-                                    did_command_executor.execute(cmd).await;
                                 }
                                 Command::Wallet(cmd) => {
                                     debug!("WalletCommand command received");
