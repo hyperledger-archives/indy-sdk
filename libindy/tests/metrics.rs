@@ -90,17 +90,10 @@ mod collect {
             .as_array()
             .unwrap();
 
-        let expected_commands_count = [
-            generate_command_json("pairwise_command_pairwise_exists", "executed", 0),
-            generate_command_json("pairwise_command_pairwise_exists", "queued", 0),
-            generate_command_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
-            generate_command_json("payments_command_build_set_txn_fees_req_ack", "queued", 0)
-        ];
-
-        assert!(commands_count.contains(&expected_commands_count[0]));
-        assert!(commands_count.contains(&expected_commands_count[1]));
-        assert!(commands_count.contains(&expected_commands_count[2]));
-        assert!(commands_count.contains(&expected_commands_count[3]));
+        assert!(commands_count.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "executed"} ,"value": 0})));
+        assert!(commands_count.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "queued"} ,"value": 0})));
+        assert!(commands_count.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "executed"} ,"value": 0})));
+        assert!(commands_count.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "queued"} ,"value": 0})));
     }
 
     #[test]
@@ -120,17 +113,10 @@ mod collect {
             .as_array()
             .unwrap();
 
-        let expected_commands_duration_ms = [
-            generate_command_json("pairwise_command_pairwise_exists", "executed", 0),
-            generate_command_json("pairwise_command_pairwise_exists", "queued", 0),
-            generate_command_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
-            generate_command_json("payments_command_build_set_txn_fees_req_ack", "queued", 0)
-        ];
-
-        assert!(commands_duration_ms.contains(&expected_commands_duration_ms[0]));
-        assert!(commands_duration_ms.contains(&expected_commands_duration_ms[1]));
-        assert!(commands_duration_ms.contains(&expected_commands_duration_ms[2]));
-        assert!(commands_duration_ms.contains(&expected_commands_duration_ms[3]));
+        assert!(commands_duration_ms.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "executed"} ,"value": 0})));
+        assert!(commands_duration_ms.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "queued"} ,"value": 0})));
+        assert!(commands_duration_ms.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "executed"} ,"value": 0})));
+        assert!(commands_duration_ms.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "queued"} ,"value": 0})));
     }
 
     #[test]
@@ -150,24 +136,13 @@ mod collect {
             .as_array()
             .unwrap();
 
-        let expected_commands_duration_ms_bucket = [
-            generate_command_json("pairwise_command_pairwise_exists", "executed", 0),
-            generate_command_json("pairwise_command_pairwise_exists", "queued", 0),
-            generate_command_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
-            generate_command_json("payments_command_build_set_txn_fees_req_ack", "queued", 0)
-        ];
-
-        assert!(commands_duration_ms_bucket.contains(&expected_commands_duration_ms_bucket[0]));
-        assert!(commands_duration_ms_bucket.contains(&expected_commands_duration_ms_bucket[1]));
-        assert!(commands_duration_ms_bucket.contains(&expected_commands_duration_ms_bucket[2]));
-        assert!(commands_duration_ms_bucket.contains(&expected_commands_duration_ms_bucket[3]));
-    }
-
-    fn generate_command_json(command: &str, stage: &str, value: usize) -> Value {
-        json!({"tags":{"command": command, "stage": stage} ,"value": value})
+        assert!(commands_duration_ms_bucket.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "executed"} ,"value": 0})));
+        assert!(commands_duration_ms_bucket.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "queued"} ,"value": 0})));
+        assert!(commands_duration_ms_bucket.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "executed"} ,"value": 0})));
+        assert!(commands_duration_ms_bucket.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "queued"} ,"value": 0})));
     }
 
     fn config(name: &str) -> String {
-        json!({"id": name}).to_string()
+        json!({ "id": name }).to_string()
     }
 }
