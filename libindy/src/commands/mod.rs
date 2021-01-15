@@ -13,7 +13,7 @@ use crate::commands::cache::CacheCommandExecutor;
 use crate::commands::crypto::CryptoCommandExecutor;
 use crate::commands::did::DidCommandExecutor;
 use crate::commands::ledger::LedgerCommandExecutor;
-use crate::commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
+use crate::commands::non_secrets::NonSecretsCommandExecutor;
 use crate::commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 //use crate::commands::payments::{PaymentsCommand, PaymentsCommandExecutor}; FIXME:
 use crate::commands::pool::{PoolCommand, PoolCommandExecutor};
@@ -55,7 +55,6 @@ pub enum Command {
     Pool(PoolCommand),
     Wallet(WalletCommand),
     Pairwise(PairwiseCommand),
-    NonSecrets(NonSecretsCommand),
     //Payments(PaymentsCommand),
     //Metrics(MetricsCommand),
 }
@@ -270,10 +269,6 @@ impl CommandExecutor {
                                 Command::Pairwise(cmd) => {
                                     debug!("PairwiseCommand command received");
                                     pairwise_command_executor.execute(cmd).await;
-                                }
-                                Command::NonSecrets(cmd) => {
-                                    debug!("NonSecretCommand command received");
-                                    non_secret_command_executor.execute(cmd).await;
                                 }
                                 // FIXME:
                                 // Command::Payments(cmd) => {
