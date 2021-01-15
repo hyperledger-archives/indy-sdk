@@ -42,7 +42,6 @@ impl CommandCounters {
         }
         self.duration_ms_bucket[self.duration_ms_bucket.len()-1] += 1;
     }
-
 }
 
 #[cfg(test)]
