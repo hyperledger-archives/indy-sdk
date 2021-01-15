@@ -96,7 +96,7 @@ jobs:
             fi;
 
             if [[ -z "$PUBLISH_VERSION" ]]; then
-              PUBLISH_VERSION="$REPO_VERSION_MOST_RECENT-citest-${{ github.run_number }}" 
+              PUBLISH_VERSION="$REPO_VERSION_MOST_RECENT-post-${{ github.run_number }}" 
             fi;
 
             echo "CI will publish artifacts at version: $PUBLISH_VERSION"
