@@ -26,7 +26,7 @@ pub struct Filter {
 }
 
 lazy_static! {
-    static ref INTERNAL_TAG_MATCHER: Regex = Regex::new("^attr::([^:]+)::(value|marker)$").unwrap();
+    static ref INTERNAL_TAG_MATCHER: Regex = Regex::new("^attr::([^:]+)::value$").unwrap();
 }
 
 pub struct Verifier {}
