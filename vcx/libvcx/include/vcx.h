@@ -266,6 +266,24 @@ vcx_error_t vcx_connection_update_state(vcx_command_handle_t command_handle,
                                      vcx_connection_handle_t connection_handle,
                                      void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
 
+/// Update the state of the connection based on the given message.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: was provided during creation. Used to identify connection object
+///
+/// message: message to process.
+///
+/// cb: Callback that provides most current state of the connection and error status of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_update_state_with_message(vcx_command_handle_t command_handle,
+                                                     vcx_connection_handle_t connection_handle,
+                                                     const char *message,
+                                                     void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
 /// Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
 ///
 /// Note that this function is useful in case `aries` communication method is used.
@@ -538,6 +556,24 @@ vcx_error_t vcx_credential_serialize(vcx_command_handle_t command_handle,
 vcx_error_t vcx_credential_update_state(vcx_command_handle_t command_handle,
                                      vcx_credential_handle_t credential_handle,
                                      void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+/// Update the state of the credential based on the given message.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// credential_handle: Credential handle that was provided during creation. Used to identify credential object
+///
+/// message: message to process for state changes
+///
+/// cb: Callback that provides most current state of the credential and error status of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_credential_update_state_with_message(vcx_command_handle_t command_handle,
+                                                     vcx_credential_handle_t credential_handle,
+                                                     const char *message,
+                                                     void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
 
 // Create a new CredentialDef object that can create credential definitions on the ledger
 //
@@ -1045,6 +1081,24 @@ vcx_error_t vcx_disclosed_proof_update_state(vcx_command_handle_t command_handle
                                           vcx_disclosed_proof_handle_t proof_handle,
                                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
 
+/// Checks for any state change from the given message and updates the state attribute
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Credential handle that was provided during creation. Used to identify disclosed proof object
+///
+/// message: message to process for state changes
+///
+/// cb: Callback that provides most current state of the disclosed proof and error status of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_disclosed_proof_update_state_with_message(vcx_command_handle_t command_handle,
+                                                          vcx_disclosed_proof_handle_t proof_handle,
+                                                          const char *message,
+                                                          void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
 const char *vcx_error_c_message(vcx_error_t error_code);
 
 // Retrieve information about a stored credential in user's wallet, including credential id and the credential itself.
@@ -1235,6 +1289,29 @@ vcx_error_t vcx_issuer_credential_serialize(vcx_command_handle_t command_handle,
 vcx_error_t vcx_issuer_credential_update_state(vcx_command_handle_t command_handle,
                                             vcx_issuer_credential_handle_t credential_handle,
                                             void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+/// Update the state of the credential based on the given message.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// credential_handle: Credential handle that was provided during creation. Used to identify credential object
+///
+/// message: message to process for state changes
+///
+/// cb: Callback that provides most current state of the credential and error status of request
+///     States:
+///         1 - Initialized
+///         2 - Offer Sent
+///         3 - Request Received
+///         4 - Issued
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_issuer_credential_update_state_with_message(vcx_command_handle_t command_handle,
+                                                            vcx_issuer_credential_handle_t credential_handle,
+                                                            const char *message,
+                                                            void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
 
 // Send Credential that was requested by user
 //
@@ -1504,6 +1581,30 @@ vcx_error_t vcx_get_proof_msg(vcx_command_handle_t command_handle,
 vcx_error_t vcx_proof_update_state(vcx_command_handle_t command_handle,
                                 vcx_proof_handle_t proof_handle,
                                 void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+
+/// Update the state of the proof based on the given message.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Proof handle that was provided during creation. Used to access proof object
+///
+/// message: message to process for state changes
+///
+/// cb: Callback that provides most current state of the proof and error status of request
+///     States:
+///         1 - Initialized
+///         2 - Request Sent
+///         3 - Proof Received
+///         4 - Accepted
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_proof_update_state_with_message(vcx_command_handle_t command_handle,
+                                                vcx_proof_handle_t proof_handle,
+                                                const char *message,
+                                                void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
 
 // Provision an agent in the agency, populate configuration and wallet for this agent.
 // NOTE: for asynchronous call use vcx_agent_provision_async
@@ -2096,10 +2197,10 @@ vcx_error_t vcx_wallet_validate_payment_address(int32_t command_handle,
 
 vcx_error_t vcx_set_default_logger( const char * pattern );
 vcx_error_t vcx_set_logger( const void* context,
-                            vcx_bool_t (*enabledFn)(const void*  context,
+                            vcx_bool_t (*enabledFn)(const void* context,
                                                       vcx_u32_t level,
                                                       const char* target),
-                            void (*logFn)(const void*  context,
+                            void (*logFn)(const void* context,
                                           vcx_u32_t level,
                                           const char* target,
                                           const char* message,
@@ -2107,18 +2208,36 @@ vcx_error_t vcx_set_logger( const void* context,
                                           const char* file,
                                           vcx_u32_t line),
                             void (*flushFn)(const void*  context));
-vcx_error_t vcx_get_logger(const void*  vcx_get_logger,
-                           vcx_bool_t (**enabledFn)(const void*  context,
+
+
+vcx_error_t vcx_set_logger_with_max_lvl( const void* context,
+										 vcx_bool_t (*enabledFn)(const void* context,
+										 						 vcx_u32_t level,
+										 						 const char* target),
+										 void (*logFn)(const void* context,
+										 			   vcx_u32_t level,
+										 			   const char* target,
+										 			   const char* message,
+										 			   const char* module_path,
+										 			   const char* file,
+										 			   vcx_u32_t line),
+										 void (*flushFn)(const void* context)
+										 vcx_u32_t max_lvl);
+
+vcx_error_t vcx_set_log_max_lvl( vcx_u32_t max_lvl);
+
+vcx_error_t vcx_get_logger(const void* vcx_get_logger,
+                           vcx_bool_t (**enabledFn)(const void* context,
                                                      vcx_u32_t level,
                                                      const char* target),
-                           void (**logFn)(const void*  context,
+                           void (**logFn)(const void* context,
                                           vcx_u32_t level,
                                           const char* target,
                                           const char* message,
                                           const char* module_path,
                                           const char* file,
                                           vcx_u32_t line),
-                           void (**flushFn)(const void*  context) );
+                           void (**flushFn)(const void* context) );
 
 /// Get details for last occurred error.
 ///

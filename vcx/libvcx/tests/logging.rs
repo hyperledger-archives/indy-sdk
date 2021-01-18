@@ -90,6 +90,53 @@ mod log_tests {
 
     }
 
+    mod max_lvl {
+        use super::*;
+
+        static mut COUNT: u32 = 0;
+        extern fn custom_log(_context: *const c_void,
+                             _level: u32,
+                             _target: *const c_char,
+                             message: *const c_char,
+                             _module_path: *const c_char,
+                             _file: *const c_char,
+                             _line: u32) {
+            let _message = CStringUtils::c_str_to_string(message).unwrap();
+            unsafe { COUNT = COUNT + 1 }
+        }
+
+        #[ignore]
+        #[test]
+        fn test_logger_max_lvl(){
+            vcx_set_logger_with_max_lvl(null(), None, Some(custom_log), None, 3);
+            unsafe {
+                COUNT = 0;
+            }
+            warn!("log");
+            unsafe {
+                assert_eq!(COUNT, 1);
+            }
+
+            trace!("log");
+            unsafe {
+                assert_eq!(COUNT, 1);
+            }
+
+            vcx_set_log_max_lvl(4);
+            unsafe {
+                COUNT = 0;
+            }
+            error!("log");
+            unsafe {
+                assert_eq!(COUNT, 1);
+            }
+            trace!("log");
+            unsafe {
+                assert_eq!(COUNT, 1);
+            }
+        }
+    }
+
 }
 
 

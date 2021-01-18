@@ -20,7 +20,7 @@ fi
 
 if [[ $RUSTC_VERSION =~ ^'rustc ' ]]; then
     rustup component add rls-preview rust-analysis rust-src
-    rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios x86_64-apple-ios i386-apple-ios
+    rustup target add aarch64-apple-ios x86_64-apple-ios
     cargo install cargo-lipo
     cargo install cargo-xcode
     

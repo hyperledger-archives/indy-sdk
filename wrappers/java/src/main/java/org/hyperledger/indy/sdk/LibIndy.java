@@ -31,6 +31,7 @@ public abstract class LibIndy {
 		public int indy_close_pool_ledger(int command_handle, int handle, Callback cb);
 		public int indy_delete_pool_ledger_config(int command_handle, String config_name, Callback cb);
 		public int indy_set_protocol_version(int command_handle, int protocol_version, Callback cb);
+		public int indy_list_pools(int command_handle, Callback cb);
 
 		// wallet.rs
 
@@ -200,6 +201,9 @@ public abstract class LibIndy {
 		int indy_get_request_info(int command_handle, String get_auth_rule_response_json, String requester_info_json, String fees_json, Callback cb);
 		int indy_sign_with_address(int command_handle, int wallet_handle, String address, byte[] message_raw, int message_len, Callback cb);
 		int indy_verify_with_address(int command_handle, String address, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
+
+		// metrics.rs
+		int indy_collect_metrics(int command_handle, Callback cb);
 
 		int indy_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
 		int indy_set_logger_with_max_lvl(Pointer context, Callback enabled, Callback log, Callback flush, int max_lvl);
