@@ -3954,17 +3954,17 @@ mod demos {
     }
 
     #[test]
-    fn anoncreds_proof_req_with_attr_value_restriction_when_requestd_attribute_name_contains_spaces_and_different_case() {
+    fn anoncreds_proof_req_with_attr_value_restrict_by_attribute_value() {
         Setup::empty();
 
         //1. Create Issuer wallet, gets wallet handle
-        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_fails_for_unmet_attr_value_restrictions").unwrap();
+        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_proof_req_with_attr_value_restrict_by_attribute_value").unwrap();
 
         //2. Create Prover wallet, gets wallet handle
-        let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_fails_for_unmet_attr_value_restrictions").unwrap();
+        let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_proof_req_with_attr_value_restrict_by_attribute_value").unwrap();
 
         //3. Issuer creates Schema and Credential Definition
-        let schema_attr = r#"["First Name", "Age"]"#;
+        let schema_attr = r#"["First Name", "Age", "Last Name", "Sex", "Serial Number"]"#;
         let (schema_id, schema_json, cred_def_id, cred_def_json) = anoncreds::multi_steps_issuer_preparation(issuer_wallet_handle,
                                                                                                              ISSUER_DID,
                                                                                                              GVT_SCHEMA_NAME,
@@ -3975,8 +3975,11 @@ mod demos {
 
         //5. Issuance 2 credentials for Prover
         let cred_values = json!({
-            "First Name": {"raw": "Alexander B", "encoded": "1139481716457488690172217916278103335"},
+            "First Name": {"raw": "Alexander", "encoded": "1139481716457488690172217916278103335"},
+            "Last Name": {"raw": "Brown", "encoded": "43252312987618532132148541932185371"},
             "Age": {"raw": "28", "encoded": "28"},
+            "Sex": {"raw": "male", "encoded": "3123124343252454252"},
+            "Serial Number": {"raw": "A184D632VSF", "encoded": "123426788715432763124345182351419"},
         }).to_string();
         anoncreds::multi_steps_create_credential(COMMON_MASTER_SECRET,
                                                  prover_wallet_handle,
@@ -3995,18 +3998,55 @@ mod demos {
                                "requested_attributes":{
                                     "attr1_referent":{
                                         "name":"First Name",
-                                        "restrictions": json!({ "attr::firstname::value": "Alexander B", "cred_def_id": cred_def_id })
-                                    }
+                                        "restrictions": json!({
+                                            // restrict by exact value of requested field (case insensitive)
+                                            "attr::firstname::value": "Alexander",
+                                            "cred_def_id": cred_def_id
+                                        })
+                                    },
+                                    "attr2_referent":{
+                                        "names":["Last Name", "Serial Number"],
+                                        "restrictions": json!({
+                                            // restrict by exact value of one of fields
+                                            "attr::Serial Number::value": "A184D632VSF",
+                                        })
+                                    },
+                                    "attr3_referent":{
+                                        "name":"Age",
+                                        "restrictions": json!({
+                                            // restrict by existance of different field
+                                            "attr::Serial Number::marker": "1",
+                                        })
+                                    },
+                                    "attr4_referent":{
+                                        "names": ["Sex", "Serial Number"],
+                                        "restrictions": json!({
+                                            // restrict by exact value of one of fields (case insensitive)
+                                            "attr::serialnumber::value": "A184D632VSF",
+                                            // restrict by existance of different field (case insensitive)
+                                            "attr::firstname::marker": "1",
+                                        })
+                                    },
                                },
                                "requested_predicates":{
                                }
                             }).to_string();
 
+        //7. Prover gets Credentials for Proof Request
+        let credentials_json = anoncreds::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
+        let credential_1 = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
+        let credential_2 = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr2_referent");
+        let credential_3 = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr3_referent");
+        let credential_4 = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr4_referent");
+
         //8. Prover creates Proof containing gvt2_credential
         let requested_credentials_json = json!({
             "self_attested_attributes": {},
             "requested_attributes": {
-                "attr1_referent": {"cred_id": CREDENTIAL1_ID, "revealed":true}
+                "attr1_referent": {"cred_id": credential_1.referent, "revealed":true},
+                "attr2_referent": {"cred_id": credential_2.referent, "revealed":true},
+                "attr3_referent": {"cred_id": credential_3.referent, "revealed":true},
+                "attr4_referent": {"cred_id": credential_4.referent, "revealed":true},
             },
             "requested_predicates": {}
         }).to_string();
@@ -4022,11 +4062,14 @@ mod demos {
                                                         &schemas_json,
                                                         &cred_defs_json,
                                                         &rev_states_json).unwrap();
-
+        println!("{:?}", proof_json);
         let proof: Proof = serde_json::from_str(&proof_json).unwrap();
 
         //9. Verifier verifies proof
-        assert_eq!("Alexander B", proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().raw);
+        assert_eq!("Alexander", proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().raw);
+        assert_eq!("Brown", proof.requested_proof.revealed_attr_groups.get("attr2_referent").unwrap().values.get("Last Name").unwrap().raw);
+        assert_eq!("28", proof.requested_proof.revealed_attrs.get("attr3_referent").unwrap().raw);
+        assert_eq!("male", proof.requested_proof.revealed_attr_groups.get("attr4_referent").unwrap().values.get("Sex").unwrap().raw);
 
         let rev_reg_defs_json = json!({}).to_string();
         let rev_regs_json = json!({}).to_string();

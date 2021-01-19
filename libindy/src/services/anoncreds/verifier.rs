@@ -26,7 +26,8 @@ pub struct Filter {
 }
 
 lazy_static! {
-    static ref INTERNAL_TAG_MATCHER: Regex = Regex::new("^attr::([^:]+)::value$").unwrap();
+    pub static ref VALUE_TAG_MATCHER: Regex = Regex::new("^attr::([^:]+)::value$").unwrap();
+    pub static ref MARKER_TAG_MATCHER: Regex = Regex::new("^attr::([^:]+)::marker$").unwrap();
 }
 
 pub struct Verifier {}
@@ -578,8 +579,14 @@ impl Verifier {
             tag_ @ "schema_version" => Verifier::_precess_filed(tag_, &filter.schema_version, tag_value),
             tag_ @ "cred_def_id" => Verifier::_precess_filed(tag_, &filter.cred_def_id, tag_value),
             tag_ @ "issuer_did" => Verifier::_precess_filed(tag_, &filter.issuer_did, tag_value),
-            x if Verifier::_is_attr_internal_tag(x, attr_value_map) => Verifier::_check_internal_tag_revealed_value(x, tag_value, attr_value_map),
-            x if Verifier::_is_attr_operator(x) => Ok(()),
+            x if Verifier::_is_attr_with_revealed_value(x, attr_value_map) => {
+                // attr::<tag>::value -> check revealed value
+                Verifier::_check_internal_tag_revealed_value(x, tag_value, attr_value_map)
+            },
+            x if Verifier::_is_attr_marker_operator(x) => {
+                // attr::<tag/other_tag>::marker -> ok
+                Ok(())
+            },
             _ => Err(err_msg(IndyErrorKind::InvalidStructure, "Unknown Filter Type"))
         }
     }
@@ -592,8 +599,20 @@ impl Verifier {
         }
     }
 
-    fn _is_attr_internal_tag(key: &str, attr_value_map: &HashMap<String, Option<&str>>) -> bool {
-        INTERNAL_TAG_MATCHER.captures(key).map( |caps|
+    pub fn attr_request_by_value(key: &str) -> Option<&str> {
+        VALUE_TAG_MATCHER.captures(key).and_then( |caps|
+            caps.get(1).map(|s| s.as_str())
+        )
+    }
+
+    pub fn attr_request_by_marker(key: &str) -> Option<&str> {
+        MARKER_TAG_MATCHER.captures(key).and_then( |caps|
+            caps.get(1).map(|s| s.as_str())
+        )
+    }
+
+    fn _is_attr_with_revealed_value(key: &str, attr_value_map: &HashMap<String, Option<&str>>) -> bool {
+        VALUE_TAG_MATCHER.captures(key).map( |caps|
             caps.get(1).map(|s|
                 attr_value_map.keys().any(|key| attr_common_view(key)  == attr_common_view(s.as_str()))
             ).unwrap_or(false)
@@ -601,8 +620,10 @@ impl Verifier {
     }
 
     fn _check_internal_tag_revealed_value(key: &str, tag_value: &str, attr_value_map: &HashMap<String, Option<&str>>) -> IndyResult<()> {
-        let attr_name = INTERNAL_TAG_MATCHER.captures(key)
-            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Attribute name became unparseable")))?
+        let captures = VALUE_TAG_MATCHER.captures(key)
+            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Attribute name became unparseable")))?;
+
+        let attr_name = captures
             .get(1)
             .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, format!("No name has been parsed")))?
             .as_str();
@@ -624,7 +645,13 @@ impl Verifier {
         Ok(())
     }
 
-    fn _is_attr_operator(key: &str) -> bool { key.starts_with("attr::") && key.ends_with("::marker") }
+    fn _is_attr_marker_operator(key: &str) -> bool {
+        MARKER_TAG_MATCHER.is_match(key)
+    }
+
+    fn _is_attr_value_operator(key: &str) -> bool {
+        VALUE_TAG_MATCHER.is_match(key)
+    }
 }
 
 #[cfg(test)]
