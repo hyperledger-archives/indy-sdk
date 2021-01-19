@@ -28,6 +28,7 @@ use crate::domain::anoncreds::schema::{SchemaV1, SchemaId};
 use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::helpers::*;
 use crate::utils::wql::Query;
+use crate::services::anoncreds::verifier::Verifier;
 
 const ATTRIBUTE_EXISTENCE_MARKER: &str = "1";
 
@@ -306,14 +307,22 @@ impl Prover {
             .for_each(|(attr, values)| {
                 if catpol.map(|cp| cp.is_taggable(attr.as_str())).unwrap_or(true) {
                     // abstain for attrs policy marks untaggable
-                    res.insert(format!("attr::{}::marker", attr_common_view(&attr)), ATTRIBUTE_EXISTENCE_MARKER.to_string());
-                    res.insert(format!("attr::{}::value", attr_common_view(&attr)), values.raw.clone());
+                    res.insert(Self::_build_attr_marker_tag(attr), ATTRIBUTE_EXISTENCE_MARKER.to_string());
+                    res.insert(Self::_build_attr_value_tag(attr), values.raw.clone());
                 }
             });
 
         trace!("build_credential_tags <<< res: {:?}", res);
 
         Ok(res)
+    }
+
+    fn _build_attr_marker_tag(attr: &str) -> String {
+        format!("attr::{}::marker", attr_common_view(&attr))
+    }
+
+    fn _build_attr_value_tag(attr: &str) -> String {
+        format!("attr::{}::value", attr_common_view(&attr))
     }
 
     pub fn attribute_satisfy_predicate(&self,
@@ -435,20 +444,20 @@ impl Prover {
         Ok(sub_proof_request)
     }
 
-    pub fn extend_proof_request_restrictions(&self,
-                                             version: &ProofRequestsVersion,
-                                             name: &Option<String>,
-                                             names: &Option<Vec<String>>,
-                                             referent: &str,
-                                             restrictions: &Option<Query>,
-                                             extra_query: &Option<&ProofRequestExtraQuery>) -> IndyResult<Query> {
+    pub fn process_proof_request_restrictions(&self,
+                                              version: &ProofRequestsVersion,
+                                              name: &Option<String>,
+                                              names: &Option<Vec<String>>,
+                                              referent: &str,
+                                              restrictions: &Option<Query>,
+                                              extra_query: &Option<&ProofRequestExtraQuery>) -> IndyResult<Query> {
         info!("name: {:?}, names: {:?}", name, names);
 
         let mut queries: Vec<Query> = Vec::new();
         
         let mut attr_queries: Vec<Query> = if let Some(names) = names.as_ref().or(name.as_ref().map(|s| vec![s.clone()]).as_ref()) {
             names.iter().map(|name| {
-                Query::Eq(format!("attr::{}::marker", &attr_common_view(name)), ATTRIBUTE_EXISTENCE_MARKER.to_string())
+                Query::Eq(Self::_build_attr_marker_tag(name), ATTRIBUTE_EXISTENCE_MARKER.to_string())
             }).collect()
         } else {
             return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, r#"Proof Request attribute restriction should contain "name" or "names" param"#));
@@ -457,10 +466,12 @@ impl Prover {
         if let Some(restrictions_) = restrictions.clone() {
             match version {
                 ProofRequestsVersion::V1 => {
-                    queries.push(self.double_restrictions(restrictions_)?)
+                    let insensitive_restrictions = Self::_make_restrictions_by_internal_tags_case_insensitive(restrictions_)?;
+                    queries.push(self.double_restrictions(insensitive_restrictions)?)
                 }
                 ProofRequestsVersion::V2 => {
-                    queries.push(restrictions_)
+                    let insensitive_restrictions = Self::_make_restrictions_by_internal_tags_case_insensitive(restrictions_)?;
+                    queries.push(insensitive_restrictions)
                 }
             };
         }
@@ -474,6 +485,58 @@ impl Prover {
         queries.append(&mut attr_queries);
 
         Ok(Query::And(queries))
+    }
+
+    fn _make_restrictions_by_internal_tags_case_insensitive(operator: Query) -> IndyResult<Query> {
+        Ok(match operator {
+            Query::Eq(tag_name, tag_value) => {
+                if let Some(tag_name) = Verifier::attr_request_by_value(&tag_name) {
+                    Query::Eq(Self::_build_attr_value_tag(tag_name), tag_value)
+                } else if let Some(tag_name) = Verifier::attr_request_by_marker(&tag_name) {
+                    Query::Eq(Self::_build_attr_marker_tag(tag_name), tag_value)
+                } else {
+                    Query::Eq(tag_name, tag_value)
+                }
+            }
+            Query::Neq(tag_name, tag_value) => {
+                if let Some(tag_name) = Verifier::attr_request_by_value(&tag_name) {
+                    Query::Neq(Self::_build_attr_value_tag(tag_name), tag_value)
+                } else if let Some(tag_name) = Verifier::attr_request_by_marker(&tag_name) {
+                    Query::Neq(Self::_build_attr_marker_tag(tag_name), tag_value)
+                } else {
+                    Query::Neq(tag_name, tag_value)
+                }
+            }
+            Query::In(tag_name, tag_values) => {
+                if let Some(tag_name) = Verifier::attr_request_by_value(&tag_name) {
+                    Query::In(Self::_build_attr_value_tag(tag_name), tag_values)
+                } else if let Some(tag_name) = Verifier::attr_request_by_marker(&tag_name) {
+                    Query::In(Self::_build_attr_marker_tag(tag_name), tag_values)
+                } else {
+                    Query::In(tag_name, tag_values)
+                }
+            }
+            Query::And(operators) => {
+                Query::And(
+                    operators
+                        .into_iter()
+                        .map(|op| Self::_make_restrictions_by_internal_tags_case_insensitive(op))
+                        .collect::<IndyResult<Vec<Query>>>()?
+                )
+            }
+            Query::Or(operators) => {
+                Query::Or(
+                    operators
+                        .into_iter()
+                        .map(|op| Self::_make_restrictions_by_internal_tags_case_insensitive(op))
+                        .collect::<IndyResult<Vec<Query>>>()?
+                )
+            }
+            Query::Not(operator) => {
+                Query::Not(::std::boxed::Box::new(Self::_make_restrictions_by_internal_tags_case_insensitive(*operator)?))
+            }
+            _ => return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "unsupported operator"))
+        })
     }
 
     fn double_restrictions(&self, operator: Query) -> IndyResult<Query> {
@@ -980,12 +1043,12 @@ mod tests {
         fn build_query_works() {
             let ps = Prover::new();
 
-            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             &Some(ATTR_NAME.to_string()),
-                                                             &None,
-                                                             ATTR_REFERENT,
-                                                             &None,
-                                                             &None).unwrap();
+            let query = ps.process_proof_request_restrictions(&ProofRequestsVersion::V2,
+                                                              &Some(ATTR_NAME.to_string()),
+                                                              &None,
+                                                              ATTR_REFERENT,
+                                                              &None,
+                                                              &None).unwrap();
 
             let expected_query = Query::And(vec![
                 Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string())
@@ -998,12 +1061,12 @@ mod tests {
         fn build_query_works_for_name() {
             let ps = Prover::new();
 
-            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             &None,
-                                                             &Some(vec![ATTR_NAME.to_string(), ATTR_NAME_2.to_string()]),
-                                                             ATTR_REFERENT,
-                                                             &None,
-                                                             &None).unwrap();
+            let query = ps.process_proof_request_restrictions(&ProofRequestsVersion::V2,
+                                                              &None,
+                                                              &Some(vec![ATTR_NAME.to_string(), ATTR_NAME_2.to_string()]),
+                                                              ATTR_REFERENT,
+                                                              &None,
+                                                              &None).unwrap();
 
             let expected_query = Query::And(vec![
                 Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
@@ -1022,12 +1085,12 @@ mod tests {
                 Query::Eq("cred_def_id".to_string(), CRED_DEF_ID.to_string()),
             ]);
 
-            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             &Some(ATTR_NAME.to_string()),
-                                                             &None,
-                                                             ATTR_REFERENT,
-                                                             &Some(restriction),
-                                                             &None).unwrap();
+            let query = ps.process_proof_request_restrictions(&ProofRequestsVersion::V2,
+                                                              &Some(ATTR_NAME.to_string()),
+                                                              &None,
+                                                              ATTR_REFERENT,
+                                                              &Some(restriction),
+                                                              &None).unwrap();
 
             let expected_query = Query::And(vec![
                 Query::And(vec![
@@ -1048,12 +1111,12 @@ mod tests {
                 ATTR_REFERENT.to_string() => Query::Eq("name".to_string(), "Alex".to_string())
             );
 
-            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             &Some(ATTR_NAME.to_string()),
-                                                             &None,
-                                                             ATTR_REFERENT,
-                                                             &None,
-                                                             &Some(&extra_query)).unwrap();
+            let query = ps.process_proof_request_restrictions(&ProofRequestsVersion::V2,
+                                                              &Some(ATTR_NAME.to_string()),
+                                                              &None,
+                                                              ATTR_REFERENT,
+                                                              &None,
+                                                              &Some(&extra_query)).unwrap();
 
             let expected_query = Query::And(vec![
                 Query::Eq("name".to_string(), "Alex".to_string()),
@@ -1076,12 +1139,12 @@ mod tests {
                 ATTR_REFERENT.to_string() => Query::Eq("name".to_string(), "Alex".to_string())
             );
 
-            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             &Some(ATTR_NAME.to_string()),
-                                                             &None,
-                                                             ATTR_REFERENT,
-                                                             &Some(restriction),
-                                                             &Some(&extra_query)).unwrap();
+            let query = ps.process_proof_request_restrictions(&ProofRequestsVersion::V2,
+                                                              &Some(ATTR_NAME.to_string()),
+                                                              &None,
+                                                              ATTR_REFERENT,
+                                                              &Some(restriction),
+                                                              &Some(&extra_query)).unwrap();
 
             let expected_query = Query::And(vec![
                 Query::And(vec![
@@ -1103,12 +1166,12 @@ mod tests {
                 "other_attr_referent".to_string() => Query::Eq("name".to_string(), "Alex".to_string())
             );
 
-            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             &Some(ATTR_NAME.to_string()),
-                                                             &None,
-                                                             ATTR_REFERENT,
-                                                             &None,
-                                                             &Some(&extra_query)).unwrap();
+            let query = ps.process_proof_request_restrictions(&ProofRequestsVersion::V2,
+                                                              &Some(ATTR_NAME.to_string()),
+                                                              &None,
+                                                              ATTR_REFERENT,
+                                                              &None,
+                                                              &Some(&extra_query)).unwrap();
 
             let expected_query = Query::And(vec![
                 Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
@@ -1134,12 +1197,12 @@ mod tests {
                     ])
             );
 
-            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             &Some(ATTR_NAME.to_string()),
-                                                             &None,
-                                                             ATTR_REFERENT,
-                                                             &Some(restriction),
-                                                             &Some(&extra_query)).unwrap();
+            let query = ps.process_proof_request_restrictions(&ProofRequestsVersion::V2,
+                                                              &Some(ATTR_NAME.to_string()),
+                                                              &None,
+                                                              ATTR_REFERENT,
+                                                              &Some(restriction),
+                                                              &Some(&extra_query)).unwrap();
 
             let expected_query = Query::And(vec![
                 Query::Or(vec![
@@ -1149,6 +1212,39 @@ mod tests {
                 Query::Or(vec![
                     Query::Eq("name".to_string(), "Alex".to_string()),
                     Query::Eq("name".to_string(), "Alexander".to_string()),
+                ]),
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
+            ]);
+
+            assert_eq!(expected_query, query);
+        }
+
+        #[test]
+        fn build_query_works_for_restriction_by_internal_tags() {
+            let ps = Prover::new();
+
+            let restriction = Query::And(vec![
+                Query::Eq("schema_id".to_string(), SCHEMA_ID.to_string()),
+                Query::Eq("attr::firstname::value".to_string(), "firstname_value".to_string()),
+                Query::Eq("attr::Last Name::value".to_string(), "lastname_value".to_string()),
+                Query::Eq("attr::File Name::marker".to_string(), "1".to_string()),
+                Query::Eq("attr::textresult::marker".to_string(), "1".to_string()),
+            ]);
+
+            let query = ps.process_proof_request_restrictions(&ProofRequestsVersion::V2,
+                                                              &Some(ATTR_NAME.to_string()),
+                                                              &None,
+                                                              ATTR_REFERENT,
+                                                              &Some(restriction),
+                                                              &None).unwrap();
+
+            let expected_query = Query::And(vec![
+                Query::And(vec![
+                    Query::Eq("schema_id".to_string(), SCHEMA_ID.to_string()),
+                    Query::Eq("attr::firstname::value".to_string(), "firstname_value".to_string()),
+                    Query::Eq("attr::lastname::value".to_string(), "lastname_value".to_string()),
+                    Query::Eq("attr::filename::marker".to_string(), "1".to_string()),
+                    Query::Eq("attr::textresult::marker".to_string(), "1".to_string()),
                 ]),
                 Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
             ]);
