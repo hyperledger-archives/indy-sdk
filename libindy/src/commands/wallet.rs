@@ -14,75 +14,13 @@ use rust_base58::ToBase58;
 
 use crate::services::crypto::CryptoService;
 
-pub enum WalletCommand {
-    RegisterWalletType(
-        String,                      // type_
-        WalletCreate,                // create
-        WalletOpen,                  // open
-        WalletClose,                 // close
-        WalletDelete,                // delete
-        WalletAddRecord,             // add record
-        WalletUpdateRecordValue,     // update record value
-        WalletUpdateRecordTags,      // update record value
-        WalletAddRecordTags,         // add record tags
-        WalletDeleteRecordTags,      // delete record tags
-        WalletDeleteRecord,          // delete record
-        WalletGetRecord,             // get record
-        WalletGetRecordId,           // get record id
-        WalletGetRecordType,         // get record id
-        WalletGetRecordValue,        // get record value
-        WalletGetRecordTags,         // get record tags
-        WalletFreeRecord,            // free record
-        WalletGetStorageMetadata,    // get storage metadata
-        WalletSetStorageMetadata,    // set storage metadata
-        WalletFreeStorageMetadata,   // free storage metadata
-        WalletSearchRecords,         // search records
-        WalletSearchAllRecords,      // search all records
-        WalletGetSearchTotalCount,   // get search total count
-        WalletFetchSearchNextRecord, // fetch search next record
-        WalletFreeSearch,            // free search
-        Box<dyn Fn(IndyResult<()>) + Send + Sync>,
-    ),
-    Create(
-        Config,      // config
-        Credentials, // credentials
-        Box<dyn Fn(IndyResult<()>) + Send + Sync>,
-    ),
-    Open(
-        Config,      // config
-        Credentials, // credentials
-        Box<dyn Fn(IndyResult<WalletHandle>) + Send + Sync>,
-    ),
-    Close(WalletHandle, Box<dyn Fn(IndyResult<()>) + Send + Sync>),
-    Delete(
-        Config,      // config
-        Credentials, // credentials
-        Box<dyn Fn(IndyResult<()>) + Send + Sync>,
-    ),
-    Export(
-        WalletHandle,
-        ExportConfig, // export config
-        Box<dyn Fn(IndyResult<()>) + Send + Sync>,
-    ),
-    Import(
-        Config,       // config
-        Credentials,  // credentials
-        ExportConfig, // import config
-        Box<dyn Fn(IndyResult<()>) + Send + Sync>,
-    ),
-    GenerateKey(
-        Option<KeyConfig>, // config
-        Box<dyn Fn(IndyResult<String>) + Send + Sync>,
-    ),
-}
-
-pub struct WalletCommandExecutor {
+pub(crate) struct WalletCommandExecutor {
     wallet_service: Arc<WalletService>,
     crypto_service: Arc<CryptoService>,
 }
 
 impl WalletCommandExecutor {
-    pub fn new(
+    pub(crate) fn new(
         wallet_service: Arc<WalletService>,
         crypto_service: Arc<CryptoService>,
     ) -> WalletCommandExecutor {
@@ -92,99 +30,9 @@ impl WalletCommandExecutor {
         }
     }
 
-    pub async fn execute(&self, command: WalletCommand) {
-        match command {
-            WalletCommand::RegisterWalletType(
-                type_,
-                create,
-                open,
-                close,
-                delete,
-                add_record,
-                update_record_value,
-                update_record_tags,
-                add_record_tags,
-                delete_record_tags,
-                delete_record,
-                get_record,
-                get_record_id,
-                get_record_type,
-                get_record_value,
-                get_record_tags,
-                free_record,
-                get_storage_metadata,
-                set_storage_metadata,
-                free_storage_metadata,
-                search_records,
-                search_all_records,
-                get_search_total_count,
-                fetch_search_next_record,
-                free_search,
-                cb,
-            ) => {
-                debug!(target: "wallet_command_executor", "RegisterWalletType command received");
-                cb(self._register_type(
-                    &type_,
-                    create,
-                    open,
-                    close,
-                    delete,
-                    add_record,
-                    update_record_value,
-                    update_record_tags,
-                    add_record_tags,
-                    delete_record_tags,
-                    delete_record,
-                    get_record,
-                    get_record_id,
-                    get_record_type,
-                    get_record_value,
-                    get_record_tags,
-                    free_record,
-                    get_storage_metadata,
-                    set_storage_metadata,
-                    free_storage_metadata,
-                    search_records,
-                    search_all_records,
-                    get_search_total_count,
-                    fetch_search_next_record,
-                    free_search,
-                ));
-            }
-            WalletCommand::Create(config, credentials, cb) => {
-                debug!(target: "wallet_command_executor", "Create command received");
-                cb(self._create(config, credentials).await)
-            }
-            WalletCommand::Open(config, credentials, cb) => {
-                debug!(target: "wallet_command_executor", "Open command received");
-                cb(self._open(config, credentials).await);
-            }
-            WalletCommand::Close(handle, cb) => {
-                debug!(target: "wallet_command_executor", "Close command received");
-                cb(self._close(handle).await);
-            }
-            WalletCommand::Delete(config, credentials, cb) => {
-                debug!(target: "wallet_command_executor", "Delete command received");
-                cb(self._delete(config, credentials).await)
-            }
-            WalletCommand::Export(wallet_handle, export_config, cb) => {
-                debug!(target: "wallet_command_executor", "Export command received");
-                cb(self._export(wallet_handle, export_config).await)
-            }
-            WalletCommand::Import(config, credentials, import_config, cb) => {
-                debug!(target: "wallet_command_executor", "Import command received");
-                cb(self._import(config, credentials, import_config).await);
-            }
-            WalletCommand::GenerateKey(config, cb) => {
-                debug!(target: "wallet_command_executor", "GenerateKey command received");
-                cb(self._generate_key(config));
-            }
-        };
-    }
-
-    fn _register_type(
+    pub(crate) fn register_type(
         &self,
-        type_: &str,
+        type_: String,
         create: WalletCreate,
         open: WalletOpen,
         close: WalletClose,
@@ -210,10 +58,10 @@ impl WalletCommandExecutor {
         fetch_search_next_record: WalletFetchSearchNextRecord,
         free_search: WalletFreeSearch,
     ) -> IndyResult<()> {
-        trace!("_register_type >>> type_: {:?}", type_);
+        trace!("register_type > type_: {:?}", type_);
 
         self.wallet_service.register_wallet_storage(
-            type_,
+            &type_,
             create,
             open,
             close,
@@ -240,13 +88,13 @@ impl WalletCommandExecutor {
             free_search,
         )?;
 
-        trace!("_register_type <<< res: ()");
+        trace!("register_type < res: ()");
         Ok(())
     }
 
-    async fn _create(&self, config: Config, credentials: Credentials) -> IndyResult<()> {
+    pub(crate) async fn create(&self, config: Config, credentials: Credentials) -> IndyResult<()> {
         trace!(
-            "_create >>> config: {:?}, credentials: {:?}",
+            "_create > config: {:?} credentials: {:?}",
             &config,
             secret!(&credentials)
         );
@@ -263,16 +111,17 @@ impl WalletCommandExecutor {
             .create_wallet(&config, &credentials, (&key_data, &key))
             .await;
 
-        trace!("_create <<< {:?}", res);
+        trace!("create < {:?}", res);
         res
     }
 
-    async fn _open(&self, config: Config, credentials: Credentials) -> IndyResult<WalletHandle> {
+    pub(crate) async fn open(&self, config: Config, credentials: Credentials) -> IndyResult<WalletHandle> {
         trace!(
-            "_open >>> config: {:?}, credentials: {:?}",
+            "open > config: {:?} credentials: {:?}",
             &config,
             secret!(&credentials)
         );
+        // TODO: try to refactor to avoid usage of continue methods
 
         let (wallet_handle, key_derivation_data, rekey_data) = self
             .wallet_service
@@ -292,30 +141,31 @@ impl WalletCommandExecutor {
             .open_wallet_continue(wallet_handle, (&key, rekey.as_ref()))
             .await;
 
-        trace!("_open <<< res: {:?}", res);
+        trace!("open < res: {:?}", res);
 
         res
     }
 
-    async fn _close(&self, wallet_handle: WalletHandle) -> IndyResult<()> {
-        trace!("_close >>> handle: {:?}", wallet_handle);
+    pub(crate) async fn close(&self, wallet_handle: WalletHandle) -> IndyResult<()> {
+        trace!("close > handle: {:?}", wallet_handle);
 
         self.wallet_service.close_wallet(wallet_handle).await?;
 
-        trace!("_close <<< res: ()");
+        trace!("close < res: ()");
         Ok(())
     }
 
-    async fn _delete(
+    pub(crate) async fn delete(
         &self,
         config: Config,
         credentials: Credentials,
     ) -> IndyResult<()> {
         trace!(
-            "_delete >>> config: {:?}, credentials: {:?}",
+            "delete > config: {:?} credentials: {:?}",
             &config,
             secret!(&credentials)
         );
+        // TODO: try to refactor to avoid usage of continue methods
 
         let (metadata, key_derivation_data) = self
             .wallet_service
@@ -329,17 +179,17 @@ impl WalletCommandExecutor {
             .delete_wallet_continue(&config, &credentials, &metadata, &key)
             .await;
 
-        trace!("_delete <<< {:?}", res);
+        trace!("delete < {:?}", res);
         res
     }
 
-    async fn _export(
+    pub(crate) async fn export(
         &self,
         wallet_handle: WalletHandle,
         export_config: ExportConfig,
     ) -> IndyResult<()> {
         trace!(
-            "_export >>> handle: {:?}, export_config: {:?}",
+            "export > handle: {:?} export_config: {:?}",
             wallet_handle,
             secret!(&export_config)
         );
@@ -356,22 +206,23 @@ impl WalletCommandExecutor {
             .export_wallet(wallet_handle, &export_config, 0, (&key_data, &key))
             .await;
 
-        trace!("_export <<< {:?}", res);
+        trace!("export < {:?}", res);
         res
     }
 
-    async fn _import(
+    pub(crate) async fn import(
         &self,
         config: Config,
         credentials: Credentials,
         import_config: ExportConfig,
     ) -> IndyResult<()> {
         trace!(
-            "_import >>> config: {:?}, credentials: {:?}, import_config: {:?}",
+            "import > config: {:?} credentials: {:?} import_config: {:?}",
             &config,
             secret!(&credentials),
             secret!(&import_config)
         );
+        // TODO: try to refactor to avoid usage of continue methods
 
         let (wallet_handle, key_data, import_key_data) = self
             .wallet_service
@@ -386,16 +237,16 @@ impl WalletCommandExecutor {
             .import_wallet_continue(wallet_handle, &config, &credentials, (import_key, key))
             .await;
 
-        trace!("_import <<< {:?}", res);
+        trace!("import < {:?}", res);
 
         res
     }
 
-    fn _generate_key(
+    pub(crate) fn generate_key(
         &self,
         config: Option<KeyConfig>,
     ) -> IndyResult<String> {
-        trace!("_generate_key >>>config: {:?}", secret!(&config));
+        trace!("generate_key > config: {:?}", secret!(&config));
 
         let seed = config
             .as_ref()
@@ -411,7 +262,7 @@ impl WalletCommandExecutor {
 
         let res = key[..].to_base58();
 
-        trace!("_generate_key <<< res: {:?}", res);
+        trace!("generate_key < res: {:?}", res);
         Ok(res)
     }
 
