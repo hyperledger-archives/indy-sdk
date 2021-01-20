@@ -6,30 +6,6 @@ use indy_api_types::errors::prelude::*;
 use crate::services::pool::PoolService;
 use indy_api_types::PoolHandle;
 
-pub enum PoolCommand {
-    Create(
-        String, // name
-        Option<PoolConfig>, // config
-        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
-    Delete(
-        String, // name
-        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
-    Open(
-        String, // name
-        Option<PoolOpenConfig>, // config
-        Box<dyn Fn(IndyResult<PoolHandle>) + Send + Sync>),
-    List(Box<dyn Fn(IndyResult<String>) + Send + Sync>),
-    Close(
-        PoolHandle, // pool handle
-        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
-    Refresh(
-        PoolHandle, // pool handle
-        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
-    SetProtocolVersion(
-        usize, // protocol version
-        Box<dyn Fn(IndyResult<()>) + Send + Sync>),
-}
-
 pub struct PoolCommandExecutor {
     pool_service:Arc<PoolService>,
 }
@@ -41,102 +17,80 @@ impl PoolCommandExecutor {
         }
     }
 
-    pub async fn execute(&self, command: PoolCommand) {
-        match command {
-            PoolCommand::Create(name, config, cb) => {
-                debug!(target: "pool_command_executor", "Create command received");
-                cb(self.create(&name, config));
-            }
-            PoolCommand::Delete(name, cb) => {
-                debug!(target: "pool_command_executor", "Delete command received");
-                cb(self.delete(&name).await);
-            }
-            PoolCommand::Open(name, config, cb) => {
-                debug!(target: "pool_command_executor", "Open command received");
-                self.open(name, config, cb).await;
-            }
-            PoolCommand::List(cb) => {
-                debug!(target: "pool_command_executor", "List command received");
-                cb(self.list());
-            }
-            PoolCommand::Close(handle, cb) => {
-                debug!(target: "pool_command_executor", "Close command received");
-                self.close(handle, cb).await;
-            }
-            PoolCommand::Refresh(handle, cb) => {
-                debug!(target: "pool_command_executor", "Refresh command received");
-                self.refresh(handle, cb).await;
-            }
-            PoolCommand::SetProtocolVersion(protocol_version, cb) => {
-                debug!(target: "pool_command_executor", "SetProtocolVersion command received");
-                cb(self.set_protocol_version(protocol_version));
-            }
-        };
-    }
+    pub(crate) fn create(&self, name: String, config: Option<PoolConfig>) -> IndyResult<()> {
+        trace!("create > name {:?} config {:?}", name, config);
 
-    fn create(&self, name: &str, config: Option<PoolConfig>) -> IndyResult<()> {
-        debug!("create >>> name: {:?}, config: {:?}", name, config);
+        self.pool_service.create(&name, config)?;
 
-        self.pool_service.create(name, config)?;
-
-        debug!("create << res: ()");
+        trace!("create < res ()");
 
         Ok(())
     }
 
-    async fn delete(&self, name: &str) -> IndyResult<()> {
-        debug!("delete >>> name: {:?}", name);
+    pub(crate) async fn delete(&self, name: String) -> IndyResult<()> {
+        trace!("delete > name {:?}", name);
 
-        self.pool_service.delete(name).await?;
+        self.pool_service.delete(&name).await?;
 
-        debug!("delete << res: ()");
+        trace!("delete < res ()");
 
         Ok(())
     }
 
-    async fn open(&self, name: String, config: Option<PoolOpenConfig>, cb: Box<dyn Fn(IndyResult<PoolHandle>) + Send + Sync>) {
-        debug!("open >>> name: {:?}, config: {:?}", name, config);
+    pub(crate) async fn open(&self, name: String, config: Option<PoolOpenConfig>) -> IndyResult<PoolHandle> {
+        trace!("open > name {:?} config {:?}", name, config);
 
-        let result = self.pool_service.open(name, config).await;
-        cb(result);
+        let result = self
+            .pool_service
+            .open(name, config)
+            .await;
 
-        debug!("open <<<");
+        trace!("open < res {:?}", result);
+
+        result
     }
 
-    fn list(&self) -> IndyResult<String> {
-        debug!("list >>> ");
+    pub(crate) fn list(&self) -> IndyResult<String> {
+        trace!("list > ");
 
         let res = self.pool_service
             .list()
             .and_then(|pools| ::serde_json::to_string(&pools)
-                .to_indy(IndyErrorKind::InvalidState, "Can't serialize pools list"))?;
+            .to_indy(IndyErrorKind::InvalidState, "Can't serialize pools list"))?;
 
-        debug!("list << res: {:?}", res);
+        trace!("list < res: {:?}", res);
+
         Ok(res)
     }
 
-    async fn close(&self, pool_handle: PoolHandle, cb: Box<dyn Fn(IndyResult<()>) + Send + Sync>) {
-        debug!("close >>> handle: {:?}", pool_handle);
+    pub(crate) async fn close(&self, pool_handle: PoolHandle) -> IndyResult<()> {
+        trace!("close > handle {:?}", pool_handle);
 
-        let result = self.pool_service.close(pool_handle).await;
+        let result = self
+            .pool_service
+            .close(pool_handle)
+            .await?;
 
-        cb(result);
+        trace!("close < ()");
 
-        debug!("close <<<");
+        Ok(())
     }
 
-    async fn refresh(&self, handle: PoolHandle, cb: Box<dyn Fn(IndyResult<()>) + Send + Sync>) {
-        debug!("refresh >>> handle: {:?}", handle);
+    pub(crate) async fn refresh(&self, handle: PoolHandle) -> IndyResult<()> {
+        trace!("refresh > handle {:?}", handle);
 
-        let result = self.pool_service.refresh(handle).await;
+        let result = self
+            .pool_service
+            .refresh(handle)
+            .await?;
 
-        cb(result);
+        trace!("refresh < ()");
 
-        debug!("refresh <<<");
+        Ok(())
     }
 
-    fn set_protocol_version(&self, version: usize) -> IndyResult<()> {
-        debug!("set_protocol_version >>> version: {:?}", version);
+    pub(crate) fn set_protocol_version(&self, version: usize) -> IndyResult<()> {
+        trace!("set_protocol_version > version {:?}", version);
 
         if version != 1 && version != 2 {
             return Err(err_msg(IndyErrorKind::PoolIncompatibleProtocolVersion, format!("Unsupported Protocol version: {}", version)));
@@ -144,7 +98,7 @@ impl PoolCommandExecutor {
 
         ProtocolVersion::set(version);
 
-        debug!("set_protocol_version <<<");
+        trace!("set_protocol_version < ()");
 
         Ok(())
     }

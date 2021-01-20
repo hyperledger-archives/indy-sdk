@@ -1,7 +1,6 @@
 
 use indy_api_types::{ErrorCode, CommandHandle, PoolHandle, INVALID_POOL_HANDLE};
 use crate::commands::{Command, CommandExecutor};
-use crate::commands::pool::PoolCommand;
 use crate::domain::pool::{PoolConfig, PoolOpenConfig};
 use indy_api_types::errors::prelude::*;
 use indy_utils::ctypes;
@@ -27,33 +26,40 @@ use libc::c_char;
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_create_pool_ledger_config(command_handle: CommandHandle,
-                                             config_name: *const c_char,
-                                             config: *const c_char,
-                                             cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                  err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_create_pool_ledger_config: >>> config_name: {:?}, config: {:?}", config_name, config);
+pub extern fn indy_create_pool_ledger_config(
+    command_handle: CommandHandle,
+    config_name: *const c_char,
+    config: *const c_char,
+    cb: Option<extern fn(command_handle_: CommandHandle,
+                         err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_create_pool_ledger_config > config_name {:?}, config {:?}", config_name, config);
 
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
     check_useful_opt_json!(config, ErrorCode::CommonInvalidParam3, PoolConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_create_pool_ledger_config: entities >>> config_name: {:?}, config: {:?}", config_name, config);
+    trace!("indy_create_pool_ledger_config ? config_name {:?}, config: {:?}", config_name, config);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Pool(PoolCommand::Create(
-            config_name,
-            config,
-            Box::new(move |result| {
-                let err = prepare_result!(result);
-                trace!("indy_create_pool_ledger_config:");
-                cb(command_handle, err)
-            })
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.pool_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .create(config_name, config);
 
-    trace!("indy_create_pool_ledger_config: <<< res: {:?}", res);
+        let err = prepare_result!(res);
+        trace!("indy_create_pool_ledger_config ? err {:?}", err);
+
+        cb(command_handle, err)
+    });
+
+    let res = ErrorCode::Success;
+
+    trace!("indy_create_pool_ledger_config < {:?}", res);
 
     res
 }
@@ -88,34 +94,42 @@ pub extern fn indy_create_pool_ledger_config(command_handle: CommandHandle,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_open_pool_ledger(command_handle: CommandHandle,
-                                    config_name: *const c_char,
-                                    config: *const c_char,
-                                    cb: Option<extern fn(command_handle_: CommandHandle,
-                                                         err: ErrorCode,
-                                                         pool_handle: PoolHandle)>) -> ErrorCode {
-    trace!("indy_open_pool_ledger: >>> config_name: {:?}, config: {:?}", config_name, config);
+pub extern fn indy_open_pool_ledger(
+    command_handle: CommandHandle,
+    config_name: *const c_char,
+    config: *const c_char,
+    cb: Option<extern fn(command_handle_: CommandHandle,
+                         err: ErrorCode,
+                         pool_handle: PoolHandle)>) -> ErrorCode {
+    trace!("indy_open_pool_ledger > config_name {:?} config {:?}", config_name, config);
 
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
     check_useful_opt_validatable_json!(config, ErrorCode::CommonInvalidParam3, PoolOpenConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_open_pool_ledger: entities >>> config_name: {:?}, config: {:?}", config_name, config);
+    trace!("indy_open_pool_ledger ? config_name {:?} config {:?}", config_name, config);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Pool(PoolCommand::Open(
-            config_name,
-            config,
-            Box::new(move |result| {
-                let (err, pool_handle) = prepare_result_1!(result, INVALID_POOL_HANDLE);
-                trace!("indy_open_pool_ledger: pool_handle: {:?}", pool_handle);
-                cb(command_handle, err, pool_handle)
-            })
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.pool_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .open(config_name, config)
+            .await;
 
-    trace!("indy_open_pool_ledger: <<< res: {:?}", res);
+        let (err, pool_handle) = prepare_result_1!(res, INVALID_POOL_HANDLE);
+        trace!("indy_open_pool_ledger ? err {:?} pool_handle {:?}", err, pool_handle);
+
+        cb(command_handle, err, pool_handle)
+    });
+
+    let res = ErrorCode::Success;
+
+    trace!("indy_open_pool_ledger < {:?}", res);
 
     res
 }
@@ -132,29 +146,38 @@ pub extern fn indy_open_pool_ledger(command_handle: CommandHandle,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_refresh_pool_ledger(command_handle: CommandHandle,
-                                       handle: PoolHandle,
-                                       cb: Option<extern fn(command_handle_: CommandHandle,
-                                                            err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_refresh_pool_ledger: >>> handle: {:?}", handle);
+pub extern fn indy_refresh_pool_ledger(
+    command_handle: CommandHandle,
+    handle: PoolHandle,
+    cb: Option<extern fn(command_handle_: CommandHandle,
+                         err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_refresh_pool_ledger > handle {:?}", handle);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_refresh_pool_ledger: entities >>> handle: {:?}", handle);
+    trace!("indy_refresh_pool_ledger ? handle {:?}", handle);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Pool(PoolCommand::Refresh(
-            handle,
-            Box::new(move |result| {
-                let err = prepare_result!(result);
-                trace!("indy_refresh_pool_ledger:");
-                cb(command_handle, err)
-            })
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.pool_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .refresh(handle)
+            .await;
 
-    trace!("indy_refresh_pool_ledger: <<< res: {:?}", res);
+        let err = prepare_result!(res);
+        trace!("indy_refresh_pool_ledger ? err {:?}", err);
+
+        cb(command_handle, err)
+    });
+
+    let res = ErrorCode::Success;
+
+    trace!("indy_refresh_pool_ledger < {:?}", res);
 
     res
 }
@@ -168,22 +191,38 @@ pub extern fn indy_refresh_pool_ledger(command_handle: CommandHandle,
 ///
 /// #Errors
 #[no_mangle]
-pub extern fn indy_list_pools(command_handle: CommandHandle,
-                              cb: Option<extern fn(command_handle_: CommandHandle,
-                                                   err: ErrorCode,
-                                                   pools: *const c_char)>) -> ErrorCode {
-    trace!("indy_list_pools: >>>");
+pub extern fn indy_list_pools(
+    command_handle: CommandHandle,
+    cb: Option<extern fn(command_handle_: CommandHandle,
+                         err: ErrorCode,
+                         pools: *const c_char)>) -> ErrorCode {
+    trace!("indy_list_pools >");
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
 
-    trace!("indy_list_pools: entities >>>");
+    trace!("indy_list_pools ?");
 
-    let result = CommandExecutor::instance()
-        .send(Command::Pool(PoolCommand::List(boxed_callback_string!("indy_list_pools", cb, command_handle))));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.pool_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .list();
 
-    trace!("indy_list_pools: <<< res: {:?}", res);
+        let (err, res) = prepare_result_1!(res, String::new());
+        trace!("indy_list_pools ? err {:?} res {:?}", err, res);
+
+        let list = ctypes::string_to_cstring(res);
+        cb(command_handle, err, list.as_ptr());
+    });
+
+    let res = ErrorCode::Success;
+
+    trace!("indy_list_pools < {:?}", res);
 
     res
 }
@@ -200,29 +239,38 @@ pub extern fn indy_list_pools(command_handle: CommandHandle,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_close_pool_ledger(command_handle: CommandHandle,
-                                     handle: PoolHandle,
-                                     cb: Option<extern fn(command_handle_: CommandHandle,
-                                                          err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_close_pool_ledger: >>> handle: {:?}", handle);
+pub extern fn indy_close_pool_ledger(
+    command_handle: CommandHandle,
+    handle: PoolHandle,
+    cb: Option<extern fn(command_handle_: CommandHandle,
+                         err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_close_pool_ledger > handle {:?}", handle);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_close_pool_ledger: entities >>> handle: {:?}", handle);
+    trace!("indy_close_pool_ledger ? handle {:?}", handle);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Pool(PoolCommand::Close(
-            handle,
-            Box::new(move |result| {
-                let err = prepare_result!(result);
-                trace!("indy_close_pool_ledger:");
-                cb(command_handle, err)
-            })
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.pool_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .close(handle)
+            .await;
 
-    trace!("indy_close_pool_ledger: <<< res: {:?}", res);
+        let err = prepare_result!(res);
+        trace!("indy_close_pool_ledger ? err {:?}", err);
+
+        cb(command_handle, err);
+    });
+
+    let res = ErrorCode::Success;
+
+    trace!("indy_close_pool_ledger < {:?}", res);
 
     res
 }
@@ -239,30 +287,39 @@ pub extern fn indy_close_pool_ledger(command_handle: CommandHandle,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_delete_pool_ledger_config(command_handle: CommandHandle,
-                                             config_name: *const c_char,
-                                             cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                  err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_delete_pool_ledger_config: >>> config_name: {:?}", config_name);
+pub extern fn indy_delete_pool_ledger_config(
+    command_handle: CommandHandle,
+    config_name: *const c_char,
+    cb: Option<extern fn(command_handle_: CommandHandle,
+                         err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_delete_pool_ledger_config > config_name {:?}", config_name);
 
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_delete_pool_ledger_config: entities >>> config_name: {:?}", config_name);
+    trace!("indy_delete_pool_ledger_config ? config_name {:?}", config_name);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Pool(PoolCommand::Delete(
-            config_name,
-            Box::new(move |result| {
-                let err = prepare_result!(result);
-                trace!("indy_delete_pool_ledger_config:");
-                cb(command_handle, err)
-            })
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.pool_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .delete(config_name)
+            .await;
 
-    trace!("indy_delete_pool_ledger_config: <<< res: {:?}", res);
+        let err = prepare_result!(res);
+        trace!("indy_delete_pool_ledger_config ? err {:?}", err);
+
+        cb(command_handle, err);
+    });
+
+    let res = ErrorCode::Success;
+
+    trace!("indy_delete_pool_ledger_config < {:?}", res);
 
     res
 }
@@ -285,30 +342,37 @@ pub extern fn indy_delete_pool_ledger_config(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_set_protocol_version(command_handle: CommandHandle,
-                                        protocol_version: usize,
-                                        cb: Option<extern fn(command_handle_: CommandHandle,
-                                                             err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_set_protocol_version: >>> protocol_version: {:?}", protocol_version);
+pub extern fn indy_set_protocol_version(
+    command_handle: CommandHandle,
+    protocol_version: usize,
+    cb: Option<extern fn(command_handle_: CommandHandle,
+                         err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_set_protocol_version > protocol_version {:?}", protocol_version);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_set_protocol_version: entities >>> protocol_version: {:?}", protocol_version);
+    trace!("indy_set_protocol_version ? protocol_version {:?}", protocol_version);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Pool(
-            PoolCommand::SetProtocolVersion(
-            protocol_version,
-            Box::new(move |result| {
-                let err = prepare_result!(result);
-                trace!("indy_set_protocol_version:");
-                cb(command_handle, err)
-            })
-        )));
+    let (executor, controller) = {
+        let locator = CommandExecutor::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.pool_command_executor.clone();
+        (executor, controller)
+    };
 
-    let res = prepare_result!(result);
+    executor.spawn_ok(async move {
+        let res = controller
+            .set_protocol_version(protocol_version);
 
-    trace!("indy_set_protocol_version: <<< res: {:?}", res);
+        let err = prepare_result!(res);
+        trace!("indy_set_protocol_version ? err {:?}", err);
+
+        cb(command_handle, err);
+    });
+
+    let res = ErrorCode::Success;
+
+    trace!("indy_set_protocol_version < {:?}", res);
 
     res
 }

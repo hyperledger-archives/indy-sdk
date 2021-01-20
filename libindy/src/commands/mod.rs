@@ -16,7 +16,7 @@ use crate::commands::ledger::LedgerCommandExecutor;
 use crate::commands::non_secrets::NonSecretsCommandExecutor;
 use crate::commands::pairwise::PairwiseCommandExecutor;
 //use crate::commands::payments::{PaymentsCommand, PaymentsCommandExecutor}; FIXME:
-use crate::commands::pool::{PoolCommand, PoolCommandExecutor};
+use crate::commands::pool::PoolCommandExecutor;
 use crate::commands::wallet::WalletCommandExecutor;
 // use crate::commands::metrics::{MetricsCommand, MetricsCommandExecutor}; FIXME:
 use crate::domain::IndyConfig;
@@ -52,7 +52,6 @@ type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>) + 
 
 pub enum Command {
     Exit,
-    Pool(PoolCommand),
     //Payments(PaymentsCommand),
     //Metrics(MetricsCommand),
 }
@@ -256,10 +255,6 @@ impl CommandExecutor {
                             //                                start_execution_ts - instrumented_cmd.enqueue_ts);
 
                             match instrumented_cmd.command {
-                                Command::Pool(cmd) => {
-                                    debug!("PoolCommand command received");
-                                    pool_command_executor.execute(cmd).await;
-                                }
                                 // FIXME:
                                 // Command::Payments(cmd) => {
                                 //     debug!("PaymentsCommand command received");
