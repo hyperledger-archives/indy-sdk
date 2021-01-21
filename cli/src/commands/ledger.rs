@@ -2270,6 +2270,8 @@ fn get_txn_title(role: &serde_json::Value) -> serde_json::Value {
         Some("120") => "AUTH_RULE",
         Some("121") => "GET_AUTH_RULE",
         Some("122") => "AUTH_RULES",
+        Some("123") => "FREEZE_LEDGERS",
+        Some("124") => "GET_FROZEN_LEDGERS",
         Some(val) => val,
         _ => "-"
     }.to_string())
