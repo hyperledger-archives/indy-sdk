@@ -18,17 +18,17 @@ pub const PROTECTED_HEADER_TYP: &str = "JWM/1.0";
 pub const PROTECTED_HEADER_ALG_AUTH: &str = "Authcrypt";
 pub const PROTECTED_HEADER_ALG_ANON: &str = "Anoncrypt";
 
-pub struct CryptoCommandExecutor {
+pub struct CryptoController {
     wallet_service: Arc<WalletService>,
     crypto_service: Arc<CryptoService>,
 }
 
-impl CryptoCommandExecutor {
+impl CryptoController {
     pub fn new(
         wallet_service:Arc<WalletService>,
         crypto_service:Arc<CryptoService>,
-    ) -> CryptoCommandExecutor {
-        CryptoCommandExecutor {
+    ) -> CryptoController {
+        CryptoController {
             wallet_service,
             crypto_service,
         }

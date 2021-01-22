@@ -5,7 +5,7 @@ use indy_api_types::{
 use indy_utils::ctypes;
 use libc::c_char;
 
-use crate::{commands::CommandExecutor, domain::crypto::did::DidValue};
+use crate::{commands::Locator, domain::crypto::did::DidValue};
 
 /// Check if pairwise is exists.
 ///
@@ -44,7 +44,7 @@ pub extern "C" fn indy_is_pairwise_exists(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.pairwise_command_executor.clone();
         (executor, controller)
@@ -116,7 +116,7 @@ pub extern "C" fn indy_create_pairwise(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.pairwise_command_executor.clone();
         (executor, controller)
@@ -165,7 +165,7 @@ pub extern "C" fn indy_list_pairwise(
     trace!("indy_list_pairwise ? wallet_handle {:?}", wallet_handle);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.pairwise_command_executor.clone();
         (executor, controller)
@@ -229,7 +229,7 @@ pub extern "C" fn indy_get_pairwise(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.pairwise_command_executor.clone();
         (executor, controller)
@@ -294,7 +294,7 @@ pub extern "C" fn indy_set_pairwise_metadata(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.pairwise_command_executor.clone();
         (executor, controller)

@@ -6,13 +6,13 @@ use indy_api_types::errors::prelude::*;
 use crate::services::pool::PoolService;
 use indy_api_types::PoolHandle;
 
-pub struct PoolCommandExecutor {
+pub struct PoolController {
     pool_service:Arc<PoolService>,
 }
 
-impl PoolCommandExecutor {
-    pub fn new(pool_service:Arc<PoolService>) -> PoolCommandExecutor {
-        PoolCommandExecutor {
+impl PoolController {
+    pub fn new(pool_service:Arc<PoolService>) -> PoolController {
+        PoolController {
             pool_service,
         }
     }

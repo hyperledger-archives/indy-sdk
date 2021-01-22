@@ -4,7 +4,7 @@ extern crate indy_sys;
 use indy::{IndyError, ErrorCode};
 use indy::payments;
 use crate::indy::future::Future;
-use self::indy_sys::payments as payments_sys;
+//use self::indy_sys::payments as payments_sys;
 
 use std::collections::VecDeque;
 use std::ffi::CString;

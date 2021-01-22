@@ -9,7 +9,7 @@ use libc::c_char;
 use serde_json;
 
 use crate::{
-    commands::CommandExecutor,
+    commands::Locator,
     domain::{
         crypto::{
             did::{DidMethod, DidValue, MyDidInfo, TheirDidInfo},
@@ -86,7 +86,7 @@ pub extern "C" fn indy_create_and_store_my_did(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.did_command_executor.clone();
         (executor, controller)
@@ -175,7 +175,7 @@ pub extern "C" fn indy_replace_keys_start(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.did_command_executor.clone();
         (executor, controller)
@@ -239,7 +239,7 @@ pub extern "C" fn indy_replace_keys_apply(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.did_command_executor.clone();
         (executor, controller)
@@ -308,7 +308,7 @@ pub extern "C" fn indy_store_their_did(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.did_command_executor.clone();
         (executor, controller)
@@ -387,7 +387,7 @@ pub extern "C" fn indy_key_for_did(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.did_command_executor.clone();
         (executor, controller)
@@ -461,7 +461,7 @@ pub extern "C" fn indy_key_for_local_did(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.did_command_executor.clone();
         (executor, controller)
@@ -537,7 +537,7 @@ pub extern "C" fn indy_set_endpoint_for_did(
     let endpoint = Endpoint::new(address, Some(transport_key));
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.did_command_executor.clone();
         (executor, controller)
@@ -612,7 +612,7 @@ pub extern "C" fn indy_get_endpoint_for_did(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.did_command_executor.clone();
         (executor, controller)
@@ -697,7 +697,7 @@ pub extern "C" fn indy_set_did_metadata(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.did_command_executor.clone();
         (executor, controller)
@@ -762,7 +762,7 @@ pub extern "C" fn indy_get_did_metadata(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.did_command_executor.clone();
         (executor, controller)
@@ -833,7 +833,7 @@ pub extern "C" fn indy_get_my_did_with_meta(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.did_command_executor.clone();
         (executor, controller)
@@ -895,7 +895,7 @@ pub extern "C" fn indy_list_my_dids_with_meta(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.did_command_executor.clone();
         (executor, controller)
@@ -960,7 +960,7 @@ pub extern "C" fn indy_abbreviate_verkey(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.did_command_executor.clone();
         (executor, controller)
@@ -1036,7 +1036,7 @@ pub extern "C" fn indy_qualify_did(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.did_command_executor.clone();
         (executor, controller)

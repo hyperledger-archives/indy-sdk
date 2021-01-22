@@ -22,6 +22,7 @@ use crate::utils::domain::anoncreds::credential_for_proof_request::CredentialsFo
 use crate::utils::domain::crypto::did::DidValue;
 
 use indy::WalletHandle;
+use crate::utils::logger::set_default_logger;
 
 pub static mut CREDENTIAL_DEF_JSON: &'static str = "";
 pub static mut CREDENTIAL_OFFER_JSON: &'static str = "";

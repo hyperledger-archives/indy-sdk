@@ -272,6 +272,7 @@ impl PoolService {
         let res = receiver.await?;
 
         trace!("send_action <<< {:?}", res);
+
         res
     }
 
@@ -597,10 +598,10 @@ pub mod tests {
 
             ps.open_pools.lock().await.insert(
                 pool_id,
-                ZMQPool::new(
+                Arc::new(ZMQPool::new(
                     Pool::new("", pool_id, PoolOpenConfig::default()),
                     send_cmd_sock,
-                ),
+                )),
             );
 
             let pool_mock = thread::spawn(move || {
@@ -608,7 +609,7 @@ pub mod tests {
                 assert_eq!(recv.len(), 3);
                 assert_eq!(COMMAND_EXIT, String::from_utf8(recv[0].clone()).unwrap());
                 assert_eq!(pool_id, LittleEndian::read_i32(recv[1].as_slice()));
-                PoolService::close_ack(pool_id, Ok(()));
+                block_on(PoolService::close_ack(pool_id, Ok(())));
             });
 
             block_on(ps.close(pool_id)).unwrap();
@@ -626,10 +627,10 @@ pub mod tests {
 
             ps.open_pools.lock().await.insert(
                 pool_id,
-                ZMQPool::new(
+                Arc::new(ZMQPool::new(
                     Pool::new("", pool_id, PoolOpenConfig::default()),
                     send_cmd_sock,
-                ),
+                )),
             );
 
             let pool_mock = thread::spawn(move || {
@@ -641,7 +642,7 @@ pub mod tests {
                 assert_eq!(recv.len(), 3);
                 assert_eq!(COMMAND_REFRESH, String::from_utf8(recv[0].clone()).unwrap());
                 let cmd_id = LittleEndian::read_i32(recv[1].as_slice());
-                PoolService::refresh_ack(cmd_id, Ok(()));
+                block_on(PoolService::refresh_ack(cmd_id, Ok(())));
             });
 
             ps.refresh(pool_id).await.unwrap();
@@ -678,7 +679,7 @@ pub mod tests {
             ps.open_pools
                 .lock()
                 .await
-                .insert(pool_id, ZMQPool::new(pool, send_cmd_sock));
+                .insert(pool_id, Arc::new(ZMQPool::new(pool, send_cmd_sock)));
 
             fs::create_dir_all(path.as_path()).unwrap();
             assert!(path.exists());
@@ -702,7 +703,7 @@ pub mod tests {
             ps.open_pools
                 .lock()
                 .await
-                .insert(pool_id, ZMQPool::new(pool, send_cmd_sock));
+                .insert(pool_id, Arc::new(ZMQPool::new(pool, send_cmd_sock)));
 
             let test_data = "str_instead_of_tx_json";
 
@@ -720,7 +721,7 @@ pub mod tests {
                 let cmd_id = LittleEndian::read_i32(
                     recv_cmd_sock.recv_bytes(zmq::DONTWAIT).unwrap().as_slice(),
                 );
-                PoolService::submit_ack(cmd_id, Ok("".to_owned()));
+                block_on(PoolService::submit_ack(cmd_id, Ok("".to_owned())));
             });
 
             ps.send_tx(pool_id, test_data).await.unwrap();
@@ -742,7 +743,7 @@ pub mod tests {
             ps.open_pools
                 .lock()
                 .await
-                .insert(pool_id, ZMQPool::new(pool, send_cmd_sock));
+                .insert(pool_id, Arc::new(ZMQPool::new(pool, send_cmd_sock)));
 
             let res = ps.send_tx(pool_id, "test_data").await;
             assert_eq!(IndyErrorKind::IOError, res.unwrap_err().kind());
@@ -770,7 +771,7 @@ pub mod tests {
             ps.open_pools
                 .lock()
                 .await
-                .insert(pool_id, ZMQPool::new(pool, send_cmd_sock));
+                .insert(pool_id, Arc::new(ZMQPool::new(pool, send_cmd_sock)));
 
             let test_data = "str_instead_of_tx_json";
 
@@ -786,13 +787,13 @@ pub mod tests {
                 let cmd_id = LittleEndian::read_i32(
                     recv_cmd_sock.recv_bytes(zmq::DONTWAIT).unwrap().as_slice(),
                 );
-                PoolService::submit_ack(cmd_id, Ok("".to_owned()));
+                block_on(PoolService::submit_ack(cmd_id, Ok("".to_owned())));
             });
 
             ps.send_action(pool_id, test_data, None, None)
                 .await
                 .unwrap();
-            pool_mock.join().unwrap();
+//            pool_mock.join().unwrap();
         }
 
         #[test]
@@ -886,7 +887,7 @@ pub mod tests {
             ps.open_pools
                 .lock()
                 .await
-                .insert(pool_id, ZMQPool::new(pool, send_cmd_sock));
+                .insert(pool_id, Arc::new(ZMQPool::new(pool, send_cmd_sock)));
 
             thread::sleep(time::Duration::from_secs(1));
             ps.close(pool_id).await.unwrap();

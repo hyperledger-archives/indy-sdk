@@ -8,16 +8,16 @@ use std::thread;
 use futures::channel::mpsc::{unbounded, UnboundedSender};
 use futures::StreamExt;
 
-use crate::commands::blob_storage::BlobStorageCommandExecutor;
-use crate::commands::cache::CacheCommandExecutor;
-use crate::commands::crypto::CryptoCommandExecutor;
-use crate::commands::did::DidCommandExecutor;
-use crate::commands::ledger::LedgerCommandExecutor;
-use crate::commands::non_secrets::NonSecretsCommandExecutor;
-use crate::commands::pairwise::PairwiseCommandExecutor;
+use crate::commands::blob_storage::BlobStorageController;
+use crate::commands::cache::CacheController;
+use crate::commands::crypto::CryptoController;
+use crate::commands::did::DidController;
+use crate::commands::ledger::LedgerController;
+use crate::commands::non_secrets::NonSecretsController;
+use crate::commands::pairwise::PairwiseController;
 //use crate::commands::payments::{PaymentsCommand, PaymentsCommandExecutor}; FIXME:
-use crate::commands::pool::PoolCommandExecutor;
-use crate::commands::wallet::WalletCommandExecutor;
+use crate::commands::pool::PoolController;
+use crate::commands::wallet::WalletController;
 // use crate::commands::metrics::{MetricsCommand, MetricsCommandExecutor}; FIXME:
 use crate::domain::IndyConfig;
 use crate::services::anoncreds::AnoncredsService;
@@ -32,7 +32,7 @@ use crate::services::pool::{set_freshness_threshold, PoolService};
 use indy_wallet::WalletService;
 
 use self::threadpool::ThreadPool;
-use anoncreds::{IssuerCommandExecutor, ProverCommandExecutor, VerifierCommandExecutor};
+use anoncreds::{IssuerController, ProverController, VerifierController};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub mod anoncreds;
@@ -101,38 +101,33 @@ fn get_cur_time() -> u128 {
     since_epoch.as_millis()
 }
 
-pub(crate) struct CommandExecutor {
-    pub(crate) issuer_command_cxecutor: Arc<IssuerCommandExecutor>,
-    pub(crate) prover_command_cxecutor: Arc<ProverCommandExecutor>,
-    pub(crate) verifier_command_cxecutor: Arc<VerifierCommandExecutor>,
-    pub(crate) crypto_command_executor: Arc<CryptoCommandExecutor>,
-    pub(crate) ledger_command_executor: Arc<LedgerCommandExecutor>,
-    pub(crate) pool_command_executor: Arc<PoolCommandExecutor>,
-    pub(crate) did_command_executor: Arc<DidCommandExecutor>,
-    pub(crate) wallet_command_executor: Arc<WalletCommandExecutor>,
-    pub(crate) pairwise_command_executor: Arc<PairwiseCommandExecutor>,
-    pub(crate) blob_storage_command_executor: Arc<BlobStorageCommandExecutor>,
-    pub(crate) non_secret_command_executor: Arc<NonSecretsCommandExecutor>,
-    pub(crate) cache_command_executor: Arc<CacheCommandExecutor>,
+pub(crate) struct Locator {
+    pub(crate) issuer_command_cxecutor: Arc<IssuerController>,
+    pub(crate) prover_command_cxecutor: Arc<ProverController>,
+    pub(crate) verifier_command_cxecutor: Arc<VerifierController>,
+    pub(crate) crypto_command_executor: Arc<CryptoController>,
+    pub(crate) ledger_command_executor: Arc<LedgerController>,
+    pub(crate) pool_command_executor: Arc<PoolController>,
+    pub(crate) did_command_executor: Arc<DidController>,
+    pub(crate) wallet_command_executor: Arc<WalletController>,
+    pub(crate) pairwise_command_executor: Arc<PairwiseController>,
+    pub(crate) blob_storage_command_executor: Arc<BlobStorageController>,
+    pub(crate) non_secret_command_executor: Arc<NonSecretsController>,
+    pub(crate) cache_command_executor: Arc<CacheController>,
     pub(crate) executor: futures::executor::ThreadPool,
-
-    worker: Option<thread::JoinHandle<()>>,
-    sender: UnboundedSender<InstrumentedCommand>,
 }
 
 // Global (lazy inited) instance of CommandExecutor
 lazy_static! {
-    static ref COMMAND_EXECUTOR: Mutex<CommandExecutor> = Mutex::new(CommandExecutor::new());
+    static ref LOCATOR: Arc<Locator> = Arc::new(Locator::new());
 }
 
-impl CommandExecutor {
-    pub fn instance<'mutex>() -> MutexGuard<'mutex, CommandExecutor> {
-        COMMAND_EXECUTOR.lock().unwrap()
+impl Locator {
+    pub fn instance() -> Arc<Locator> {
+        LOCATOR.clone()
     }
 
-    fn new() -> CommandExecutor {
-        let (sender, mut receiver) = unbounded();
-        let thread = thread::Builder::new().name("libindy CommandExecutor".to_owned());
+    fn new() -> Locator {
         let executor = futures::executor::ThreadPool::new().unwrap();
 
         let anoncreds_service = Arc::new(AnoncredsService::new());
@@ -144,7 +139,7 @@ impl CommandExecutor {
         let wallet_service = Arc::new(WalletService::new());
         //let metrics_service = Arc::new(MetricsService::new());
 
-        let issuer_command_cxecutor = Arc::new(IssuerCommandExecutor::new(
+        let issuer_command_cxecutor = Arc::new(IssuerController::new(
             anoncreds_service.clone(),
             pool_service.clone(),
             blob_storage_service.clone(),
@@ -152,7 +147,7 @@ impl CommandExecutor {
             crypto_service.clone(),
         ));
 
-        let prover_command_cxecutor = Arc::new(ProverCommandExecutor::new(
+        let prover_command_cxecutor = Arc::new(ProverController::new(
             anoncreds_service.clone(),
             wallet_service.clone(),
             crypto_service.clone(),
@@ -160,47 +155,47 @@ impl CommandExecutor {
         ));
 
         let verifier_command_cxecutor =
-            Arc::new(VerifierCommandExecutor::new(anoncreds_service.clone()));
+            Arc::new(VerifierController::new(anoncreds_service.clone()));
 
-        let crypto_command_executor = Arc::new(CryptoCommandExecutor::new(
+        let crypto_command_executor = Arc::new(CryptoController::new(
             wallet_service.clone(),
             crypto_service.clone(),
         ));
 
-        let ledger_command_executor = Arc::new(LedgerCommandExecutor::new(
+        let ledger_command_executor = Arc::new(LedgerController::new(
             pool_service.clone(),
             crypto_service.clone(),
             wallet_service.clone(),
             ledger_service.clone(),
         ));
 
-        let pool_command_executor = Arc::new(PoolCommandExecutor::new(pool_service.clone()));
+        let pool_command_executor = Arc::new(PoolController::new(pool_service.clone()));
 
-        let did_command_executor = Arc::new(DidCommandExecutor::new(
+        let did_command_executor = Arc::new(DidController::new(
             wallet_service.clone(),
             crypto_service.clone(),
             ledger_service.clone(),
             pool_service.clone(),
         ));
 
-        let wallet_command_executor = Arc::new(WalletCommandExecutor::new(
+        let wallet_command_executor = Arc::new(WalletController::new(
             wallet_service.clone(),
             crypto_service.clone(),
         ));
 
         let pairwise_command_executor =
-            Arc::new(PairwiseCommandExecutor::new(wallet_service.clone()));
+            Arc::new(PairwiseController::new(wallet_service.clone()));
 
-        let blob_storage_command_executor = Arc::new(BlobStorageCommandExecutor::new(
+        let blob_storage_command_executor = Arc::new(BlobStorageController::new(
             blob_storage_service.clone(),
         ));
 
         let non_secret_command_executor =
-            Arc::new(NonSecretsCommandExecutor::new(wallet_service.clone()));
+            Arc::new(NonSecretsController::new(wallet_service.clone()));
 
         // FIXME: let payments_command_executor = Arc::new(PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone()));
 
-        let cache_command_executor = Arc::new(CacheCommandExecutor::new(
+        let cache_command_executor = Arc::new(CacheController::new(
             crypto_service.clone(),
             ledger_service.clone(),
             pool_service.clone(),
@@ -216,7 +211,7 @@ impl CommandExecutor {
             error!("Custom panic hook: {:?}", bt);
         }));
 
-        CommandExecutor {
+        Locator {
             issuer_command_cxecutor: issuer_command_cxecutor.clone(),
             prover_command_cxecutor: prover_command_cxecutor.clone(),
             verifier_command_cxecutor: verifier_command_cxecutor.clone(),
@@ -230,106 +225,18 @@ impl CommandExecutor {
             non_secret_command_executor: non_secret_command_executor.clone(),
             cache_command_executor: cache_command_executor.clone(),
             executor: executor.clone(),
-            sender,
-            worker: Some(
-                thread
-                    .spawn(move || {
-                        info!(target: "command_executor", "Worker thread started");
-
-                        async fn _exec_cmd(
-                            instrumented_cmd: InstrumentedCommand,
-                            //metrics_service:Arc<MetricsService>, FIXME:
-                            ledger_command_executor: Arc<LedgerCommandExecutor>,
-                            pool_command_executor: Arc<PoolCommandExecutor>,
-                            did_command_executor: Arc<DidCommandExecutor>,
-                            wallet_command_executor: Arc<WalletCommandExecutor>,
-                            pairwise_command_executor: Arc<PairwiseCommandExecutor>,
-                            non_secret_command_executor: Arc<NonSecretsCommandExecutor>,
-                            //payments_command_executor:Arc<PaymentsCommandExecutor>,
-                            //metrics_command_executor:Arc<MetricsCommandExecutor>, FIXME:
-                        ) {
-                            // FIXME:
-                            // let cmd_index: CommandIndex = (&instrumented_cmd.command).into();
-                            // let start_execution_ts = get_cur_time();
-                            // metrics_service.cmd_left_queue(cmd_index,
-                            //                                start_execution_ts - instrumented_cmd.enqueue_ts);
-
-                            match instrumented_cmd.command {
-                                // FIXME:
-                                // Command::Payments(cmd) => {
-                                //     debug!("PaymentsCommand command received");
-                                //     payments_command_executor.execute(cmd).await;
-                                // }
-                                // Command::Metrics(cmd) => {
-                                //     debug!("MetricsCommand command received");
-                                //     metrics_command_executor.execute(cmd).await;
-                                // }
-                                Command::Exit => {
-                                    debug!("Exit command received");
-                                }
-                            }
-
-                            // FIXMLE
-                            // metrics_service.cmd_executed(cmd_index,
-                            //                              get_cur_time() - start_execution_ts);
-                        };
-
-                        loop {
-                            trace!("CommandExecutor main loop >>");
-                            let cmd = futures::executor::block_on(receiver.next());
-
-                            let cmd = if let Some(cmd) = cmd {
-                                cmd
-                            } else {
-                                warn!("No command to execute");
-                                continue;
-                            };
-
-                            if let Command::Exit = cmd.command {
-                                break;
-                            }
-
-                            executor.spawn_ok(_exec_cmd(
-                                cmd,
-                                /*metrics_service.clone(),*/
-                                ledger_command_executor.clone(),
-                                pool_command_executor.clone(),
-                                did_command_executor.clone(),
-                                wallet_command_executor.clone(),
-                                pairwise_command_executor.clone(),
-                                non_secret_command_executor.clone(),
-                                /*payments_command_executor.clone(),*/
-                                /*metrics_command_executor.clone()*/
-                            ));
-                            trace!("CommandExecutor main loop <<");
-                        }
-
-                        trace!("CommandExecutor main loop finished");
-                    })
-                    .unwrap(),
-            ),
         }
-    }
-
-    pub fn send(&mut self, cmd: Command) -> IndyResult<()> {
-        self.sender
-            .unbounded_send(InstrumentedCommand::new(cmd))
-            .map_err(|err| {
-                err_msg(
-                    IndyErrorKind::InvalidState,
-                    format!("Can't send msg to CommandExecutor: {}", err),
-                )
-            })
     }
 }
 
-impl Drop for CommandExecutor {
+impl Drop for Locator {
     fn drop(&mut self) {
+        //TODO: fix drop, we need to finish the executor (if it is needed)
         info!(target: "command_executor", "Drop started");
-        self.send(Command::Exit).unwrap();
-        self.sender.disconnect();
+//        self.send(Command::Exit).unwrap();
+//        self.sender.disconnect();
         // Option worker type and this kludge is workaround for rust
-        self.worker.take().unwrap().join().unwrap();
+//        self.worker.take().unwrap().join().unwrap();
         info!(target: "command_executor", "Drop finished");
     }
 }
@@ -340,14 +247,14 @@ mod tests {
 
     #[test]
     fn command_executor_can_be_created() {
-        let _command_executor = CommandExecutor::new();
+        let _command_executor = Locator::new();
         assert!(true, "No crashes on CommandExecutor::new");
     }
 
     #[test]
     fn command_executor_can_be_dropped() {
         fn drop_test() {
-            let _command_executor = CommandExecutor::new();
+            let _command_executor = Locator::new();
         }
 
         drop_test();
@@ -356,7 +263,7 @@ mod tests {
 
     #[test]
     fn command_executor_can_get_instance() {
-        let ref _command_executor: CommandExecutor = *CommandExecutor::instance();
+        let ref _command_executor: Locator = *Locator::instance();
         // Deadlock if another one instance will be requested (try to uncomment the next line)
         // let ref other_ce: CommandExecutor = *CommandExecutor::instance();
     }

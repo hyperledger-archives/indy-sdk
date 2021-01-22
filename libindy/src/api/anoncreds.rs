@@ -1,4 +1,4 @@
-use crate::commands::CommandExecutor;
+use crate::commands::Locator;
 use crate::domain::anoncreds::credential::{Credential, CredentialValues};
 use crate::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
 use crate::domain::anoncreds::credential_definition::{
@@ -109,7 +109,7 @@ pub extern "C" fn indy_issuer_create_schema(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.issuer_command_cxecutor.clone();
         (executor, controller)
@@ -253,7 +253,7 @@ pub extern "C" fn indy_issuer_create_and_store_credential_def(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.issuer_command_cxecutor.clone();
         (executor, controller)
@@ -367,7 +367,7 @@ pub extern "C" fn indy_issuer_rotate_credential_def_start(
            wallet_handle, cred_def_id, config_json);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.issuer_command_cxecutor.clone();
         (executor, controller)
@@ -439,7 +439,7 @@ pub extern "C" fn indy_issuer_rotate_credential_def_apply(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.issuer_command_cxecutor.clone();
         (executor, controller)
@@ -601,7 +601,7 @@ pub extern "C" fn indy_issuer_create_and_store_revoc_reg(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.issuer_command_cxecutor.clone();
         (executor, controller)
@@ -709,7 +709,7 @@ pub extern "C" fn indy_issuer_create_credential_offer(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.issuer_command_cxecutor.clone();
         (executor, controller)
@@ -870,7 +870,7 @@ pub extern "C" fn indy_issuer_create_credential(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.issuer_command_cxecutor.clone();
         (executor, controller)
@@ -1000,7 +1000,7 @@ pub extern "C" fn indy_issuer_revoke_credential(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.issuer_command_cxecutor.clone();
         (executor, controller)
@@ -1173,7 +1173,7 @@ pub extern "C" fn indy_issuer_merge_revocation_registry_deltas(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.issuer_command_cxecutor.clone();
         (executor, controller)
@@ -1247,7 +1247,7 @@ pub extern "C" fn indy_prover_create_master_secret(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -1368,7 +1368,7 @@ pub extern "C" fn indy_prover_create_credential_req(
            wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -1490,7 +1490,7 @@ pub extern "C" fn indy_prover_set_credential_attr_tag_policy(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -1565,7 +1565,7 @@ pub extern "C" fn indy_prover_get_credential_attr_tag_policy(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -1704,7 +1704,7 @@ pub extern "C" fn indy_prover_store_credential(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -1790,7 +1790,7 @@ pub extern "C" fn indy_prover_get_credential(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -1843,7 +1843,7 @@ pub extern "C" fn indy_prover_delete_credential(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -1929,7 +1929,7 @@ pub extern "C" fn indy_prover_get_credentials(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -2005,7 +2005,7 @@ pub extern "C" fn indy_prover_search_credentials(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -2084,7 +2084,7 @@ pub extern "C" fn indy_prover_fetch_credentials(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -2137,7 +2137,7 @@ pub extern "C" fn indy_prover_close_credentials_search(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -2291,7 +2291,7 @@ pub extern "C" fn indy_prover_get_credentials_for_proof_req(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -2448,7 +2448,7 @@ pub extern "C" fn indy_prover_search_credentials_for_proof_req(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -2544,7 +2544,7 @@ pub extern "C" fn indy_prover_fetch_credentials_for_proof_req(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -2600,7 +2600,7 @@ pub extern "C" fn indy_prover_close_credentials_search_for_proof_req(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -2862,7 +2862,7 @@ pub extern "C" fn indy_prover_create_proof(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -3106,7 +3106,7 @@ pub extern "C" fn indy_verifier_verify_proof(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.verifier_command_cxecutor.clone();
         (executor, controller)
@@ -3223,7 +3223,7 @@ pub extern "C" fn indy_create_revocation_state(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -3351,7 +3351,7 @@ pub extern "C" fn indy_update_revocation_state(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.prover_command_cxecutor.clone();
         (executor, controller)
@@ -3405,7 +3405,7 @@ pub extern "C" fn indy_generate_nonce(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.verifier_command_cxecutor.clone();
         (executor, controller)
@@ -3463,7 +3463,7 @@ pub extern "C" fn indy_to_unqualified(
 
     trace!("indy_to_unqualified ? entity {:?}", entity);
 
-    let executor = CommandExecutor::instance().executor.clone();
+    let executor = Locator::instance().executor.clone();
 
     executor.spawn_ok(async move {
         use crate::services::anoncreds::helpers::to_unqualified;

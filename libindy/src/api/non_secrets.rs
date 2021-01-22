@@ -7,7 +7,7 @@ use indy_utils::ctypes;
 use libc::c_char;
 use serde_json;
 
-use crate::commands::CommandExecutor;
+use crate::commands::Locator;
 
 /// Create a new non-secret record in the wallet
 ///
@@ -65,7 +65,7 @@ pub extern "C" fn indy_add_wallet_record(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.non_secret_command_executor.clone();
         (executor, controller)
@@ -128,7 +128,7 @@ pub extern "C" fn indy_update_wallet_record_value(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.non_secret_command_executor.clone();
         (executor, controller)
@@ -200,7 +200,7 @@ pub extern "C" fn indy_update_wallet_record_tags(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.non_secret_command_executor.clone();
         (executor, controller)
@@ -274,7 +274,7 @@ pub extern "C" fn indy_add_wallet_record_tags(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.non_secret_command_executor.clone();
         (executor, controller)
@@ -324,7 +324,7 @@ pub extern "C" fn indy_delete_wallet_record_tags(
     trace!("indy_delete_wallet_record_tags ? wallet_handle {:?} type_ {:?} id {:?} tag_names_json {:?}", wallet_handle, type_, id, tag_names_json);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.non_secret_command_executor.clone();
         (executor, controller)
@@ -380,7 +380,7 @@ pub extern "C" fn indy_delete_wallet_record(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.non_secret_command_executor.clone();
         (executor, controller)
@@ -457,7 +457,7 @@ pub extern "C" fn indy_get_wallet_record(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.non_secret_command_executor.clone();
         (executor, controller)
@@ -543,7 +543,7 @@ pub extern "C" fn indy_open_wallet_search(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.non_secret_command_executor.clone();
         (executor, controller)
@@ -619,7 +619,7 @@ pub extern "C" fn indy_fetch_wallet_search_next_records(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.non_secret_command_executor.clone();
         (executor, controller)
@@ -670,7 +670,7 @@ pub extern "C" fn indy_close_wallet_search(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.non_secret_command_executor.clone();
         (executor, controller)

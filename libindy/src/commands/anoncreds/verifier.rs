@@ -16,13 +16,13 @@ use crate::{
     services::anoncreds::AnoncredsService,
 };
 
-pub(crate) struct VerifierCommandExecutor {
+pub(crate) struct VerifierController {
     anoncreds_service: Arc<AnoncredsService>,
 }
 
-impl VerifierCommandExecutor {
-    pub(crate) fn new(anoncreds_service: Arc<AnoncredsService>) -> VerifierCommandExecutor {
-        VerifierCommandExecutor { anoncreds_service }
+impl VerifierController {
+    pub(crate) fn new(anoncreds_service: Arc<AnoncredsService>) -> VerifierController {
+        VerifierController { anoncreds_service }
     }
 
     pub(crate) fn verify_proof(

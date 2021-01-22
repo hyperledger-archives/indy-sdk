@@ -70,6 +70,8 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore]
+        // plugged wallet not supported
         fn indy_create_wallet_works_for_plugged() {
             Setup::empty();
             InmemWallet::cleanup();
@@ -134,6 +136,8 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore]
+        // plugged wallet not supported
         fn indy_delete_wallet_works_for_plugged() {
             Setup::empty();
             InmemWallet::cleanup();
@@ -174,6 +178,8 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore]
+        // plugged wallet not supported
         fn indy_open_wallet_works_for_plugged() {
             Setup::empty();
             InmemWallet::cleanup();
@@ -207,6 +213,8 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore]
+        // plugged wallet not supported
         fn indy_close_wallet_works_for_plugged() {
             Setup::empty();
             InmemWallet::cleanup();
@@ -335,6 +343,8 @@ mod medium_cases {
         use super::*;
 
         #[test]
+        #[ignore]
+        // plugged wallet not supported
         fn indy_register_wallet_storage_does_not_work_twice_with_same_name() {
             Setup::empty();
             InmemWallet::cleanup();
@@ -347,6 +357,8 @@ mod medium_cases {
         }
 
         #[test]
+        #[ignore]
+        // plugged wallet not supported
         fn indy_register_wallet_storage_does_not_work_with_null_params() {
             Setup::empty();
             InmemWallet::cleanup();

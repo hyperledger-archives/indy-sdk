@@ -7,7 +7,7 @@ use libc::c_char;
 use serde_json;
 
 use crate::{
-    commands::CommandExecutor,
+    commands::Locator,
     domain::{
         anoncreds::{
             credential_definition::{CredentialDefinition, CredentialDefinitionId},
@@ -85,7 +85,7 @@ pub extern "C" fn indy_sign_and_submit_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -153,7 +153,7 @@ pub extern "C" fn indy_submit_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -238,7 +238,7 @@ pub extern "C" fn indy_submit_action(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -314,7 +314,7 @@ pub extern "C" fn indy_sign_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -390,7 +390,7 @@ pub extern "C" fn indy_multi_sign_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -452,7 +452,7 @@ pub extern "C" fn indy_build_get_ddo_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -537,7 +537,7 @@ pub extern "C" fn indy_build_nym_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -599,7 +599,7 @@ pub extern "C" fn indy_build_get_nym_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -666,7 +666,7 @@ pub extern "C" fn indy_parse_get_nym_response(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -746,7 +746,7 @@ pub extern "C" fn indy_build_attrib_request(
     }
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -819,7 +819,7 @@ pub extern "C" fn indy_build_get_attrib_request(
     }
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -892,7 +892,7 @@ pub extern "C" fn indy_build_schema_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -952,7 +952,7 @@ pub extern "C" fn indy_build_get_schema_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -1024,7 +1024,7 @@ pub extern "C" fn indy_parse_get_schema_response(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -1115,7 +1115,7 @@ pub extern "C" fn indy_build_cred_def_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -1176,7 +1176,7 @@ pub extern "C" fn indy_build_get_cred_def_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -1252,7 +1252,7 @@ pub extern "C" fn indy_parse_get_cred_def_response(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -1341,7 +1341,7 @@ pub extern "C" fn indy_build_node_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -1392,7 +1392,7 @@ pub extern "C" fn indy_build_get_validator_info_request(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -1467,7 +1467,7 @@ pub extern "C" fn indy_build_get_txn_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -1535,7 +1535,7 @@ pub extern "C" fn indy_build_pool_config_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -1616,7 +1616,7 @@ pub extern "C" fn indy_build_pool_restart_request(
     }
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -1753,7 +1753,7 @@ pub extern "C" fn indy_build_pool_upgrade_request(
     }
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -1854,7 +1854,7 @@ pub extern "C" fn indy_build_revoc_reg_def_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -1920,7 +1920,7 @@ pub extern "C" fn indy_build_get_revoc_reg_def_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -2000,7 +2000,7 @@ pub extern "C" fn indy_parse_get_revoc_reg_def_response(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -2111,7 +2111,7 @@ pub extern "C" fn indy_build_revoc_reg_entry_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -2194,7 +2194,7 @@ pub extern "C" fn indy_build_get_revoc_reg_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -2267,7 +2267,7 @@ pub extern "C" fn indy_parse_get_revoc_reg_response(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -2363,7 +2363,7 @@ pub extern "C" fn indy_build_get_revoc_reg_delta_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -2439,7 +2439,7 @@ pub extern "C" fn indy_parse_get_revoc_reg_delta_response(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -2598,7 +2598,7 @@ pub extern "C" fn indy_get_response_metadata(
     trace!("indy_get_response_metadata? response {:?}", response);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -2708,7 +2708,7 @@ pub extern "C" fn indy_build_auth_rule_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -2800,7 +2800,7 @@ pub extern "C" fn indy_build_auth_rules_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -2894,7 +2894,7 @@ pub extern "C" fn indy_build_get_auth_rule_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -3004,7 +3004,7 @@ pub extern "C" fn indy_build_txn_author_agreement_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -3073,7 +3073,7 @@ pub extern "C" fn indy_build_disable_all_txn_author_agreements_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -3159,7 +3159,7 @@ pub extern "C" fn indy_build_get_txn_author_agreement_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -3233,7 +3233,7 @@ pub extern "C" fn indy_build_acceptance_mechanisms_request(
            submitter_did, aml, version, aml_context);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -3320,7 +3320,7 @@ pub extern "C" fn indy_build_get_acceptance_mechanisms_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -3423,7 +3423,7 @@ pub extern "C" fn indy_append_txn_author_agreement_acceptance_to_request(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)
@@ -3510,7 +3510,7 @@ pub extern "C" fn indy_append_request_endorser(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.ledger_command_executor.clone();
         (executor, controller)

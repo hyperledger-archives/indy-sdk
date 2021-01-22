@@ -1360,26 +1360,26 @@ mod high_cases {
         }
     }
 
-    mod indy_register_transaction_parser_for_sp {
-        extern crate libc;
-
-        use super::*;
-
-        use self::libc::c_char;
-
-        #[test]
-        fn indy_register_transaction_parser_for_sp_works() {
-            Setup::empty();
-
-            extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> i32 {
-                unsafe { *parsed = msg; }
-                ErrorCode::Success as i32
-            }
-            extern fn free(_buf: *const c_char) -> i32 { ErrorCode::Success as i32 }
-
-            ledger::register_transaction_parser_for_sp("my_txn_type", parse, free).unwrap();
-        }
-    }
+//    mod indy_register_transaction_parser_for_sp {
+//        extern crate libc;
+//
+//        use super::*;
+//
+//        use self::libc::c_char;
+//
+//        #[test]
+//        fn indy_register_transaction_parser_for_sp_works() {
+//            Setup::empty();
+//
+//            extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> i32 {
+//                unsafe { *parsed = msg; }
+//                ErrorCode::Success as i32
+//            }
+//            extern fn free(_buf: *const c_char) -> i32 { ErrorCode::Success as i32 }
+//
+//            ledger::register_transaction_parser_for_sp("my_txn_type", parse, free).unwrap();
+//        }
+//    }
 
     mod get_response_metadata {
         use super::*;

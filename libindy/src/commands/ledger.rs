@@ -43,21 +43,21 @@ enum SignatureType {
     Multi,
 }
 
-pub(crate) struct LedgerCommandExecutor {
+pub(crate) struct LedgerController {
     pool_service: Arc<PoolService>,
     crypto_service: Arc<CryptoService>,
     wallet_service: Arc<WalletService>,
     ledger_service: Arc<LedgerService>,
 }
 
-impl LedgerCommandExecutor {
+impl LedgerController {
     pub(crate) fn new(
         pool_service: Arc<PoolService>,
         crypto_service: Arc<CryptoService>,
         wallet_service: Arc<WalletService>,
         ledger_service: Arc<LedgerService>,
-    ) -> LedgerCommandExecutor {
-        LedgerCommandExecutor {
+    ) -> LedgerController {
+        LedgerController {
             pool_service,
             crypto_service,
             wallet_service,

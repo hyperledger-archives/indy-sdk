@@ -21,17 +21,17 @@ pub enum MetricsCommand {
     CollectMetrics(Box<dyn Fn(IndyResult<String>) + Send + Sync>),
 }
 
-pub struct MetricsCommandExecutor {
+pub struct MetricsController {
     wallet_service:Arc<WalletService>,
     metrics_service:Arc<MetricsService>,
 }
 
-impl MetricsCommandExecutor {
+impl MetricsController {
     pub fn new(
         wallet_service:Arc<WalletService>,
         metrics_service:Arc<MetricsService>,
-    ) -> MetricsCommandExecutor {
-        MetricsCommandExecutor {
+    ) -> MetricsController {
+        MetricsController {
             wallet_service,
             metrics_service,
         }

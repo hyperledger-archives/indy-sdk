@@ -4,7 +4,7 @@ use libc::c_char;
 use serde_json;
 
 use crate::{
-    commands::CommandExecutor,
+    commands::Locator,
     domain::crypto::{key::KeyInfo, pack::JWE},
 };
 
@@ -53,7 +53,7 @@ pub extern "C" fn indy_create_key(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.crypto_command_executor.clone();
 
@@ -121,7 +121,7 @@ pub extern "C" fn indy_set_key_metadata(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.crypto_command_executor.clone();
         (executor, controller)
@@ -187,7 +187,7 @@ pub extern "C" fn indy_get_key_metadata(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.crypto_command_executor.clone();
         (executor, controller)
@@ -275,7 +275,7 @@ pub extern "C" fn indy_crypto_sign(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.crypto_command_executor.clone();
         (executor, controller)
@@ -364,7 +364,7 @@ pub extern "C" fn indy_crypto_verify(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.crypto_command_executor.clone();
         (executor, controller)
@@ -451,7 +451,7 @@ pub extern "C" fn indy_crypto_auth_crypt(
            wallet_handle, sender_vk, recipient_vk, msg_data);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.crypto_command_executor.clone();
         (executor, controller)
@@ -545,7 +545,7 @@ pub extern "C" fn indy_crypto_auth_decrypt(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.crypto_command_executor.clone();
         (executor, controller)
@@ -641,7 +641,7 @@ pub extern "C" fn indy_crypto_anon_crypt(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.crypto_command_executor.clone();
         (executor, controller)
@@ -730,7 +730,7 @@ pub extern "C" fn indy_crypto_anon_decrypt(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.crypto_command_executor.clone();
         (executor, controller)
@@ -888,7 +888,7 @@ pub extern "C" fn indy_pack_message(
     }
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.crypto_command_executor.clone();
         (executor, controller)
@@ -986,7 +986,7 @@ pub extern "C" fn indy_unpack_message(
     };
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.crypto_command_executor.clone();
         (executor, controller)
