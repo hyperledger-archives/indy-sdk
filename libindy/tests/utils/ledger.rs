@@ -5,7 +5,9 @@ use indy::{IndyError, ErrorCode};
 use indy::ledger;
 use indy_utils::crypto::hash::hash;
 use crate::indy::future::Future;
-use self::indy_sys::ledger::{CustomTransactionParser, CustomFree, indy_register_transaction_parser_for_sp};
+use self::indy_sys::ledger::{CustomTransactionParser, CustomFree,
+//                             indy_register_transaction_parser_for_sp
+};
 
 use crate::utils::{timeout, anoncreds, blob_storage, did, wallet, pool, callback};
 use crate::utils::constants::*;
@@ -194,22 +196,22 @@ pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) ->
     ledger::parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response).wait()
 }
 
-pub fn register_transaction_parser_for_sp(txn_type: &str, parse: CustomTransactionParser, free: CustomFree) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let txn_type = CString::new(txn_type).unwrap();
-
-    let err =
-        unsafe {
-            indy_register_transaction_parser_for_sp(command_handle,
-                                                    txn_type.as_ptr(),
-                                                    Some(parse),
-                                                    Some(free),
-                                                    cb)
-        };
-
-    super::results::result_to_empty(err, receiver)
-}
+//pub fn register_transaction_parser_for_sp(txn_type: &str, parse: CustomTransactionParser, free: CustomFree) -> Result<(), ErrorCode> {
+//    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
+//
+//    let txn_type = CString::new(txn_type).unwrap();
+//
+//    let err =
+//        unsafe {
+//            indy_register_transaction_parser_for_sp(command_handle,
+//                                                    txn_type.as_ptr(),
+//                                                    Some(parse),
+//                                                    Some(free),
+//                                                    cb)
+//        };
+//
+//    super::results::result_to_empty(err, receiver)
+//}
 
 pub fn get_response_metadata(response: &str) -> Result<String, IndyError> {
     ledger::get_response_metadata(response).wait()

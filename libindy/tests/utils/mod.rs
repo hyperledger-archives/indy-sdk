@@ -22,11 +22,11 @@ pub mod constants;
 pub mod blob_storage;
 pub mod non_secrets;
 pub mod results;
-pub mod payments;
+//pub mod payments;
 pub mod rand_utils;
 pub mod logger;
 pub mod cache;
-pub mod metrics;
+//pub mod metrics;
 
 #[macro_use]
 #[allow(unused_macros)]
@@ -206,18 +206,18 @@ impl Setup {
         Setup { name, wallet_config, wallet_handle, pool_handle: INVALID_POOL_HANDLE, did: String::new(), verkey }
     }
 
-    pub fn payment() -> Setup {
-        let name = setup();
-        payments::mock_method::init();
-        Setup { name, wallet_config: String::new(), wallet_handle: INVALID_WALLET_HANDLE, pool_handle: INVALID_POOL_HANDLE, did: String::new(), verkey: String::new() }
-    }
-
-    pub fn payment_wallet() -> Setup {
-        let name = setup();
-        let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
-        payments::mock_method::init();
-        Setup { name, wallet_config, wallet_handle, pool_handle: INVALID_POOL_HANDLE, did: String::new(), verkey: String::new() }
-    }
+//    pub fn payment() -> Setup {
+//        let name = setup();
+//        payments::mock_method::init();
+//        Setup { name, wallet_config: String::new(), wallet_handle: INVALID_WALLET_HANDLE, pool_handle: INVALID_POOL_HANDLE, did: String::new(), verkey: String::new() }
+//    }
+//
+//    pub fn payment_wallet() -> Setup {
+//        let name = setup();
+//        let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
+//        payments::mock_method::init();
+//        Setup { name, wallet_config, wallet_handle, pool_handle: INVALID_POOL_HANDLE, did: String::new(), verkey: String::new() }
+//    }
 }
 
 impl Drop for Setup {

@@ -2,7 +2,7 @@ use indy_api_types::{errors::prelude::*, CommandHandle, ErrorCode, IndyHandle};
 use indy_utils::ctypes;
 use libc::c_char;
 
-use crate::commands::CommandExecutor;
+use crate::commands::Locator;
 
 #[no_mangle]
 pub extern "C" fn indy_open_blob_storage_reader(
@@ -28,7 +28,7 @@ pub extern "C" fn indy_open_blob_storage_reader(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.blob_storage_command_executor.clone();
         (executor, controller)
@@ -76,7 +76,7 @@ pub extern "C" fn indy_open_blob_storage_writer(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.blob_storage_command_executor.clone();
         (executor, controller)

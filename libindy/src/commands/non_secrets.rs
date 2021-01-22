@@ -5,14 +5,14 @@ use indy_api_types::{domain::wallet::Tags, errors::prelude::*, SearchHandle, Wal
 use indy_utils::next_search_handle;
 use indy_wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
 
-pub(crate) struct NonSecretsCommandExecutor {
+pub(crate) struct NonSecretsController {
     wallet_service: Arc<WalletService>,
     searches: Mutex<HashMap<SearchHandle, Arc<Mutex<WalletSearch>>>>,
 }
 
-impl NonSecretsCommandExecutor {
-    pub(crate) fn new(wallet_service: Arc<WalletService>) -> NonSecretsCommandExecutor {
-        NonSecretsCommandExecutor {
+impl NonSecretsController {
+    pub(crate) fn new(wallet_service: Arc<WalletService>) -> NonSecretsController {
+        NonSecretsController {
             wallet_service,
             searches: Mutex::new(HashMap::new()),
         }

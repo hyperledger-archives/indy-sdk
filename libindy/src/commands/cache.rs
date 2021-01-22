@@ -18,7 +18,7 @@ use crate::{
 const CRED_DEF_CACHE: &str = "cred_def_cache";
 const SCHEMA_CACHE: &str = "schema_cache";
 
-pub(crate) struct CacheCommandExecutor {
+pub(crate) struct CacheController {
     crypto_service: Arc<CryptoService>,
     ledger_service: Arc<LedgerService>,
     pool_service: Arc<PoolService>,
@@ -30,7 +30,7 @@ macro_rules! check_cache {
         if let Some(cache) = $cache {
             let min_fresh = $options.min_fresh.unwrap_or(-1);
             if min_fresh >= 0 {
-                let ts = match CacheCommandExecutor::_get_seconds_since_epoch() {
+                let ts = match CacheController::_get_seconds_since_epoch() {
                     Ok(ts) => ts,
                     Err(err) => return Err(err),
                 };
@@ -52,14 +52,14 @@ macro_rules! check_cache {
     };
 }
 
-impl CacheCommandExecutor {
+impl CacheController {
     pub(crate) fn new(
         crypto_service: Arc<CryptoService>,
         ledger_service: Arc<LedgerService>,
         pool_service: Arc<PoolService>,
         wallet_service: Arc<WalletService>,
-    ) -> CacheCommandExecutor {
-        CacheCommandExecutor {
+    ) -> CacheController {
+        CacheController {
             crypto_service,
             ledger_service,
             pool_service,
@@ -352,7 +352,7 @@ impl CacheCommandExecutor {
 
     fn _build_query_json(max_age: i32) -> Result<String, IndyError> {
         if max_age >= 0 {
-            let ts = CacheCommandExecutor::_get_seconds_since_epoch()?;
+            let ts = CacheController::_get_seconds_since_epoch()?;
             Ok(json!({"timestamp": {"$lt": ts - max_age}}).to_string())
         } else {
             Ok("{}".to_string())

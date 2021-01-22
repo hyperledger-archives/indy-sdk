@@ -215,12 +215,12 @@ extern {
                                                    get_revoc_reg_delta_response: CString,
                                                    cb: Option<ResponseStringStringU64CB>) -> Error;
 
-    #[no_mangle]
-    pub fn indy_register_transaction_parser_for_sp(command_handle: CommandHandle,
-                                                   txn_type: CString,
-                                                   parser: Option<CustomTransactionParser>,
-                                                   free: Option<CustomFree>,
-                                                   cb: Option<ResponseEmptyCB>) -> Error;
+//    #[no_mangle]
+//    pub fn indy_register_transaction_parser_for_sp(command_handle: CommandHandle,
+//                                                   txn_type: CString,
+//                                                   parser: Option<CustomTransactionParser>,
+//                                                   free: Option<CustomFree>,
+//                                                   cb: Option<ResponseEmptyCB>) -> Error;
 
     #[no_mangle]
     pub fn indy_get_response_metadata(command_handle: CommandHandle,

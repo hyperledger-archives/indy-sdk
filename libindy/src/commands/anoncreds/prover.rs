@@ -72,7 +72,7 @@ impl SearchForProofRequest {
     }
 }
 
-pub(crate) struct ProverCommandExecutor {
+pub(crate) struct ProverController {
     anoncreds_service: Arc<AnoncredsService>,
     wallet_service: Arc<WalletService>,
     crypto_service: Arc<CryptoService>,
@@ -82,14 +82,14 @@ pub(crate) struct ProverCommandExecutor {
         Mutex<HashMap<SearchHandle, HashMap<String, Arc<Mutex<SearchForProofRequest>>>>>,
 }
 
-impl ProverCommandExecutor {
+impl ProverController {
     pub(crate) fn new(
         anoncreds_service: Arc<AnoncredsService>,
         wallet_service: Arc<WalletService>,
         crypto_service: Arc<CryptoService>,
         blob_storage_service: Arc<BlobStorageService>,
-    ) -> ProverCommandExecutor {
-        ProverCommandExecutor {
+    ) -> ProverController {
+        ProverController {
             anoncreds_service,
             wallet_service,
             crypto_service,

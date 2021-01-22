@@ -6,7 +6,7 @@ use indy_utils::ctypes;
 use libc::c_char;
 
 use crate::{
-    commands::CommandExecutor,
+    commands::Locator,
     domain::{
         anoncreds::{credential_definition::CredentialDefinitionId, schema::SchemaId},
         cache::{GetCacheOptions, PurgeOptions},
@@ -77,7 +77,7 @@ pub extern "C" fn indy_get_cred_def(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.cache_command_executor.clone();
         (executor, controller)
@@ -164,7 +164,7 @@ pub extern "C" fn indy_get_schema(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.cache_command_executor.clone();
         (executor, controller)
@@ -224,7 +224,7 @@ pub extern "C" fn indy_purge_cred_def_cache(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.cache_command_executor.clone();
         (executor, controller)
@@ -282,7 +282,7 @@ pub extern "C" fn indy_purge_schema_cache(
     );
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.cache_command_executor.clone();
         (executor, controller)

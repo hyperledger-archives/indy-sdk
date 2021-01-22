@@ -26,12 +26,12 @@ pub mod crypto;
 pub mod did;
 pub mod ledger;
 pub mod logger;
-pub mod payments;
+//pub mod payments;
 pub mod pairwise;
 pub mod pool;
 pub mod wallet;
 pub mod cache;
-pub mod metrics;
+//pub mod metrics;
 mod utils;
 
 use std::ffi::CString;

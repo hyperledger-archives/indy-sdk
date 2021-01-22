@@ -4,13 +4,13 @@ use indy_api_types::errors::prelude::*;
 
 use crate::services::blob_storage::BlobStorageService;
 
-pub(crate) struct BlobStorageCommandExecutor {
+pub(crate) struct BlobStorageController {
     blob_storage_service: Arc<BlobStorageService>,
 }
 
-impl BlobStorageCommandExecutor {
-    pub(crate) fn new(blob_storage_service: Arc<BlobStorageService>) -> BlobStorageCommandExecutor {
-        BlobStorageCommandExecutor {
+impl BlobStorageController {
+    pub(crate) fn new(blob_storage_service: Arc<BlobStorageService>) -> BlobStorageController {
+        BlobStorageController {
             blob_storage_service,
         }
     }

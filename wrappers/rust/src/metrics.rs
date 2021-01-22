@@ -2,7 +2,7 @@ use futures::Future;
 
 use {ErrorCode, IndyError};
 
-use ffi::metrics;
+//use ffi::metrics;
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
 

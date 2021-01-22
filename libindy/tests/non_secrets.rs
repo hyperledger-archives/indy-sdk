@@ -34,6 +34,8 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore]
+        // plugged wallet not supported
         fn indy_add_wallet_record_works_for_plugged_wallet() {
             let setup = Setup::plugged_wallet();
             add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None).unwrap();
@@ -65,6 +67,8 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore]
+        // plugged wallet not supported
         fn indy_update_record_value_works_for_plugged_wallet() {
             let setup = Setup::plugged_wallet();
 
@@ -253,6 +257,8 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore]
+        // plugged wallet not supported
         fn indy_get_wallet_record_works_for_plugged_wallet_default_options() {
             let setup = Setup::plugged_wallet();
 

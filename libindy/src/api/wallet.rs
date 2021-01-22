@@ -1,6 +1,6 @@
 
 use indy_api_types::{ErrorCode, CommandHandle, WalletHandle, INVALID_WALLET_HANDLE};
-use crate::commands::{Command, CommandExecutor};
+use crate::commands::{Command, Locator};
 use indy_api_types::domain::wallet::{Config, Credentials, ExportConfig, KeyConfig};
 use indy_api_types::wallet::*;
 use indy_api_types::errors::prelude::*;
@@ -103,7 +103,7 @@ pub extern fn indy_register_wallet_storage(
     trace!("indy_register_wallet_type ? type_ {:?}", type_);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.wallet_command_executor.clone();
         (executor, controller)
@@ -207,7 +207,7 @@ pub extern fn indy_create_wallet(
            config, secret!(&credentials));
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.wallet_command_executor.clone();
         (executor, controller)
@@ -297,7 +297,7 @@ pub extern fn indy_open_wallet(
            config, secret!(&credentials));
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.wallet_command_executor.clone();
         (executor, controller)
@@ -357,7 +357,7 @@ pub extern fn indy_export_wallet(
     trace!("indy_export_wallet ? wallet_handle {:?} export_config {:?}", wallet_handle, secret!(&export_config));
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.wallet_command_executor.clone();
         (executor, controller)
@@ -446,7 +446,7 @@ pub extern fn indy_import_wallet(
            config, secret!(&credentials), secret!(&import_config));
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.wallet_command_executor.clone();
         (executor, controller)
@@ -493,7 +493,7 @@ pub extern fn indy_close_wallet(
     trace!("indy_close_wallet ? wallet_handle {:?}", wallet_handle);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.wallet_command_executor.clone();
         (executor, controller)
@@ -571,7 +571,7 @@ pub extern fn indy_delete_wallet(
     trace!("indy_delete_wallet ? config {:?} credentials {:?}", config, secret!(&credentials));
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.wallet_command_executor.clone();
         (executor, controller)
@@ -624,7 +624,7 @@ pub extern fn indy_generate_wallet_key(command_handle: CommandHandle,
     trace!("indy_generate_wallet_key ? config: {:?}", secret!(config.as_ref()));
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.wallet_command_executor.clone();
         (executor, controller)

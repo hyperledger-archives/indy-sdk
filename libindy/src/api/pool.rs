@@ -1,6 +1,6 @@
 
 use indy_api_types::{ErrorCode, CommandHandle, PoolHandle, INVALID_POOL_HANDLE};
-use crate::commands::{Command, CommandExecutor};
+use crate::commands::{Command, Locator};
 use crate::domain::pool::{PoolConfig, PoolOpenConfig};
 use indy_api_types::errors::prelude::*;
 use indy_utils::ctypes;
@@ -41,7 +41,7 @@ pub extern fn indy_create_pool_ledger_config(
     trace!("indy_create_pool_ledger_config ? config_name {:?}, config: {:?}", config_name, config);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.pool_command_executor.clone();
         (executor, controller)
@@ -110,7 +110,7 @@ pub extern fn indy_open_pool_ledger(
     trace!("indy_open_pool_ledger ? config_name {:?} config {:?}", config_name, config);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.pool_command_executor.clone();
         (executor, controller)
@@ -158,7 +158,7 @@ pub extern fn indy_refresh_pool_ledger(
     trace!("indy_refresh_pool_ledger ? handle {:?}", handle);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.pool_command_executor.clone();
         (executor, controller)
@@ -203,7 +203,7 @@ pub extern fn indy_list_pools(
     trace!("indy_list_pools ?");
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.pool_command_executor.clone();
         (executor, controller)
@@ -251,7 +251,7 @@ pub extern fn indy_close_pool_ledger(
     trace!("indy_close_pool_ledger ? handle {:?}", handle);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.pool_command_executor.clone();
         (executor, controller)
@@ -300,7 +300,7 @@ pub extern fn indy_delete_pool_ledger_config(
     trace!("indy_delete_pool_ledger_config ? config_name {:?}", config_name);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.pool_command_executor.clone();
         (executor, controller)
@@ -354,7 +354,7 @@ pub extern fn indy_set_protocol_version(
     trace!("indy_set_protocol_version ? protocol_version {:?}", protocol_version);
 
     let (executor, controller) = {
-        let locator = CommandExecutor::instance();
+        let locator = Locator::instance();
         let executor = locator.executor.clone();
         let controller = locator.pool_command_executor.clone();
         (executor, controller)

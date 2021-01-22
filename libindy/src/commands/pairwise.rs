@@ -8,13 +8,13 @@ use crate::domain::{
     pairwise::{Pairwise, PairwiseInfo},
 };
 
-pub(crate) struct PairwiseCommandExecutor {
+pub(crate) struct PairwiseController {
     wallet_service: Arc<WalletService>,
 }
 
-impl PairwiseCommandExecutor {
-    pub(crate) fn new(wallet_service: Arc<WalletService>) -> PairwiseCommandExecutor {
-        PairwiseCommandExecutor { wallet_service }
+impl PairwiseController {
+    pub(crate) fn new(wallet_service: Arc<WalletService>) -> PairwiseController {
+        PairwiseController { wallet_service }
     }
 
     pub(crate) async fn pairwise_exists(

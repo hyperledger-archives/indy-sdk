@@ -14,17 +14,17 @@ use rust_base58::ToBase58;
 
 use crate::services::crypto::CryptoService;
 
-pub(crate) struct WalletCommandExecutor {
+pub(crate) struct WalletController {
     wallet_service: Arc<WalletService>,
     crypto_service: Arc<CryptoService>,
 }
 
-impl WalletCommandExecutor {
+impl WalletController {
     pub(crate) fn new(
         wallet_service: Arc<WalletService>,
         crypto_service: Arc<CryptoService>,
-    ) -> WalletCommandExecutor {
-        WalletCommandExecutor {
+    ) -> WalletController {
+        WalletController {
             wallet_service,
             crypto_service,
         }

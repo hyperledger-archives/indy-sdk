@@ -44,7 +44,7 @@ use crate::{
 
 use super::tails::{store_tails_from_generator, SDKTailsAccessor};
 
-pub(crate) struct IssuerCommandExecutor {
+pub(crate) struct IssuerController {
     pub anoncreds_service: Arc<AnoncredsService>,
     pub blob_storage_service: Arc<BlobStorageService>,
     pub pool_service: Arc<PoolService>,
@@ -52,15 +52,15 @@ pub(crate) struct IssuerCommandExecutor {
     pub crypto_service: Arc<CryptoService>,
 }
 
-impl IssuerCommandExecutor {
+impl IssuerController {
     pub fn new(
         anoncreds_service: Arc<AnoncredsService>,
         pool_service: Arc<PoolService>,
         blob_storage_service: Arc<BlobStorageService>,
         wallet_service: Arc<WalletService>,
         crypto_service: Arc<CryptoService>,
-    ) -> IssuerCommandExecutor {
-        IssuerCommandExecutor {
+    ) -> IssuerController {
+        IssuerController {
             anoncreds_service,
             pool_service,
             blob_storage_service,

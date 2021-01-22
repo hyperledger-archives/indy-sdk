@@ -20,21 +20,21 @@ use crate::{
     services::{crypto::CryptoService, ledger::LedgerService, pool::PoolService},
 };
 
-pub struct DidCommandExecutor {
+pub struct DidController {
     wallet_service: Arc<WalletService>,
     crypto_service: Arc<CryptoService>,
     ledger_service: Arc<LedgerService>,
     pool_service: Arc<PoolService>,
 }
 
-impl DidCommandExecutor {
+impl DidController {
     pub fn new(
         wallet_service: Arc<WalletService>,
         crypto_service: Arc<CryptoService>,
         ledger_service: Arc<LedgerService>,
         pool_service: Arc<PoolService>,
-    ) -> DidCommandExecutor {
-        DidCommandExecutor {
+    ) -> DidController {
+        DidController {
             wallet_service,
             crypto_service,
             ledger_service,
