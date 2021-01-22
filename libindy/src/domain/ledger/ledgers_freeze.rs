@@ -1,4 +1,4 @@
-use crate::domain::ledger::constants::{FREEZE_LEDGERS, GET_FROZEN_LEDGERS};
+use super::constants::{FREEZE_LEDGERS, GET_FROZEN_LEDGERS};
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct FreezeLedgersOperation {

@@ -201,6 +201,22 @@ mod high_cases {
         }
     }
 
+    mod frozen_ledgers {
+        use super::*;
+
+        #[test]
+        fn indy_build_freeze_ledgers_request() {
+            let ledgers_ids = json!(vec![0, 1, 10, 23]);
+            let res = ledger::build_freeze_ledgers_request(DID_TRUSTEE, &ledgers_ids.to_string());
+        }
+
+        #[test]
+        fn indy_get_frozen_ledgers_request() {
+            let res = ledger::get_frozen_ledgers_request(DID_TRUSTEE);
+        }
+
+    }
+
     mod multi_sign_request {
         use super::*;
 

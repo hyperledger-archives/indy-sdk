@@ -1511,3 +1511,36 @@ fn _append_request_endorser(command_handle: CommandHandle,
                                              cb)
     })
 }
+
+pub fn build_freeze_ledgers_request(submitter_did: &str, ledgers_ids: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+    let err = _build_freeze_ledgers_request(command_handle, submitter_did, ledgers_ids, cb);
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_freeze_ledgers_request(command_handle: CommandHandle, submitter_did: &str, ledgers_ids: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did = c_str!(submitter_did);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_freeze_ledgers_request(command_handle,
+                                                submitter_did.as_ptr(),
+                                                ledgers_ids.as_ptr() as *const i8,
+                                                cb)
+    })
+}
+
+pub fn get_frozen_ledgers_request(submitter_did: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+    let err = _get_frozen_ledgers_request(command_handle, submitter_did, cb);
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _get_frozen_ledgers_request(command_handle: CommandHandle, submitter_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did = c_str!(submitter_did);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_get_frozen_ledgers_request(command_handle,
+                                             submitter_did.as_ptr(),
+                                             cb)
+    })
+}

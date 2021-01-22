@@ -421,3 +421,10 @@ pub fn post_qualified_entities() -> (&'static str, &'static str) {
         (SCHEMA_ID_V2, CRED_DEF_ID_V2)
     }
 }
+pub fn build_freeze_ledgers_request(submitter_did: &str, ledgers_ids: &str) {
+    ledger::build_freeze_ledgers_request(submitter_did, ledgers_ids).wait();
+}
+
+pub fn get_frozen_ledgers_request(submitter_did: &str) {
+    ledger::get_frozen_ledgers_request(submitter_did).wait();
+}
