@@ -5171,7 +5171,7 @@ pub mod tests {
 
         #[test]
         pub fn freeze_ledgers() {
-            let ctx = setup_with_wallet_and_pool();
+            let ctx = setup();
 
             let (_, path_str) = _path();
             {
@@ -5186,7 +5186,7 @@ pub mod tests {
 
         #[test]
         pub fn get_frozen_ledgers() {
-            let ctx = setup_with_wallet_and_pool();
+            let ctx = setup();
 
             let (_, path_str) = _path();
             {
