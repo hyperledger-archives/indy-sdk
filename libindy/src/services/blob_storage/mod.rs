@@ -4,11 +4,13 @@ use async_trait::async_trait;
 use indy_api_types::errors::prelude::*;
 use indy_utils::sequence;
 
+use std::sync::Mutex as SyncMutex;
 use futures::lock::Mutex;
 use sha2::{
     digest::{FixedOutput, Input},
     Sha256,
 };
+use failure::_core::cell::RefCell;
 
 mod default_reader;
 mod default_writer;
@@ -41,9 +43,9 @@ trait Reader: Send + Sync {
 
 #[async_trait]
 trait ReadableBlob: Send + Sync {
-    async fn read(&mut self, size: usize, offset: usize) -> IndyResult<Vec<u8>>;
+    fn read(&mut self, size: usize, offset: usize) -> IndyResult<Vec<u8>>;
     async fn verify(&mut self) -> IndyResult<bool>;
-    async fn close(&self) -> IndyResult<()>;
+    fn close(&self) -> IndyResult<()>;
 }
 
 pub struct BlobStorageService {
@@ -53,7 +55,7 @@ pub struct BlobStorageService {
 
     reader_types: Mutex<HashMap<String, Box<dyn ReaderType>>>,
     reader_configs: Mutex<HashMap<i32, Box<dyn Reader>>>,
-    reader_blobs: Mutex<HashMap<i32, Box<dyn ReadableBlob>>>,
+    reader_blobs: SyncMutex<HashMap<i32, Box<dyn ReadableBlob>>>,
 }
 
 impl BlobStorageService {
@@ -77,7 +79,7 @@ impl BlobStorageService {
 
             reader_types: Mutex::new(reader_types),
             reader_configs: Mutex::new(HashMap::new()),
-            reader_blobs: Mutex::new(HashMap::new()),
+            reader_blobs: SyncMutex::new(HashMap::new()),
         }
     }
 }
@@ -216,15 +218,14 @@ impl BlobStorageService {
             .await?;
 
         let reader_handle = sequence::get_next_id();
-        self.reader_blobs.lock().await.insert(reader_handle, reader);
+        self.reader_blobs.lock().unwrap().insert(reader_handle, reader);
 
         Ok(reader_handle)
     }
 
-    pub async fn read(&self, handle: i32, size: usize, offset: usize) -> IndyResult<Vec<u8>> {
+    pub fn read(&self, handle: i32, size: usize, offset: usize) -> IndyResult<Vec<u8>> {
         self.reader_blobs
-            .lock()
-            .await
+            .lock().unwrap()
             .get_mut(&handle)
             .ok_or_else(|| {
                 err_msg(
@@ -233,14 +234,12 @@ impl BlobStorageService {
                 )
             })? // FIXME: Review error kind
             .read(size, offset)
-            .await
     }
 
     pub async fn _verify(&self, handle: i32) -> IndyResult<bool> {
         let res = self
             .reader_blobs
-            .lock()
-            .await
+            .lock().unwrap()
             .get_mut(&handle)
             .ok_or_else(|| {
                 err_msg(
@@ -254,10 +253,9 @@ impl BlobStorageService {
         Ok(res)
     }
 
-    pub async fn close(&self, handle: i32) -> IndyResult<()> {
+    pub fn close(&self, handle: i32) -> IndyResult<()> {
         self.reader_blobs
-            .lock()
-            .await
+            .lock().unwrap()
             .remove(&handle)
             .ok_or_else(|| {
                 err_msg(
@@ -266,6 +264,5 @@ impl BlobStorageService {
                 )
             })? // FIXME: Review error kind
             .close()
-            .await
     }
 }

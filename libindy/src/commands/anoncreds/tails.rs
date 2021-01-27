@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use async_trait::async_trait;
 
 use indy_api_types::errors::prelude::*;
 
@@ -52,7 +53,7 @@ impl Drop for SDKTailsAccessor {
     fn drop(&mut self) {
         #[allow(unused_must_use)] //TODO
         {
-            futures::executor::block_on(self.tails_service.close(self.tails_reader_handle))
+            self.tails_service.close(self.tails_reader_handle)
                 .map_err(map_err_err!());
         }
     }
@@ -67,11 +68,11 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
         debug!("access_tail > tail_id {:?}", tail_id);
 
         // FIXME: Potentially it is significant lock
-        let tail_bytes = futures::executor::block_on(self.tails_service.read(
+        let tail_bytes = self.tails_service.read(
             self.tails_reader_handle,
             TAIL_SIZE,
             TAIL_SIZE * tail_id as usize + TAILS_BLOB_TAG_SZ as usize,
-        ))
+        )
         .map_err(|_| {
             UrsaCryptoError::from_msg(
                 UrsaCryptoErrorKind::InvalidState,
