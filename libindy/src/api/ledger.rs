@@ -1793,7 +1793,34 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
 }
 
 #[no_mangle]
-pub extern fn indy_get_frozen_ledgers_request (command_handle: CommandHandle,
+pub extern fn indy_build_freeze_ledgers_request (command_handle: CommandHandle,
+                                                 submitter_did: *const c_char,
+                                                 ledgers_ids: *const c_char,
+                                                 cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                      err: ErrorCode,
+                                                                      request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_build_freeze_ledgers_request: entities >>> submitter_did: {:?}, ledgers_ids: {:?}", submitter_did, ledgers_ids);
+
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_json!(ledgers_ids, ErrorCode::CommonInvalidParam3, Vec<u64>);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildFreezeLedgersRequest(
+            submitter_did,
+            ledgers_ids,
+            boxed_callback_string!("indy_build_freeze_ledgers_request", cb, command_handle)
+        )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_build_freeze_ledgers_request: <<< res: {:?}", res);
+
+    res
+}
+
+#[no_mangle]
+pub extern fn indy_build_get_frozen_ledgers_request (command_handle: CommandHandle,
                                            submitter_did: *const c_char,
                                            cb: Option<extern fn(command_handle_: CommandHandle,
                                                                 err: ErrorCode,
@@ -1812,33 +1839,6 @@ pub extern fn indy_get_frozen_ledgers_request (command_handle: CommandHandle,
     let res = prepare_result!(result);
 
     trace!("indy_build_get_frozen_ledgers_request: <<< res: {:?}", res);
-
-    res
-}
-
-#[no_mangle]
-pub extern fn indy_build_freeze_ledgers_request (command_handle: CommandHandle,
-                                               submitter_did: *const c_char,
-                                               ledgers_ids: *const c_char,
-                                               cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                    err: ErrorCode,
-                                                                    request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_freeze_ledgers_request: entities >>> submitter_did: {:?}, ledgers_ids: {:?}", submitter_did, ledgers_ids);
-
-    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
-    check_useful_json!(ledgers_ids, ErrorCode::CommonInvalidParam3, Vec<u64>);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
-
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildFreezeLedgersRequest(
-            submitter_did,
-            ledgers_ids,
-            boxed_callback_string!("indy_build_freeze_ledgers_request", cb, command_handle)
-        )));
-
-    let res = prepare_result!(result);
-
-    trace!("indy_build_freeze_ledgers_request: <<< res: {:?}", res);
 
     res
 }

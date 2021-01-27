@@ -2042,6 +2042,79 @@ pub mod get_acceptance_mechanisms_command {
     }
 }
 
+pub mod freeze_ledgers_command {
+    use super::*;
+
+    command!(CommandMetadata::build("freeze-ledgers", r#"Freeze all ledgers"#)
+                .add_required_param("ledgers_ids", "List ledgers for freeze.")
+                .add_example("ledger freeze-ledgers")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let submitter_did = ensure_active_did(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
+        let ledgers_ids = get_str_param("ledgers_ids", params).map_err(error_err!())?;
+
+        let request = Ledger::build_freeze_ledgers_request(&submitter_did, ledgers_ids)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        let (_, response) = send_write_request!(&ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
+
+        let result = handle_transaction_response(response)?;
+
+        println!("result {:?}", result);
+
+        trace!("execute <<");
+        Ok(())
+    }
+}
+
+pub mod get_frozen_ledgers_command {
+    use super::*;
+    use serde_json::Value;
+
+    command!(CommandMetadata::build("get-frozen-ledgers", r#"Get a list of frozen ledgers"#)
+                .add_example("ledger get-frozen-ledgers")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let submitter_did = ensure_active_did(&ctx)?;
+
+        let request = Ledger::build_get_frozen_ledgers_request(&submitter_did)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        let (_, response) = send_read_request!(&ctx, params, &request, Some(&submitter_did));
+        let result = handle_transaction_response(response)?;
+
+        // Flattering ap into vector
+        let result = result.as_object()
+            .expect("top level object is not a map")
+            .iter()
+            .map(|kv| {
+                let key = kv.0;
+                let value = kv.1;
+
+                let mut flat_value = value.as_object()
+                    .expect("inner object is not a map").clone();
+
+                let ledger_id = serde_json::to_value(&key).unwrap();
+                flat_value.insert("ledger_id".to_owned(), ledger_id);
+
+                serde_json::to_value(&flat_value).unwrap()
+            }).collect::<Vec<Value>>();
+
+        print_frozen_ledgers(result);
+        trace!("execute <<");
+        Ok(())
+    }
+}
+
 pub fn set_author_agreement(ctx: &CommandContext, request: &mut String) -> Result<(), ()> {
     if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
         if acc_mech_type.is_empty() {
@@ -2109,6 +2182,18 @@ pub fn print_response_receipts(receipts: Option<Vec<serde_json::Value>>) -> Resu
                              "");
         }
     });
+    Ok(())
+}
+
+pub fn print_frozen_ledgers(frozen_ledgers: Vec<serde_json::Value>) -> Result<(), ()> {
+        println_succ!("Following Receipts has been received.");
+        print_list_table(&frozen_ledgers,
+                         &[("ledger_id", "Ledger id"),
+                             ("ledger", "Payment Address of recipient"),
+                             ("state", "Amount"),
+                             ("seq_no", "Extra")],
+                         "");
+
     Ok(())
 }
 
@@ -5078,6 +5163,39 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap();
             }
             tear_down_with_wallet_and_pool(&ctx);
+        }
+    }
+
+    mod frozen_ledgers {
+        use super::*;
+
+        #[test]
+        pub fn freeze_ledgers() {
+            let ctx = setup_with_wallet_and_pool();
+
+            let (_, path_str) = _path();
+            {
+                let cmd = freeze_ledgers_command::new();
+                let mut params = CommandParams::new();
+                params.insert("ledgers_ids", json!(vec![0, 1, 10, 23]).to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+
+            tear_down();
+        }
+
+        #[test]
+        pub fn get_frozen_ledgers() {
+            let ctx = setup_with_wallet_and_pool();
+
+            let (_, path_str) = _path();
+            {
+                let cmd = get_frozen_ledgers_command::new();
+                let mut params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+
+            tear_down();
         }
     }
 

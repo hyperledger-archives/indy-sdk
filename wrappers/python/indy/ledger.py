@@ -1838,3 +1838,45 @@ async def append_request_endorser(request_json: str,
     res = request_json.decode()
     logger.debug("append_request_endorser: <<< res: %r", res)
     return res
+
+async def build_freeze_ledgers_request(submitter_did: str, ledgers_ids: str) -> str:
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_freeze_ledgers_request: >>> submitter_did: %r",
+                 submitter_did)
+
+    if not hasattr(build_freeze_ledgers_request, "cb"):
+        logger.debug("build_freeze_ledgers_request: Creating callback")
+        build_freeze_ledgers_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_ledgers_ids = c_char_p(ledgers_ids.encode('utf-8'))
+
+    request_json = await do_call('indy_build_freeze_ledgers_request',
+                                 c_submitter_did,
+                                 c_ledgers_ids,
+                                 build_freeze_ledgers_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_freeze_ledgers_request: <<< res: %r", res)
+    return res
+
+async def build_get_frozen_ledgers_request(submitter_did: str) -> str:
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_get_frozen_ledgers_request: >>> submitter_did: %r",
+                 submitter_did)
+
+    if not hasattr(build_get_frozen_ledgers_request, "cb"):
+        logger.debug("build_get_frozen_ledgers_request: Creating callback")
+        build_get_frozen_ledgers_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+
+    request_json = await do_call('indy_build_get_frozen_ledgers_request',
+                                 c_submitter_did,
+                                 build_get_frozen_ledgers_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_get_frozen_ledgers_request: <<< res: %r", res)
+    return res

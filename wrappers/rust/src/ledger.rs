@@ -1529,17 +1529,17 @@ fn _build_freeze_ledgers_request(command_handle: CommandHandle, submitter_did: &
     })
 }
 
-pub fn get_frozen_ledgers_request(submitter_did: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
+pub fn build_get_frozen_ledgers_request(submitter_did: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
-    let err = _get_frozen_ledgers_request(command_handle, submitter_did, cb);
+    let err = _build_get_frozen_ledgers_request(command_handle, submitter_did, cb);
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _get_frozen_ledgers_request(command_handle: CommandHandle, submitter_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_frozen_ledgers_request(command_handle: CommandHandle, submitter_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
 
     ErrorCode::from(unsafe {
-        ledger::indy_get_frozen_ledgers_request(command_handle,
+        ledger::indy_build_get_frozen_ledgers_request(command_handle,
                                              submitter_did.as_ptr(),
                                              cb)
     })

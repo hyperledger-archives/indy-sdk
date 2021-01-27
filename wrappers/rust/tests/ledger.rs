@@ -565,6 +565,43 @@ mod test_build_cred_def_request {
 }
 
 #[cfg(test)]
+mod test_build_freeze_ledgers_request {
+    use super::*;
+
+    #[test]
+    pub fn test_build_freeze_ledgers_request() {
+        let wallet = Wallet::new();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
+        let ledgers_ids: &str = &json!(vec![0u64, 1u64, 10u64, 23u64]).to_string();
+
+        match ledger::build_freeze_ledgers_request(&did, ledgers_ids).wait() {
+            Ok(_) => {},
+            Err(ec) => {
+                assert!(false, "build_freeze_ledgers_request returned error_code {:?}", ec);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_build_get_frozen_ledgers_request {
+    use super::*;
+
+    #[test]
+    pub fn test_build_get_frozen_ledgers_request() {
+        let wallet = Wallet::new();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
+
+        match ledger::build_get_frozen_ledgers_request(&did).wait() {
+            Ok(_) => {},
+            Err(ec) => {
+                assert!(false, "build_get_frozen_ledgers_request returned error_code {:?}", ec);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
 mod test_build_get_cred_def_request {}
 
 #[cfg(test)]
