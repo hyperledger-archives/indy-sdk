@@ -1,18 +1,16 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import java.util.concurrent.CompletableFuture;
-
+import com.sun.jna.Callback;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.ParamGuard;
+import org.hyperledger.indy.sdk.ledger.LedgerResults.ParseRegistryResponseResult;
+import org.hyperledger.indy.sdk.ledger.LedgerResults.ParseResponseResult;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
-import org.hyperledger.indy.sdk.ledger.LedgerResults.ParseResponseResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.ParseRegistryResponseResult;
-
-import com.sun.jna.Callback;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * ledger.rs API
@@ -1779,6 +1777,39 @@ public class Ledger extends IndyJava.API {
 				commandHandle,
 				requestJson,
 				endorserDid,
+				buildRequestCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	public static CompletableFuture<String> GetFreezeLedgersRequest(String submitterDid, String ledgersIds) throws IndyException {
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_freeze_ledgers_request(
+				commandHandle,
+				submitterDid,
+				ledgersIds,
+				buildRequestCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	public static CompletableFuture<String> GetFrozenLedgersRequest(String submitterDid) throws IndyException {
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_get_frozen_ledgers_request(
+				commandHandle,
+				submitterDid,
 				buildRequestCb);
 
 		checkResult(future, result);
