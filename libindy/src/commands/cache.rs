@@ -319,7 +319,7 @@ impl CacheController {
         options: &GetCacheOptions,
         which_cache: &str,
     ) -> Result<Option<WalletRecord>, IndyError> {
-        if options.no_cache.unwrap_or(true) {
+        if options.no_cache.unwrap_or(false) {
             return Ok(None);
         }
 
