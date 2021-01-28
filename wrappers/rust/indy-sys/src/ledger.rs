@@ -307,7 +307,7 @@ extern {
                                         cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
-    pub fn indy_build_freeze_ledgers_request(command_handle: CommandHandle,
+    pub fn indy_build_ledgers_freeze_request(command_handle: CommandHandle,
                                        submitter_did: CString,
                                        ledgers_ids: CString,
                                        cb: Option<ResponseStringCB>) -> Error;

@@ -88,7 +88,7 @@ public abstract class LibIndy {
 		public int indy_build_get_acceptance_mechanisms_request(int command_handle, String submitter_did, int timestamp, String version, Callback cb);
 		public int indy_append_txn_author_agreement_acceptance_to_request(int command_handle, String request_json, String text, String version, String hash, String acc_mech_type, long time_of_acceptance, Callback cb);
 		public int indy_append_request_endorser(int command_handle, String request_json, String endorser_did, Callback cb);
-		public int indy_build_freeze_ledgers_request(int command_handle, String submitter_did, String ledgers_ids, Callback cb);
+		public int indy_build_ledgers_freeze_request(int command_handle, String submitter_did, String ledgers_ids, Callback cb);
 		public int indy_build_get_frozen_ledgers_request(int command_handle, String submitter_did, Callback cb);
 
 		// did.rs

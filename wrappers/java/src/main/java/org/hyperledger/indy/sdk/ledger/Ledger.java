@@ -1784,13 +1784,24 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<String> GetFreezeLedgersRequest(String submitterDid, String ledgersIds) throws IndyException {
+	/**
+	 * Request to freeze list of ledgers.
+	 *
+	 * @param command_handle - command handle to map callback to caller context.
+	 * @param submitter_did - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
+	 * @param ledgers_ids - list ids for freeze ledgers (json format).
+	 * @param cb - Callback that takes command result as parameter.
+	 *
+	 * @return A future resolving to a request result as json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildLedgersFreezeRequest(String submitterDid, String ledgersIds) throws IndyException {
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_build_freeze_ledgers_request(
+		int result = LibIndy.api.indy_build_ledgers_freeze_request(
 				commandHandle,
 				submitterDid,
 				ledgersIds,
@@ -1801,7 +1812,27 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
-	public static CompletableFuture<String> GetFrozenLedgersRequest(String submitterDid) throws IndyException {
+	/**
+	 * Request to get list of frozen ledgers.
+	 * Frozen ledgers are defined by ledgers freeze request.
+	 *
+	 * @param command_handle - command handle to map callback to caller context.
+	 * @param submitter_did - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
+	 * @param cb - Callback that takes command result as parameter.
+	 *
+	 * @return A future resolving to a request result as json.
+	 * {
+	 *     <ledger_id>: {
+	 *         "ledger": String - Ledger root hash,
+	 *         "state": String - State root hash,
+	 *         "seq_no": u64 - the latest transaction seqNo for particular Node,
+	 *     },
+	 *     ...
+	 * }
+	 *
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildGetFrozenLedgersRequest(String submitterDid) throws IndyException {
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();

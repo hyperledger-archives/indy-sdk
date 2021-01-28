@@ -192,7 +192,7 @@ impl From<&Command> for CommandMetric {
                     LedgerCommand::AppendTxnAuthorAgreementAcceptanceToRequest(_, _, _, _, _, _, _) => { CommandMetric::LedgerCommandAppendTxnAuthorAgreementAcceptanceToRequest }
                     LedgerCommand::AppendRequestEndorser(_, _, _) => { CommandMetric::LedgerCommandAppendRequestEndorser }
                     LedgerCommand::BuildGetFrozenLedgersRequest(_,_,) => { CommandMetric::LedgerCommandBuildGetFrozenLedgersRequest }
-                    LedgerCommand::BuildFreezeLedgersRequest(_,_,_,) => { CommandMetric::LedgerCommandBuildFreezeLedgersRequest }
+                    LedgerCommand::BuildLedgersFreezeRequest(_,_,_,) => { CommandMetric::LedgerCommandBuildLedgersFreezeRequest }
                 }
             }
             Command::Pool(cmd) => {
@@ -430,7 +430,7 @@ pub enum CommandMetric {
     LedgerCommandAppendTxnAuthorAgreementAcceptanceToRequest,
     LedgerCommandAppendRequestEndorser,
     LedgerCommandBuildGetFrozenLedgersRequest,
-    LedgerCommandBuildFreezeLedgersRequest,
+    LedgerCommandBuildLedgersFreezeRequest,
     // PoolCommand
     PoolCommandCreate,
     PoolCommandDelete,

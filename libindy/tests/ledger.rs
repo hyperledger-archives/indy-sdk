@@ -205,14 +205,14 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn indy_build_freeze_ledgers_request() {
-            let ledgers_ids = json!(vec![0, 1, 10, 23]);
-            let res = ledger::build_freeze_ledgers_request(DID_TRUSTEE, &ledgers_ids.to_string());
+        fn indy_build_ledgers_freeze_request() {
+            let ledgers_ids = json!(vec![0u64, 1u64, 10u64, 23u64]);
+            let res = ledger::build_ledgers_freeze_request(DID_TRUSTEE, &ledgers_ids.to_string());
 
             match res {
                 Ok(_) => {},
                 Err(ec) => {
-                    assert!(false, "indy_build_freeze_ledgers_request returned error_code {:?}", ec);
+                    assert!(false, "indy_build_ledgers_freeze_request returned error_code {:?}", ec);
                 }
             }
         }

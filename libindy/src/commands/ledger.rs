@@ -279,7 +279,7 @@ pub enum LedgerCommand {
     BuildGetFrozenLedgersRequest(
         DidValue, // submitter did
         Box<dyn Fn(IndyResult<String>) + Send>),
-    BuildFreezeLedgersRequest(
+    BuildLedgersFreezeRequest(
         DidValue, // submitter did
         Vec<u64>, // ledgers ids
         Box<dyn Fn(IndyResult<String>) + Send>),
@@ -535,9 +535,9 @@ impl LedgerCommandExecutor {
                 cb(self.append_request_endorser(&request_json,
                                                 &endorser_did));
             }
-            LedgerCommand::BuildFreezeLedgersRequest(submitter_did, ledgers_ids, cb) => {
-                debug!(target: "ledger_command_executor", "BuildFreezeLedgersRequest command received");
-                cb(self.build_freeze_ledgers_request(&submitter_did, ledgers_ids));
+            LedgerCommand::BuildLedgersFreezeRequest(submitter_did, ledgers_ids, cb) => {
+                debug!(target: "ledger_command_executor", "BuildLedgersFreezeRequest command received");
+                cb(self.build_ledgers_freeze_request(&submitter_did, ledgers_ids));
             }
             LedgerCommand::BuildGetFrozenLedgersRequest(submitter_did, cb) => {
                 debug!(target: "ledger_command_executor", "BuildGetFrozenLedgersRequest command received");
@@ -1324,14 +1324,14 @@ impl LedgerCommandExecutor {
         cb(self.ledger_service.parse_get_cred_def_response(&pool_response, id.get_method().as_ref().map(String::as_str)))
     }
 
-    fn build_freeze_ledgers_request(&self, submitter_did: &DidValue, ledgers_ids: Vec<u64>) -> IndyResult<String>{
-        debug!("build_freeze_ledgers_request >>> submitter_did: {:?}, ledgers_ids: {:?}", submitter_did, ledgers_ids);
+    fn build_ledgers_freeze_request(&self, submitter_did: &DidValue, ledgers_ids: Vec<u64>) -> IndyResult<String>{
+        debug!("build_ledgers_freeze_request >>> submitter_did: {:?}, ledgers_ids: {:?}", submitter_did, ledgers_ids);
 
         self.crypto_service.validate_did(&submitter_did)?;
 
-        let res = self.ledger_service.build_freeze_ledgers_request(&submitter_did, ledgers_ids)?;
+        let res = self.ledger_service.build_ledgers_freeze_request(&submitter_did, ledgers_ids)?;
 
-        debug!("build_freeze_ledgers_request <<< res: {:?}", res);
+        debug!("build_ledgers_freeze_request <<< res: {:?}", res);
 
         Ok(res)
     }

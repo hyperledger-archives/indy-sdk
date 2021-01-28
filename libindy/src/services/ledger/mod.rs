@@ -27,7 +27,7 @@ use crate::domain::ledger::txn::{GetTxnOperation, LedgerType};
 use crate::domain::ledger::validator_info::GetValidatorInfoOperation;
 use crate::domain::ledger::auth_rule::*;
 use crate::domain::ledger::author_agreement::*;
-use crate::domain::ledger::ledgers_freeze::{FreezeLedgersOperation, GetFrozenLedgersOperation};
+use crate::domain::ledger::ledgers_freeze::{LedgersFreezeOperation, GetFrozenLedgersOperation};
 use indy_api_types::errors::prelude::*;
 use indy_utils::crypto::hash::hash as openssl_hash;
 
@@ -396,8 +396,8 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_freeze_ledgers_request(&self, submitter_did: &DidValue, ledgers_ids: Vec<u64>) -> IndyResult<String> {
-        build_result!(FreezeLedgersOperation, Some(submitter_did), ledgers_ids)
+    pub fn build_ledgers_freeze_request(&self, submitter_did: &DidValue, ledgers_ids: Vec<u64>) -> IndyResult<String> {
+        build_result!(LedgersFreezeOperation, Some(submitter_did), ledgers_ids)
     }
 
     #[logfn(Info)]

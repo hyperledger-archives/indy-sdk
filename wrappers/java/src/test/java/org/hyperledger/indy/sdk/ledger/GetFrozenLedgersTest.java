@@ -16,13 +16,13 @@ public class GetFrozenLedgersTest extends LedgerIntegrationTest {
     public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
 
     @Test
-    public void TestGetFrozenLedgersRequest() throws Exception {
+    public void TestBuildGetFrozenLedgersRequest() throws Exception {
         DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 
         DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
         String did = myDidResult.getDid();
 
-        String request = Ledger.GetFrozenLedgersRequest(did).get();
+        String request = Ledger.buildGetFrozenLedgersRequest(did).get();
         JSONObject expectedResult = new JSONObject()
             .put("operation", new JSONObject()
                 .put("type", "124")
@@ -34,14 +34,14 @@ public class GetFrozenLedgersTest extends LedgerIntegrationTest {
     }
 
     @Test
-    public void TestFreezeLedgersRequest() throws Exception {
+    public void TestLedgersFreezeRequest() throws Exception {
         DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 
         DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
         String did = myDidResult.getDid();
 
         String ledgersIds = "[0,1,28,345]";
-        String request = Ledger.GetFreezeLedgersRequest(did, ledgersIds).get();
+        String request = Ledger.buildLedgersFreezeRequest(did, ledgersIds).get();
 
         List<Integer> expe = new ArrayList<Integer>();
         expe.add(0);

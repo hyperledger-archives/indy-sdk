@@ -2042,12 +2042,12 @@ pub mod get_acceptance_mechanisms_command {
     }
 }
 
-pub mod freeze_ledgers_command {
+pub mod ledgers_freeze_command {
     use super::*;
 
-    command!(CommandMetadata::build("freeze-ledgers", r#"Freeze all ledgers"#)
+    command!(CommandMetadata::build("ledgers-freeze", r#"Freeze all ledgers"#)
                 .add_required_param("ledgers_ids", "List ledgers for freeze.")
-                .add_example("ledger freeze-ledgers ledgers_ids=[1,2,3]")
+                .add_example("ledger ledgers-freeze ledgers_ids=[1,2,3]")
                 .finalize()
     );
 
@@ -2058,7 +2058,7 @@ pub mod freeze_ledgers_command {
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
         let ledgers_ids = get_str_param("ledgers_ids", params).map_err(error_err!())?;
 
-        let request = Ledger::build_freeze_ledgers_request(&submitter_did, ledgers_ids)
+        let request = Ledger::build_ledgers_freeze_request(&submitter_did, ledgers_ids)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let (_, response) = send_write_request!(&ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
@@ -2355,7 +2355,7 @@ fn get_txn_title(role: &serde_json::Value) -> serde_json::Value {
         Some("120") => "AUTH_RULE",
         Some("121") => "GET_AUTH_RULE",
         Some("122") => "AUTH_RULES",
-        Some("123") => "FREEZE_LEDGERS",
+        Some("123") => "LEDGERS_FREEZE",
         Some("124") => "GET_FROZEN_LEDGERS",
         Some(val) => val,
         _ => "-"
@@ -5170,11 +5170,11 @@ pub mod tests {
         use super::*;
 
         #[test]
-        pub fn freeze_ledgers() {
+        pub fn ledgers_freeze() {
             let ctx = setup();
 
             {
-                let cmd = freeze_ledgers_command::new();
+                let cmd = ledgers_freeze_command::new();
                 let mut params = CommandParams::new();
                 params.insert("ledgers_ids", json!(vec![0, 1, 10, 23]).to_string());
                 cmd.execute(&ctx, &params).unwrap_err();

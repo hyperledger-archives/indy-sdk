@@ -1,17 +1,17 @@
-use super::constants::{FREEZE_LEDGERS, GET_FROZEN_LEDGERS};
+use super::constants::{LEDGERS_FREEZE, GET_FROZEN_LEDGERS};
 
 #[derive(Serialize, PartialEq, Debug)]
-pub struct FreezeLedgersOperation {
+pub struct LedgersFreezeOperation {
     #[serde(rename = "type")]
     pub _type: String,
     pub ledgers_ids: Vec<u64>,
 }
 
-impl FreezeLedgersOperation {
-    pub fn new(ledgers_ids: Vec<u64>) -> FreezeLedgersOperation {
-        FreezeLedgersOperation {
+impl LedgersFreezeOperation {
+    pub fn new(ledgers_ids: Vec<u64>) -> LedgersFreezeOperation {
+        LedgersFreezeOperation {
             ledgers_ids,
-            _type: FREEZE_LEDGERS.to_string()
+            _type: LEDGERS_FREEZE.to_string()
         }
     }
 }

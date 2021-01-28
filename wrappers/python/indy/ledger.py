@@ -1839,30 +1839,59 @@ async def append_request_endorser(request_json: str,
     logger.debug("append_request_endorser: <<< res: %r", res)
     return res
 
-async def build_freeze_ledgers_request(submitter_did: str, ledgers_ids: str) -> str:
+
+async def build_ledgers_freeze_request(submitter_did: str, ledgers_ids: str) -> str:
+    """
+	Request to freeze list of ledgers.
+
+    :param command_handle: command handle to map callback to caller context.
+	:param submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
+	:param ledgers_ids: list ids for freeze ledgers (json format).
+	:param cb: Callback that takes command result as parameter.
+
+	:return: Request result as json.
+    """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_freeze_ledgers_request: >>> submitter_did: %r",
+    logger.debug("build_ledgers_freeze_request: >>> submitter_did: %r",
                  submitter_did)
 
-    if not hasattr(build_freeze_ledgers_request, "cb"):
-        logger.debug("build_freeze_ledgers_request: Creating callback")
-        build_freeze_ledgers_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    if not hasattr(build_ledgers_freeze_request, "cb"):
+        logger.debug("build_ledgers_freeze_request: Creating callback")
+        build_ledgers_freeze_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_ledgers_ids = c_char_p(ledgers_ids.encode('utf-8'))
 
-    request_json = await do_call('indy_build_freeze_ledgers_request',
+    request_json = await do_call('indy_build_ledgers_freeze_request',
                                  c_submitter_did,
                                  c_ledgers_ids,
-                                 build_freeze_ledgers_request.cb)
+                                 build_ledgers_freeze_request.cb)
 
     res = request_json.decode()
-    logger.debug("build_freeze_ledgers_request: <<< res: %r", res)
+    logger.debug("build_ledgers_freeze_request: <<< res: %r", res)
     return res
 
-async def build_get_frozen_ledgers_request(submitter_did: str) -> str:
 
+async def build_get_frozen_ledgers_request(submitter_did: str) -> str:
+    """
+	Request to get list of frozen ledgers.
+	Frozen ledgers are defined by ledgers freeze request.
+
+	:param command_handle: command handle to map callback to caller context.
+	:param submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
+	:param cb: Callback that takes command result as parameter.
+
+	:return A future resolving to a request result as json.
+	{
+        <ledger_id>: {
+            ledger: Ledger root hash,
+            state": State root hash,
+            seq_no: the latest transaction seqNo for particular Node,
+        },
+        ...
+	}
+    """
     logger = logging.getLogger(__name__)
     logger.debug("build_get_frozen_ledgers_request: >>> submitter_did: %r",
                  submitter_did)

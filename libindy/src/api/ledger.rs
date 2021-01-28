@@ -1792,33 +1792,67 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
     res
 }
 
+/// Builds a LEDGERS_FREEZE request. Request to freeze list of ledgers.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
+/// ledgers_ids: list ids for freeze ledgers (json format).
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
 #[no_mangle]
-pub extern fn indy_build_freeze_ledgers_request (command_handle: CommandHandle,
+pub extern fn indy_build_ledgers_freeze_request (command_handle: CommandHandle,
                                                  submitter_did: *const c_char,
                                                  ledgers_ids: *const c_char,
                                                  cb: Option<extern fn(command_handle_: CommandHandle,
                                                                       err: ErrorCode,
                                                                       request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_freeze_ledgers_request: entities >>> submitter_did: {:?}, ledgers_ids: {:?}", submitter_did, ledgers_ids);
+    trace!("indy_build_ledgers_freeze_request: entities >>> submitter_did: {:?}, ledgers_ids: {:?}", submitter_did, ledgers_ids);
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_json!(ledgers_ids, ErrorCode::CommonInvalidParam3, Vec<u64>);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildFreezeLedgersRequest(
+        .send(Command::Ledger(LedgerCommand::BuildLedgersFreezeRequest(
             submitter_did,
             ledgers_ids,
-            boxed_callback_string!("indy_build_freeze_ledgers_request", cb, command_handle)
+            boxed_callback_string!("indy_build_ledgers_freeze_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
 
-    trace!("indy_build_freeze_ledgers_request: <<< res: {:?}", res);
+    trace!("indy_build_ledgers_freeze_request: <<< res: {:?}", res);
 
     res
 }
 
+/// Builds a GET_FROZEN_LEDGERS request. Request to get list of frozen ledgers.
+/// frozen ledgers are defined by LEDGERS_FREEZE request.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///  {
+///     <ledger_id>: {
+///         "ledger": String - Ledger root hash,
+///         "state": String - State root hash,
+///         "seq_no": u64 - the latest transaction seqNo for particular Node,
+///     },
+///     ...
+/// }
+///
+/// #Errors
+/// Common*
 #[no_mangle]
 pub extern fn indy_build_get_frozen_ledgers_request (command_handle: CommandHandle,
                                            submitter_did: *const c_char,
