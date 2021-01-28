@@ -2047,7 +2047,7 @@ pub mod freeze_ledgers_command {
 
     command!(CommandMetadata::build("freeze-ledgers", r#"Freeze all ledgers"#)
                 .add_required_param("ledgers_ids", "List ledgers for freeze.")
-                .add_example("ledger freeze-ledgers")
+                .add_example("ledger freeze-ledgers ledgers_ids=[1,2,3]")
                 .finalize()
     );
 
@@ -2109,8 +2109,20 @@ pub mod get_frozen_ledgers_command {
                 serde_json::to_value(&flat_value).unwrap()
             }).collect::<Vec<Value>>();
 
-        print_frozen_ledgers(result);
+        print_frozen_ledgers(result)?;
         trace!("execute <<");
+        Ok(())
+    }
+
+    fn print_frozen_ledgers(frozen_ledgers: Vec<serde_json::Value>) -> Result<(), ()> {
+        println_succ!("Following Receipts has been received.");
+        print_list_table(&frozen_ledgers,
+                         &[("ledger_id", "Ledger id"),
+                             ("ledger", "Payment Address of recipient"),
+                             ("state", "Amount"),
+                             ("seq_no", "Extra")],
+                         "");
+
         Ok(())
     }
 }
@@ -2182,18 +2194,6 @@ pub fn print_response_receipts(receipts: Option<Vec<serde_json::Value>>) -> Resu
                              "");
         }
     });
-    Ok(())
-}
-
-pub fn print_frozen_ledgers(frozen_ledgers: Vec<serde_json::Value>) -> Result<(), ()> {
-        println_succ!("Following Receipts has been received.");
-        print_list_table(&frozen_ledgers,
-                         &[("ledger_id", "Ledger id"),
-                             ("ledger", "Payment Address of recipient"),
-                             ("state", "Amount"),
-                             ("seq_no", "Extra")],
-                         "");
-
     Ok(())
 }
 
@@ -5173,7 +5173,6 @@ pub mod tests {
         pub fn freeze_ledgers() {
             let ctx = setup();
 
-            let (_, path_str) = _path();
             {
                 let cmd = freeze_ledgers_command::new();
                 let mut params = CommandParams::new();
@@ -5188,10 +5187,9 @@ pub mod tests {
         pub fn get_frozen_ledgers() {
             let ctx = setup();
 
-            let (_, path_str) = _path();
             {
                 let cmd = get_frozen_ledgers_command::new();
-                let mut params = CommandParams::new();
+                let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap_err();
             }
 
