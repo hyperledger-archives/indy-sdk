@@ -651,6 +651,7 @@ impl WalletService {
         options_json: &str,
     ) -> IndyResult<WalletSearch> {
         let wallet = self.get_wallet(wallet_handle).await?;
+        
         Ok(WalletSearch {
             iter: wallet.search(type_, query_json, Some(options_json)).await?,
         })
