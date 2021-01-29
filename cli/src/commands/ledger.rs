@@ -2336,6 +2336,8 @@ fn get_txn_title(role: &serde_json::Value) -> serde_json::Value {
         Some("5") => "TXN_AUTHR_AGRMT_AML",
         Some("6") => "GET_TXN_AUTHR_AGRMT",
         Some("7") => "GET_TXN_AUTHR_AGRMT_AML",
+        Some("9") => "LEDGERS_FREEZE",
+        Some("10") => "GET_FROZEN_LEDGERS",
         Some("100") => "ATTRIB",
         Some("101") => "SCHEMA",
         Some("104") => "GET_ATTR",
@@ -2355,8 +2357,6 @@ fn get_txn_title(role: &serde_json::Value) -> serde_json::Value {
         Some("120") => "AUTH_RULE",
         Some("121") => "GET_AUTH_RULE",
         Some("122") => "AUTH_RULES",
-        Some("123") => "LEDGERS_FREEZE",
-        Some("124") => "GET_FROZEN_LEDGERS",
         Some(val) => val,
         _ => "-"
     }.to_string())

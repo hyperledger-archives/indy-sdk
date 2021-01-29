@@ -6,6 +6,8 @@ pub const TXN_AUTHR_AGRMT_AML: &str = "5";
 pub const GET_TXN_AUTHR_AGRMT: &str = "6";
 pub const GET_TXN_AUTHR_AGRMT_AML: &str = "7";
 pub const DISABLE_ALL_TXN_AUTHR_AGRMTS: &str = "8";
+pub const LEDGERS_FREEZE: &str = "9";
+pub const GET_FROZEN_LEDGERS: &str = "10";
 pub const ATTRIB: &str = "100";
 pub const SCHEMA: &str = "101";
 pub const CRED_DEF: &str = "102";
@@ -25,8 +27,6 @@ pub const GET_VALIDATOR_INFO: &str = "119";
 pub const AUTH_RULE: &str = "120";
 pub const GET_AUTH_RULE: &str = "121";
 pub const AUTH_RULES: &str = "122";
-pub const LEDGERS_FREEZE: &str = "123";
-pub const GET_FROZEN_LEDGERS: &str = "124";
 pub const GET_DDO: &str = "120";//TODO change number
 
 pub const REQUESTS: [&str; 27] = [NODE, NYM, GET_TXN, ATTRIB, SCHEMA, CRED_DEF, GET_ATTR, GET_NYM, GET_SCHEMA,

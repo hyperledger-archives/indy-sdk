@@ -25,7 +25,7 @@ public class GetFrozenLedgersTest extends LedgerIntegrationTest {
         String request = Ledger.buildGetFrozenLedgersRequest(did).get();
         JSONObject expectedResult = new JSONObject()
             .put("operation", new JSONObject()
-                .put("type", "124")
+                .put("type", "10")
             );
 
         System.out.println(request);
@@ -51,7 +51,7 @@ public class GetFrozenLedgersTest extends LedgerIntegrationTest {
 
         JSONObject expectedResult = new JSONObject()
             .put("operation", new JSONObject()
-                .put("type", "123")
+                .put("type", "9")
                 .put("ledgers_ids", expe)
             );
 
