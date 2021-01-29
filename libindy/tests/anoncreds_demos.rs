@@ -134,6 +134,8 @@ mod demos {
         wallet::close_and_delete_wallet(prover_wallet_handle, &prover_wallet_config).unwrap();
     }
 
+    // FIXME: We don't support plugged wallet now
+    #[ignore]
     #[test]
     fn anoncreds_works_for_plugged_wallet() {
         Setup::empty();
