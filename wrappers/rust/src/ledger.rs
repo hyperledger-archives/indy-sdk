@@ -1529,11 +1529,12 @@ pub fn build_ledgers_freeze_request(submitter_did: &str, ledgers_ids: &str) -> B
 
 fn _build_ledgers_freeze_request(command_handle: CommandHandle, submitter_did: &str, ledgers_ids: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
+    let ledgers_ids = c_str!(ledgers_ids);
 
     ErrorCode::from(unsafe {
         ledger::indy_build_ledgers_freeze_request(command_handle,
                                                 submitter_did.as_ptr(),
-                                                ledgers_ids.as_ptr() as *const i8,
+                                                ledgers_ids.as_ptr(),
                                                 cb)
     })
 }
