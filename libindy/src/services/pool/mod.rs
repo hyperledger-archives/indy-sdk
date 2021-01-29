@@ -24,8 +24,6 @@ use ursa::bls::VerKey;
 
 use futures::{channel::oneshot, lock::Mutex};
 
-use log_derive::logfn;
-
 use zmq::Socket;
 
 mod catchup;

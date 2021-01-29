@@ -65,6 +65,7 @@ impl LedgerController {
         }
     }
 
+    #[allow(dead_code)] // FIXME [async] TODO implement external SP parsers
     pub(crate) fn register_sp_parser(
         &self,
         txn_type: String,

@@ -4,7 +4,7 @@ use serde_json::Value as SJsonValue;
 use crate::domain::ledger::constants;
 use indy_api_types::errors::prelude::*;
 use crate::services::ledger::merkletree::merkletree::MerkleTree;
-use crate::services::pool::{PoolService, types:: *};
+use crate::services::pool::types::*;
 use indy_api_types::CommandHandle;
 
 pub const REQUESTS_FOR_STATE_PROOFS: [&str; 11] = [

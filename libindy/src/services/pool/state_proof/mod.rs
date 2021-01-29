@@ -2,7 +2,6 @@ extern crate log_derive;
 extern crate rmp_serde;
 
 use std::collections::HashMap;
-use std::ffi::{CStr, CString};
 use indy_utils::crypto::hash::{Hash};
 use rust_base58::ToBase58;
 
@@ -11,13 +10,11 @@ use rlp::UntrustedRlp;
 use serde_json;
 use serde_json::Value as SJsonValue;
 
-use indy_api_types::ErrorCode;
 use crate::domain::ledger::{constants, request::ProtocolVersion};
 use indy_api_types::errors::prelude::*;
 use crate::services::pool::events::{REQUESTS_FOR_STATE_PROOFS, REQUESTS_FOR_MULTI_STATE_PROOFS};
 use indy_utils::crypto::hash::hash as openssl_hash;
 
-use super::PoolService;
 use super::types::*;
 
 use self::log_derive::logfn;

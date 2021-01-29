@@ -1,6 +1,6 @@
 
 use indy_api_types::{ErrorCode, CommandHandle, PoolHandle, INVALID_POOL_HANDLE};
-use crate::commands::{Command, Locator};
+use crate::commands::Locator;
 use crate::domain::pool::{PoolConfig, PoolOpenConfig};
 use indy_api_types::errors::prelude::*;
 use indy_utils::ctypes;

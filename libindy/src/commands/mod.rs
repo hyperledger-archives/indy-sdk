@@ -2,11 +2,7 @@ extern crate threadpool;
 extern crate ursa;
 
 use std::env;
-use std::sync::{Arc, Mutex, MutexGuard};
-use std::thread;
-
-use futures::channel::mpsc::{unbounded, UnboundedSender};
-use futures::StreamExt;
+use std::sync::{Arc, Mutex};
 
 use crate::commands::blob_storage::BlobStorageController;
 use crate::commands::cache::CacheController;
@@ -24,7 +20,6 @@ use crate::services::anoncreds::AnoncredsService;
 use crate::services::blob_storage::BlobStorageService;
 use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
-use indy_api_types::errors::prelude::*;
 //use crate::services::payments::PaymentsService; FIXME:
 use crate::services::pool::{set_freshness_threshold, PoolService};
 //use crate::services::metrics::MetricsService; FIXME:
@@ -48,20 +43,21 @@ pub mod wallet;
 pub mod cache;
 //pub mod metrics;
 
-type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>) + Send + Sync>;
-
+#[allow(dead_code)] // FIXME [async] TODO implement Payment and Metrics
 pub enum Command {
     Exit,
     //Payments(PaymentsCommand),
     //Metrics(MetricsCommand),
 }
 
+#[allow(dead_code)] // FIXME [async] TODO implement Metrics
 pub struct InstrumentedCommand {
     pub enqueue_ts: u128,
     pub command: Command,
 }
 
 impl InstrumentedCommand {
+    #[allow(dead_code)] // FIXME [async] TODO implement Metrics
     pub fn new(command: Command) -> InstrumentedCommand {
         InstrumentedCommand {
             enqueue_ts: get_cur_time(),
@@ -93,6 +89,7 @@ pub fn indy_set_runtime_config(config: IndyConfig) {
     }
 }
 
+#[allow(dead_code)] // FIXME [async] TODO implement Metrics ?
 fn get_cur_time() -> u128 {
     let since_epoch = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -212,19 +209,19 @@ impl Locator {
         }));
 
         Locator {
-            issuer_command_cxecutor: issuer_command_cxecutor.clone(),
-            prover_command_cxecutor: prover_command_cxecutor.clone(),
-            verifier_command_cxecutor: verifier_command_cxecutor.clone(),
-            crypto_command_executor: crypto_command_executor,
-            ledger_command_executor: ledger_command_executor.clone(),
-            pool_command_executor: pool_command_executor.clone(),
-            did_command_executor: did_command_executor.clone(),
-            wallet_command_executor: wallet_command_executor.clone(),
-            pairwise_command_executor: pairwise_command_executor.clone(),
-            blob_storage_command_executor: blob_storage_command_executor.clone(),
-            non_secret_command_executor: non_secret_command_executor.clone(),
-            cache_command_executor: cache_command_executor.clone(),
-            executor: executor.clone(),
+            issuer_command_cxecutor,
+            prover_command_cxecutor,
+            verifier_command_cxecutor,
+            crypto_command_executor,
+            ledger_command_executor,
+            pool_command_executor,
+            did_command_executor,
+            wallet_command_executor,
+            pairwise_command_executor,
+            blob_storage_command_executor,
+            non_secret_command_executor,
+            cache_command_executor,
+            executor,
         }
     }
 }

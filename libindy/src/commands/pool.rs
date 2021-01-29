@@ -66,8 +66,7 @@ impl PoolController {
     pub(crate) async fn close(&self, pool_handle: PoolHandle) -> IndyResult<()> {
         trace!("close > handle {:?}", pool_handle);
 
-        let result = self
-            .pool_service
+        self.pool_service
             .close(pool_handle)
             .await?;
 
@@ -79,8 +78,7 @@ impl PoolController {
     pub(crate) async fn refresh(&self, handle: PoolHandle) -> IndyResult<()> {
         trace!("refresh > handle {:?}", handle);
 
-        let result = self
-            .pool_service
+        self.pool_service
             .refresh(handle)
             .await?;
 

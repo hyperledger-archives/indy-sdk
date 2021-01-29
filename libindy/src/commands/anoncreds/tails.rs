@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use async_trait::async_trait;
 
 use indy_api_types::errors::prelude::*;
 

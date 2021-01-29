@@ -541,6 +541,7 @@ impl LedgerService {
         Ok(())
     }
 
+    #[allow(dead_code)] // FIXME [async] TODO check why unused
     pub fn parse_get_auth_rule_response(&self, response: &str) -> IndyResult<Vec<AuthRule>> {
         trace!("parse_get_auth_rule_response >>> response: {:?}", response);
 

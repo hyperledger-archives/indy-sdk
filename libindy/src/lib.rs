@@ -11,7 +11,6 @@ extern crate serde;
 
 extern crate variant_count;
 
-#[macro_use]
 extern crate num_derive;
 
 extern crate num_traits;

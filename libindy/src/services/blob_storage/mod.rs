@@ -10,7 +10,6 @@ use sha2::{
     digest::{FixedOutput, Update},
     Sha256,
 };
-use failure::_core::cell::RefCell;
 
 mod default_reader;
 mod default_writer;

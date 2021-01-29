@@ -1,7 +1,6 @@
 use std::{io::SeekFrom, path::PathBuf};
 
 use std::fs::File as SyncFile;
-use async_std::{fs::File, prelude::*};
 use async_trait::async_trait;
 use indy_api_types::errors::prelude::*;
 use indy_utils::crypto::hash::Hash;

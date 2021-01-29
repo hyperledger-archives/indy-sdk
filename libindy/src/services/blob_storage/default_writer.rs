@@ -64,7 +64,7 @@ impl WritableBlob for DefaultWriter {
     async fn append(&mut self, bytes: &[u8]) -> IndyResult<usize> {
         trace!("append >>>");
 
-        let res = self.file.write_all(bytes).await.map_err(map_err_trace!())?;
+        self.file.write_all(bytes).await.map_err(map_err_trace!())?;
 
         let res = bytes.len();
         trace!("append <<< {}", res);

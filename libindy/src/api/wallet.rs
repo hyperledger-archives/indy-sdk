@@ -1,6 +1,6 @@
 
 use indy_api_types::{ErrorCode, CommandHandle, WalletHandle, INVALID_WALLET_HANDLE};
-use crate::commands::{Command, Locator};
+use crate::commands::Locator;
 use indy_api_types::domain::wallet::{Config, Credentials, ExportConfig, KeyConfig};
 use indy_api_types::wallet::*;
 use indy_api_types::errors::prelude::*;
