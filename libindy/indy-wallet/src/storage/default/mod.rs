@@ -658,11 +658,11 @@ impl WalletStorage for SQLiteStorage {
         };
 
         let total_count = if options.retrieve_total_count {
-            let (query, mut args) = query::wql_to_sql_count(&type_, query)?;
+            let (query, args) = query::wql_to_sql_count(&type_, query)?;
 
             let mut query = sqlx::query_as::<sqlx::Sqlite, (i64,)>(&query);
 
-            while let Some(arg) = args.pop() {
+            for arg in args.iter() {
                 query = match arg {
                     query::ToSQL::ByteSlice(a) => query.bind(a),
                     query::ToSQL::CharSlice(a) => query.bind(a),
