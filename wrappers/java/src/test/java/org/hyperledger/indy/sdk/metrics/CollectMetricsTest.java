@@ -16,8 +16,6 @@ public class CollectMetricsTest extends IndyIntegrationTest {
 		String metricsResult = Metrics.collectMetrics().get();
 		assertNotNull(metricsResult);
 		Map<String, Object> metricMap = (new JSONObject(metricsResult)).toMap();
-		assert(metricMap.containsKey("threadpool_active_count"));
-		// check that vales from the result can be parsed to BigIntegers
-		metricMap.values().forEach(v-> new BigInteger(String.valueOf(v)));
+		assert(metricMap.containsKey("threadpool_threads_count"));
 	}
 }
