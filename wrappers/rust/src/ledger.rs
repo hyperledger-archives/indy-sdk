@@ -1,3 +1,4 @@
+use serde_json::json;
 use {ErrorCode, IndyError};
 
 use std::ffi::CString;
@@ -1516,14 +1517,15 @@ fn _append_request_endorser(command_handle: CommandHandle,
 /// # Arguments
 /// * `command_handle`: command handle to map callback to caller context.
 /// * `submitter_did`: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
-/// * `ledgers_ids`: list ids for freeze ledgers (json format).
+/// * `ledgers_ids`: list of ledgers IDs for freezing (json format).
 /// * `cb`: Callback that takes command result as parameter.
 ///
 /// # Returns
 /// Updated request result as json.
-pub fn build_ledgers_freeze_request(submitter_did: &str, ledgers_ids: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
+pub fn build_ledgers_freeze_request(submitter_did: &str, ledgers_ids: Vec<u64>) -> Box<dyn Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
-    let err = _build_ledgers_freeze_request(command_handle, submitter_did, ledgers_ids, cb);
+    let json_ledgers_ids: &str = &json!(ledgers_ids).to_string();
+    let err = _build_ledgers_freeze_request(command_handle, submitter_did, json_ledgers_ids, cb);
     ResultHandler::str(command_handle, err, receiver)
 }
 

@@ -10,8 +10,8 @@ pub struct LedgersFreezeOperation {
 impl LedgersFreezeOperation {
     pub fn new(ledgers_ids: Vec<u64>) -> LedgersFreezeOperation {
         LedgersFreezeOperation {
-            ledgers_ids,
-            _type: LEDGERS_FREEZE.to_string()
+            _type: LEDGERS_FREEZE.to_string(),
+            ledgers_ids
         }
     }
 }

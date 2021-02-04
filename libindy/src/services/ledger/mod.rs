@@ -877,6 +877,47 @@ mod tests {
         ledger_service.validate_action(&request).unwrap();
     }
 
+    #[test]
+    fn build_ledgers_freeze_request_work_with_valid_data() {
+        let ledger_service = LedgerService::new();
+        let ledgers_ids = vec![0,1,50,873];
+        let res = ledger_service.build_ledgers_freeze_request(&identifier(), ledgers_ids);
+
+        match res {
+            Ok(_) => {},
+            Err(ec) => {
+                assert!(false, "build_ledgers_freeze_request_work_with_valid_data returned error_code {:?}", ec);
+            }
+        }
+    }
+
+    #[test]
+    fn build_get_frozen_ledgers_request_work_with_valid_data() {
+        let ledger_service = LedgerService::new();
+        let res = ledger_service.build_get_frozen_ledgers_request(&identifier());
+
+        match res {
+            Ok(_) => {},
+            Err(ec) => {
+                assert!(false, "build_get_frozen_ledgers_request_work_with_valid_data returned error_code {:?}", ec);
+            }
+        }
+    }
+
+    #[test]
+    fn build_ledgers_freeze_request_work_with_empty_data() {
+        let ledger_service = LedgerService::new();
+        let ledgers_ids = vec![];
+        let res = ledger_service.build_ledgers_freeze_request(&identifier(), ledgers_ids);
+
+        match res {
+            Ok(_) => {},
+            Err(ec) => {
+                assert!(false, "build_ledgers_freeze_request_work_with_empty_data returned error_code {:?}", ec);
+            }
+        }
+    }
+
     mod auth_rule {
         use super::*;
 

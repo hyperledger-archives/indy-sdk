@@ -1797,7 +1797,7 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
-/// ledgers_ids: list ids for freeze ledgers (json format).
+/// ledgers_ids: list of ledgers IDs for freezing ledgers (json format).
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -1806,7 +1806,7 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_ledgers_freeze_request (command_handle: CommandHandle,
+pub extern fn indy_build_ledgers_freeze_request(command_handle: CommandHandle,
                                                  submitter_did: *const c_char,
                                                  ledgers_ids: *const c_char,
                                                  cb: Option<extern fn(command_handle_: CommandHandle,
@@ -1854,7 +1854,7 @@ pub extern fn indy_build_ledgers_freeze_request (command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_frozen_ledgers_request (command_handle: CommandHandle,
+pub extern fn indy_build_get_frozen_ledgers_request(command_handle: CommandHandle,
                                            submitter_did: *const c_char,
                                            cb: Option<extern fn(command_handle_: CommandHandle,
                                                                 err: ErrorCode,

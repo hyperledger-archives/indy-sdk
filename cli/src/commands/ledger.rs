@@ -2045,20 +2045,19 @@ pub mod get_acceptance_mechanisms_command {
 pub mod ledgers_freeze_command {
     use super::*;
 
-    command!(CommandMetadata::build("ledgers-freeze", r#"Freeze all ledgers"#)
-                .add_required_param("ledgers_ids", "List ledgers for freeze.")
-                .add_example("ledger ledgers-freeze ledgers_ids=[1,2,3]")
+    command!(CommandMetadata::build("ledgers-freeze", r#"Freeze ledgers"#)
+                .add_required_param("ledgers_ids", "List of ledgers IDs for freezing.")
+                .add_example("ledger ledgers-freeze ledgers_ids=1,2,3")
                 .finalize()
     );
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
-
+        let ledgers_ids = get_number_tuple_array_param("ledgers_ids", params);
         let submitter_did = ensure_active_did(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
-        let ledgers_ids = get_str_param("ledgers_ids", params).map_err(error_err!())?;
 
-        let request = Ledger::build_ledgers_freeze_request(&submitter_did, ledgers_ids)
+        let request = Ledger::build_ledgers_freeze_request(&submitter_did, ledgers_ids?)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let (_, response) = send_write_request!(&ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
@@ -2074,7 +2073,6 @@ pub mod ledgers_freeze_command {
 
 pub mod get_frozen_ledgers_command {
     use super::*;
-    use serde_json::Value;
 
     command!(CommandMetadata::build("get-frozen-ledgers", r#"Get a list of frozen ledgers"#)
                 .add_example("ledger get-frozen-ledgers")
@@ -2090,24 +2088,24 @@ pub mod get_frozen_ledgers_command {
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let (_, response) = send_read_request!(&ctx, params, &request, Some(&submitter_did));
-        let result = handle_transaction_response(response)?;
+        let handle_response = handle_transaction_response(response)?;
 
         // Flattering ap into vector
-        let result = result.as_object()
-            .expect("top level object is not a map")
-            .iter()
-            .map(|kv| {
-                let key = kv.0;
-                let value = kv.1;
+        let handle_response = handle_response.as_object()
+            .expect("top level object is not a map");
 
-                let mut flat_value = value.as_object()
-                    .expect("inner object is not a map").clone();
+        let mut result = Vec::new();
+        for (key, value) in handle_response {
+            let mut flat_value = value.as_object()
+                .expect("inner object is not a map").clone();
 
-                let ledger_id = serde_json::to_value(&key).unwrap();
-                flat_value.insert("ledger_id".to_owned(), ledger_id);
+            let ledger_id = serde_json::to_value(&key)
+                .map_err(|_| println_err!("Invalid format of Outputs: Ledger ID is incorrect."))?;
+            flat_value.insert("ledger_id".to_owned(), ledger_id);
 
-                serde_json::to_value(&flat_value).unwrap()
-            }).collect::<Vec<Value>>();
+            result.push(serde_json::to_value(&flat_value)
+                .map_err(|_| println_err!("Invalid format of Outputs: result is incorrect."))?);
+        }
 
         print_frozen_ledgers(result)?;
         trace!("execute <<");
@@ -2115,13 +2113,13 @@ pub mod get_frozen_ledgers_command {
     }
 
     fn print_frozen_ledgers(frozen_ledgers: Vec<serde_json::Value>) -> Result<(), ()> {
-        println_succ!("Following Receipts has been received.");
+        println_succ!("Frozen ledgers has been received.");
         print_list_table(&frozen_ledgers,
                          &[("ledger_id", "Ledger id"),
-                             ("ledger", "Payment Address of recipient"),
-                             ("state", "Amount"),
-                             ("seq_no", "Extra")],
-                         "");
+                             ("ledger", "Ledger root hash"),
+                             ("state", "State root hash"),
+                             ("seq_no", "Last sequance number")],
+                         "No frozen ledgers found.");
 
         Ok(())
     }
@@ -5176,7 +5174,7 @@ pub mod tests {
             {
                 let cmd = ledgers_freeze_command::new();
                 let mut params = CommandParams::new();
-                params.insert("ledgers_ids", json!(vec![0, 1, 10, 23]).to_string());
+                params.insert("ledgers_ids", "0,1,10,237".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
 

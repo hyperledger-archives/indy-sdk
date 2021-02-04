@@ -10,6 +10,7 @@ import org.hyperledger.indy.sdk.ledger.LedgerResults.ParseResponseResult;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -1789,13 +1790,13 @@ public class Ledger extends IndyJava.API {
 	 *
 	 * @param command_handle - command handle to map callback to caller context.
 	 * @param submitter_did - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
-	 * @param ledgers_ids - list ids for freeze ledgers (json format).
+	 * @param ledgers_ids - List of ledgers IDs for freezing.
 	 * @param cb - Callback that takes command result as parameter.
 	 *
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> buildLedgersFreezeRequest(String submitterDid, String ledgersIds) throws IndyException {
+	public static CompletableFuture<String> buildLedgersFreezeRequest(String submitterDid, List<Integer> ledgersIds) throws IndyException {
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -1804,7 +1805,7 @@ public class Ledger extends IndyJava.API {
 		int result = LibIndy.api.indy_build_ledgers_freeze_request(
 				commandHandle,
 				submitterDid,
-				ledgersIds,
+				ledgersIds.toString(),
 				buildRequestCb);
 
 		checkResult(future, result);

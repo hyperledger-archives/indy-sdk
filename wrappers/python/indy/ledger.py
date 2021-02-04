@@ -1,6 +1,6 @@
 from .libindy import do_call, create_cb
 
-from typing import Optional
+from typing import Optional, List
 from ctypes import *
 
 import logging
@@ -1840,13 +1840,13 @@ async def append_request_endorser(request_json: str,
     return res
 
 
-async def build_ledgers_freeze_request(submitter_did: str, ledgers_ids: str) -> str:
+async def build_ledgers_freeze_request(submitter_did: str, ledgers_ids: List[int]) -> str:
     """
 	Request to freeze list of ledgers.
 
     :param command_handle: command handle to map callback to caller context.
 	:param submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
-	:param ledgers_ids: list ids for freeze ledgers (json format).
+	:param ledgers_ids: List of ledgers IDs for freezing.
 	:param cb: Callback that takes command result as parameter.
 
 	:return: Request result as json.
@@ -1861,7 +1861,8 @@ async def build_ledgers_freeze_request(submitter_did: str, ledgers_ids: str) -> 
         build_ledgers_freeze_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
-    c_ledgers_ids = c_char_p(ledgers_ids.encode('utf-8'))
+    json_ledgers_ids = '[' + ','.join(str(e) for e in ledgers_ids) + ']'
+    c_ledgers_ids = c_char_p(json_ledgers_ids.encode('utf-8'))
 
     request_json = await do_call('indy_build_ledgers_freeze_request',
                                  c_submitter_did,

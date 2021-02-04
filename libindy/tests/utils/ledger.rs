@@ -421,7 +421,7 @@ pub fn post_qualified_entities() -> (&'static str, &'static str) {
         (SCHEMA_ID_V2, CRED_DEF_ID_V2)
     }
 }
-pub fn build_ledgers_freeze_request(submitter_did: &str, ledgers_ids: &str) -> Result<String, IndyError> {
+pub fn build_ledgers_freeze_request(submitter_did: &str, ledgers_ids: Vec<u64>) -> Result<String, IndyError> {
     ledger::build_ledgers_freeze_request(submitter_did, ledgers_ids).wait()
 }
 
