@@ -4,6 +4,7 @@ from typing import Optional, List
 from ctypes import *
 
 import logging
+import json
 
 
 async def sign_and_submit_request(pool_handle: int,
@@ -1861,7 +1862,7 @@ async def build_ledgers_freeze_request(submitter_did: str, ledgers_ids: List[int
         build_ledgers_freeze_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
-    json_ledgers_ids = '[' + ','.join(str(e) for e in ledgers_ids) + ']'
+    json_ledgers_ids = json.dumps(ledgers_ids)
     c_ledgers_ids = c_char_p(json_ledgers_ids.encode('utf-8'))
 
     request_json = await do_call('indy_build_ledgers_freeze_request',

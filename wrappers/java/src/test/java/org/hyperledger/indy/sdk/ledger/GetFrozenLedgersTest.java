@@ -39,11 +39,10 @@ public class GetFrozenLedgersTest extends LedgerIntegrationTest {
         List<Integer> ledgersIds = Arrays.asList(0, 1, 28 ,345);
         String request = Ledger.buildLedgersFreezeRequest(did, ledgersIds).get();
 
-        List<Integer> expectedLedgersIds = Arrays.asList(0, 1, 28 ,345);
         JSONObject expectedResult = new JSONObject()
             .put("operation", new JSONObject()
                 .put("type", "9")
-                .put("ledgers_ids", expectedLedgersIds)
+                .put("ledgers_ids", ledgersIds)
             );
 
         assert (new JSONObject(request).toMap().entrySet()
@@ -58,11 +57,10 @@ public class GetFrozenLedgersTest extends LedgerIntegrationTest {
         List<Integer> ledgersIds = Arrays.asList();
         String request = Ledger.buildLedgersFreezeRequest(did, ledgersIds).get();
 
-        List<Integer> expectedLedgersIds = Arrays.asList();
         JSONObject expectedResult = new JSONObject()
                 .put("operation", new JSONObject()
                         .put("type", "9")
-                        .put("ledgers_ids", expectedLedgersIds)
+                        .put("ledgers_ids", ledgersIds)
                 );
 
         assert (new JSONObject(request).toMap().entrySet()

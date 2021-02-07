@@ -636,6 +636,18 @@ indy.buildGetAcceptanceMechanismsRequest = function buildGetAcceptanceMechanisms
   return cb.promise
 }
 
+indy.buildLedgersFreezeRequest = function buildLedgersFreezeRequest (submitterDid, ledgersIds, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildLedgersFreezeRequest(submitterDid, JSON.stringify(ledgersIds), cb)
+  return cb.promise
+}
+
+indy.buildGetFrozenLedgersRequest = function buildGetFrozenLedgersRequest (submitterDid, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildGetFrozenLedgersRequest(submitterDid, cb)
+  return cb.promise
+}
+
 indy.appendTxnAuthorAgreementAcceptanceToRequest = function appendTxnAuthorAgreementAcceptanceToRequest (request, text, version, taaDigest, accMechType, timeOfAcceptance, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.appendTxnAuthorAgreementAcceptanceToRequest(toJson(request), text, version, taaDigest, accMechType, timeOfAcceptance, cb)
