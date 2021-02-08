@@ -2095,15 +2095,15 @@ pub mod get_frozen_ledgers_command {
             .expect("top level object is not a map");
 
         let mut result = Vec::new();
-        for (key, value) in handle_response {
-            let mut flat_value = value.as_object()
+        for (response_ledger_key, response_ledger_value) in handle_response {
+            let mut ledger_info = response_ledger_value.as_object()
                 .expect("inner object is not a map").clone();
 
-            let ledger_id = serde_json::to_value(&key)
+            let ledger_id = serde_json::to_value(&response_ledger_key)
                 .map_err(|_| println_err!("Invalid format of Outputs: Ledger ID is incorrect."))?;
-            flat_value.insert("ledger_id".to_owned(), ledger_id);
+            ledger_info.insert("ledger_id".to_owned(), ledger_id);
 
-            result.push(serde_json::to_value(&flat_value)
+            result.push(serde_json::to_value(&ledger_info)
                 .map_err(|_| println_err!("Invalid format of Outputs: result is incorrect."))?);
         }
 

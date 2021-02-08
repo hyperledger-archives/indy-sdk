@@ -1517,7 +1517,7 @@ fn _append_request_endorser(command_handle: CommandHandle,
 /// # Arguments
 /// * `command_handle`: command handle to map callback to caller context.
 /// * `submitter_did`: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
-/// * `ledgers_ids`: list of ledgers IDs for freezing (json format).
+/// * `ledgers_ids`: list of ledgers IDs for freezing.
 /// * `cb`: Callback that takes command result as parameter.
 ///
 /// # Returns
