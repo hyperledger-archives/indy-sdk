@@ -201,6 +201,35 @@ mod high_cases {
         }
     }
 
+    mod frozen_ledgers {
+        use super::*;
+
+        #[test]
+        fn indy_build_ledgers_freeze_request() {
+            let ledgers_ids = vec![0u64, 1u64, 10u64, 23u64];
+            let res = ledger::build_ledgers_freeze_request(DID_TRUSTEE, ledgers_ids);
+
+            match res {
+                Ok(_) => {},
+                Err(ec) => {
+                    assert!(false, "indy_build_ledgers_freeze_request returned error_code {:?}", ec);
+                }
+            }
+        }
+
+        #[test]
+        fn indy_get_frozen_ledgers_request() {
+            let res = ledger::get_frozen_ledgers_request(DID_TRUSTEE);
+
+            match res {
+                Ok(_) => {},
+                Err(ec) => {
+                    assert!(false, "indy_get_frozen_ledgers_request returned error_code {:?}", ec);
+                }
+            }
+        }
+    }
+
     mod multi_sign_request {
         use super::*;
 

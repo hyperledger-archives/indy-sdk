@@ -1256,6 +1256,57 @@ extern "C" {
                                                                                       const char*   request_json)
                                                                 );
 
+    /// Builds a LEDGERS_FREEZE request. Request to freeze list of ledgers.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
+    /// ledgers_ids: list of ledgers IDs for freezing ledgers (json format).
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_ledgers_freeze_request(indy_handle_t command_handle,
+                                                                 const char *  submitter_did,
+                                                                 const char *  ledgers_ids,
+
+                                                                 void           (*cb)(indy_handle_t command_handle_,
+                                                                                      indy_error_t  err,
+                                                                                      const char*   request_json)
+                                                                );
+
+    /// Builds a GET_FROZEN_LEDGERS request. Request to get list of frozen ledgers.
+    /// frozen ledgers are defined by LEDGERS_FREEZE request.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///  {
+    ///     <ledger_id>: {
+    ///         "ledger": String - Ledger root hash,
+    ///         "state": String - State root hash,
+    ///         "seq_no": u64 - the latest transaction seqNo for particular Node,
+    ///     },
+    ///     ...
+    /// }
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_get_frozen_ledgers_request(indy_handle_t command_handle,
+                                                                 const char *  submitter_did,
+
+                                                                 void           (*cb)(indy_handle_t command_handle_,
+                                                                                      indy_error_t  err,
+                                                                                      const char*   request_json)
+                                                                );
+
     /// Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get a list of  acceptance mechanisms from the ledger
     /// valid for specified time or the latest one.
     ///
