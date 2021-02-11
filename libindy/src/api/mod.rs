@@ -1,26 +1,24 @@
 pub mod anoncreds;
+pub mod blob_storage;
+pub mod cache;
 pub mod crypto;
+pub mod did;
 pub mod ledger;
+pub mod logger;
+pub mod non_secrets;
 pub mod pairwise;
 pub mod pool;
-pub mod did;
 pub mod wallet;
-pub mod blob_storage;
-pub mod non_secrets;
+
+//pub mod metrics;
 //pub mod payments;
 //pub mod payments_v2;
-pub mod logger;
-pub mod cache;
-//pub mod metrics;
 
+use indy_api_types::{errors::prelude::*, validation::Validatable, ErrorCode};
+use indy_utils::ctypes;
 use libc::c_char;
 
 use crate::domain::IndyConfig;
-use indy_api_types::validation::Validatable;
-
-use indy_api_types::*;
-use indy_api_types::errors::prelude::*;
-use indy_utils::ctypes;
 
 /// Set libindy runtime configuration. Can be optionally called to change current params.
 ///
@@ -35,17 +33,17 @@ use indy_utils::ctypes;
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_set_runtime_config(config: *const c_char) -> ErrorCode {
-    trace!("indy_set_runtime_config >>> config: {:?}", config);
+pub extern "C" fn indy_set_runtime_config(config: *const c_char) -> ErrorCode {
+    debug!("indy_set_runtime_config > config {:?}", config);
 
     check_useful_validatable_json!(config, ErrorCode::CommonInvalidParam1, IndyConfig);
 
-    crate::commands::indy_set_runtime_config(config);
+    crate::Locator::instance()
+        .config_controller
+        .set_runtime_config(config);
 
     let res = ErrorCode::Success;
-
-    trace!("indy_set_runtime_config: <<< res: {:?}", res);
-
+    debug!("indy_set_runtime_config < {:?}", res);
     res
 }
 
@@ -70,11 +68,11 @@ pub extern fn indy_set_runtime_config(config: *const c_char) -> ErrorCode {
 /// }
 ///
 #[no_mangle]
-pub extern fn indy_get_current_error(error_json_p: *mut *const c_char) {
-    trace!("indy_get_current_error >>> error_json_p: {:?}", error_json_p);
+pub extern "C" fn indy_get_current_error(error_json_p: *mut *const c_char) {
+    debug!("indy_get_current_error > error_json_p {:?}", error_json_p);
 
     let error = get_current_error_c_json();
     unsafe { *error_json_p = error };
 
-    trace!("indy_get_current_error: <<<");
+    debug!("indy_get_current_error <");
 }

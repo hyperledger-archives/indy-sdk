@@ -1,6 +1,9 @@
-use std::{io::SeekFrom, path::PathBuf};
+use std::{
+    fs::File as SyncFile,
+    io::{SeekFrom, Read, Seek},
+    path::PathBuf,
+};
 
-use std::fs::File as SyncFile;
 use async_trait::async_trait;
 use indy_api_types::errors::prelude::*;
 use indy_utils::crypto::hash::Hash;
@@ -8,9 +11,8 @@ use rust_base58::ToBase58;
 use serde_json;
 
 use super::{ReadableBlob, Reader, ReaderType};
-use std::io::{Read, Seek};
 
-pub struct DefaultReader {
+pub(crate) struct DefaultReader {
     file: SyncFile,
     hash: Vec<u8>,
 }
@@ -82,10 +84,10 @@ impl ReadableBlob for DefaultReader {
     }
 }
 
-pub struct DefaultReaderType {}
+pub(crate) struct DefaultReaderType {}
 
 impl DefaultReaderType {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         DefaultReaderType {}
     }
 }

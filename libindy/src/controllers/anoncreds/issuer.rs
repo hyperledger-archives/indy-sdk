@@ -3,6 +3,7 @@ use std::{
     sync::Arc,
 };
 
+use async_std::task::spawn_blocking;
 use indy_api_types::{domain::wallet::Tags, errors::prelude::*, WalletHandle};
 use indy_wallet::{RecordOptions, WalletService};
 
@@ -34,18 +35,13 @@ use crate::{
         },
         crypto::did::DidValue,
     },
-    services::{
-        anoncreds::{helpers::parse_cred_rev_id, AnoncredsService},
-        blob_storage::BlobStorageService,
-        crypto::CryptoService,
-        pool::PoolService,
-    },
+    services::{AnoncredsHelpers, BlobStorageService, CryptoService, IssuerService, PoolService},
 };
 
 use super::tails::{store_tails_from_generator, SDKTailsAccessor};
 
 pub(crate) struct IssuerController {
-    pub anoncreds_service: Arc<AnoncredsService>,
+    pub issuer_service: Arc<IssuerService>,
     pub blob_storage_service: Arc<BlobStorageService>,
     pub pool_service: Arc<PoolService>,
     pub wallet_service: Arc<WalletService>,
@@ -54,14 +50,14 @@ pub(crate) struct IssuerController {
 
 impl IssuerController {
     pub fn new(
-        anoncreds_service: Arc<AnoncredsService>,
+        issuer_service: Arc<IssuerService>,
         pool_service: Arc<PoolService>,
         blob_storage_service: Arc<BlobStorageService>,
         wallet_service: Arc<WalletService>,
         crypto_service: Arc<CryptoService>,
     ) -> IssuerController {
         IssuerController {
-            anoncreds_service,
+            issuer_service,
             pool_service,
             blob_storage_service,
             wallet_service,
@@ -76,9 +72,12 @@ impl IssuerController {
         version: String,
         attrs: AttributeNames,
     ) -> IndyResult<(String, String)> {
-        debug!(
+        trace!(
             "create_schema > issuer_did {:?} name {:?} version {:?} attrs {:?}",
-            issuer_did, name, version, attrs
+            issuer_did,
+            name,
+            version,
+            attrs
         );
 
         self.crypto_service.validate_did(&issuer_did)?;
@@ -97,7 +96,7 @@ impl IssuerController {
             .to_indy(IndyErrorKind::InvalidState, "Cannot serialize Schema")?;
 
         let res = Ok((schema_id.0, schema_json));
-        debug!("create_schema < {:?}", res);
+        trace!("create_schema < {:?}", res);
         res
     }
 
@@ -110,11 +109,16 @@ impl IssuerController {
         type_: Option<String>,
         config: Option<CredentialDefinitionConfig>,
     ) -> IndyResult<(String, String)> {
-        debug!(
+        trace!(
             "create_and_store_credential_definition > wallet_handle {:?} \
                     issuer_did {:?} schema {:?} tag {:?} \
                     type_ {:?}, config {:?}",
-            wallet_handle, issuer_did, schema, tag, type_, config
+            wallet_handle,
+            issuer_did,
+            schema,
+            tag,
+            type_,
+            config
         );
 
         let mut schema = SchemaV1::from(schema);
@@ -163,7 +167,7 @@ impl IssuerController {
         if let Ok(cred_def) = cred_def {
             let res = Ok((cred_def_id.0, cred_def));
 
-            debug!(
+            trace!(
                 "create_and_store_credential_definition < already exists {:?}",
                 res
             );
@@ -231,7 +235,7 @@ impl IssuerController {
             .await?; // TODO: FIXME delete temporary storing of schema id
 
         let res = Ok((cred_def_id.0, cred_def_json));
-        debug!("create_and_store_credential_definition < {:?}", res);
+        trace!("create_and_store_credential_definition < {:?}", res);
         res
     }
 
@@ -245,20 +249,13 @@ impl IssuerController {
         CredentialKeyCorrectnessProof,
     )> {
         let attr_names = attr_names.clone();
-        let (s, r) = futures::channel::oneshot::channel();
 
-        crate::commands::THREADPOOL
-            .lock()
-            .unwrap()
-            .execute(move || {
-                let res = crate::services::anoncreds::issuer::Issuer::new_credential_definition(
-                    &attr_names,
-                    support_revocation,
-                );
-                s.send(res).unwrap();
-            });
+        let res = spawn_blocking(move || {
+            IssuerService::new_credential_definition(&attr_names, support_revocation)
+        })
+        .await?;
 
-        r.await?
+        Ok(res)
     }
 
     pub(crate) async fn rotate_credential_definition_start(
@@ -267,10 +264,12 @@ impl IssuerController {
         cred_def_id: CredentialDefinitionId,
         cred_def_config: Option<CredentialDefinitionConfig>,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "rotate_credential_definition_start > \
                     wallet_handle {:?} cred_def_id {:?} cred_def_config {:?}",
-            wallet_handle, cred_def_id, cred_def_config
+            wallet_handle,
+            cred_def_id,
+            cred_def_config
         );
 
         let cred_def = self
@@ -301,7 +300,7 @@ impl IssuerController {
 
             let res = Ok(cred_def_json);
 
-            debug!(
+            trace!(
                 "rotate_credential_definition_start < already exists {:?}",
                 res
             );
@@ -365,7 +364,7 @@ impl IssuerController {
             .await?;
 
         let res = Ok(cred_def_json);
-        debug!("rotate_credential_definition_start < {:?}", res);
+        trace!("rotate_credential_definition_start < {:?}", res);
         res
     }
 
@@ -374,9 +373,10 @@ impl IssuerController {
         wallet_handle: WalletHandle,
         cred_def_id: CredentialDefinitionId,
     ) -> IndyResult<()> {
-        debug!(
+        trace!(
             "rotate_credential_definition_apply > wallet_handle {:?} cred_def_id {:?}",
-            wallet_handle, cred_def_id
+            wallet_handle,
+            cred_def_id
         );
 
         let _cred_def: CredentialDefinition = self
@@ -413,7 +413,7 @@ impl IssuerController {
             .delete_indy_record::<TemporaryCredentialDefinition>(wallet_handle, &cred_def_id.0)
             .await?;
 
-        debug!("rotate_credential_definition_apply <<<");
+        trace!("rotate_credential_definition_apply <<<");
         Ok(())
     }
 
@@ -427,11 +427,17 @@ impl IssuerController {
         config: RevocationRegistryConfig,
         tails_writer_handle: i32,
     ) -> IndyResult<(String, String, String)> {
-        debug!(
+        trace!(
             "create_and_store_revocation_registry > wallet_handle {:?} \
                     issuer_did {:?} type_ {:?} tag: {:?} cred_def_id {:?} \
                     config: {:?} tails_handle {:?}",
-            wallet_handle, issuer_did, type_, tag, cred_def_id, config, tails_writer_handle
+            wallet_handle,
+            issuer_did,
+            type_,
+            tag,
+            cred_def_id,
+            config,
+            tails_writer_handle
         );
 
         match (issuer_did.get_method(), cred_def_id.get_method()) {
@@ -487,7 +493,7 @@ impl IssuerController {
         ) {
             let res = Ok((cred_def_id.0.to_string(), rev_reg_def, rev_reg));
 
-            debug!(
+            trace!(
                 "create_and_store_revocation_registry < already exists {:?}",
                 res
             );
@@ -501,7 +507,7 @@ impl IssuerController {
             .await?;
 
         let (revoc_public_keys, revoc_key_private, revoc_registry, mut revoc_tails_generator) =
-            self.anoncreds_service.issuer.new_revocation_registry(
+            self.issuer_service.new_revocation_registry(
                 &CredentialDefinitionV1::from(cred_def),
                 max_cred_num,
                 issuance_type.to_bool(),
@@ -576,7 +582,7 @@ impl IssuerController {
             .await?;
 
         let res = Ok((rev_reg_id.0, revoc_reg_def_json, revoc_reg_json));
-        debug!("create_and_store_revocation_registry < {:?}", res);
+        trace!("create_and_store_revocation_registry < {:?}", res);
         res
     }
 
@@ -585,9 +591,10 @@ impl IssuerController {
         wallet_handle: WalletHandle,
         cred_def_id: CredentialDefinitionId,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "create_credential_offer > wallet_handle {:?} cred_def_id {:?}",
-            wallet_handle, cred_def_id
+            wallet_handle,
+            cred_def_id
         );
 
         let cred_def_correctness_proof: CredentialDefinitionCorrectnessProof = self
@@ -615,7 +622,7 @@ impl IssuerController {
         )?;
 
         let res = Ok(credential_offer_json);
-        debug!("create_credential_offer < {:?}", res);
+        trace!("create_credential_offer < {:?}", res);
         res
     }
 
@@ -628,7 +635,7 @@ impl IssuerController {
         rev_reg_id: Option<RevocationRegistryId>,
         blob_storage_reader_handle: Option<i32>,
     ) -> IndyResult<(String, Option<String>, Option<String>)> {
-        debug!(
+        trace!(
             "new_credential > wallet_handle {:?} cred_offer {:?} \
                     cred_request {:?} cred_values {:?} rev_reg_id {:?} \
                     blob_storage_reader_handle {:?}",
@@ -723,7 +730,7 @@ impl IssuerController {
             };
 
         let (credential_signature, signature_correctness_proof, rev_reg_delta) =
-            self.anoncreds_service.issuer.new_credential(
+            self.issuer_service.new_credential(
                 &cred_def,
                 &cred_def_priv_key.value,
                 &cred_offer.nonce,
@@ -816,7 +823,7 @@ impl IssuerController {
         let cred_rev_id = rev_reg_info.map(|r_reg_info| r_reg_info.curr_id.to_string());
 
         let res = Ok((cred_json, cred_rev_id, rev_reg_delta_json));
-        debug!("new_credential < {:?}", secret!(&res));
+        trace!("new_credential < {:?}", secret!(&res));
         res
     }
 
@@ -827,7 +834,7 @@ impl IssuerController {
         rev_reg_id: RevocationRegistryId,
         cred_revoc_id: String,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "revoke_credential > wallet_handle {:?} \
                     blob_storage_reader_handle {:?} \
                     rev_reg_id {:?} cred_revoc_id {:?}",
@@ -837,7 +844,7 @@ impl IssuerController {
             secret!(&cred_revoc_id)
         );
 
-        let cred_revoc_id = parse_cred_rev_id(&cred_revoc_id)?;
+        let cred_revoc_id = AnoncredsHelpers::parse_cred_rev_id(&cred_revoc_id)?;
 
         let revocation_registry_definition: RevocationRegistryDefinitionV1 =
             RevocationRegistryDefinitionV1::from(
@@ -894,7 +901,7 @@ impl IssuerController {
             }
         };
 
-        let rev_reg_delta = self.anoncreds_service.issuer.revoke(
+        let rev_reg_delta = self.issuer_service.revoke(
             &mut rev_reg.value,
             revocation_registry_definition.value.max_cred_num,
             cred_revoc_id,
@@ -922,7 +929,7 @@ impl IssuerController {
             .await?;
 
         let res = Ok(rev_reg_delta_json);
-        debug!("revoke_credential < {:?}", res);
+        trace!("revoke_credential < {:?}", res);
         res
     }
 
@@ -933,10 +940,10 @@ impl IssuerController {
         rev_reg_id: &RevocationRegistryId,
         cred_revoc_id: &str,
     ) -> IndyResult<String> {
-        debug!("recovery_credential >>> wallet_handle: {:?}, blob_storage_reader_handle: {:?}, rev_reg_id: {:?}, cred_revoc_id: {:?}",
+        trace!("recovery_credential >>> wallet_handle: {:?}, blob_storage_reader_handle: {:?}, rev_reg_id: {:?}, cred_revoc_id: {:?}",
                wallet_handle, blob_storage_reader_handle, rev_reg_id, secret!(cred_revoc_id));
 
-        let cred_revoc_id = parse_cred_rev_id(cred_revoc_id)?;
+        let cred_revoc_id = AnoncredsHelpers::parse_cred_rev_id(cred_revoc_id)?;
 
         let revocation_registry_definition: RevocationRegistryDefinitionV1 =
             RevocationRegistryDefinitionV1::from(
@@ -993,7 +1000,7 @@ impl IssuerController {
             }
         };
 
-        let revocation_registry_delta = self.anoncreds_service.issuer.recovery(
+        let revocation_registry_delta = self.issuer_service.recovery(
             &mut rev_reg.value,
             revocation_registry_definition.value.max_cred_num,
             cred_revoc_id,
@@ -1021,7 +1028,7 @@ impl IssuerController {
             .await?;
 
         let res = Ok(rev_reg_delta_json);
-        debug!("recovery_credential < {:?}", res);
+        trace!("recovery_credential < {:?}", res);
         res
     }
 
@@ -1030,9 +1037,10 @@ impl IssuerController {
         rev_reg_delta: RevocationRegistryDelta,
         other_rev_reg_delta: RevocationRegistryDelta,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "merge_revocation_registry_deltas > rev_reg_delta {:?} other_rev_reg_delta {:?}",
-            rev_reg_delta, other_rev_reg_delta
+            rev_reg_delta,
+            other_rev_reg_delta
         );
 
         let mut rev_reg_delta = RevocationRegistryDeltaV1::from(rev_reg_delta);
@@ -1049,7 +1057,7 @@ impl IssuerController {
         )?;
 
         let res = Ok(merged_rev_reg_delta_json);
-        debug!("merge_revocation_registry_deltas < {:?}", res);
+        trace!("merge_revocation_registry_deltas < {:?}", res);
         res
     }
 

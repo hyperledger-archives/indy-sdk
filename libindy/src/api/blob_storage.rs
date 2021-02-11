@@ -2,7 +2,7 @@ use indy_api_types::{errors::prelude::*, CommandHandle, ErrorCode, IndyHandle};
 use indy_utils::ctypes;
 use libc::c_char;
 
-use crate::commands::Locator;
+use crate::Locator;
 
 #[no_mangle]
 pub extern "C" fn indy_open_blob_storage_reader(
@@ -11,44 +11,40 @@ pub extern "C" fn indy_open_blob_storage_reader(
     config_json: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, handle: IndyHandle)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_open_blob_storage_reader > type_ {:?} config_json {:?}",
-        type_,
-        config_json
+        type_, config_json
     );
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(config_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_open_blob_storage_reader ? type_ {:?} config_json {:?}",
-        type_,
-        config_json
+        type_, config_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.blob_storage_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.open_reader(type_, config_json).await;
-        let (err, handle) = prepare_result_1!(res, 0);
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .blob_storage_controller
+            .open_reader(type_, config_json)
+            .await;
+        
+            let (err, handle) = prepare_result_1!(res, 0);
 
-        trace!(
+        debug!(
             "indy_open_blob_storage_reader ? err {:?} handle {:?}",
-            err,
-            handle
+            err, handle
         );
 
         cb(command_handle, err, handle)
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_open_blob_storage_reader < {:?}", res);
+    debug!("indy_open_blob_storage_reader < {:?}", res);
     res
 }
 
@@ -59,43 +55,38 @@ pub extern "C" fn indy_open_blob_storage_writer(
     config_json: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, handle: IndyHandle)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_open_blob_storage_writer > type_ {:?} config_json {:?}",
-        type_,
-        config_json
+        type_, config_json
     );
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(config_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_open_blob_storage_writer ? type_ {:?} config_json {:?}",
-        type_,
-        config_json
+        type_, config_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.blob_storage_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.open_writer(type_, config_json).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .blob_storage_controller
+            .open_writer(type_, config_json)
+            .await;
         let (err, handle) = prepare_result_1!(res, 0);
 
-        trace!(
+        debug!(
             "indy_open_blob_storage_writer ? err {:?} handle {:?}",
-            err,
-            handle
+            err, handle
         );
 
         cb(command_handle, err, handle)
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_open_blob_storage_writer < {:?}", res);
+    debug!("indy_open_blob_storage_writer < {:?}", res);
     res
 }

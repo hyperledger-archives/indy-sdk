@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use indy_api_types::errors::prelude::*;
 
-use crate::services::blob_storage::BlobStorageService;
+use crate::services::BlobStorageService;
 
 pub(crate) struct BlobStorageController {
     blob_storage_service: Arc<BlobStorageService>,
@@ -16,7 +16,7 @@ impl BlobStorageController {
     }
 
     pub(crate) async fn open_reader(&self, type_: String, config: String) -> IndyResult<i32> {
-        debug!("open_reader > type_ {:?} config {:?}", type_, config);
+        trace!("open_reader > type_ {:?} config {:?}", type_, config);
 
         let handle = self
             .blob_storage_service
@@ -24,12 +24,12 @@ impl BlobStorageController {
             .await?;
 
         let res = Ok(handle);
-        debug!("open_reader < {:?}", res);
+        trace!("open_reader < {:?}", res);
         res
     }
 
     pub(crate) async fn open_writer(&self, type_: String, config: String) -> IndyResult<i32> {
-        debug!("open_writer > type_ {:?} config {:?}", type_, config);
+        trace!("open_writer > type_ {:?} config {:?}", type_, config);
 
         let handle = self
             .blob_storage_service
@@ -37,7 +37,7 @@ impl BlobStorageController {
             .await?;
 
         let res = Ok(handle);
-        debug!("open_writer < {:?}", res);
+        trace!("open_writer < {:?}", res);
         res
     }
 }

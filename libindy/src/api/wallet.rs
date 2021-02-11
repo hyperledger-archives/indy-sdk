@@ -1,15 +1,16 @@
+use indy_api_types::{
+    domain::wallet::{Config, Credentials, ExportConfig, KeyConfig},
+    errors::prelude::*,
+    validation::Validatable,
+    wallet::*,
+    CommandHandle, ErrorCode, WalletHandle, INVALID_WALLET_HANDLE,
+};
 
-use indy_api_types::{ErrorCode, CommandHandle, WalletHandle, INVALID_WALLET_HANDLE};
-use crate::commands::Locator;
-use indy_api_types::domain::wallet::{Config, Credentials, ExportConfig, KeyConfig};
-use indy_api_types::wallet::*;
-use indy_api_types::errors::prelude::*;
 use indy_utils::ctypes;
-use indy_api_types::validation::Validatable;
-
-use serde_json;
 use libc::c_char;
+use serde_json;
 
+use crate::Locator;
 
 /// Register custom wallet storage implementation.
 ///
@@ -42,7 +43,7 @@ use libc::c_char;
 /// #Returns
 /// Error code
 #[no_mangle]
-pub extern fn indy_register_wallet_storage(
+pub extern "C" fn indy_register_wallet_storage(
     command_handle: CommandHandle,
     type_: *const c_char,
     create: Option<WalletCreate>,
@@ -69,9 +70,9 @@ pub extern fn indy_register_wallet_storage(
     get_search_total_count: Option<WalletGetSearchTotalCount>,
     fetch_search_next_record: Option<WalletFetchSearchNextRecord>,
     free_search: Option<WalletFreeSearch>,
-    cb: Option<extern fn(command_handle_: CommandHandle,
-                         err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_register_wallet_type: > type_ {:?}", type_); // TODO: Log all params
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
+) -> ErrorCode {
+    debug!("indy_register_wallet_type: > type_ {:?}", type_); // TODO: Log all params
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(create, ErrorCode::CommonInvalidParam3);
@@ -100,53 +101,47 @@ pub extern fn indy_register_wallet_storage(
     check_useful_c_callback!(free_search, ErrorCode::CommonInvalidParam26);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam27);
 
-    trace!("indy_register_wallet_type ? type_ {:?}", type_);
+    debug!("indy_register_wallet_type ? type_ {:?}", type_);
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.wallet_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
-            .register_type(
-                type_,
-                create,
-                open,
-                close,
-                delete,
-                add_record,
-                update_record_value,
-                update_record_tags,
-                add_record_tags,
-                delete_record_tags,
-                delete_record,
-                get_record,
-                get_record_id,
-                get_record_type,
-                get_record_value,
-                get_record_tags,
-                free_record,
-                get_storage_metadata,
-                set_storage_metadata,
-                free_storage_metadata,
-                search_records,
-                search_all_records,
-                get_search_total_count,
-                fetch_search_next_record,
-                free_search,
-            );
+    locator.executor.spawn_ok(async move {
+        let res = locator.wallet_controller.register_type(
+            type_,
+            create,
+            open,
+            close,
+            delete,
+            add_record,
+            update_record_value,
+            update_record_tags,
+            add_record_tags,
+            delete_record_tags,
+            delete_record,
+            get_record,
+            get_record_id,
+            get_record_type,
+            get_record_value,
+            get_record_tags,
+            free_record,
+            get_storage_metadata,
+            set_storage_metadata,
+            free_storage_metadata,
+            search_records,
+            search_all_records,
+            get_search_total_count,
+            fetch_search_next_record,
+            free_search,
+        );
 
         let err = prepare_result!(res);
-        trace!("indy_register_wallet_type ? err {:?}", err);
+        debug!("indy_register_wallet_type ? err {:?}", err);
 
         cb(command_handle, err);
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_register_wallet_type < {:?}", res);
+    debug!("indy_register_wallet_type < {:?}", res);
     res
 }
 
@@ -190,42 +185,40 @@ pub extern fn indy_register_wallet_storage(
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_create_wallet(
+pub extern "C" fn indy_create_wallet(
     command_handle: CommandHandle,
     config: *const c_char,
     credentials: *const c_char,
-    cb: Option<extern fn(command_handle_: CommandHandle,
-                         err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_create_wallet > config {:?} credentials {:?}",
-           config, credentials);
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
+) -> ErrorCode {
+    debug!(
+        "indy_create_wallet > config {:?} credentials {:?}",
+        config, credentials
+    );
 
     check_useful_validatable_json!(config, ErrorCode::CommonInvalidParam2, Config);
     check_useful_json!(credentials, ErrorCode::CommonInvalidParam3, Credentials);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_create_wallet ? config {:?} credentials {:?}",
-           config, secret!(&credentials));
+    debug!(
+        "indy_create_wallet ? config {:?} credentials {:?}",
+        config,
+        secret!(&credentials)
+    );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.wallet_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
-            .create(config, credentials)
-            .await;
+    locator.executor.spawn_ok(async move {
+        let res = locator.wallet_controller.create(config, credentials).await;
 
         let err = prepare_result!(res);
-        trace!("indy_create_wallet ? err {:?}", err);
+        debug!("indy_create_wallet ? err {:?}", err);
 
         cb(command_handle, err);
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_create_wallet < {:?}", res);
+    debug!("indy_create_wallet < {:?}", res);
     res
 }
 
@@ -279,44 +272,42 @@ pub extern fn indy_create_wallet(
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_open_wallet(
+pub extern "C" fn indy_open_wallet(
     command_handle: CommandHandle,
     config: *const c_char,
     credentials: *const c_char,
-    cb: Option<extern fn(command_handle_: CommandHandle,
-                         err: ErrorCode,
-                         wallet_handle: WalletHandle)>) -> ErrorCode {
-    trace!("indy_open_wallet > config {:?} credentials {:?}",
-           config, credentials);
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, wallet_handle: WalletHandle),
+    >,
+) -> ErrorCode {
+    debug!(
+        "indy_open_wallet > config {:?} credentials {:?}",
+        config, credentials
+    );
 
     check_useful_validatable_json!(config, ErrorCode::CommonInvalidParam2, Config);
     check_useful_json!(credentials, ErrorCode::CommonInvalidParam3, Credentials);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_open_wallet ? config {:?} credentials {:?}",
-           config, secret!(&credentials));
+    debug!(
+        "indy_open_wallet ? config {:?} credentials {:?}",
+        config,
+        secret!(&credentials)
+    );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.wallet_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
-            .open(config, credentials)
-            .await;
+    locator.executor.spawn_ok(async move {
+        let res = locator.wallet_controller.open(config, credentials).await;
 
         let (err, handle) = prepare_result_1!(res, INVALID_WALLET_HANDLE);
-        trace!("indy_open_wallet ? err {:?} handle {:?}",
-               err, handle);
+        debug!("indy_open_wallet ? err {:?} handle {:?}", err, handle);
 
         cb(command_handle, err, handle)
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_open_wallet < {:?}", res);
+    debug!("indy_open_wallet < {:?}", res);
     res
 }
 
@@ -343,42 +334,44 @@ pub extern fn indy_open_wallet(
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_export_wallet(
+pub extern "C" fn indy_export_wallet(
     command_handle: CommandHandle,
     wallet_handle: WalletHandle,
     export_config: *const c_char,
-    cb: Option<extern fn(command_handle_: CommandHandle,
-                         err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_export_wallet > wallet_handle {:?} export_config {:?}", wallet_handle, export_config);
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
+) -> ErrorCode {
+    debug!(
+        "indy_export_wallet > wallet_handle {:?} export_config {:?}",
+        wallet_handle, export_config
+    );
 
     check_useful_json!(export_config, ErrorCode::CommonInvalidParam3, ExportConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_export_wallet ? wallet_handle {:?} export_config {:?}", wallet_handle, secret!(&export_config));
+    debug!(
+        "indy_export_wallet ? wallet_handle {:?} export_config {:?}",
+        wallet_handle,
+        secret!(&export_config)
+    );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.wallet_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .wallet_controller
             .export(wallet_handle, export_config)
             .await;
 
         let err = prepare_result!(res);
-        trace!("indy_export_wallet ? err {:?}", err);
+        debug!("indy_export_wallet ? err {:?}", err);
 
         cb(command_handle, err);
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_export_wallet < {:?}", res);
+    debug!("indy_export_wallet < {:?}", res);
     res
 }
-
 
 /// Creates a new secure wallet and then imports its content
 /// according to fields provided in import_config
@@ -427,47 +420,48 @@ pub extern fn indy_export_wallet(
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_import_wallet(
+pub extern "C" fn indy_import_wallet(
     command_handle: CommandHandle,
     config: *const c_char,
     credentials: *const c_char,
     import_config: *const c_char,
-    cb: Option<extern fn(command_handle_: CommandHandle,
-                         err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_import_wallet > config {:?} credentials {:?} import_config {:?}",
-           config, credentials, import_config);
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
+) -> ErrorCode {
+    debug!(
+        "indy_import_wallet > config {:?} credentials {:?} import_config {:?}",
+        config, credentials, import_config
+    );
 
     check_useful_validatable_json!(config, ErrorCode::CommonInvalidParam2, Config);
     check_useful_json!(credentials, ErrorCode::CommonInvalidParam3, Credentials);
     check_useful_json!(import_config, ErrorCode::CommonInvalidParam4, ExportConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_import_wallet ? config {:?} credentials {:?} import_config {:?}",
-           config, secret!(&credentials), secret!(&import_config));
+    debug!(
+        "indy_import_wallet ? config {:?} credentials {:?} import_config {:?}",
+        config,
+        secret!(&credentials),
+        secret!(&import_config)
+    );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.wallet_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .wallet_controller
             .import(config, credentials, import_config)
             .await;
 
         let err = prepare_result!(res);
-        trace!("indy_import_wallet ? err {:?}", err);
+        debug!("indy_import_wallet ? err {:?}", err);
 
         cb(command_handle, err);
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_import_wallet < {:?}", res);
+    debug!("indy_import_wallet < {:?}", res);
     res
 }
-
 
 /// Closes opened wallet and frees allocated resources.
 ///
@@ -481,37 +475,30 @@ pub extern fn indy_import_wallet(
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_close_wallet(
+pub extern "C" fn indy_close_wallet(
     command_handle: CommandHandle,
     wallet_handle: WalletHandle,
-    cb: Option<extern fn(command_handle_: CommandHandle,
-                         err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_close_wallet > wallet_handle {:?}", wallet_handle);
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
+) -> ErrorCode {
+    debug!("indy_close_wallet > wallet_handle {:?}", wallet_handle);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_close_wallet ? wallet_handle {:?}", wallet_handle);
+    debug!("indy_close_wallet ? wallet_handle {:?}", wallet_handle);
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.wallet_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
-            .close(wallet_handle)
-            .await;
+    locator.executor.spawn_ok(async move {
+        let res = locator.wallet_controller.close(wallet_handle).await;
 
         let err = prepare_result!(res);
-        trace!("indy_close_wallet ? err {:?}", err);
+        debug!("indy_close_wallet ? err {:?}", err);
 
         cb(command_handle, err)
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_close_wallet < {:?}", res);
+    debug!("indy_close_wallet < {:?}", res);
     res
 }
 
@@ -555,41 +542,40 @@ pub extern fn indy_close_wallet(
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_delete_wallet(
+pub extern "C" fn indy_delete_wallet(
     command_handle: CommandHandle,
     config: *const c_char,
     credentials: *const c_char,
-    cb: Option<extern fn(command_handle_: CommandHandle,
-                         err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_delete_wallet > config {:?} credentials {:?}",
-           config, credentials);
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
+) -> ErrorCode {
+    debug!(
+        "indy_delete_wallet > config {:?} credentials {:?}",
+        config, credentials
+    );
 
     check_useful_validatable_json!(config, ErrorCode::CommonInvalidParam2, Config);
     check_useful_json!(credentials, ErrorCode::CommonInvalidParam3, Credentials);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_delete_wallet ? config {:?} credentials {:?}", config, secret!(&credentials));
+    debug!(
+        "indy_delete_wallet ? config {:?} credentials {:?}",
+        config,
+        secret!(&credentials)
+    );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.wallet_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
-            .delete(config, credentials)
-            .await;
+    locator.executor.spawn_ok(async move {
+        let res = locator.wallet_controller.delete(config, credentials).await;
 
         let err = prepare_result!(res);
-        trace!("indy_delete_wallet ? err {:?}", err);
+        debug!("indy_delete_wallet ? err {:?}", err);
 
         cb(command_handle, err);
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_delete_wallet < {:?}", res);
+    debug!("indy_delete_wallet < {:?}", res);
     res
 }
 
@@ -611,37 +597,34 @@ pub extern fn indy_delete_wallet(
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_generate_wallet_key(command_handle: CommandHandle,
-                                       config: *const c_char,
-                                       cb: Option<extern fn(command_handle_: CommandHandle,
-                                                            err: ErrorCode,
-                                                            key: *const c_char)>) -> ErrorCode {
-    trace!("indy_generate_wallet_key > config {:?}", config);
+pub extern "C" fn indy_generate_wallet_key(
+    command_handle: CommandHandle,
+    config: *const c_char,
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, key: *const c_char)>,
+) -> ErrorCode {
+    debug!("indy_generate_wallet_key > config {:?}", config);
 
     check_useful_opt_json!(config, ErrorCode::CommonInvalidParam2, KeyConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_generate_wallet_key ? config: {:?}", secret!(config.as_ref()));
+    debug!(
+        "indy_generate_wallet_key ? config: {:?}",
+        secret!(config.as_ref())
+    );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.wallet_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
-            .generate_key(config);
+    locator.executor.spawn_ok(async move {
+        let res = locator.wallet_controller.generate_key(config);
 
         let (err, key) = prepare_result_1!(res, String::new());
-        trace!("indy_generate_wallet_key ? err {:?} result {:?}", err, key);
+        debug!("indy_generate_wallet_key ? err {:?} result {:?}", err, key);
 
         let res = ctypes::string_to_cstring(key);
         cb(command_handle, err, res.as_ptr())
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_generate_wallet_key {:?}", res);
+    debug!("indy_generate_wallet_key {:?}", res);
     res
 }

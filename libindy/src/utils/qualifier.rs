@@ -1,4 +1,5 @@
 use regex::Regex;
+use lazy_static::lazy_static;
 
 lazy_static! {
     pub static ref REGEX: Regex = Regex::new("^[a-z0-9]+:([a-z0-9]+):(.*)$").unwrap();

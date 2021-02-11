@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use indy_api_types::errors::prelude::*;
+use log::trace;
 
 use crate::{
     domain::anoncreds::{
@@ -13,16 +14,16 @@ use crate::{
         },
         schema::{schemas_map_to_schemas_v1_map, Schemas},
     },
-    services::anoncreds::AnoncredsService,
+    services::VerifierService,
 };
 
 pub(crate) struct VerifierController {
-    anoncreds_service: Arc<AnoncredsService>,
+    verifier_service: Arc<VerifierService>,
 }
 
 impl VerifierController {
-    pub(crate) fn new(anoncreds_service: Arc<AnoncredsService>) -> VerifierController {
-        VerifierController { anoncreds_service }
+    pub(crate) fn new(verifier_service: Arc<VerifierService>) -> VerifierController {
+        VerifierController { verifier_service }
     }
 
     pub(crate) fn verify_proof(
@@ -34,11 +35,16 @@ impl VerifierController {
         rev_reg_defs: RevocationRegistryDefinitions,
         rev_regs: RevocationRegistries,
     ) -> IndyResult<bool> {
-        debug!(
+        trace!(
             "verify_proof > proof_req {:?} \
                 proof {:?} schemas {:?} cred_defs {:?} \
                 rev_reg_defs {:?} rev_regs {:?}",
-            proof_req, proof, schemas, cred_defs, rev_reg_defs, rev_regs
+            proof_req,
+            proof,
+            schemas,
+            cred_defs,
+            rev_reg_defs,
+            rev_regs
         );
 
         let schemas = schemas_map_to_schemas_v1_map(schemas);
@@ -46,7 +52,7 @@ impl VerifierController {
         let rev_reg_defs = rev_reg_defs_map_to_rev_reg_defs_v1_map(rev_reg_defs);
         let rev_regs = rev_regs_map_to_rev_regs_local_map(rev_regs);
 
-        let valid = self.anoncreds_service.verifier.verify(
+        let valid = self.verifier_service.verify(
             &proof,
             &proof_req.value(),
             &schemas,
@@ -56,22 +62,21 @@ impl VerifierController {
         )?;
 
         let res = Ok(valid);
-        debug!("verify_proof < {:?}", res);
+        trace!("verify_proof < {:?}", res);
         res
     }
 
     pub(crate) fn generate_nonce(&self) -> IndyResult<String> {
-        debug!("generate_nonce >");
+        trace!("generate_nonce >");
 
         let nonce = self
-            .anoncreds_service
-            .verifier
+            .verifier_service
             .generate_nonce()?
             .to_dec()
             .to_indy(IndyErrorKind::InvalidState, "Cannot serialize Nonce")?;
 
         let res = Ok(nonce);
-        debug!("generate_nonce < {:?}", res);
+        trace!("generate_nonce < {:?}", res);
         res
     }
 }

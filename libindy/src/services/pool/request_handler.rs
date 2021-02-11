@@ -16,7 +16,7 @@ use crate::services::pool::catchup::{build_catchup_req, CatchupProgress, check_c
 use crate::services::pool::events::NetworkerEvent;
 use crate::services::pool::events::PoolEvent;
 use crate::services::pool::events::RequestEvent;
-use crate::services::pool::{get_last_signed_time, Nodes, PoolService};
+use crate::services::pool::{PoolService, Nodes};
 use crate::services::pool::merkle_tree_factory;
 use crate::services::pool::networker::Networker;
 use crate::services::pool::state_proof;
@@ -388,10 +388,11 @@ impl<T: Networker> RequestSM<T> {
                     RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
                         trace!("reply on single request");
                         state.timeout_nodes.remove(&node_alias);
+                        
                         if let Ok((result, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
                             let hashable = HashableValue { inner: result_without_proof };
 
-                            let last_write_time = get_last_signed_time(&raw_msg).unwrap_or(0);
+                            let last_write_time = PoolService::get_last_signed_time(&raw_msg).unwrap_or(0);
 
                             let (cnt, soonest) = {
                                 let set = state.replies.entry(hashable).or_insert_with(HashSet::new);
@@ -822,7 +823,7 @@ fn _extract_left_last_write_time(msg_result: &SJsonValue) -> Option<u64> {
 }
 
 fn _get_freshness_threshold() -> u64 {
-    *THRESHOLD.lock().unwrap()
+    *THRESHOLD.read().unwrap()
 }
 
 fn _get_cur_time() -> u64 {
@@ -1214,7 +1215,7 @@ pub mod tests {
 
     mod single {
         use super::*;
-        use crate::services::pool::set_freshness_threshold;
+        use crate::services::PoolService;
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_consensus_reached() {

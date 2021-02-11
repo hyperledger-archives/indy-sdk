@@ -19,6 +19,7 @@ use libc::c_char;
 
 use crate::ErrorCode;
 
+
 pub mod prelude {
     pub use super::{
         err_msg, get_current_error_c_json, set_current_error, IndyError, IndyErrorExt,

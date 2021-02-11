@@ -1,11 +1,11 @@
-use libc::{c_void, c_char};
-
-use indy_api_types::ErrorCode;
-use indy_api_types::errors::prelude::*;
-
-use crate::utils::logger::{EnabledCB, LogCB, FlushCB, LibindyLogger, LibindyDefaultLogger, LOGGER_STATE};
+use indy_api_types::{errors::prelude::*, ErrorCode};
 use indy_utils::ctypes;
+use libc::{c_char, c_void};
 use log::LevelFilter;
+
+use crate::utils::logger::{
+    EnabledCB, FlushCB, LibindyDefaultLogger, LibindyLogger, LogCB, LOGGER_STATE,
+};
 
 /// Set custom logger implementation.
 ///
@@ -20,23 +20,25 @@ use log::LevelFilter;
 /// #Returns
 /// Error code
 #[no_mangle]
-pub extern fn indy_set_logger(context: *const c_void,
-                              enabled: Option<EnabledCB>,
-                              log: Option<LogCB>,
-                              flush: Option<FlushCB>) -> ErrorCode {
-    trace!("indy_set_logger >>> context: {:?}, enabled: {:?}, log: {:?}, flush: {:?}", context, enabled, log, flush);
+pub extern "C" fn indy_set_logger(
+    context: *const c_void,
+    enabled: Option<EnabledCB>,
+    log: Option<LogCB>,
+    flush: Option<FlushCB>,
+) -> ErrorCode {
+    debug!(
+        "indy_set_logger > context {:?} enabled {:?} log {:?} flush {:?}",
+        context, enabled, log, flush
+    );
 
     check_useful_c_callback!(log, ErrorCode::CommonInvalidParam3);
 
-    let result = LibindyLogger::init(context, enabled, log, flush, None);
+    let res = LibindyLogger::init(context, enabled, log, flush, None);
 
-    let res = prepare_result!(result);
-
-    trace!("indy_set_logger: <<< res: {:?}", res);
-
-    res
+    let err = prepare_result!(res);
+    debug!("indy_set_logger < {:?}", err);
+    err
 }
-
 
 /// Set custom logger implementation.
 ///
@@ -55,23 +57,32 @@ pub extern fn indy_set_logger(context: *const c_void,
 /// ErrorCode::CommonInvalidParam3 is returned in case of `log` callback is missed
 /// ErrorCode::CommonInvalidParam5 is returned in case of `max_lvl` value is out of range [0-5]
 #[no_mangle]
-pub extern fn indy_set_logger_with_max_lvl(context: *const c_void,
-                                           enabled: Option<EnabledCB>,
-                                           log: Option<LogCB>,
-                                           flush: Option<FlushCB>,
-                                           max_lvl: u32) -> ErrorCode {
-    trace!("indy_set_logger >>> context: {:?}, enabled: {:?}, log: {:?}, flush: {:?}, max lvl {}", context, enabled, log, flush, max_lvl);
+pub extern "C" fn indy_set_logger_with_max_lvl(
+    context: *const c_void,
+    enabled: Option<EnabledCB>,
+    log: Option<LogCB>,
+    flush: Option<FlushCB>,
+    max_lvl: u32,
+) -> ErrorCode {
+    debug!(
+        "indy_set_logger > context {:?} enabled {:?} \
+            log {:?} flush {:?} max lvl {}",
+        context, enabled, log, flush, max_lvl
+    );
 
     check_useful_c_callback!(log, ErrorCode::CommonInvalidParam3);
-    check_u32_less_or_eq!(max_lvl, LevelFilter::max() as usize as u32, ErrorCode::CommonInvalidParam5);
 
-    let result = LibindyLogger::init(context, enabled, log, flush, Some(max_lvl));
+    check_u32_less_or_eq!(
+        max_lvl,
+        LevelFilter::max() as usize as u32,
+        ErrorCode::CommonInvalidParam5
+    );
 
-    let res = prepare_result!(result);
+    let res = LibindyLogger::init(context, enabled, log, flush, Some(max_lvl));
 
-    trace!("indy_set_logger: <<< res: {:?}", res);
-
-    res
+    let err = prepare_result!(res);
+    debug!("indy_set_logger < {:?}", err);
+    err
 }
 
 ///
@@ -85,20 +96,21 @@ pub extern fn indy_set_logger_with_max_lvl(context: *const c_void,
 /// On success returns `ErrorCode::Success`
 /// ErrorCode::CommonInvalidParam1 is returned in case of `max_lvl` value is out of range [0-5]
 #[no_mangle]
-pub extern fn indy_set_log_max_lvl(max_lvl: u32) -> ErrorCode {
-    trace!("indy_set_log_max_lvl >>> max_lvl: {}", max_lvl);
+pub extern "C" fn indy_set_log_max_lvl(max_lvl: u32) -> ErrorCode {
+    debug!("indy_set_log_max_lvl > max_lvl {}", max_lvl);
 
-    check_u32_less_or_eq!(max_lvl, LevelFilter::max() as usize as u32, ErrorCode::CommonInvalidParam1);
+    check_u32_less_or_eq!(
+        max_lvl,
+        LevelFilter::max() as usize as u32,
+        ErrorCode::CommonInvalidParam1
+    );
 
-    let result = LibindyLogger::set_max_level(max_lvl);
+    let res = LibindyLogger::set_max_level(max_lvl);
 
-    let res = prepare_result!(result);
-
-    trace!("indy_set_log_max_lvl: <<< res: {:?}", res);
-
-    res
+    let err = prepare_result!(res);
+    debug!("indy_set_log_max_lvl < {:?}", err);
+    err
 }
-
 
 /// Set default logger implementation.
 ///
@@ -113,20 +125,18 @@ pub extern fn indy_set_log_max_lvl(max_lvl: u32) -> ErrorCode {
 /// #Returns
 /// Error code
 #[no_mangle]
-pub extern fn indy_set_default_logger(pattern: *const c_char) -> ErrorCode {
-    trace!("indy_set_default_logger >>> pattern: {:?}", pattern);
+pub extern "C" fn indy_set_default_logger(pattern: *const c_char) -> ErrorCode {
+    debug!("indy_set_default_logger > pattern {:?}", pattern);
 
     check_useful_opt_c_str!(pattern, ErrorCode::CommonInvalidParam1);
 
-    trace!("indy_set_default_logger: entities >>> pattern: {:?}", pattern);
+    debug!("indy_set_default_logger ? pattern {:?}", pattern);
 
-    let result = LibindyDefaultLogger::init(pattern);
+    let res = LibindyDefaultLogger::init(pattern);
 
-    let res = prepare_result!(result);
-
-    trace!("indy_set_default_logger: <<< res: {:?}", res);
-
-    res
+    let err = prepare_result!(res);
+    debug!("indy_set_default_logger < {:?}", err);
+    err
 }
 
 /// Get the currently used logger.
@@ -142,11 +152,17 @@ pub extern fn indy_set_default_logger(pattern: *const c_char) -> ErrorCode {
 /// #Returns
 /// Error code
 #[no_mangle]
-pub extern fn indy_get_logger(context_p: *mut *const c_void,
-                              enabled_cb_p: *mut Option<EnabledCB>,
-                              log_cb_p: *mut Option<LogCB>,
-                              flush_cb_p: *mut Option<FlushCB>) -> ErrorCode {
-    trace!("indy_get_logger >>> context_p: {:?}, enabled_cb_p: {:?}, log_cb_p: {:?}, flush_cb_p: {:?}", context_p, enabled_cb_p, log_cb_p, flush_cb_p);
+pub extern "C" fn indy_get_logger(
+    context_p: *mut *const c_void,
+    enabled_cb_p: *mut Option<EnabledCB>,
+    log_cb_p: *mut Option<LogCB>,
+    flush_cb_p: *mut Option<FlushCB>,
+) -> ErrorCode {
+    debug!(
+        "indy_get_logger > context_p {:?} enabled_cb_p {:?} \
+            log_cb_p {:?} flush_cb_p {:?}",
+        context_p, enabled_cb_p, log_cb_p, flush_cb_p
+    );
 
     unsafe {
         let (context, enabled_cb, log_cb, flush_cb) = LOGGER_STATE.get();
@@ -158,8 +174,6 @@ pub extern fn indy_get_logger(context_p: *mut *const c_void,
     }
 
     let res = ErrorCode::Success;
-
-    trace!("indy_get_logger: <<< res: {:?}", res);
-
+    debug!("indy_get_logger < {:?}", res);
     res
 }

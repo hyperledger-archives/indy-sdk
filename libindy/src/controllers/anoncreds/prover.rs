@@ -8,6 +8,7 @@ use futures::lock::Mutex;
 use indy_api_types::{errors::prelude::*, SearchHandle, WalletHandle};
 use indy_utils::next_search_handle;
 use indy_wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
+use log::trace;
 use serde_json::Value;
 use ursa::cl::{new_nonce, RevocationRegistry, Witness};
 
@@ -39,14 +40,7 @@ use crate::{
         },
         crypto::did::DidValue,
     },
-    services::{
-        anoncreds::{
-            helpers::{get_non_revoc_interval, parse_cred_rev_id},
-            AnoncredsService,
-        },
-        blob_storage::BlobStorageService,
-        crypto::CryptoService,
-    },
+    services::{AnoncredsHelpers, BlobStorageService, CryptoService, ProverService},
     utils::wql::Query,
 };
 
@@ -73,7 +67,7 @@ impl SearchForProofRequest {
 }
 
 pub(crate) struct ProverController {
-    anoncreds_service: Arc<AnoncredsService>,
+    prover_service: Arc<ProverService>,
     wallet_service: Arc<WalletService>,
     crypto_service: Arc<CryptoService>,
     blob_storage_service: Arc<BlobStorageService>,
@@ -84,13 +78,13 @@ pub(crate) struct ProverController {
 
 impl ProverController {
     pub(crate) fn new(
-        anoncreds_service: Arc<AnoncredsService>,
+        prover_service: Arc<ProverService>,
         wallet_service: Arc<WalletService>,
         crypto_service: Arc<CryptoService>,
         blob_storage_service: Arc<BlobStorageService>,
     ) -> ProverController {
         ProverController {
-            anoncreds_service,
+            prover_service,
             wallet_service,
             crypto_service,
             blob_storage_service,
@@ -104,9 +98,10 @@ impl ProverController {
         wallet_handle: WalletHandle,
         master_secret_id: Option<String>,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "create_master_secret > wallet_handle {:?} master_secret_id {:?}",
-            wallet_handle, master_secret_id
+            wallet_handle,
+            master_secret_id
         );
 
         let master_secret_id = master_secret_id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
@@ -122,7 +117,7 @@ impl ProverController {
             ));
         }
 
-        let master_secret = self.anoncreds_service.prover.new_master_secret()?;
+        let master_secret = self.prover_service.new_master_secret()?;
 
         let master_secret = MasterSecret {
             value: master_secret,
@@ -138,7 +133,7 @@ impl ProverController {
             .await?;
 
         let res = Ok(master_secret_id);
-        debug!("create_master_secret < {:?}", res);
+        trace!("create_master_secret < {:?}", res);
         res
     }
 
@@ -150,11 +145,15 @@ impl ProverController {
         cred_def: CredentialDefinition,
         master_secret_id: String,
     ) -> IndyResult<(String, String)> {
-        debug!(
+        trace!(
             "create_credential_request > wallet_handle {:?} \
                 prover_did {:?} cred_offer {:?} cred_def {:?} \
                 master_secret_id: {:?}",
-            wallet_handle, prover_did, cred_offer, cred_def, master_secret_id
+            wallet_handle,
+            prover_did,
+            cred_offer,
+            cred_def,
+            master_secret_id
         );
 
         let cred_def = CredentialDefinitionV1::from(cred_def);
@@ -166,8 +165,7 @@ impl ProverController {
             .await?;
 
         let (blinded_ms, ms_blinding_data, blinded_ms_correctness_proof) = self
-            .anoncreds_service
-            .prover
+            .prover_service
             .new_credential_request(&cred_def, &master_secret.value, &cred_offer)?;
 
         let nonce = new_nonce()?;
@@ -197,7 +195,7 @@ impl ProverController {
         )?;
 
         let res = Ok((cred_req_json, cred_req_metadata_json));
-        debug!("create_credential_request < {:?}", res);
+        trace!("create_credential_request < {:?}", res);
         res
     }
 
@@ -208,10 +206,13 @@ impl ProverController {
         catpol: Option<CredentialAttrTagPolicy>,
         retroactive: bool,
     ) -> IndyResult<()> {
-        debug!(
+        trace!(
             "set_credential_attr_tag_policy > wallet_handle {:?} \
                 cred_def_id {:?} catpol {:?} retroactive {:?}",
-            wallet_handle, cred_def_id, catpol, retroactive
+            wallet_handle,
+            cred_def_id,
+            catpol,
+            retroactive
         );
 
         match catpol {
@@ -253,8 +254,7 @@ impl ProverController {
                 let (_, credential) = self._get_credential(&credential_record)?;
 
                 let cred_tags = self
-                    .anoncreds_service
-                    .prover
+                    .prover_service
                     .build_credential_tags(&credential, catpol.as_ref())?;
 
                 self.wallet_service
@@ -269,7 +269,7 @@ impl ProverController {
         }
 
         let res = Ok(());
-        debug!("set_credential_attr_tag_policy < {:?}", res);
+        trace!("set_credential_attr_tag_policy < {:?}", res);
         res
     }
 
@@ -278,10 +278,11 @@ impl ProverController {
         wallet_handle: WalletHandle,
         cred_def_id: CredentialDefinitionId,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "get_credential_attr_tag_policy > wallet_handle {:?} \
                 cred_def_id {:?}",
-            wallet_handle, cred_def_id
+            wallet_handle,
+            cred_def_id
         );
 
         let catpol = self
@@ -289,7 +290,7 @@ impl ProverController {
             .await?;
 
         let res = Ok(catpol);
-        debug!("get_credential_attr_tag_policy < {:?}", res);
+        trace!("get_credential_attr_tag_policy < {:?}", res);
         res
     }
 
@@ -302,12 +303,17 @@ impl ProverController {
         cred_def: CredentialDefinition,
         rev_reg_def: Option<RevocationRegistryDefinition>,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "store_credential > wallet_handle {:?} \
                 cred_id {:?} cred_req_metadata {:?} \
                 credential {:?} cred_def {:?} \
                 rev_reg_def {:?}",
-            wallet_handle, cred_id, cred_req_metadata, credential, cred_def, rev_reg_def
+            wallet_handle,
+            cred_id,
+            cred_req_metadata,
+            credential,
+            cred_def,
+            rev_reg_def
         );
 
         let cred_def = CredentialDefinitionV1::from(cred_def);
@@ -317,7 +323,7 @@ impl ProverController {
             ._wallet_get_master_secret(wallet_handle, &cred_req_metadata.master_secret_name)
             .await?;
 
-        self.anoncreds_service.prover.process_credential(
+        self.prover_service.process_credential(
             &mut credential,
             &cred_req_metadata,
             &master_secret.value,
@@ -344,8 +350,7 @@ impl ProverController {
         };
 
         let cred_tags = self
-            .anoncreds_service
-            .prover
+            .prover_service
             .build_credential_tags(&credential, catpol.as_ref())?;
 
         self.wallet_service
@@ -353,7 +358,7 @@ impl ProverController {
             .await?;
 
         let res = Ok(out_cred_id);
-        debug!("store_credential < {:?}", res);
+        trace!("store_credential < {:?}", res);
         res
     }
 
@@ -362,9 +367,10 @@ impl ProverController {
         wallet_handle: WalletHandle,
         filter_json: Option<String>,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "get_credentials > wallet_handle {:?} filter_json {:?}",
-            wallet_handle, filter_json
+            wallet_handle,
+            filter_json
         );
 
         let filter_json = filter_json.as_deref().unwrap_or("{}");
@@ -390,7 +396,7 @@ impl ProverController {
         )?;
 
         let res = Ok(credentials_info_json);
-        debug!("get_credentials < {:?}", res);
+        trace!("get_credentials < {:?}", res);
         res
     }
 
@@ -399,9 +405,10 @@ impl ProverController {
         wallet_handle: WalletHandle,
         cred_id: String,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "get_credentials > wallet_handle {:?} cred_id {:?}",
-            wallet_handle, cred_id
+            wallet_handle,
+            cred_id
         );
 
         let credential: Credential = self
@@ -417,7 +424,7 @@ impl ProverController {
         )?;
 
         let res = Ok(credential_info_json);
-        debug!("get_credential < {:?}", res);
+        trace!("get_credential < {:?}", res);
         res
     }
 
@@ -426,9 +433,10 @@ impl ProverController {
         wallet_handle: WalletHandle,
         query_json: Option<String>,
     ) -> IndyResult<(SearchHandle, usize)> {
-        debug!(
+        trace!(
             "search_credentials > wallet_handle {:?} query_json {:?}",
-            wallet_handle, query_json
+            wallet_handle,
+            query_json
         );
 
         let credentials_search = self
@@ -526,9 +534,10 @@ impl ProverController {
         wallet_handle: WalletHandle,
         proof_request: ProofRequest,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "get_credentials_for_proof_req > wallet_handle {:?} proof_request {:?}",
-            wallet_handle, proof_request
+            wallet_handle,
+            proof_request
         );
 
         let proof_req = proof_request.value();
@@ -538,20 +547,19 @@ impl ProverController {
             CredentialsForProofRequest::default();
 
         for (attr_id, requested_attr) in proof_req.requested_attributes.iter() {
-            let query = self
-                .anoncreds_service
-                .prover
-                .process_proof_request_restrictions(
-                    &proof_req_version,
-                    &requested_attr.name,
-                    &requested_attr.names,
-                    &attr_id,
-                    &requested_attr.restrictions,
-                    &None,
-                )?;
+            let query = self.prover_service.process_proof_request_restrictions(
+                &proof_req_version,
+                &requested_attr.name,
+                &requested_attr.names,
+                &attr_id,
+                &requested_attr.restrictions,
+                &None,
+            )?;
 
-            let interval =
-                get_non_revoc_interval(&proof_req.non_revoked, &requested_attr.non_revoked);
+            let interval = AnoncredsHelpers::get_non_revoc_interval(
+                &proof_req.non_revoked,
+                &requested_attr.non_revoked,
+            );
 
             let credentials_for_attribute = self
                 ._query_requested_credentials(wallet_handle, &query, None, &interval)
@@ -563,20 +571,19 @@ impl ProverController {
         }
 
         for (predicate_id, requested_predicate) in proof_req.requested_predicates.iter() {
-            let query = self
-                .anoncreds_service
-                .prover
-                .process_proof_request_restrictions(
-                    &proof_req_version,
-                    &Some(requested_predicate.name.clone()),
-                    &None,
-                    &predicate_id,
-                    &requested_predicate.restrictions,
-                    &None,
-                )?;
+            let query = self.prover_service.process_proof_request_restrictions(
+                &proof_req_version,
+                &Some(requested_predicate.name.clone()),
+                &None,
+                &predicate_id,
+                &requested_predicate.restrictions,
+                &None,
+            )?;
 
-            let interval =
-                get_non_revoc_interval(&proof_req.non_revoked, &requested_predicate.non_revoked);
+            let interval = AnoncredsHelpers::get_non_revoc_interval(
+                &proof_req.non_revoked,
+                &requested_predicate.non_revoked,
+            );
 
             let credentials_for_predicate = self
                 ._query_requested_credentials(
@@ -599,7 +606,7 @@ impl ProverController {
             )?;
 
         let res = Ok(credentials_for_proof_request_json);
-        debug!("get_credentials_for_proof_req < {:?}", res);
+        trace!("get_credentials_for_proof_req < {:?}", res);
         res
     }
 
@@ -609,10 +616,12 @@ impl ProverController {
         proof_request: ProofRequest,
         extra_query: Option<ProofRequestExtraQuery>,
     ) -> IndyResult<SearchHandle> {
-        debug!(
+        trace!(
             "search_credentials_for_proof_req > wallet_handle {:?} \
                 proof_request {:?} extra_query {:?}",
-            wallet_handle, proof_request, extra_query
+            wallet_handle,
+            proof_request,
+            extra_query
         );
 
         let proof_req = proof_request.value();
@@ -622,17 +631,14 @@ impl ProverController {
             HashMap::<String, Arc<Mutex<SearchForProofRequest>>>::new();
 
         for (attr_id, requested_attr) in proof_req.requested_attributes.iter() {
-            let query = self
-                .anoncreds_service
-                .prover
-                .process_proof_request_restrictions(
-                    &version,
-                    &requested_attr.name,
-                    &requested_attr.names,
-                    &attr_id,
-                    &requested_attr.restrictions,
-                    &extra_query.as_ref(),
-                )?;
+            let query = self.prover_service.process_proof_request_restrictions(
+                &version,
+                &requested_attr.name,
+                &requested_attr.names,
+                &attr_id,
+                &requested_attr.restrictions,
+                &extra_query.as_ref(),
+            )?;
 
             let credentials_search = self
                 .wallet_service
@@ -643,8 +649,10 @@ impl ProverController {
                 )
                 .await?;
 
-            let interval =
-                get_non_revoc_interval(&proof_req.non_revoked, &requested_attr.non_revoked);
+            let interval = AnoncredsHelpers::get_non_revoc_interval(
+                &proof_req.non_revoked,
+                &requested_attr.non_revoked,
+            );
 
             credentials_for_proof_request_search.insert(
                 attr_id.to_string(),
@@ -657,17 +665,14 @@ impl ProverController {
         }
 
         for (predicate_id, requested_predicate) in proof_req.requested_predicates.iter() {
-            let query = self
-                .anoncreds_service
-                .prover
-                .process_proof_request_restrictions(
-                    &version,
-                    &Some(requested_predicate.name.clone()),
-                    &None,
-                    &predicate_id,
-                    &requested_predicate.restrictions,
-                    &extra_query.as_ref(),
-                )?;
+            let query = self.prover_service.process_proof_request_restrictions(
+                &version,
+                &Some(requested_predicate.name.clone()),
+                &None,
+                &predicate_id,
+                &requested_predicate.restrictions,
+                &extra_query.as_ref(),
+            )?;
 
             let credentials_search = self
                 .wallet_service
@@ -678,8 +683,10 @@ impl ProverController {
                 )
                 .await?;
 
-            let interval =
-                get_non_revoc_interval(&proof_req.non_revoked, &requested_predicate.non_revoked);
+            let interval = AnoncredsHelpers::get_non_revoc_interval(
+                &proof_req.non_revoked,
+                &requested_predicate.non_revoked,
+            );
 
             credentials_for_proof_request_search.insert(
                 predicate_id.to_string(),
@@ -699,7 +706,7 @@ impl ProverController {
             .insert(search_handle, credentials_for_proof_request_search);
 
         let res = Ok(search_handle);
-        debug!("search_credentials_for_proof_req < {:?}", search_handle);
+        trace!("search_credentials_for_proof_req < {:?}", search_handle);
         res
     }
 
@@ -826,7 +833,7 @@ impl ProverController {
         cred_defs: CredentialDefinitions,
         rev_states: RevocationStates,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "create_proof > wallet_handle {:?} \
                 proof_req {:?} requested_credentials {:?} \
                 master_secret_id {:?} schemas {:?} \
@@ -875,7 +882,7 @@ impl ProverController {
             credentials.insert(cred_referent, credential);
         }
 
-        let proof = self.anoncreds_service.prover.create_proof(
+        let proof = self.prover_service.create_proof(
             &credentials,
             &proof_req,
             &requested_credentials,
@@ -889,7 +896,7 @@ impl ProverController {
             .to_indy(IndyErrorKind::InvalidState, "Cannot serialize FullProof")?;
 
         let res = Ok(proof_json);
-        debug!("create_proof <{:?}", res);
+        trace!("create_proof <{:?}", res);
         res
     }
 
@@ -901,15 +908,19 @@ impl ProverController {
         timestamp: u64,
         cred_rev_id: String,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "create_revocation_state > blob_storage_reader_handle {:?} \
                 revoc_reg_def {:?} rev_reg_delta {:?} timestamp {:?} \
                 cred_rev_id {:?}",
-            blob_storage_reader_handle, revoc_reg_def, rev_reg_delta, timestamp, cred_rev_id
+            blob_storage_reader_handle,
+            revoc_reg_def,
+            rev_reg_delta,
+            timestamp,
+            cred_rev_id
         );
 
         let revoc_reg_def = RevocationRegistryDefinitionV1::from(revoc_reg_def);
-        let rev_idx = parse_cred_rev_id(&cred_rev_id)?;
+        let rev_idx = AnoncredsHelpers::parse_cred_rev_id(&cred_rev_id)?;
 
         let sdk_tails_accessor = SDKTailsAccessor::new(
             self.blob_storage_service.clone(),
@@ -940,7 +951,7 @@ impl ProverController {
         )?;
 
         let res = Ok(revocation_state_json);
-        debug!("create_revocation_state < {:?}", res);
+        trace!("create_revocation_state < {:?}", res);
         res
     }
 
@@ -953,7 +964,7 @@ impl ProverController {
         timestamp: u64,
         cred_rev_id: String,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "update_revocation_state > blob_storage_reader_handle {:?} \
                 rev_state {:?} rev_reg_def {:?} rev_reg_delta {:?} \
                 timestamp {:?} cred_rev_id {:?}",
@@ -967,7 +978,7 @@ impl ProverController {
 
         let revocation_registry_definition = RevocationRegistryDefinitionV1::from(rev_reg_def);
         let rev_reg_delta = RevocationRegistryDeltaV1::from(rev_reg_delta);
-        let rev_idx = parse_cred_rev_id(&cred_rev_id)?;
+        let rev_idx = AnoncredsHelpers::parse_cred_rev_id(&cred_rev_id)?;
 
         let sdk_tails_accessor = SDKTailsAccessor::new(
             self.blob_storage_service.clone(),
@@ -992,7 +1003,7 @@ impl ProverController {
         )?;
 
         let res = Ok(rev_state_json);
-        debug!("update_revocation_state < {:?}", res);
+        trace!("update_revocation_state < {:?}", res);
         res
     }
 
@@ -1040,10 +1051,12 @@ impl ProverController {
         predicate_info: Option<&PredicateInfo>,
         interval: &Option<NonRevocedInterval>,
     ) -> IndyResult<Vec<RequestedCredential>> {
-        debug!(
+        trace!(
             "_query_requested_credentials > wallet_handle {:?} \
                 query_json {:?} predicate_info {:?}",
-            wallet_handle, query_json, predicate_info
+            wallet_handle,
+            query_json,
+            predicate_info
         );
 
         let mut credentials_search = self
@@ -1060,7 +1073,7 @@ impl ProverController {
             .await?;
 
         let res = Ok(credentials);
-        debug!("_query_requested_credentials < {:?}", res);
+        trace!("_query_requested_credentials < {:?}", res);
         res
     }
 
@@ -1082,16 +1095,14 @@ impl ProverController {
 
             if let Some(predicate) = predicate_info {
                 let values = self
-                    .anoncreds_service
-                    .prover
+                    .prover_service
                     .get_credential_values_for_attribute(&credential.values.0, &predicate.name)
                     .ok_or_else(|| {
                         err_msg(IndyErrorKind::InvalidState, "Credential values not found")
                     })?;
 
                 let satisfy = self
-                    .anoncreds_service
-                    .prover
+                    .prover_service
                     .attribute_satisfy_predicate(predicate, &values.encoded)?;
                 if !satisfy {
                     continue;

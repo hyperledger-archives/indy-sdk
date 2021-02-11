@@ -1,10 +1,9 @@
-extern crate libc;
+use std::{
+    ffi::{CStr, CString},
+    str::Utf8Error,
+};
 
-use self::libc::c_char;
-
-use std::ffi::CStr;
-use std::str::Utf8Error;
-use std::ffi::CString;
+use libc::c_char;
 
 /// String helpers
 pub fn c_str_to_string<'a>(cstr: *const c_char) -> Result<Option<&'a str>, Utf8Error> {
@@ -15,7 +14,7 @@ pub fn c_str_to_string<'a>(cstr: *const c_char) -> Result<Option<&'a str>, Utf8E
     unsafe {
         match CStr::from_ptr(cstr).to_str() {
             Ok(str) => Ok(Some(str)),
-            Err(err) => Err(err)
+            Err(err) => Err(err),
         }
     }
 }
@@ -24,23 +23,22 @@ pub fn string_to_cstring(s: String) -> CString {
     CString::new(s).unwrap()
 }
 
-pub fn str_to_cstring(s: &str) -> CString { CString::new(s).unwrap() }
-
+pub fn str_to_cstring(s: &str) -> CString {
+    CString::new(s).unwrap()
+}
 
 #[macro_export]
 macro_rules! check_useful_c_str {
     ($x:ident, $e:expr) => {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(Some(val)) => val.to_string(),
-            _ => {
-                return err_msg($e.into(), "Invalid pointer has been passed").into()
-            }
+            _ => return err_msg($e.into(), "Invalid pointer has been passed").into(),
         };
 
         if $x.is_empty() {
-            return err_msg($e.into(), "Empty string has been passed").into()
+            return err_msg($e.into(), "Empty string has been passed").into();
         }
-    }
+    };
 }
 
 #[macro_export]
@@ -49,19 +47,17 @@ macro_rules! check_useful_opt_json {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(Some(val)) => Some(val),
             Ok(None) => None,
-            _ => {
-                return err_msg($e.into(), "Invalid pointer has been passed").into()
-            },
+            _ => return err_msg($e.into(), "Invalid pointer has been passed").into(),
         };
 
-        let $x: Option<$t>  = match $x {
+        let $x: Option<$t> = match $x {
             Some(val) => {
                 parse_json!(val, $e, $t);
                 Some(val)
-            },
-            None => None
+            }
+            None => None,
         };
-    }
+    };
 }
 
 #[macro_export]
@@ -69,13 +65,11 @@ macro_rules! check_useful_json {
     ($x:ident, $e:expr, $t:ty) => {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(Some(val)) => val,
-            _ => {
-                return err_msg($e.into(), "Invalid pointer has been passed").into()
-            },
+            _ => return err_msg($e.into(), "Invalid pointer has been passed").into(),
         };
 
         parse_json!($x, $e, $t);
-    }
+    };
 }
 
 #[macro_export]
@@ -85,11 +79,9 @@ macro_rules! check_useful_validatable_json {
 
         match $x.validate() {
             Ok(ok) => ok,
-            Err(err) => {
-                return err_msg(IndyErrorKind::InvalidStructure, err).into()
-            }
+            Err(err) => return err_msg(IndyErrorKind::InvalidStructure, err).into(),
         };
-    }
+    };
 }
 
 #[macro_export]
@@ -98,25 +90,21 @@ macro_rules! check_useful_opt_validatable_json {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(Some(val)) => Some(val),
             Ok(None) => None,
-            _ => {
-                return err_msg($e.into(), "Invalid pointer has been passed").into()
-            },
+            _ => return err_msg($e.into(), "Invalid pointer has been passed").into(),
         };
 
-        let $x: Option<$t>  = match $x {
+        let $x: Option<$t> = match $x {
             Some(val) => {
                 parse_json!(val, $e, $t);
                 match val.validate() {
                     Ok(ok) => ok,
-                    Err(err) => {
-                        return err_msg($e.into(), err).into()
-                    }
+                    Err(err) => return err_msg($e.into(), err).into(),
                 };
                 Some(val)
-            },
-            None => None
+            }
+            None => None,
         };
-    }
+    };
 }
 
 #[macro_export]
@@ -128,11 +116,9 @@ macro_rules! check_useful_validatable_string {
 
         match $x.validate() {
             Ok(ok) => ok,
-            Err(err) => {
-                return err_msg(IndyErrorKind::InvalidStructure, err).into()
-            }
+            Err(err) => return err_msg(IndyErrorKind::InvalidStructure, err).into(),
         };
-    }
+    };
 }
 
 #[macro_export]
@@ -140,40 +126,38 @@ macro_rules! check_useful_validatable_opt_string {
     ($x:ident, $e:expr, $t:ident) => {
         check_useful_opt_c_str!($x, $e);
 
-        let $x: Option<$t>  = match $x {
+        let $x: Option<$t> = match $x {
             Some(val) => {
                 let $x: $t = $t(val.to_string());
 
                 match $x.validate() {
                     Ok(ok) => ok,
-                    Err(err) => {
-                        return err_msg(IndyErrorKind::InvalidStructure, err).into()
-                    }
+                    Err(err) => return err_msg(IndyErrorKind::InvalidStructure, err).into(),
                 };
                 Some($x)
-            },
-            None => None
+            }
+            None => None,
         };
-    }
+    };
 }
 
 #[macro_export]
 macro_rules! parse_json {
     ($x:ident, $e:expr, $t:ty) => {
         if $x.is_empty() {
-           return err_msg($e.into(), "Empty string has been passed").into()
+            return err_msg($e.into(), "Empty string has been passed").into();
         }
 
-        let r = serde_json::from_str::<$t>($x)
-                    .to_indy(indy_api_types::errors::IndyErrorKind::InvalidStructure, format!("Invalid {} json has been passed", stringify!($t)));
+        let r = serde_json::from_str::<$t>($x).to_indy(
+            indy_api_types::errors::IndyErrorKind::InvalidStructure,
+            format!("Invalid {} json has been passed", stringify!($t)),
+        );
 
         let $x: $t = match r {
             Ok(ok) => ok,
-            Err(err) => {
-                return err.into()
-            }
+            Err(err) => return err.into(),
         };
-    }
+    };
 }
 
 #[macro_export]
@@ -181,11 +165,9 @@ macro_rules! check_useful_c_str_empty_accepted {
     ($x:ident, $e:expr) => {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(Some(val)) => val.to_string(),
-            _ => {
-                return err_msg($e.into(), "Invalid pointer has been passed").into()
-            }
+            _ => return err_msg($e.into(), "Invalid pointer has been passed").into(),
         };
-    }
+    };
 }
 
 #[macro_export]
@@ -194,11 +176,9 @@ macro_rules! check_useful_opt_c_str {
     ($x:ident, $e:expr) => {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(opt_val) => opt_val.map(String::from),
-            Err(_) => {
-                return err_msg($e.into(), "Invalid pointer has been passed").into()
-            }
+            Err(_) => return err_msg($e.into(), "Invalid pointer has been passed").into(),
         };
-    }
+    };
 }
 
 /// Vector helpers
@@ -215,7 +195,7 @@ macro_rules! check_useful_c_byte_array {
 
         let $ptr = unsafe { ::std::slice::from_raw_parts($ptr, $len as usize) };
         let $ptr = $ptr.to_vec();
-    }
+    };
 }
 
 //Returnable pointer is valid only before first vector modification
@@ -233,7 +213,7 @@ macro_rules! boxed_callback_string {
             let result_string = ctypes::string_to_cstring(result_string);
             $cb($command_handle, err, result_string.as_ptr())
         })
-    }
+    };
 }
 
 #[macro_export]
@@ -244,9 +224,13 @@ macro_rules! check_useful_opt_u64 {
         } else if $x == -1 {
             None
         } else {
-            return err_msg($e.into(), "Invalid integer has been passed (should be non-negative or -1").into()
+            return err_msg(
+                $e.into(),
+                "Invalid integer has been passed (should be non-negative or -1",
+            )
+            .into();
         };
-    }
+    };
 }
 
 #[macro_export]

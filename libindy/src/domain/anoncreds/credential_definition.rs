@@ -1,31 +1,32 @@
-use super::DELIMITER;
-use super::schema::SchemaId;
-use super::super::ledger::request::ProtocolVersion;
-use super::super::crypto::did::DidValue;
+use std::collections::HashMap;
 
 use indy_api_types::validation::Validatable;
-use crate::utils::qualifier;
 
 use ursa::cl::{
-    CredentialPrimaryPublicKey,
+    CredentialKeyCorrectnessProof, CredentialPrimaryPublicKey, CredentialPrivateKey,
     CredentialRevocationPublicKey,
-    CredentialPrivateKey,
-    CredentialKeyCorrectnessProof
 };
 
-use std::collections::HashMap;
+use crate::{
+    domain::{
+        anoncreds::{schema::SchemaId, DELIMITER},
+        crypto::did::DidValue,
+        ledger::request::ProtocolVersion,
+    },
+    utils::qualifier,
+};
 
 pub const CL_SIGNATURE_TYPE: &str = "CL";
 
 #[derive(Deserialize, Debug, Serialize, PartialEq, Clone)]
 pub enum SignatureType {
-    CL
+    CL,
 }
 
 impl SignatureType {
     pub fn to_str(&self) -> &'static str {
         match *self {
-            SignatureType::CL => CL_SIGNATURE_TYPE
+            SignatureType::CL => CL_SIGNATURE_TYPE,
         }
     }
 }
@@ -33,13 +34,13 @@ impl SignatureType {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CredentialDefinitionConfig {
     #[serde(default)]
-    pub support_revocation: bool
+    pub support_revocation: bool,
 }
 
 impl Default for CredentialDefinitionConfig {
     fn default() -> Self {
         CredentialDefinitionConfig {
-            support_revocation: false
+            support_revocation: false,
         }
     }
 }
@@ -48,7 +49,7 @@ impl Default for CredentialDefinitionConfig {
 pub struct CredentialDefinitionData {
     pub primary: CredentialPrimaryPublicKey,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub revocation: Option<CredentialRevocationPublicKey>
+    pub revocation: Option<CredentialRevocationPublicKey>,
 }
 
 #[derive(Deserialize, Debug, Serialize)]
@@ -59,21 +60,21 @@ pub struct CredentialDefinitionV1 {
     #[serde(rename = "type")]
     pub signature_type: SignatureType,
     pub tag: String,
-    pub value: CredentialDefinitionData
+    pub value: CredentialDefinitionData,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ver")]
 pub enum CredentialDefinition {
     #[serde(rename = "1.0")]
-    CredentialDefinitionV1(CredentialDefinitionV1)
+    CredentialDefinitionV1(CredentialDefinitionV1),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TemporaryCredentialDefinition {
     pub cred_def: CredentialDefinition,
     pub cred_def_priv_key: CredentialDefinitionPrivateKey,
-    pub cred_def_correctness_proof: CredentialDefinitionCorrectnessProof
+    pub cred_def_correctness_proof: CredentialDefinitionCorrectnessProof,
 }
 
 impl CredentialDefinition {
@@ -95,14 +96,16 @@ impl CredentialDefinition {
 impl From<CredentialDefinition> for CredentialDefinitionV1 {
     fn from(cred_def: CredentialDefinition) -> Self {
         match cred_def {
-            CredentialDefinition::CredentialDefinitionV1(cred_def) => cred_def
+            CredentialDefinition::CredentialDefinitionV1(cred_def) => cred_def,
         }
     }
 }
 
 pub type CredentialDefinitions = HashMap<CredentialDefinitionId, CredentialDefinition>;
 
-pub fn cred_defs_map_to_cred_defs_v1_map(cred_defs: CredentialDefinitions) -> HashMap<CredentialDefinitionId, CredentialDefinitionV1> {
+pub fn cred_defs_map_to_cred_defs_v1_map(
+    cred_defs: CredentialDefinitions,
+) -> HashMap<CredentialDefinitionId, CredentialDefinitionV1> {
     cred_defs
         .into_iter()
         .map(|(cred_def_id, cred_def)| (cred_def_id, CredentialDefinitionV1::from(cred_def)))
@@ -111,12 +114,12 @@ pub fn cred_defs_map_to_cred_defs_v1_map(cred_defs: CredentialDefinitions) -> Ha
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialDefinitionPrivateKey {
-    pub value: CredentialPrivateKey
+    pub value: CredentialPrivateKey,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialDefinitionCorrectnessProof {
-    pub value: CredentialKeyCorrectnessProof
+    pub value: CredentialKeyCorrectnessProof,
 }
 
 impl Validatable for CredentialDefinition {
@@ -137,16 +140,44 @@ impl CredentialDefinitionId {
     pub const PREFIX: &'static str = "creddef";
     pub const MARKER: &'static str = "3";
 
-    pub fn new(did: &DidValue, schema_id: &SchemaId, signature_type: &str, tag: &str) -> CredentialDefinitionId {
+    pub fn new(
+        did: &DidValue,
+        schema_id: &SchemaId,
+        signature_type: &str,
+        tag: &str,
+    ) -> CredentialDefinitionId {
         let id = if ProtocolVersion::is_node_1_3() {
-            CredentialDefinitionId(format!("{}{}{}{}{}{}{}", did.0, DELIMITER, Self::MARKER, DELIMITER, signature_type, DELIMITER, schema_id.0))
+            CredentialDefinitionId(format!(
+                "{}{}{}{}{}{}{}",
+                did.0,
+                DELIMITER,
+                Self::MARKER,
+                DELIMITER,
+                signature_type,
+                DELIMITER,
+                schema_id.0
+            ))
         } else {
-            let tag = if tag.is_empty() { format!("") } else { format!("{}{}", DELIMITER, tag) };
-            CredentialDefinitionId(format!("{}{}{}{}{}{}{}{}", did.0, DELIMITER, Self::MARKER, DELIMITER, signature_type, DELIMITER, schema_id.0, tag))
+            let tag = if tag.is_empty() {
+                format!("")
+            } else {
+                format!("{}{}", DELIMITER, tag)
+            };
+            CredentialDefinitionId(format!(
+                "{}{}{}{}{}{}{}{}",
+                did.0,
+                DELIMITER,
+                Self::MARKER,
+                DELIMITER,
+                signature_type,
+                DELIMITER,
+                schema_id.0,
+                tag
+            ))
         };
         match did.get_method() {
             Some(method) => id.set_method(&method),
-            None => id
+            None => id,
         }
     }
 
@@ -216,26 +247,35 @@ impl CredentialDefinitionId {
 
     pub fn qualify(&self, method: &str) -> CredentialDefinitionId {
         match self.parts() {
-            Some((did, signature_type, schema_id, tag)) => {
-                CredentialDefinitionId::new(&did.qualify(method), &schema_id.qualify(method), &signature_type, &tag)
-            }
-            None => self.clone()
+            Some((did, signature_type, schema_id, tag)) => CredentialDefinitionId::new(
+                &did.qualify(method),
+                &schema_id.qualify(method),
+                &signature_type,
+                &tag,
+            ),
+            None => self.clone(),
         }
     }
 
     pub fn to_unqualified(&self) -> CredentialDefinitionId {
         match self.parts() {
-            Some((did, signature_type, schema_id, tag)) => {
-                CredentialDefinitionId::new(&did.to_unqualified(), &schema_id.to_unqualified(), &signature_type, &tag)
-            }
-            None => self.clone()
+            Some((did, signature_type, schema_id, tag)) => CredentialDefinitionId::new(
+                &did.to_unqualified(),
+                &schema_id.to_unqualified(),
+                &signature_type,
+                &tag,
+            ),
+            None => self.clone(),
         }
     }
 }
 
 impl Validatable for CredentialDefinitionId {
     fn validate(&self) -> Result<(), String> {
-        self.parts().ok_or(format!("Credential Definition Id validation failed: {:?}, doesn't match pattern", self.0))?;
+        self.parts().ok_or(format!(
+            "Credential Definition Id validation failed: {:?}, doesn't match pattern",
+            self.0
+        ))?;
         Ok(())
     }
 }
@@ -250,9 +290,13 @@ mod tests {
         DidValue("NcYxiDXkpYi6ov5FcYDi1e".to_string())
     }
 
-    fn _signature_type() -> String { "CL".to_string() }
+    fn _signature_type() -> String {
+        "CL".to_string()
+    }
 
-    fn _tag() -> String { "tag".to_string() }
+    fn _tag() -> String {
+        "tag".to_string()
+    }
 
     fn _did_qualified() -> DidValue {
         DidValue("did:sov:NcYxiDXkpYi6ov5FcYDi1e".to_string())
@@ -271,7 +315,9 @@ mod tests {
     }
 
     fn _cred_def_id_unqualified() -> CredentialDefinitionId {
-        CredentialDefinitionId("NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:tag".to_string())
+        CredentialDefinitionId(
+            "NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:tag".to_string(),
+        )
     }
 
     fn _cred_def_id_unqualified_with_schema_as_seq_no() -> CredentialDefinitionId {
@@ -283,7 +329,9 @@ mod tests {
     }
 
     fn _cred_def_id_unqualified_without_tag() -> CredentialDefinitionId {
-        CredentialDefinitionId("NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0".to_string())
+        CredentialDefinitionId(
+            "NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0".to_string(),
+        )
     }
 
     fn _cred_def_id_qualified_with_schema_as_seq_no() -> CredentialDefinitionId {
@@ -299,32 +347,51 @@ mod tests {
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified() {
-            assert_eq!(_cred_def_id_unqualified(), _cred_def_id_unqualified().to_unqualified());
+            assert_eq!(
+                _cred_def_id_unqualified(),
+                _cred_def_id_unqualified().to_unqualified()
+            );
         }
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified_without_tag() {
-            assert_eq!(_cred_def_id_unqualified_without_tag(), _cred_def_id_unqualified_without_tag().to_unqualified());
+            assert_eq!(
+                _cred_def_id_unqualified_without_tag(),
+                _cred_def_id_unqualified_without_tag().to_unqualified()
+            );
         }
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified_without_tag_with_schema_as_seq_no() {
-            assert_eq!(_cred_def_id_unqualified_with_schema_as_seq_no(), _cred_def_id_unqualified_with_schema_as_seq_no().to_unqualified());
+            assert_eq!(
+                _cred_def_id_unqualified_with_schema_as_seq_no(),
+                _cred_def_id_unqualified_with_schema_as_seq_no().to_unqualified()
+            );
         }
 
         #[test]
-        fn test_cred_def_id_parts_for_id_as_unqualified_without_tag_with_schema_as_seq_no_without_tag() {
-            assert_eq!(_cred_def_id_unqualified_with_schema_as_seq_no_without_tag(), _cred_def_id_unqualified_with_schema_as_seq_no_without_tag().to_unqualified());
+        fn test_cred_def_id_parts_for_id_as_unqualified_without_tag_with_schema_as_seq_no_without_tag(
+        ) {
+            assert_eq!(
+                _cred_def_id_unqualified_with_schema_as_seq_no_without_tag(),
+                _cred_def_id_unqualified_with_schema_as_seq_no_without_tag().to_unqualified()
+            );
         }
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_qualified() {
-            assert_eq!(_cred_def_id_unqualified(), _cred_def_id_qualified().to_unqualified());
+            assert_eq!(
+                _cred_def_id_unqualified(),
+                _cred_def_id_qualified().to_unqualified()
+            );
         }
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_qualified_with_schema_as_seq_no() {
-            assert_eq!(_cred_def_id_unqualified_with_schema_as_seq_no(), _cred_def_id_qualified_with_schema_as_seq_no().to_unqualified());
+            assert_eq!(
+                _cred_def_id_unqualified_with_schema_as_seq_no(),
+                _cred_def_id_qualified_with_schema_as_seq_no().to_unqualified()
+            );
         }
     }
 
@@ -342,7 +409,8 @@ mod tests {
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified_without_tag() {
-            let (did, signature_type, schema_id, tag) = _cred_def_id_unqualified_without_tag().parts().unwrap();
+            let (did, signature_type, schema_id, tag) =
+                _cred_def_id_unqualified_without_tag().parts().unwrap();
             assert_eq!(_did(), did);
             assert_eq!(_signature_type(), signature_type);
             assert_eq!(_schema_id_unqualified(), schema_id);
@@ -351,7 +419,10 @@ mod tests {
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified_with_schema_as_seq() {
-            let (did, signature_type, schema_id, tag) = _cred_def_id_unqualified_with_schema_as_seq_no().parts().unwrap();
+            let (did, signature_type, schema_id, tag) =
+                _cred_def_id_unqualified_with_schema_as_seq_no()
+                    .parts()
+                    .unwrap();
             assert_eq!(_did(), did);
             assert_eq!(_signature_type(), signature_type);
             assert_eq!(_schema_id_seq_no(), schema_id);
@@ -360,7 +431,10 @@ mod tests {
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified_with_schema_as_seq_without_tag() {
-            let (did, signature_type, schema_id, tag) = _cred_def_id_unqualified_with_schema_as_seq_no_without_tag().parts().unwrap();
+            let (did, signature_type, schema_id, tag) =
+                _cred_def_id_unqualified_with_schema_as_seq_no_without_tag()
+                    .parts()
+                    .unwrap();
             assert_eq!(_did(), did);
             assert_eq!(_signature_type(), signature_type);
             assert_eq!(_schema_id_seq_no(), schema_id);
@@ -378,7 +452,10 @@ mod tests {
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_qualified_with_schema_as_seq() {
-            let (did, signature_type, schema_id, tag) = _cred_def_id_qualified_with_schema_as_seq_no().parts().unwrap();
+            let (did, signature_type, schema_id, tag) =
+                _cred_def_id_qualified_with_schema_as_seq_no()
+                    .parts()
+                    .unwrap();
             assert_eq!(_did_qualified(), did);
             assert_eq!(_signature_type(), signature_type);
             assert_eq!(_schema_id_seq_no(), schema_id);
@@ -401,12 +478,16 @@ mod tests {
 
         #[test]
         fn test_validate_cred_def_id_as_unqualified_with_schema_as_seq_no() {
-            _cred_def_id_unqualified_with_schema_as_seq_no().validate().unwrap();
+            _cred_def_id_unqualified_with_schema_as_seq_no()
+                .validate()
+                .unwrap();
         }
 
         #[test]
         fn test_validate_cred_def_id_as_unqualified_with_schema_as_seq_no_without_tag() {
-            _cred_def_id_unqualified_with_schema_as_seq_no_without_tag().validate().unwrap();
+            _cred_def_id_unqualified_with_schema_as_seq_no_without_tag()
+                .validate()
+                .unwrap();
         }
 
         #[test]
@@ -416,7 +497,9 @@ mod tests {
 
         #[test]
         fn test_validate_cred_def_id_as_fully_qualified_with_schema_as_seq_no() {
-            _cred_def_id_qualified_with_schema_as_seq_no().validate().unwrap();
+            _cred_def_id_qualified_with_schema_as_seq_no()
+                .validate()
+                .unwrap();
         }
     }
 }

@@ -7,7 +7,7 @@ use indy_utils::ctypes;
 use libc::c_char;
 use serde_json;
 
-use crate::commands::Locator;
+use crate::Locator;
 
 /// Create a new non-secret record in the wallet
 ///
@@ -38,14 +38,10 @@ pub extern "C" fn indy_add_wallet_record(
     tags_json: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_add_wallet_record > wallet_handle {:?} \
             type_ {:?} id {:?} value {:?} tags_json {:?}",
-        wallet_handle,
-        type_,
-        id,
-        value,
-        tags_json
+        wallet_handle, type_, id, value, tags_json
     );
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
@@ -54,36 +50,28 @@ pub extern "C" fn indy_add_wallet_record(
     check_useful_opt_json!(tags_json, ErrorCode::CommonInvalidParam6, Tags);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!(
+    debug!(
         "indy_add_wallet_record ? wallet_handle {:?} \
             type_ {:?} id {:?} value {:?} tags_json {:?}",
-        wallet_handle,
-        type_,
-        id,
-        value,
-        tags_json
+        wallet_handle, type_, id, value, tags_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.non_secret_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .non_secret_controller
             .add_record(wallet_handle, type_, id, value, tags_json)
             .await;
 
         let err = prepare_result!(res);
-        trace!("indy_add_wallet_record ? err {:?}", err);
+        debug!("indy_add_wallet_record ? err {:?}", err);
 
         cb(command_handle, err);
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_add_wallet_record < {:?}", res);
+    debug!("indy_add_wallet_record < {:?}", res);
     res
 }
 
@@ -104,13 +92,10 @@ pub extern "C" fn indy_update_wallet_record_value(
     value: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_update_wallet_record_value > wallet_handle {:?} \
             type_ {:?} id {:?} value {:?}",
-        wallet_handle,
-        type_,
-        id,
-        value
+        wallet_handle, type_, id, value
     );
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
@@ -118,35 +103,28 @@ pub extern "C" fn indy_update_wallet_record_value(
     check_useful_c_str!(value, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!(
+    debug!(
         "indy_update_wallet_record_value ? wallet_handle {:?} \
             type_ {:?} id {:?} value {:?}",
-        wallet_handle,
-        type_,
-        id,
-        value
+        wallet_handle, type_, id, value
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.non_secret_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .non_secret_controller
             .update_record_value(wallet_handle, type_, id, value)
             .await;
 
         let err = prepare_result!(res);
-        trace!("indy_update_wallet_record_value ? err {:?}", err);
+        debug!("indy_update_wallet_record_value ? err {:?}", err);
 
         cb(command_handle, err);
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_update_wallet_record_value < {:?}", res);
+    debug!("indy_update_wallet_record_value < {:?}", res);
     res
 }
 
@@ -176,13 +154,10 @@ pub extern "C" fn indy_update_wallet_record_tags(
     tags_json: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_update_wallet_record_tags > wallet_handle {:?} \
             type_ {:?} id {:?} tags_json {:?}",
-        wallet_handle,
-        type_,
-        id,
-        tags_json
+        wallet_handle, type_, id, tags_json
     );
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
@@ -190,35 +165,28 @@ pub extern "C" fn indy_update_wallet_record_tags(
     check_useful_json!(tags_json, ErrorCode::CommonInvalidParam5, Tags);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!(
+    debug!(
         "indy_update_wallet_record_tags ? wallet_handle {:?} \
             type_ {:?} id {:?} tags_json {:?}",
-        wallet_handle,
-        type_,
-        id,
-        tags_json
+        wallet_handle, type_, id, tags_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.non_secret_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .non_secret_controller
             .update_record_tags(wallet_handle, type_, id, tags_json)
             .await;
 
         let err = prepare_result!(res);
-        trace!("update_wallet_record_tags ? err {:?}", err);
+        debug!("update_wallet_record_tags ? err {:?}", err);
 
         cb(command_handle, err);
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_update_wallet_record_tags < {:?}", res);
+    debug!("indy_update_wallet_record_tags < {:?}", res);
     res
 }
 
@@ -250,13 +218,10 @@ pub extern "C" fn indy_add_wallet_record_tags(
     tags_json: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_add_wallet_record_tags > wallet_handle {:?} \
             type_ {:?} id {:?} tags_json {:?}",
-        wallet_handle,
-        type_,
-        id,
-        tags_json
+        wallet_handle, type_, id, tags_json
     );
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
@@ -264,35 +229,28 @@ pub extern "C" fn indy_add_wallet_record_tags(
     check_useful_json!(tags_json, ErrorCode::CommonInvalidParam5, Tags);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!(
+    debug!(
         "indy_add_wallet_record_tags ? wallet_handle {:?} \
             type_ {:?} id {:?} tags_json {:?}",
-        wallet_handle,
-        type_,
-        id,
-        tags_json
+        wallet_handle, type_, id, tags_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.non_secret_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .non_secret_controller
             .add_record_tags(wallet_handle, type_, id, tags_json)
             .await;
 
         let err = prepare_result!(res);
-        trace!("indy_add_wallet_record_tags ? err {:?}", err);
+        debug!("indy_add_wallet_record_tags ? err {:?}", err);
 
         cb(command_handle, err);
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_add_wallet_record_tags < {:?}", res);
+    debug!("indy_add_wallet_record_tags < {:?}", res);
     res
 }
 
@@ -314,35 +272,31 @@ pub extern "C" fn indy_delete_wallet_record_tags(
     tag_names_json: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!("indy_delete_wallet_record_tags > wallet_handle {:?} type_ {:?} id {:?} tag_names_json {:?}", wallet_handle, type_, id, tag_names_json);
+    debug!("indy_delete_wallet_record_tags > wallet_handle {:?} type_ {:?} id {:?} tag_names_json {:?}", wallet_handle, type_, id, tag_names_json);
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(tag_names_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("indy_delete_wallet_record_tags ? wallet_handle {:?} type_ {:?} id {:?} tag_names_json {:?}", wallet_handle, type_, id, tag_names_json);
+    debug!("indy_delete_wallet_record_tags ? wallet_handle {:?} type_ {:?} id {:?} tag_names_json {:?}", wallet_handle, type_, id, tag_names_json);
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.non_secret_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .non_secret_controller
             .delete_record_tags(wallet_handle, type_, id, tag_names_json)
             .await;
 
         let err = prepare_result!(res);
-        trace!("indy_delete_wallet_record_tags ? err {:?}", err);
+        debug!("indy_delete_wallet_record_tags ? err {:?}", err);
 
         cb(command_handle, err);
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_delete_wallet_record_tags < {:?}", res);
+    debug!("indy_delete_wallet_record_tags < {:?}", res);
     res
 }
 
@@ -361,36 +315,30 @@ pub extern "C" fn indy_delete_wallet_record(
     id: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_delete_wallet_record > wallet_handle {:?} type_ {:?} id {:?}",
-        wallet_handle,
-        type_,
-        id
+        wallet_handle, type_, id
     );
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_delete_wallet_record ? wallet_handle {:?} type_ {:?} id {:?}",
-        wallet_handle,
-        type_,
-        id
+        wallet_handle, type_, id
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.non_secret_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.delete_record(wallet_handle, type_, id).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .non_secret_controller
+            .delete_record(wallet_handle, type_, id)
+            .await;
 
         let err = prepare_result!(res);
-        trace!(
+        debug!(
             "indy_adindy_delete_wallet_recordd_wallet_record_tags ? err {:?}",
             err
         );
@@ -399,7 +347,7 @@ pub extern "C" fn indy_delete_wallet_record(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_delete_wallet_record < {:?}", res);
+    debug!("indy_delete_wallet_record < {:?}", res);
     res
 }
 
@@ -435,12 +383,9 @@ pub extern "C" fn indy_get_wallet_record(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, record_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_get_wallet_record > wallet_handle {:?} type_ {:?} id {:?} options_json {:?}",
-        wallet_handle,
-        type_,
-        id,
-        options_json
+        wallet_handle, type_, id, options_json
     );
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
@@ -448,35 +393,28 @@ pub extern "C" fn indy_get_wallet_record(
     check_useful_c_str!(options_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!(
+    debug!(
         "indy_get_wallet_record ? wallet_handle {:?} type_ {:?} id {:?} options_json {:?}",
-        wallet_handle,
-        type_,
-        id,
-        options_json
+        wallet_handle, type_, id, options_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.non_secret_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .non_secret_controller
             .get_record(wallet_handle, type_, id, options_json)
             .await;
 
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_get_wallet_record ? err {:?} res {:?}", err, res);
+        debug!("indy_get_wallet_record ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr());
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_get_wallet_record < {:?}", res);
+    debug!("indy_get_wallet_record < {:?}", res);
     res
 }
 
@@ -519,13 +457,10 @@ pub extern "C" fn indy_open_wallet_search(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, search_handle: SearchHandle),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_open_wallet_search > wallet_handle {:?} \
             type_ {:?} query_json {:?} options_json {:?}",
-        wallet_handle,
-        type_,
-        query_json,
-        options_json
+        wallet_handle, type_, query_json, options_json
     );
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
@@ -533,40 +468,32 @@ pub extern "C" fn indy_open_wallet_search(
     check_useful_c_str!(options_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!(
+    debug!(
         "indy_open_wallet_search ? wallet_handle {:?} \
             type_ {:?} query_json {:?} options_json {:?}",
-        wallet_handle,
-        type_,
-        query_json,
-        options_json
+        wallet_handle, type_, query_json, options_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.non_secret_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .non_secret_controller
             .open_search(wallet_handle, type_, query_json, options_json)
             .await;
 
         let (err, handle) = prepare_result_1!(res, INVALID_SEARCH_HANDLE);
 
-        trace!(
+        debug!(
             "indy_open_wallet_search ? err {:?} handle {:?}",
-            err,
-            handle
+            err, handle
         );
 
         cb(command_handle, err, handle)
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_open_wallet_search < {:?}", res);
+    debug!("indy_open_wallet_search < {:?}", res);
     res
 }
 
@@ -600,42 +527,33 @@ pub extern "C" fn indy_fetch_wallet_search_next_records(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, records_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_fetch_wallet_search_next_records > \
             wallet_handle {:?} wallet_search_handle {:?} count {:?}",
-        wallet_handle,
-        wallet_search_handle,
-        count
+        wallet_handle, wallet_search_handle, count
     );
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_fetch_wallet_search_next_records ? wallet_handle {:?} \
             wallet_search_handle {:?} count {:?}",
-        wallet_handle,
-        wallet_search_handle,
-        count
+        wallet_handle, wallet_search_handle, count
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.non_secret_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .non_secret_controller
             .fetch_search_next_records(wallet_handle, wallet_search_handle, count)
             .await;
 
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_fetch_wallet_search_next_records ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
@@ -643,7 +561,7 @@ pub extern "C" fn indy_fetch_wallet_search_next_records(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_fetch_wallet_search_next_records < {:?}", res);
+    debug!("indy_fetch_wallet_search_next_records < {:?}", res);
     res
 }
 
@@ -657,36 +575,34 @@ pub extern "C" fn indy_close_wallet_search(
     wallet_search_handle: SearchHandle,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_close_wallet_search > wallet_search_handle {:?}",
         wallet_search_handle
     );
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_close_wallet_search ? wallet_search_handle {:?}",
         wallet_search_handle
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.non_secret_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.close_search(wallet_search_handle).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .non_secret_controller
+            .close_search(wallet_search_handle)
+            .await;
 
         let err = prepare_result!(res);
 
-        trace!("indy_close_wallet_search ? err {:?}", err);
+        debug!("indy_close_wallet_search ? err {:?}", err);
 
         cb(command_handle, err);
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_close_wallet_search < {:?}", res);
+    debug!("indy_close_wallet_search < {:?}", res);
     res
 }

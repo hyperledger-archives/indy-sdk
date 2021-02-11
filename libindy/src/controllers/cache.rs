@@ -12,7 +12,7 @@ use crate::{
         cache::{GetCacheOptions, PurgeOptions},
         crypto::did::DidValue,
     },
-    services::{crypto::CryptoService, ledger::LedgerService, pool::PoolService},
+    services::{CryptoService, LedgerService, PoolService},
 };
 
 const CRED_DEF_CACHE: &str = "cred_def_cache";

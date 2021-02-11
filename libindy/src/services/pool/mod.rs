@@ -1,30 +1,33 @@
-use byteorder::{ByteOrder, LittleEndian};
-
-use std::collections::{HashMap, HashSet};
-use std::io::Write;
-use std::sync::Arc;
-use std::{fs, io};
-
-use serde::de::DeserializeOwned;
-use serde_json;
-
-//use crate::api::ledger::{CustomFree, CustomTransactionParser}; FIXME: !!!
-use crate::domain::{
-    ledger::response::{Message, Reply, ResponseMetadata},
-    pool::{PoolConfig, PoolOpenConfig},
+use std::{
+    collections::{HashMap, HashSet},
+    fs, io,
+    io::Write,
+    sync::Arc,
 };
 
-use crate::services::pool::events::{COMMAND_CONNECT, COMMAND_EXIT, COMMAND_REFRESH};
-use crate::services::pool::pool::{Pool, ZMQPool};
-use crate::utils::environment;
-use indy_api_types::errors::*;
-use indy_api_types::{CommandHandle, PoolHandle};
-use indy_utils::{next_command_handle, next_pool_handle};
-use ursa::bls::VerKey;
-
+use byteorder::{ByteOrder, LittleEndian};
 use futures::{channel::oneshot, lock::Mutex};
-
+use indy_api_types::{errors::*, CommandHandle, PoolHandle};
+use indy_utils::{next_command_handle, next_pool_handle};
+use lazy_static::lazy_static;
+use serde::de::DeserializeOwned;
+use serde_json;
+use ursa::bls::VerKey;
 use zmq::Socket;
+
+//use crate::api::ledger::{CustomFree, CustomTransactionParser}; FIXME: !!!
+use crate::{
+    domain::{
+        ledger::response::{Message, Reply, ResponseMetadata},
+        pool::{PoolConfig, PoolOpenConfig},
+    },
+    utils::environment,
+};
+
+use self::{
+    events::{COMMAND_CONNECT, COMMAND_EXIT, COMMAND_REFRESH},
+    pool::{Pool, ZMQPool},
+};
 
 mod catchup;
 mod commander;
@@ -45,20 +48,20 @@ lazy_static! {
 
 type Nodes = HashMap<String, Option<VerKey>>;
 
-pub struct PoolService {
+pub(crate) struct PoolService {
     open_pools: Mutex<HashMap<PoolHandle, Arc<ZMQPool>>>,
     pending_pools: Mutex<HashSet<String>>,
 }
 
 impl PoolService {
-    pub fn new() -> PoolService {
+     pub(crate) fn new() -> PoolService {
         PoolService {
             open_pools: Mutex::new(HashMap::new()),
             pending_pools: Mutex::new(HashSet::new()),
         }
     }
 
-    pub fn create(&self, name: &str, config: Option<PoolConfig>) -> IndyResult<()> {
+     pub(crate) fn create(&self, name: &str, config: Option<PoolConfig>) -> IndyResult<()> {
         //TODO: initialize all state machines
         trace!("PoolService::create {} with config {:?}", name, config);
 
@@ -138,7 +141,7 @@ impl PoolService {
         Ok(())
     }
 
-    pub async fn delete(&self, name: &str) -> IndyResult<()> {
+     pub(crate) async fn delete(&self, name: &str) -> IndyResult<()> {
         if self
             .open_pools
             .lock()
@@ -159,7 +162,7 @@ impl PoolService {
             .to_indy(IndyErrorKind::IOError, "Can't delete pool config directory")
     }
 
-    pub async fn open(
+     pub(crate) async fn open(
         &self,
         name: String,
         config: Option<PoolOpenConfig>,
@@ -204,19 +207,19 @@ impl PoolService {
         let res = receiver.await?;
 
         self.pending_pools.lock().await.remove(&name);
-        
+
         if res.is_ok() {
-            self.open_pools
-                .lock()
-                .await
-                .insert(new_pool.get_id(), Arc::new(ZMQPool::new(new_pool, send_cmd_sock)));
+            self.open_pools.lock().await.insert(
+                new_pool.get_id(),
+                Arc::new(ZMQPool::new(new_pool, send_cmd_sock)),
+            );
         }
 
         res
     }
 
     //#[logfn(trace)] FIXME:
-    pub async fn open_ack(pool_hanlde: PoolHandle, result: IndyResult<()>) {
+     pub(crate) async fn open_ack(pool_hanlde: PoolHandle, result: IndyResult<()>) {
         let sender: futures::channel::oneshot::Sender<IndyResult<PoolHandle>> = POOL_HANDLE_SENDERS
             .lock()
             .await
@@ -226,17 +229,17 @@ impl PoolService {
     }
 
     //#[logfn(trace)] FIXME:
-    pub async fn refresh_ack(cmd_id: CommandHandle, result: IndyResult<()>) {
+     pub(crate) async fn refresh_ack(cmd_id: CommandHandle, result: IndyResult<()>) {
         let sender: futures::channel::oneshot::Sender<IndyResult<String>> =
             SUBMIT_SENDERS.lock().await.remove(&cmd_id).unwrap();
         sender.send(result.map(|()| String::new())).unwrap(); //FIXME
     }
 
-    pub async fn send_tx(&self, handle: PoolHandle, msg: &str) -> IndyResult<String> {
+     pub(crate) async fn send_tx(&self, handle: PoolHandle, msg: &str) -> IndyResult<String> {
         self.send_action(handle, msg, None, None).await
     }
 
-    pub async fn send_action(
+     pub(crate) async fn send_action(
         &self,
         handle: PoolHandle,
         msg: &str,
@@ -246,7 +249,6 @@ impl PoolService {
         trace!("send_action >>");
 
         let receiver = {
-
             let pools = self.open_pools.lock().await;
 
             let pool = pools
@@ -262,7 +264,13 @@ impl PoolService {
             let (sender, receiver) = oneshot::channel::<IndyResult<String>>();
             SUBMIT_SENDERS.lock().await.insert(cmd_id, sender);
 
-            self._send_msg(cmd_id, msg, &pool.cmd_socket.lock().unwrap(), nodes, timeout)?;
+            self._send_msg(
+                cmd_id,
+                msg,
+                &pool.cmd_socket.lock().unwrap(),
+                nodes,
+                timeout,
+            )?;
 
             receiver
         };
@@ -306,14 +314,20 @@ impl PoolService {
     //     parsers.get(txn_type).map(Clone::clone)
     // }
 
-    pub async fn close(&self, handle: PoolHandle) -> IndyResult<()> {
+     pub(crate) async fn close(&self, handle: PoolHandle) -> IndyResult<()> {
         let pool = self.open_pools.lock().await.remove(&handle);
 
         let (sender, receiver) = oneshot::channel::<IndyResult<()>>();
         CLOSE_SENDERS.lock().await.insert(handle, sender);
 
         match pool {
-            Some(pool) => self._send_msg(handle, COMMAND_EXIT, &pool.cmd_socket.lock().unwrap(), None, None)?,
+            Some(pool) => self._send_msg(
+                handle,
+                COMMAND_EXIT,
+                &pool.cmd_socket.lock().unwrap(),
+                None,
+                None,
+            )?,
             None => {
                 return Err(err_msg(
                     IndyErrorKind::InvalidPoolHandle,
@@ -332,7 +346,7 @@ impl PoolService {
         sender.send(result).unwrap(); //FIXME
     }
 
-    pub async fn refresh(&self, handle: PoolHandle) -> IndyResult<()> {
+     pub(crate) async fn refresh(&self, handle: PoolHandle) -> IndyResult<()> {
         self.send_action(handle, COMMAND_REFRESH, None, None)
             .await
             .map(|_| ())
@@ -361,7 +375,7 @@ impl PoolService {
         }
     }
 
-    pub fn list(&self) -> IndyResult<Vec<serde_json::Value>> {
+     pub(crate) fn list(&self) -> IndyResult<Vec<serde_json::Value>> {
         let mut pool = Vec::new();
         let pool_home_path = environment::pool_home_path();
 
@@ -385,51 +399,51 @@ impl PoolService {
 
         Ok(pool)
     }
+
+    pub(crate) fn set_freshness_threshold(threshold: u64) {
+        *THRESHOLD.write().unwrap() = ::std::cmp::max(threshold, 300);
+    }
+
+    pub(crate) fn parse_response_metadata(response: &str) -> IndyResult<ResponseMetadata> {
+        trace!(
+            "indy::services::pool::parse_response_metadata << response: {}",
+            response
+        );
+        let message: Message<serde_json::Value> = serde_json::from_str(response).to_indy(
+            IndyErrorKind::InvalidTransaction,
+            "Cannot deserialize transaction Response",
+        )?;
+
+        let response_object: Reply<serde_json::Value> = _handle_response_message_type(message)?;
+        let response_result = response_object.result();
+
+        let response_metadata = match response_result["ver"].as_str() {
+            None => _parse_transaction_metadata_v0(&response_result),
+            Some("1") => _parse_transaction_metadata_v1(&response_result),
+            ver => {
+                return Err(err_msg(
+                    IndyErrorKind::InvalidTransaction,
+                    format!("Unsupported transaction response version: {:?}", ver),
+                ))
+            }
+        };
+
+        trace!(
+            "indy::services::pool::parse_response_metadata >> response_metadata: {:?}",
+            response_metadata
+        );
+
+        Ok(response_metadata)
+    }
+
+    pub(crate) fn get_last_signed_time(response: &str) -> Option<u64> {
+        let c = Self::parse_response_metadata(response);
+        c.ok().and_then(|resp| resp.last_txn_time)
+    }
 }
 
 lazy_static! {
-    static ref THRESHOLD: std::sync::Mutex<u64> = std::sync::Mutex::new(600);
-}
-
-pub fn set_freshness_threshold(threshold: u64) {
-    *THRESHOLD.lock().unwrap() = ::std::cmp::max(threshold, 300);
-}
-
-pub fn parse_response_metadata(response: &str) -> IndyResult<ResponseMetadata> {
-    trace!(
-        "indy::services::pool::parse_response_metadata << response: {}",
-        response
-    );
-    let message: Message<serde_json::Value> = serde_json::from_str(response).to_indy(
-        IndyErrorKind::InvalidTransaction,
-        "Cannot deserialize transaction Response",
-    )?;
-
-    let response_object: Reply<serde_json::Value> = _handle_response_message_type(message)?;
-    let response_result = response_object.result();
-
-    let response_metadata = match response_result["ver"].as_str() {
-        None => _parse_transaction_metadata_v0(&response_result),
-        Some("1") => _parse_transaction_metadata_v1(&response_result),
-        ver => {
-            return Err(err_msg(
-                IndyErrorKind::InvalidTransaction,
-                format!("Unsupported transaction response version: {:?}", ver),
-            ))
-        }
-    };
-
-    trace!(
-        "indy::services::pool::parse_response_metadata >> response_metadata: {:?}",
-        response_metadata
-    );
-
-    Ok(response_metadata)
-}
-
-pub fn get_last_signed_time(response: &str) -> Option<u64> {
-    let c = parse_response_metadata(response);
-    c.ok().and_then(|resp| resp.last_txn_time)
+    static ref THRESHOLD: std::sync::RwLock<u64> = std::sync::RwLock::new(600);
 }
 
 fn _handle_response_message_type<T>(message: Message<T>) -> IndyResult<Reply<T>>
@@ -481,7 +495,7 @@ pub fn pool_create_pair_of_sockets(addr: &str) -> (zmq::Socket, zmq::Socket) {
 pub mod test_utils {
     use super::*;
 
-    pub async fn fake_pool_handle_for_poolsm() -> (
+     pub(crate) async fn fake_pool_handle_for_poolsm() -> (
         indy_api_types::PoolHandle,
         oneshot::Receiver<IndyResult<indy_api_types::PoolHandle>>,
     ) {
@@ -494,7 +508,7 @@ pub mod test_utils {
         (pool_handle, receiver)
     }
 
-    pub async fn fake_cmd_id() -> (
+     pub(crate) async fn fake_cmd_id() -> (
         indy_api_types::CommandHandle,
         oneshot::Receiver<IndyResult<String>>,
     ) {
@@ -504,7 +518,7 @@ pub mod test_utils {
         (cmd_id, receiver)
     }
 
-    pub async fn fake_pool_handle_for_close_cmd() -> (
+     pub(crate) async fn fake_pool_handle_for_close_cmd() -> (
         indy_api_types::CommandHandle,
         oneshot::Receiver<IndyResult<()>>,
     ) {
@@ -791,7 +805,7 @@ pub mod tests {
             ps.send_action(pool_id, test_data, None, None)
                 .await
                 .unwrap();
-//            pool_mock.join().unwrap();
+            //            pool_mock.join().unwrap();
         }
 
         #[test]
@@ -896,7 +910,7 @@ pub mod tests {
         test::cleanup_storage("pool_drop_works_for_after_close");
     }
 
-    pub mod nodes_emulator {
+     pub(crate) mod nodes_emulator {
         use indy_utils::crypto::ed25519_sign;
         use rust_base58::{FromBase58, ToBase58};
 
@@ -905,9 +919,9 @@ pub mod tests {
         use crate::services::pool::request_handler::DEFAULT_GENERATOR;
         use ursa::bls::{Generator, SignKey, VerKey};
 
-        pub static POLL_TIMEOUT: i64 = 1_000; /* in ms */
+         pub(crate) static POLL_TIMEOUT: i64 = 1_000; /* in ms */
 
-        pub fn node() -> NodeTransactionV1 {
+         pub(crate) fn node() -> NodeTransactionV1 {
             let blskey = VerKey::new(
                 &Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap(),
                 &SignKey::new(None).unwrap(),
@@ -952,7 +966,7 @@ pub mod tests {
             }
         }
 
-        pub fn node_2() -> NodeTransactionV1 {
+         pub(crate) fn node_2() -> NodeTransactionV1 {
             let blskey = VerKey::new(
                 &Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap(),
                 &SignKey::new(None).unwrap(),
@@ -997,7 +1011,7 @@ pub mod tests {
             }
         }
 
-        pub fn start(gt: &mut NodeTransactionV1) -> zmq::Socket {
+         pub(crate) fn start(gt: &mut NodeTransactionV1) -> zmq::Socket {
             let (vk, sk) = ed25519_sign::create_key_pair_for_signature(None).unwrap();
             let pkc = ed25519_sign::vk_to_curve25519(&vk).expect("Invalid pkc");
             let skc = ed25519_sign::sk_to_curve25519(&sk).expect("Invalid skc");
@@ -1022,7 +1036,7 @@ pub mod tests {
             s
         }
 
-        pub fn next(s: &zmq::Socket) -> Option<String> {
+         pub(crate) fn next(s: &zmq::Socket) -> Option<String> {
             let poll_res = s.poll(zmq::POLLIN, POLL_TIMEOUT).expect("poll");
             if poll_res == 1 {
                 let v = s.recv_multipart(zmq::DONTWAIT).expect("recv mulp");

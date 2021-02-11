@@ -1,7 +1,8 @@
+use indy_api_types::validation::Validatable;
+use lazy_static::lazy_static;
 use regex::Regex;
 use rust_base58::FromBase58;
 
-use indy_api_types::validation::Validatable;
 use crate::utils::qualifier;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -10,10 +11,13 @@ pub struct DidMethod(pub String);
 impl Validatable for DidMethod {
     fn validate(&self) -> Result<(), String> {
         lazy_static! {
-                static ref REGEX_METHOD_NAME: Regex = Regex::new("^[a-z0-9]+$").unwrap();
-            }
+            static ref REGEX_METHOD_NAME: Regex = Regex::new("^[a-z0-9]+$").unwrap();
+        }
         if !REGEX_METHOD_NAME.is_match(&self.0) {
-            return Err(format!("Invalid default name: {}. It does not match the DID method name format.", self.0));
+            return Err(format!(
+                "Invalid default name: {}. It does not match the DID method name format.",
+                self.0
+            ));
         }
         Ok(())
     }
@@ -48,10 +52,7 @@ pub struct TheirDidInfo {
 
 impl TheirDidInfo {
     pub fn new(did: DidValue, verkey: Option<String>) -> TheirDidInfo {
-        TheirDidInfo {
-            did,
-            verkey,
-        }
+        TheirDidInfo { did, verkey }
     }
 }
 
@@ -70,10 +71,7 @@ pub struct Did {
 
 impl Did {
     pub fn new(did: DidValue, verkey: String) -> Did {
-        Did {
-            did,
-            verkey,
-        }
+        Did { did, verkey }
     }
 }
 
@@ -85,7 +83,7 @@ impl DidValue {
     pub fn new(did: &str, method: Option<&str>) -> DidValue {
         match method {
             Some(method_) => DidValue(did.to_string()).set_method(&method_),
-            None => DidValue(did.to_string())
+            None => DidValue(did.to_string()),
         }
     }
 
@@ -93,7 +91,9 @@ impl DidValue {
         ShortDidValue(self.to_unqualified().0)
     }
 
-    pub fn qualify(&self, method: &str) -> DidValue { self.set_method(&method) }
+    pub fn qualify(&self, method: &str) -> DidValue {
+        self.set_method(&method)
+    }
 
     pub fn to_unqualified(&self) -> DidValue {
         DidValue(qualifier::to_unqualified(&self.0))
@@ -103,7 +103,7 @@ impl DidValue {
         match self.get_method() {
             Some(ref method) if method.starts_with("sov") => true,
             Some(_) => false,
-            None => true
+            None => true,
         }
     }
 }
@@ -113,8 +113,7 @@ impl Validatable for DidValue {
         if self.is_fully_qualified() {
             // pass
         } else {
-            let did = self.0.from_base58()
-                .map_err(|err| err.to_string())?;
+            let did = self.0.from_base58().map_err(|err| err.to_string())?;
 
             if did.len() != 16 && did.len() != 32 {
                 return Err(format!("Trying to use DID with unexpected length: {}. \
@@ -133,15 +132,14 @@ impl ShortDidValue {
     pub fn qualify(&self, method: Option<String>) -> DidValue {
         match method {
             Some(method_) => DidValue(self.set_method(&method_).0),
-            None => DidValue(self.0.to_string())
+            None => DidValue(self.0.to_string()),
         }
     }
 }
 
 impl Validatable for ShortDidValue {
     fn validate(&self) -> Result<(), String> {
-        let did = self.0.from_base58()
-            .map_err(|err| err.to_string())?;
+        let did = self.0.from_base58().map_err(|err| err.to_string())?;
 
         if did.len() != 16 && did.len() != 32 {
             return Err(format!("Trying to use DID with unexpected length: {}. \
@@ -153,7 +151,7 @@ impl Validatable for ShortDidValue {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DidMetadata {
-    pub value: String
+    pub value: String,
 }
 
 #[derive(Serialize, Clone, Debug)]

@@ -139,43 +139,43 @@ impl PaymentsCommandExecutor {
     pub async fn execute(&self, command: PaymentsCommand) {
         match command {
             PaymentsCommand::RegisterMethod(type_, method_cbs, cb) => {
-                debug!(target: "payments_command_executor", "RegisterMethod command received");
+                debug!(target: "payments_controller", "RegisterMethod command received");
                 cb(self.register_method(&type_, method_cbs));
             }
             PaymentsCommand::CreateAddress(wallet_handle, type_, config, cb) => {
-                debug!(target: "payments_command_executor", "CreateAddress command received");
+                debug!(target: "payments_controller", "CreateAddress command received");
                 cb(self.create_address(wallet_handle, &type_, &config).await);
             }
             PaymentsCommand::ListAddresses(wallet_handle, cb) => {
-                debug!(target: "payments_command_executor", "ListAddresses command received");
+                debug!(target: "payments_controller", "ListAddresses command received");
                 cb(self.list_addresses(wallet_handle).await);
             }
             PaymentsCommand::AddRequestFees(wallet_handle, submitter_did, req, inputs, outputs, extra, cb) => {
-                debug!(target: "payments_command_executor", "AddRequestFees command received");
+                debug!(target: "payments_controller", "AddRequestFees command received");
                 cb(self.add_request_fees(wallet_handle, submitter_did.as_ref(), &req, &inputs, &outputs, extra.as_ref().map(String::as_str)).await);
             }
             PaymentsCommand::ParseResponseWithFees(type_, response, cb) => {
-                debug!(target: "payments_command_executor", "ParseResponseWithFees command received");
+                debug!(target: "payments_controller", "ParseResponseWithFees command received");
                 cb(self.parse_response_with_fees(&type_, &response).await);
             }
             PaymentsCommand::BuildGetPaymentSourcesRequest(wallet_handle, submitter_did, payment_address, from, cb) => {
-                debug!(target: "payments_command_executor", "BuildGetPaymentSourcesRequest command received");
+                debug!(target: "payments_controller", "BuildGetPaymentSourcesRequest command received");
                 cb(self.build_get_payment_sources_request(wallet_handle, submitter_did.as_ref(), &payment_address, from).await);
             }
             PaymentsCommand::ParseGetPaymentSourcesResponse(type_, response, cb) => {
-                debug!(target: "payments_command_executor", "ParseGetPaymentSourcesResponse command received");
+                debug!(target: "payments_controller", "ParseGetPaymentSourcesResponse command received");
                 cb(self.parse_get_payment_sources_response(&type_, &response).await);
             }
             PaymentsCommand::BuildPaymentReq(wallet_handle, submitter_did, inputs, outputs, extra, cb) => {
-                debug!(target: "payments_command_executor", "BuildPaymentReq command received");
+                debug!(target: "payments_controller", "BuildPaymentReq command received");
                 cb(self.build_payment_req(wallet_handle, submitter_did.as_ref(), &inputs, &outputs, extra.as_ref().map(String::as_str)).await);
             }
             PaymentsCommand::ParsePaymentResponse(payment_method, response, cb) => {
-                debug!(target: "payments_command_executor", "ParsePaymentResponse command received");
+                debug!(target: "payments_controller", "ParsePaymentResponse command received");
                 cb(self.parse_payment_response(&payment_method, &response).await);
             }
             PaymentsCommand::AppendTxnAuthorAgreementAcceptanceToExtra(extra, text, version, taa_digest, mechanism, time, cb) => {
-                debug!(target: "payments_command_executor", "AppendTxnAuthorAgreementAcceptanceToExtra command received");
+                debug!(target: "payments_controller", "AppendTxnAuthorAgreementAcceptanceToExtra command received");
                 cb(self.append_txn_author_agreement_acceptance_to_extra(extra.as_ref().map(String::as_str),
                                                                         text.as_ref().map(String::as_str),
                                                                         version.as_ref().map(String::as_str),
@@ -184,39 +184,39 @@ impl PaymentsCommandExecutor {
                                                                         time));
             }
             PaymentsCommand::BuildMintReq(wallet_handle, submitter_did, outputs, extra, cb) => {
-                debug!(target: "payments_command_executor", "BuildMintReq command received");
+                debug!(target: "payments_controller", "BuildMintReq command received");
                 cb(self.build_mint_req(wallet_handle, submitter_did.as_ref(), &outputs, extra.as_ref().map(String::as_str)).await);
             }
             PaymentsCommand::BuildSetTxnFeesReq(wallet_handle, submitter_did, type_, fees, cb) => {
-                debug!(target: "payments_command_executor", "BuildSetTxnFeesReq command received");
+                debug!(target: "payments_controller", "BuildSetTxnFeesReq command received");
                 cb(self.build_set_txn_fees_req(wallet_handle, submitter_did.as_ref(), &type_, &fees).await);
             }
             PaymentsCommand::BuildGetTxnFeesReq(wallet_handle, submitter_did, type_, cb) => {
-                debug!(target: "payments_command_executor", "BuildGetTxnFeesReq command received");
+                debug!(target: "payments_controller", "BuildGetTxnFeesReq command received");
                 cb(self.build_get_txn_fees_req(wallet_handle, submitter_did.as_ref(), &type_).await);
             }
             PaymentsCommand::ParseGetTxnFeesResponse(type_, response, cb) => {
-                debug!(target: "payments_command_executor", "ParseGetTxnFeesResponse command received");
+                debug!(target: "payments_controller", "ParseGetTxnFeesResponse command received");
                 cb(self.parse_get_txn_fees_response(&type_, &response).await);
             }
             PaymentsCommand::BuildVerifyPaymentReq(wallet_handle, submitter_did, receipt, cb) => {
-                debug!(target: "payments_command_executor", "BuildVerifyPaymentReq command received");
+                debug!(target: "payments_controller", "BuildVerifyPaymentReq command received");
                 cb(self.build_verify_payment_request(wallet_handle, submitter_did.as_ref(), &receipt).await);
             }
             PaymentsCommand::ParseVerifyPaymentResponse(payment_method, resp_json, cb) => {
-                debug!(target: "payments_command_executor", "ParseVerifyPaymentResponse command received");
+                debug!(target: "payments_controller", "ParseVerifyPaymentResponse command received");
                 cb(self.parse_verify_payment_response(&payment_method, &resp_json).await);
             }
             PaymentsCommand::GetRequestInfo(get_auth_rule_response_json, requester_info, fees_json, cb) => {
-                debug!(target: "payments_command_executor", "GetRequestInfo command received");
+                debug!(target: "payments_controller", "GetRequestInfo command received");
                 cb(self.get_request_info(&get_auth_rule_response_json, requester_info, &fees_json));
 	        },
             PaymentsCommand::SignWithAddressReq(wallet_handle, address, message, cb) => {
-                debug!(target: "payments_command_executor", "SignWithAddressReq command received");
+                debug!(target: "payments_controller", "SignWithAddressReq command received");
                 cb(self.sign_with_address(wallet_handle, &address, message.as_slice()).await);
             },
             PaymentsCommand::VerifyWithAddressReq(address, message, signature, cb) => {
-                debug!(target: "payments_command_executor", "VerifyWithAddressReq command received");
+                debug!(target: "payments_controller", "VerifyWithAddressReq command received");
                 cb(self.verify_with_address(&address, message.as_slice(), signature.as_slice()).await);
             },
         }

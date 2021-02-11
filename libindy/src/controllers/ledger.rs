@@ -30,11 +30,7 @@ use crate::{
             request::Request,
         },
     },
-    services::{
-        crypto::CryptoService,
-        ledger::LedgerService,
-        pool::{parse_response_metadata, PoolService},
-    },
+    services::{CryptoService, LedgerService, PoolService},
     utils::crypto::signature_serializer::serialize_signature,
 };
 
@@ -820,7 +816,7 @@ impl LedgerController {
     pub(crate) fn get_response_metadata(&self, response: String) -> IndyResult<String> {
         debug!("get_response_metadata > response {:?}", response);
 
-        let metadata = parse_response_metadata(&response)?;
+        let metadata = PoolService::parse_response_metadata(&response)?;
 
         let res = serde_json::to_string(&metadata).to_indy(
             IndyErrorKind::InvalidState,

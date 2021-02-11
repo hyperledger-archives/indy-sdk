@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use indy_api_types::errors::prelude::*;
+use log::trace;
 
 use ursa::{
     cl::{RevocationTailsAccessor, RevocationTailsGenerator, Tail},
@@ -11,7 +12,7 @@ use rust_base58::{FromBase58, ToBase58};
 
 use crate::{
     domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1,
-    services::blob_storage::BlobStorageService,
+    services::BlobStorageService,
 };
 
 const TAILS_BLOB_TAG_SZ: u8 = 2;
@@ -64,7 +65,7 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
         tail_id: u32,
         accessor: &mut dyn FnMut(&Tail),
     ) -> Result<(), UrsaCryptoError> {
-        debug!("access_tail > tail_id {:?}", tail_id);
+        trace!("access_tail > tail_id {:?}", tail_id);
 
         // FIXME: Potentially it is significant lock
         let tail_bytes = self.tails_service.read(
@@ -83,7 +84,7 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
         accessor(&tail);
 
         let res = Ok(());
-        debug!("access_tail < {:?}", res);
+        trace!("access_tail < {:?}", res);
         res
     }
 }
@@ -93,7 +94,7 @@ pub(crate) async fn store_tails_from_generator(
     writer_handle: i32,
     rtg: &mut RevocationTailsGenerator,
 ) -> IndyResult<(String, String)> {
-    debug!(
+    trace!(
         "store_tails_from_generator > writer_handle {:?}",
         writer_handle
     );
@@ -114,6 +115,6 @@ pub(crate) async fn store_tails_from_generator(
         .map(|(location, hash)| (location, hash.to_base58()))?;
 
     let res = Ok(tails_info);
-    debug!("store_tails_from_generator < {:?}", res);
+    trace!("store_tails_from_generator < {:?}", res);
     res
 }

@@ -3,7 +3,6 @@ use std::{collections::HashMap, sync::Arc};
 use indy_api_types::{errors::prelude::*, PoolHandle, WalletHandle};
 use indy_wallet::{RecordOptions, SearchOptions, WalletService};
 use rust_base58::{FromBase58, ToBase58};
-use serde_json;
 
 use crate::{
     domain::crypto::did::{
@@ -17,10 +16,10 @@ use crate::{
         ledger::response::Reply,
         pairwise::Pairwise,
     },
-    services::{crypto::CryptoService, ledger::LedgerService, pool::PoolService},
+    services::{CryptoService, LedgerService, PoolService},
 };
 
-pub struct DidController {
+pub(crate) struct DidController {
     wallet_service: Arc<WalletService>,
     crypto_service: Arc<CryptoService>,
     ledger_service: Arc<LedgerService>,
@@ -28,7 +27,7 @@ pub struct DidController {
 }
 
 impl DidController {
-    pub fn new(
+    pub(crate) fn new(
         wallet_service: Arc<WalletService>,
         crypto_service: Arc<CryptoService>,
         ledger_service: Arc<LedgerService>,
@@ -47,7 +46,7 @@ impl DidController {
         wallet_handle: WalletHandle,
         my_did_info: MyDidInfo,
     ) -> IndyResult<(String, String)> {
-        debug!(
+        trace!(
             "create_and_store_my_did > wallet_handle {:?} my_did_info_json {:?}",
             wallet_handle,
             secret!(&my_did_info)
@@ -58,24 +57,17 @@ impl DidController {
         if let Ok(current_did) = self._wallet_get_my_did(wallet_handle, &did.did).await {
             if did.verkey == current_did.verkey {
                 let res = Ok((did.did.0, did.verkey));
-                debug!("create_and_store_my_did < already exists {:?}", res);
+                trace!("create_and_store_my_did < already exists {:?}", res);
                 return res;
             } else {
-                let res = Err(err_msg(
+                Err(err_msg(
                     IndyErrorKind::DIDAlreadyExists,
                     format!(
                         "DID \"{}\" already exists but with different Verkey. \
                                             You should specify Seed used for initial generation",
                         did.did.0
                     ),
-                ));
-
-                debug!(
-                    "create_and_store_my_did < exists different verkey {:?}",
-                    res
-                );
-
-                return res;
+                ))?;
             }
         }
 
@@ -90,7 +82,7 @@ impl DidController {
             .ok();
 
         let res = Ok((did.did.0, did.verkey));
-        debug!("create_and_store_my_did < {:?}", res);
+        trace!("create_and_store_my_did < {:?}", res);
         res
     }
 
@@ -100,7 +92,7 @@ impl DidController {
         key_info: KeyInfo,
         my_did: DidValue,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "replace_keys_start > wallet_handle {:?} key_info_json {:?} my_did {:?}",
             wallet_handle,
             secret!(&key_info),
@@ -137,7 +129,7 @@ impl DidController {
             .await?;
 
         let res = Ok(my_temporary_did.verkey);
-        debug!("replace_keys_start < {:?}", res);
+        trace!("replace_keys_start < {:?}", res);
         res
     }
 
@@ -146,7 +138,7 @@ impl DidController {
         wallet_handle: WalletHandle,
         my_did: DidValue,
     ) -> IndyResult<()> {
-        debug!(
+        trace!(
             "replace_keys_apply > wallet_handle {:?} my_did {:?}",
             wallet_handle, my_did
         );
@@ -171,7 +163,7 @@ impl DidController {
             .await?;
 
         let res = Ok(());
-        debug!("replace_keys_apply < {:?}", res);
+        trace!("replace_keys_apply < {:?}", res);
         res
     }
 
@@ -180,7 +172,7 @@ impl DidController {
         wallet_handle: WalletHandle,
         their_did_info: TheirDidInfo,
     ) -> IndyResult<()> {
-        debug!(
+        trace!(
             "store_their_did > wallet_handle {:?} their_did_info {:?}",
             wallet_handle, their_did_info
         );
@@ -195,7 +187,7 @@ impl DidController {
             .await?;
 
         let res = Ok(());
-        debug!("store_their_did < {:?}", res);
+        trace!("store_their_did < {:?}", res);
         res
     }
 
@@ -204,7 +196,7 @@ impl DidController {
         wallet_handle: WalletHandle,
         my_did: DidValue,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "get_my_did_with_meta > wallet_handle {:?} my_did {:?}",
             wallet_handle, my_did
         );
@@ -243,7 +235,7 @@ impl DidController {
             .to_indy(IndyErrorKind::InvalidState, "Can't serialize DID")?;
 
         let res = Ok(did_with_meta);
-        debug!("get_my_did_with_meta < {:?}", res);
+        trace!("get_my_did_with_meta < {:?}", res);
         res
     }
 
@@ -251,7 +243,7 @@ impl DidController {
         &self,
         wallet_handle: WalletHandle,
     ) -> IndyResult<String> {
-        debug!("list_my_dids_with_meta > wallet_handle {:?}", wallet_handle);
+        trace!("list_my_dids_with_meta > wallet_handle {:?}", wallet_handle);
 
         let mut did_search = self
             .wallet_service
@@ -341,7 +333,7 @@ impl DidController {
             .to_indy(IndyErrorKind::InvalidState, "Can't serialize DIDs list")?;
 
         let res = Ok(dids);
-        debug!("list_my_dids_with_meta < {:?}", res);
+        trace!("list_my_dids_with_meta < {:?}", res);
         res
     }
 
@@ -351,7 +343,7 @@ impl DidController {
         wallet_handle: WalletHandle,
         did: DidValue,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "key_for_did > pool_handle {:?} wallet_handle {:?} did {:?}",
             pool_handle, wallet_handle, did
         );
@@ -367,7 +359,7 @@ impl DidController {
 
         if let Some(my_did) = my_did {
             let res = Ok(my_did.verkey);
-            debug!("key_for_did < my key {:?}", res);
+            trace!("key_for_did < my key {:?}", res);
             return res;
         }
 
@@ -383,7 +375,7 @@ impl DidController {
         };
 
         let res = Ok(their_did.verkey);
-        debug!("key_for_did < their did {:?}", res);
+        trace!("key_for_did < their did {:?}", res);
         res
     }
 
@@ -392,7 +384,7 @@ impl DidController {
         wallet_handle: WalletHandle,
         did: DidValue,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "key_for_local_did > wallet_handle {:?} did {:?}",
             wallet_handle, did
         );
@@ -408,7 +400,7 @@ impl DidController {
 
         if let Some(my_did) = my_did {
             let res = Ok(my_did.verkey);
-            debug!("key_for_local_did < my {:?}", res);
+            trace!("key_for_local_did < my {:?}", res);
             return res;
         }
 
@@ -416,7 +408,7 @@ impl DidController {
         let their_did = self._wallet_get_their_did(wallet_handle, &did).await?;
 
         let res = Ok(their_did.verkey);
-        debug!("key_for_local_did < {:?}", res);
+        trace!("key_for_local_did < {:?}", res);
         res
     }
 
@@ -426,7 +418,7 @@ impl DidController {
         did: DidValue,
         endpoint: Endpoint,
     ) -> IndyResult<()> {
-        debug!(
+        trace!(
             "set_endpoint_for_did > wallet_handle {:?} did {:?} endpoint {:?}",
             wallet_handle, did, endpoint
         );
@@ -442,7 +434,7 @@ impl DidController {
             .await?;
 
         let res = Ok(());
-        debug!("set_endpoint_for_did < {:?}", res);
+        trace!("set_endpoint_for_did < {:?}", res);
         res
     }
 
@@ -452,7 +444,7 @@ impl DidController {
         pool_handle: PoolHandle,
         did: DidValue,
     ) -> IndyResult<(String, Option<String>)> {
-        debug!(
+        trace!(
             "get_endpoint_for_did > wallet_handle {:?} \
                 pool_handle {:?} did {:?}",
             wallet_handle, pool_handle, did
@@ -474,7 +466,7 @@ impl DidController {
         };
 
         let res = Ok((endpoint.ha, endpoint.verkey));
-        debug!("get_endpoint_for_did < {:?}", res);
+        trace!("get_endpoint_for_did < {:?}", res);
         res
     }
 
@@ -484,7 +476,7 @@ impl DidController {
         did: DidValue,
         metadata: String,
     ) -> IndyResult<()> {
-        debug!(
+        trace!(
             "set_did_metadata > wallet_handle {:?} did {:?} metadata {:?}",
             wallet_handle, did, metadata
         );
@@ -498,7 +490,7 @@ impl DidController {
             .await?;
 
         let res = Ok(());
-        debug!("set_did_metadata < {:?}", res);
+        trace!("set_did_metadata < {:?}", res);
         res
     }
 
@@ -507,7 +499,7 @@ impl DidController {
         wallet_handle: WalletHandle,
         did: DidValue,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "get_did_metadata > wallet_handle {:?} did {:?}",
             wallet_handle, did
         );
@@ -520,7 +512,7 @@ impl DidController {
             .await?;
 
         let res = Ok(metadata.value);
-        debug!("get_did_metadata < {:?}", res);
+        trace!("get_did_metadata < {:?}", res);
         res
     }
 
@@ -529,14 +521,14 @@ impl DidController {
         did: DidValue,
         verkey: String,
     ) -> IndyResult<String> {
-        debug!("abbreviate_verkey > did {:?} verkey {:?}", did, verkey);
+        trace!("abbreviate_verkey > did {:?} verkey {:?}", did, verkey);
 
         self.crypto_service.validate_did(&did)?;
         self.crypto_service.validate_key(&verkey).await?;
 
         if !did.is_abbreviatable() {
             let res = Ok(verkey);
-            debug!("abbreviate_verkey < not abbreviatable {:?}", res);
+            trace!("abbreviate_verkey < not abbreviatable {:?}", res);
             return res;
         }
 
@@ -552,7 +544,7 @@ impl DidController {
         };
 
         let res = Ok(res);
-        debug!("abbreviate_verkey < {:?}", res);
+        trace!("abbreviate_verkey < {:?}", res);
         res
     }
 
@@ -562,7 +554,7 @@ impl DidController {
         did: DidValue,
         method: DidMethod,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "qualify_did > wallet_handle {:?} curr_did {:?} method {:?}",
             wallet_handle, did, method
         );
@@ -642,7 +634,7 @@ impl DidController {
         }
 
         let res = Ok(curr_did.did.0);
-        debug!("qualify_did < {:?}", res);
+        trace!("qualify_did < {:?}", res);
         res
     }
 

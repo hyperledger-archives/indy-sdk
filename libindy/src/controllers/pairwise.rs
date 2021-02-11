@@ -2,6 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use indy_api_types::{errors::prelude::*, WalletHandle};
 use indy_wallet::{RecordOptions, WalletService};
+use log::trace;
 
 use crate::domain::{
     crypto::did::{Did, DidValue, TheirDid},
@@ -22,7 +23,7 @@ impl PairwiseController {
         wallet_handle: WalletHandle,
         their_did: DidValue,
     ) -> IndyResult<bool> {
-        debug!(
+        trace!(
             "pairwise_exists > wallet_handle {:?} their_did {:?}",
             wallet_handle, their_did
         );
@@ -33,7 +34,7 @@ impl PairwiseController {
             .await?;
 
         let res = Ok(exists);
-        debug!("pairwise_exists < {:?}", res);
+        trace!("pairwise_exists < {:?}", res);
         res
     }
 
@@ -44,7 +45,7 @@ impl PairwiseController {
         my_did: DidValue,
         metadata: Option<String>,
     ) -> IndyResult<()> {
-        debug!(
+        trace!(
             "create_pairwise > wallet_handle {:?} \
                 their_did {:?} my_did {:?} metadata {:?}",
             wallet_handle, their_did, my_did, metadata
@@ -74,12 +75,12 @@ impl PairwiseController {
             .await?;
 
         let res = Ok(());
-        debug!("create_pairwise < {:?}", res);
+        trace!("create_pairwise < {:?}", res);
         res
     }
 
     pub(crate) async fn list_pairwise(&self, wallet_handle: WalletHandle) -> IndyResult<String> {
-        debug!("list_pairwise > wallet_handle {:?}", wallet_handle);
+        trace!("list_pairwise > wallet_handle {:?}", wallet_handle);
 
         let mut search = self
             .wallet_service
@@ -106,7 +107,7 @@ impl PairwiseController {
             .to_indy(IndyErrorKind::InvalidState, "Can't serialize pairwise list")?;
 
         let res = Ok(pairwises);
-        debug!("list_pairwise < {:?}", res);
+        trace!("list_pairwise < {:?}", res);
         res
     }
 
@@ -115,7 +116,7 @@ impl PairwiseController {
         wallet_handle: WalletHandle,
         their_did: DidValue,
     ) -> IndyResult<String> {
-        debug!(
+        trace!(
             "get_pairwise > wallet_handle {:?} their_did {:?}",
             wallet_handle, their_did
         );
@@ -134,7 +135,7 @@ impl PairwiseController {
             .to_indy(IndyErrorKind::InvalidState, "Can't serialize PairwiseInfo")?;
 
         let res = Ok(res);
-        debug!("get_pairwise < {:?}", res);
+        trace!("get_pairwise < {:?}", res);
         res
     }
 
@@ -144,7 +145,7 @@ impl PairwiseController {
         their_did: DidValue,
         metadata: Option<String>,
     ) -> IndyResult<()> {
-        debug!(
+        trace!(
             "set_pairwise_metadata > wallet_handle {:?} their_did {:?} metadata {:?}",
             wallet_handle, their_did, metadata
         );
@@ -161,7 +162,7 @@ impl PairwiseController {
             .await?;
 
         let res = Ok(());
-        debug!("set_pairwise_metadata <<<");
+        trace!("set_pairwise_metadata <<<");
         res
     }
 }

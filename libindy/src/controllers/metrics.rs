@@ -40,7 +40,7 @@ impl MetricsController {
     pub async fn execute(&self, command: MetricsCommand) {
         match command {
             MetricsCommand::CollectMetrics(cb) => {
-                debug!(target: "metrics_command_executor", "CollectMetrics command received");
+                debug!(target: "metrics_controller", "CollectMetrics command received");
                 cb(self.collect().await);
             }
         };

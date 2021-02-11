@@ -1,18 +1,22 @@
 use std::sync::Arc;
 
+use async_std::task::spawn_blocking;
+
 use indy_api_types::{
     domain::wallet::{Config, Credentials, ExportConfig, KeyConfig},
     errors::prelude::*,
     wallet::*,
     WalletHandle,
 };
+
 use indy_utils::crypto::{
     chacha20poly1305_ietf, chacha20poly1305_ietf::Key as MasterKey, randombytes,
 };
+
 use indy_wallet::{KeyDerivationData, WalletService};
 use rust_base58::ToBase58;
 
-use crate::services::crypto::CryptoService;
+use crate::services::CryptoService;
 
 pub(crate) struct WalletController {
     wallet_service: Arc<WalletService>,
@@ -115,7 +119,11 @@ impl WalletController {
         res
     }
 
-    pub(crate) async fn open(&self, config: Config, credentials: Credentials) -> IndyResult<WalletHandle> {
+    pub(crate) async fn open(
+        &self,
+        config: Config,
+        credentials: Credentials,
+    ) -> IndyResult<WalletHandle> {
         trace!(
             "open > config: {:?} credentials: {:?}",
             &config,
@@ -155,11 +163,7 @@ impl WalletController {
         Ok(())
     }
 
-    pub(crate) async fn delete(
-        &self,
-        config: Config,
-        credentials: Credentials,
-    ) -> IndyResult<()> {
+    pub(crate) async fn delete(&self, config: Config, credentials: Credentials) -> IndyResult<()> {
         trace!(
             "delete > config: {:?} credentials: {:?}",
             &config,
@@ -242,10 +246,7 @@ impl WalletController {
         res
     }
 
-    pub(crate) fn generate_key(
-        &self,
-        config: Option<KeyConfig>,
-    ) -> IndyResult<String> {
+    pub(crate) fn generate_key(&self, config: Option<KeyConfig>) -> IndyResult<String> {
         trace!("generate_key > config: {:?}", secret!(&config));
 
         let seed = config
@@ -267,14 +268,7 @@ impl WalletController {
     }
 
     async fn _derive_key(key_data: KeyDerivationData) -> IndyResult<MasterKey> {
-        let (s, r) = futures::channel::oneshot::channel();
-        crate::commands::THREADPOOL
-            .lock()
-            .unwrap()
-            .execute(move || {
-                let res = key_data.calc_master_key();
-                s.send(res).unwrap();
-            });
-        r.await?
+        let res = spawn_blocking(move || key_data.calc_master_key()).await?;
+        Ok(res)
     }
 }

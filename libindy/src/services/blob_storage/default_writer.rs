@@ -6,12 +6,12 @@ use indy_api_types::errors::prelude::*;
 use rust_base58::ToBase58;
 use serde_json;
 
-use super::{WritableBlob, Writer, WriterType};
-
 use crate::utils::environment;
 
+use super::{WritableBlob, Writer, WriterType};
+
 #[allow(dead_code)]
-pub struct DefaultWriter {
+pub(crate) struct DefaultWriter {
     base_dir: PathBuf,
     uri_pattern: String,
     file: File,
@@ -101,7 +101,7 @@ fn tmp_storage_file(id: i32) -> PathBuf {
     environment::tmp_file_path(&format!("def_storage_tmp_{}", id))
 }
 
-pub struct DefaultWriterType {}
+pub(crate) struct DefaultWriterType {}
 
 impl DefaultWriterType {
     pub fn new() -> Self {

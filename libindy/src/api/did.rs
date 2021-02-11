@@ -9,7 +9,6 @@ use libc::c_char;
 use serde_json;
 
 use crate::{
-    commands::Locator,
     domain::{
         crypto::{
             did::{DidMethod, DidValue, MyDidInfo, TheirDidInfo},
@@ -17,6 +16,7 @@ use crate::{
         },
         ledger::attrib::Endpoint,
     },
+    Locator,
 };
 
 /// Creates keys (signing and encryption keys) for a new
@@ -70,40 +70,33 @@ pub extern "C" fn indy_create_and_store_my_did(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_create_and_store_my_did > wallet_handle {:?} did_json {:?}",
-        wallet_handle,
-        did_info
+        wallet_handle, did_info
     );
 
     check_useful_validatable_json!(did_info, ErrorCode::CommonInvalidParam3, MyDidInfo); // redefine to MyDidInfo if valid
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_create_and_store_my_did ? wallet_handle {:?} did_json {:?}",
         wallet_handle,
         secret!(&did_info)
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.did_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .did_controller
             .create_and_store_my_did(wallet_handle, did_info)
             .await;
 
         let (err, did, verkey) = prepare_result_2!(res, String::new(), String::new());
 
-        trace!(
+        debug!(
             "indy_create_and_store_my_did ? err {:?} did {:?} verkey {:?}",
-            err,
-            did,
-            verkey
+            err, did, verkey
         );
 
         let did = ctypes::string_to_cstring(did);
@@ -112,7 +105,7 @@ pub extern "C" fn indy_create_and_store_my_did(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_create_and_store_my_did < {:?}", res);
+    debug!("indy_create_and_store_my_did < {:?}", res);
     res
 }
 
@@ -154,19 +147,17 @@ pub extern "C" fn indy_replace_keys_start(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, verkey: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_replace_keys_start > wallet_handle {:?} \
             did {:?} identity_json {:?}",
-        wallet_handle,
-        did,
-        key_info
+        wallet_handle, did, key_info
     );
 
     check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_json!(key_info, ErrorCode::CommonInvalidParam4, KeyInfo);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_replace_keys_start ? wallet_handle {:?} \
             did {:?} key_info {:?}",
         wallet_handle,
@@ -174,27 +165,23 @@ pub extern "C" fn indy_replace_keys_start(
         secret!(&key_info)
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.did_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .did_controller
             .replace_keys_start(wallet_handle, key_info, did)
             .await;
 
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_replace_keys_start ? err {:?} res {:?}", err, res);
+        debug!("indy_replace_keys_start ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_replace_keys_start < {:?}", res);
+    debug!("indy_replace_keys_start < {:?}", res);
     res
 }
 
@@ -223,39 +210,35 @@ pub extern "C" fn indy_replace_keys_apply(
     did: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_replace_keys_apply > wallet_handle {:?} did {:?}",
-        wallet_handle,
-        did
+        wallet_handle, did
     );
 
     check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_replace_keys_apply ? wallet_handle {:?} did {:?}",
-        wallet_handle,
-        did
+        wallet_handle, did
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.did_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.replace_keys_apply(wallet_handle, did).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .did_controller
+            .replace_keys_apply(wallet_handle, did)
+            .await;
 
         let err = prepare_result!(res);
-        trace!("indy_replace_keys_apply ? err {:?}", err);
+        debug!("indy_replace_keys_apply ? err {:?}", err);
 
         cb(command_handle, err)
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_replace_keys_apply < {:?}", res);
+    debug!("indy_replace_keys_apply < {:?}", res);
     res
 }
 
@@ -292,41 +275,35 @@ pub extern "C" fn indy_store_their_did(
     identity_json: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_store_their_did > wallet_handle {:?} identity_json {:?}",
-        wallet_handle,
-        identity_json
+        wallet_handle, identity_json
     );
 
     check_useful_validatable_json!(identity_json, ErrorCode::CommonInvalidParam3, TheirDidInfo);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_store_their_did ? wallet_handle {:?} identity_json {:?}",
-        wallet_handle,
-        identity_json
+        wallet_handle, identity_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.did_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .did_controller
             .store_their_did(wallet_handle, identity_json)
             .await;
 
         let err = prepare_result!(res);
-        trace!("indy_store_their_did ? err {:?}", err);
+        debug!("indy_store_their_did ? err {:?}", err);
 
         cb(command_handle, err)
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_store_their_did < {:?}", res);
+    debug!("indy_store_their_did < {:?}", res);
     res
 }
 
@@ -369,44 +346,36 @@ pub extern "C" fn indy_key_for_did(
     did: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, key: *const c_char)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_key_for_did > pool_handle {:?} wallet_handle {:?} did {:?}",
-        pool_handle,
-        wallet_handle,
-        did
+        pool_handle, wallet_handle, did
     );
 
     check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam4, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_key_for_did ? pool_handle {:?} wallet_handle {:?} did {:?}",
-        pool_handle,
-        wallet_handle,
-        did
+        pool_handle, wallet_handle, did
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.did_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .did_controller
             .key_for_did(pool_handle, wallet_handle, did)
             .await;
 
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_key_for_did ? err {:?} res {:?}", err, res);
+        debug!("indy_key_for_did ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_key_for_did < {:?}", res);
+    debug!("indy_key_for_did < {:?}", res);
     res
 }
 
@@ -445,40 +414,36 @@ pub extern "C" fn indy_key_for_local_did(
     did: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, key: *const c_char)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_key_for_local_did > wallet_handle {:?} did {:?}",
-        wallet_handle,
-        did
+        wallet_handle, did
     );
 
     check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_key_for_local_did ? wallet_handle {:?} did {:?}",
-        wallet_handle,
-        did
+        wallet_handle, did
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.did_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.key_for_local_did(wallet_handle, did).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .did_controller
+            .key_for_local_did(wallet_handle, did)
+            .await;
 
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_key_for_local_did ? err {:?} res {:?}", err, res);
+        debug!("indy_key_for_local_did ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_key_for_local_did < {:?}", res);
+    debug!("indy_key_for_local_did < {:?}", res);
     res
 }
 
@@ -511,13 +476,10 @@ pub extern "C" fn indy_set_endpoint_for_did(
     transport_key: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_set_endpoint_for_did > wallet_handle {:?} \
             did {:?} address {:?} transport_key {:?}",
-        wallet_handle,
-        did,
-        address,
-        transport_key
+        wallet_handle, did, address, transport_key
     );
 
     check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
@@ -525,37 +487,30 @@ pub extern "C" fn indy_set_endpoint_for_did(
     check_useful_c_str!(transport_key, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!(
+    debug!(
         "indy_set_endpoint_for_did ? wallet_handle {:?} \
             did {:?} address {:?} transport_key {:?}",
-        wallet_handle,
-        did,
-        address,
-        transport_key
+        wallet_handle, did, address, transport_key
     );
 
     let endpoint = Endpoint::new(address, Some(transport_key));
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.did_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .did_controller
             .set_endpoint_for_did(wallet_handle, did, endpoint)
             .await;
 
         let err = prepare_result!(res);
-        trace!("indy_set_endpoint_for_did ? err {:?}", err);
+        debug!("indy_set_endpoint_for_did ? err {:?}", err);
 
         cb(command_handle, err)
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_set_endpoint_for_did < {:?}", res);
+    debug!("indy_set_endpoint_for_did < {:?}", res);
     res
 }
 
@@ -594,42 +549,32 @@ pub extern "C" fn indy_get_endpoint_for_did(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_get_endpoint_for_did > wallet_handle {:?} pool_handle {:?} did {:?}",
-        wallet_handle,
-        pool_handle,
-        did
+        wallet_handle, pool_handle, did
     );
 
     check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_get_endpoint_for_did ? wallet_handle {:?} pool_handle {:?} did {:?}",
-        wallet_handle,
-        pool_handle,
-        did
+        wallet_handle, pool_handle, did
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.did_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .did_controller
             .get_endpoint_for_did(wallet_handle, pool_handle, did)
             .await;
 
         let (err, address, transport_vk) = prepare_result_2!(res, String::new(), None);
 
-        trace!(
+        debug!(
             "indy_get_endpoint_for_did ? err {:?} address {:?} transport_vk {:?}",
-            err,
-            address,
-            transport_vk
+            err, address, transport_vk
         );
 
         let address = ctypes::string_to_cstring(address);
@@ -647,7 +592,7 @@ pub extern "C" fn indy_get_endpoint_for_did(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_get_endpoint_for_did < {:?}", res);
+    debug!("indy_get_endpoint_for_did < {:?}", res);
     res
 }
 
@@ -678,43 +623,35 @@ pub extern "C" fn indy_set_did_metadata(
     metadata: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_set_did_metadata > wallet_handle {:?} did {:?} metadata {:?}",
-        wallet_handle,
-        did,
-        metadata
+        wallet_handle, did, metadata
     );
 
     check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str_empty_accepted!(metadata, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_set_did_metadata ? wallet_handle {:?} did {:?} metadata {:?}",
-        wallet_handle,
-        did,
-        metadata
+        wallet_handle, did, metadata
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.did_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .did_controller
             .set_did_metadata(wallet_handle, did, metadata)
             .await;
 
         let err = prepare_result!(res);
-        trace!("indy_set_did_metadata:");
+        debug!("indy_set_did_metadata:");
         cb(command_handle, err)
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_set_did_metadata < {:?}", res);
+    debug!("indy_set_did_metadata < {:?}", res);
     res
 }
 
@@ -746,40 +683,36 @@ pub extern "C" fn indy_get_did_metadata(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, metadata: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_get_did_metadata > wallet_handle {:?} did {:?}",
-        wallet_handle,
-        did
+        wallet_handle, did
     );
 
     check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_get_did_metadata ? wallet_handle {:?} did {:?}",
-        wallet_handle,
-        did
+        wallet_handle, did
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.did_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.get_did_metadata(wallet_handle, did).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .did_controller
+            .get_did_metadata(wallet_handle, did)
+            .await;
 
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_get_did_metadata ? err {:?} res {:?}", err, res);
+        debug!("indy_get_did_metadata ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_get_did_metadata < {:?}", res);
+    debug!("indy_get_did_metadata < {:?}", res);
     res
 }
 
@@ -817,40 +750,36 @@ pub extern "C" fn indy_get_my_did_with_meta(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, did_with_meta: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_get_my_did_with_meta > wallet_handle {:?} my_did {:?}",
-        wallet_handle,
-        my_did
+        wallet_handle, my_did
     );
 
     check_useful_validatable_string!(my_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_get_my_did_with_meta ? wallet_handle {:?} my_did {:?}",
-        wallet_handle,
-        my_did
+        wallet_handle, my_did
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.did_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.get_my_did_with_meta(wallet_handle, my_did).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .did_controller
+            .get_my_did_with_meta(wallet_handle, my_did)
+            .await;
 
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_get_my_did_with_meta ? err {:?} res {:?}", err, res);
+        debug!("indy_get_my_did_with_meta ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_get_my_did_with_meta < {:?}", res);
+    debug!("indy_get_my_did_with_meta < {:?}", res);
     res
 }
 
@@ -882,37 +811,35 @@ pub extern "C" fn indy_list_my_dids_with_meta(
     wallet_handle: WalletHandle,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, dids: *const c_char)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_list_my_dids_with_meta > wallet_handle {:?}",
         wallet_handle
     );
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!(
+    debug!(
         "indy_list_my_dids_with_meta ? wallet_handle {:?}",
         wallet_handle
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.did_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.list_my_dids_with_meta(wallet_handle).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .did_controller
+            .list_my_dids_with_meta(wallet_handle)
+            .await;
 
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_list_my_dids_with_meta ? err {:?} res {:?}", err, res);
+        debug!("indy_list_my_dids_with_meta ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_list_my_dids_with_meta < {:?}", res);
+    debug!("indy_list_my_dids_with_meta < {:?}", res);
     res
 }
 
@@ -943,41 +870,37 @@ pub extern "C" fn indy_abbreviate_verkey(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, verkey: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_abbreviate_verkey > did {:?} full_verkey {:?}",
-        did,
-        full_verkey
+        did, full_verkey
     );
 
     check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(full_verkey, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_abbreviate_verkey ? did {:?} full_verkey {:?}",
-        did,
-        full_verkey
+        did, full_verkey
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.did_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.abbreviate_verkey(did, full_verkey).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .did_controller
+            .abbreviate_verkey(did, full_verkey)
+            .await;
 
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_abbreviate_verkey ? err {:?} res {:?}", err, res);
+        debug!("indy_abbreviate_verkey ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_abbreviate_verkey < {:?}", res);
+    debug!("indy_abbreviate_verkey < {:?}", res);
     res
 }
 
@@ -1017,42 +940,36 @@ pub extern "C" fn indy_qualify_did(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_qualify_did > wallet_handle {:?} did {:?} method {:?}",
-        wallet_handle,
-        did,
-        method
+        wallet_handle, did, method
     );
 
     check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_validatable_string!(method, ErrorCode::CommonInvalidParam4, DidMethod);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_qualify_did ? wallet_handle {:?} did {:?} method {:?}",
-        wallet_handle,
-        did,
-        method
+        wallet_handle, did, method
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.did_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.qualify_did(wallet_handle, did, method).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .did_controller
+            .qualify_did(wallet_handle, did, method)
+            .await;
 
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_qualify_did ? err {:?} res {:?}", err, res);
+        debug!("indy_qualify_did ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_qualify_did < {:?}", res);
+    debug!("indy_qualify_did < {:?}", res);
     res
 }

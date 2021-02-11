@@ -1,8 +1,9 @@
-extern crate hex;
+mod ed25519;
 
 use std::{collections::HashMap, str};
 
 use async_std::sync::RwLock;
+use hex::FromHex;
 use indy_api_types::errors::prelude::*;
 
 use indy_utils::crypto::{
@@ -21,11 +22,9 @@ use crate::{
     utils::crypto::verkey_builder::{build_full_verkey, split_verkey, verkey_get_cryptoname},
 };
 
-use self::{ed25519::ED25519CryptoType, hex::FromHex};
+use ed25519::ED25519CryptoType;
 
-mod ed25519;
-
-pub const DEFAULT_CRYPTO_TYPE: &str = "ed25519";
+const DEFAULT_CRYPTO_TYPE: &str = "ed25519";
 
 //TODO fix this crypto trait so it matches the functions below
 //TODO create a second crypto trait for additional functions
@@ -37,6 +36,7 @@ trait CryptoType: Send + Sync {
         doc: &[u8],
         nonce: &ed25519_box::Nonce,
     ) -> IndyResult<Vec<u8>>;
+
     fn crypto_box_open(
         &self,
         sk: &ed25519_sign::SecretKey,
@@ -44,21 +44,28 @@ trait CryptoType: Send + Sync {
         doc: &[u8],
         nonce: &ed25519_box::Nonce,
     ) -> IndyResult<Vec<u8>>;
+
     fn gen_nonce(&self) -> ed25519_box::Nonce;
+
     fn create_key(
         &self,
         seed: Option<&ed25519_sign::Seed>,
     ) -> IndyResult<(ed25519_sign::PublicKey, ed25519_sign::SecretKey)>;
+
     fn validate_key(&self, _vk: &ed25519_sign::PublicKey) -> IndyResult<()>;
+
     fn sign(&self, sk: &ed25519_sign::SecretKey, doc: &[u8])
         -> IndyResult<ed25519_sign::Signature>;
+
     fn verify(
         &self,
         vk: &ed25519_sign::PublicKey,
         doc: &[u8],
         signature: &ed25519_sign::Signature,
     ) -> IndyResult<bool>;
+
     fn crypto_box_seal(&self, vk: &ed25519_sign::PublicKey, doc: &[u8]) -> IndyResult<Vec<u8>>;
+
     fn crypto_box_seal_open(
         &self,
         vk: &ed25519_sign::PublicKey,
@@ -67,12 +74,12 @@ trait CryptoType: Send + Sync {
     ) -> IndyResult<Vec<u8>>;
 }
 
-pub struct CryptoService {
+pub(crate) struct CryptoService {
     crypto_types: RwLock<HashMap<&'static str, Box<dyn CryptoType>>>,
 }
 
 impl CryptoService {
-    pub fn new() -> CryptoService {
+    pub(crate) fn new() -> CryptoService {
         let crypto_types = {
             let mut types = HashMap::<&'static str, Box<dyn CryptoType>>::new();
             types.insert(DEFAULT_CRYPTO_TYPE, Box::new(ED25519CryptoType::new()));
@@ -82,8 +89,12 @@ impl CryptoService {
         CryptoService { crypto_types }
     }
 
-    pub async fn create_key(&self, key_info: &KeyInfo) -> IndyResult<Key> {
-        trace!("create_key >>> key_info: {:?}", secret!(key_info));
+    pub(crate) fn defualt_crypto_type() -> &'static str {
+        DEFAULT_CRYPTO_TYPE
+    }
+
+    pub(crate) async fn create_key(&self, key_info: &KeyInfo) -> IndyResult<Key> {
+        trace!("create_key > key_info {:?}", secret!(key_info));
 
         let crypto_type_name = key_info
             .crypto_type
@@ -112,13 +123,13 @@ impl CryptoService {
 
         let key = Key::new(vk, sk);
 
-        trace!("create_key <<< key: {:?}", key);
-
-        Ok(key)
+        let res = Ok(key);
+        trace!("create_key < {:?}", res);
+        res
     }
 
-    pub async fn create_my_did(&self, my_did_info: &MyDidInfo) -> IndyResult<(Did, Key)> {
-        trace!("create_my_did >>> my_did_info: {:?}", secret!(my_did_info));
+    pub(crate) async fn create_my_did(&self, my_did_info: &MyDidInfo) -> IndyResult<(Did, Key)> {
+        trace!("create_my_did > my_did_info {:?}", secret!(my_did_info));
 
         let crypto_type_name = my_did_info
             .crypto_type
@@ -165,13 +176,13 @@ impl CryptoService {
 
         let did = (Did::new(did, vk.clone()), Key::new(vk, sk));
 
-        trace!("create_my_did <<< did: {:?}", did);
-
-        Ok(did)
+        let res = Ok(did);
+        trace!("create_my_did < {:?}", res);
+        res
     }
 
-    pub async fn create_their_did(&self, their_did_info: &TheirDidInfo) -> IndyResult<TheirDid> {
-        trace!("create_their_did >>> their_did_info: {:?}", their_did_info);
+    pub(crate) async fn create_their_did(&self, their_did_info: &TheirDidInfo) -> IndyResult<TheirDid> {
+        trace!("create_their_did > their_did_info {:?}", their_did_info);
 
         // Check did is correct Base58
         let _ = self.validate_did(&their_did_info.did)?;
@@ -188,16 +199,15 @@ impl CryptoService {
             verkey,
         };
 
-        trace!("create_their_did <<< did: {:?}", did);
-
-        Ok(did)
+        let res = Ok(did);
+        trace!("create_their_did < {:?}", res);
+        res
     }
 
-    pub async fn sign(&self, my_key: &Key, doc: &[u8]) -> IndyResult<Vec<u8>> {
-        trace!("sign >>> my_key: {:?}, doc: {:?}", my_key, doc);
+    pub(crate) async fn sign(&self, my_key: &Key, doc: &[u8]) -> IndyResult<Vec<u8>> {
+        trace!("sign > my_key {:?} doc {:?}", my_key, doc);
 
         let crypto_type_name = verkey_get_cryptoname(&my_key.verkey);
-
         let crypto_types = self.crypto_types.read().await;
 
         let crypto_type = crypto_types.get(crypto_type_name).ok_or_else(|| {
@@ -216,14 +226,14 @@ impl CryptoService {
 
         let signature = crypto_type.sign(&my_sk, doc)?[..].to_vec();
 
-        trace!("sign <<< signature: {:?}", signature);
-
-        Ok(signature)
+        let res = Ok(signature);
+        trace!("sign < {:?}", res);
+        res
     }
 
-    pub async fn verify(&self, their_vk: &str, msg: &[u8], signature: &[u8]) -> IndyResult<bool> {
+    pub(crate) async fn verify(&self, their_vk: &str, msg: &[u8], signature: &[u8]) -> IndyResult<bool> {
         trace!(
-            "verify >>> their_vk: {:?}, msg: {:?}, signature: {:?}",
+            "verify > their_vk {:?} msg {:?} signature {:?}",
             their_vk,
             msg,
             signature
@@ -248,19 +258,19 @@ impl CryptoService {
 
         let valid = crypto_type.verify(&their_vk, msg, &signature)?;
 
-        trace!("verify <<< valid: {:?}", valid);
-
-        Ok(valid)
+        let res = Ok(valid);
+        trace!("verify < {:?}", res);
+        res
     }
 
-    pub async fn create_combo_box(
+    pub(crate) async fn create_combo_box(
         &self,
         my_key: &Key,
         their_vk: &str,
         doc: &[u8],
     ) -> IndyResult<ComboBox> {
         trace!(
-            "create_combo_box >>> my_key: {:?}, their_vk: {:?}, doc: {:?}",
+            "create_combo_box > my_key {:?} their_vk {:?} doc {:?}",
             my_key,
             their_vk,
             doc
@@ -274,19 +284,19 @@ impl CryptoService {
             nonce: base64::encode(nonce.as_slice()),
         };
 
-        trace!("create_combo_box <<< res: {:?}", res);
-
-        Ok(res)
+        let res = Ok(res);
+        trace!("create_combo_box < {:?}", res);
+        res
     }
 
-    pub async fn crypto_box(
+    pub(crate) async fn crypto_box(
         &self,
         my_key: &Key,
         their_vk: &str,
         doc: &[u8],
     ) -> IndyResult<(Vec<u8>, Vec<u8>)> {
         trace!(
-            "crypto_box >>> my_key: {:?}, their_vk: {:?}, doc: {:?}",
+            "crypto_box > my_key {:?} their_vk {:?} doc {:?}",
             my_key,
             their_vk,
             doc
@@ -328,16 +338,12 @@ impl CryptoService {
         let encrypted_doc = crypto_type.crypto_box(&my_sk, &their_vk, doc, &nonce)?;
         let nonce = nonce[..].to_vec();
 
-        trace!(
-            "crypto_box <<< encrypted_doc: {:?}, nonce: {:?}",
-            encrypted_doc,
-            nonce
-        );
-
-        Ok((encrypted_doc, nonce))
+        let res = Ok((encrypted_doc, nonce));
+        trace!("crypto_box < {:?}", res);
+        res
     }
 
-    pub async fn crypto_box_open(
+    pub(crate) async fn crypto_box_open(
         &self,
         my_key: &Key,
         their_vk: &str,
@@ -345,7 +351,7 @@ impl CryptoService {
         nonce: &[u8],
     ) -> IndyResult<Vec<u8>> {
         trace!(
-            "crypto_box_open >>> my_key: {:?}, their_vk: {:?}, doc: {:?}, nonce: {:?}",
+            "crypto_box_open > my_key {:?} their_vk {:?} doc {:?} nonce {:?}",
             my_key,
             their_vk,
             doc,
@@ -353,7 +359,6 @@ impl CryptoService {
         );
 
         let crypto_type_name = verkey_get_cryptoname(&my_key.verkey);
-
         let (their_vk, their_crypto_type_name) = split_verkey(their_vk);
 
         if !crypto_type_name.eq(their_crypto_type_name) {
@@ -385,20 +390,15 @@ impl CryptoService {
 
         let decrypted_doc = crypto_type.crypto_box_open(&my_sk, &their_vk, &doc, &nonce)?;
 
-        trace!("crypto_box_open <<< decrypted_doc: {:?}", decrypted_doc);
-
-        Ok(decrypted_doc)
+        let res = Ok(decrypted_doc);
+        trace!("crypto_box_open < {:?}", res);
+        res
     }
 
-    pub async fn crypto_box_seal(&self, their_vk: &str, doc: &[u8]) -> IndyResult<Vec<u8>> {
-        trace!(
-            "crypto_box_seal >>> their_vk: {:?}, doc: {:?}",
-            their_vk,
-            doc
-        );
+    pub(crate) async fn crypto_box_seal(&self, their_vk: &str, doc: &[u8]) -> IndyResult<Vec<u8>> {
+        trace!("crypto_box_seal > their_vk {:?} doc {:?}", their_vk, doc);
 
         let (their_vk, crypto_type_name) = split_verkey(their_vk);
-
         let crypto_types = self.crypto_types.read().await;
 
         let crypto_type = crypto_types.get(crypto_type_name).ok_or_else(|| {
@@ -412,20 +412,15 @@ impl CryptoService {
         })?;
 
         let their_vk = ed25519_sign::PublicKey::from_slice(their_vk.from_base58()?.as_slice())?;
-
         let encrypted_doc = crypto_type.crypto_box_seal(&their_vk, doc)?;
 
-        trace!("crypto_box_seal <<< encrypted_doc: {:?}", encrypted_doc);
-
-        Ok(encrypted_doc)
+        let res = Ok(encrypted_doc);
+        trace!("crypto_box_seal < {:?}", res);
+        res
     }
 
-    pub async fn crypto_box_seal_open(&self, my_key: &Key, doc: &[u8]) -> IndyResult<Vec<u8>> {
-        trace!(
-            "crypto_box_seal_open >>> my_key: {:?}, doc: {:?}",
-            my_key,
-            doc
-        );
+    pub(crate) async fn crypto_box_seal_open(&self, my_key: &Key, doc: &[u8]) -> IndyResult<Vec<u8>> {
+        trace!("crypto_box_seal_open > my_key {:?} doc {:?}", my_key, doc);
 
         let (my_vk, crypto_type_name) = split_verkey(&my_key.verkey);
 
@@ -448,16 +443,13 @@ impl CryptoService {
 
         let decrypted_doc = crypto_type.crypto_box_seal_open(&my_vk, &my_sk, doc)?;
 
-        trace!(
-            "crypto_box_seal_open <<< decrypted_doc: {:?}",
-            decrypted_doc
-        );
-
-        Ok(decrypted_doc)
+        let res = Ok(decrypted_doc);
+        trace!("crypto_box_seal_open < {:?}", res);
+        res
     }
 
-    pub fn convert_seed(&self, seed: Option<&str>) -> IndyResult<Option<ed25519_sign::Seed>> {
-        trace!("convert_seed >>> seed: {:?}", secret!(seed));
+    pub(crate) fn convert_seed(&self, seed: Option<&str>) -> IndyResult<Option<ed25519_sign::Seed>> {
+        trace!("convert_seed > seed {:?}", secret!(seed));
 
         if seed.is_none() {
             trace!("convert_seed <<< res: None");
@@ -502,15 +494,15 @@ impl CryptoService {
             ));
         };
 
-        let res = ed25519_sign::Seed::from_slice(bytes.as_slice())?;
+        let seed = ed25519_sign::Seed::from_slice(bytes.as_slice())?;
 
-        trace!("convert_seed <<< res: {:?}", secret!(&res));
-
-        Ok(Some(res))
+        let res = Ok(Some(seed));
+        trace!("convert_seed < {:?}", secret!(&res));
+        res
     }
 
-    pub async fn validate_key(&self, vk: &str) -> IndyResult<()> {
-        trace!("validate_key >>> vk: {:?}", vk);
+    pub(crate) async fn validate_key(&self, vk: &str) -> IndyResult<()> {
+        trace!("validate_key > vk {:?}", vk);
 
         let (vk, crypto_type_name) = split_verkey(vk);
 
@@ -533,28 +525,29 @@ impl CryptoService {
             crypto_type.validate_key(&vk)?;
         };
 
-        trace!("validate_key <<<");
-
-        Ok(())
+        let res = Ok(());
+        trace!("validate_key < {:?}", res);
+        res
     }
 
-    pub fn validate_did(&self, did: &DidValue) -> IndyResult<()> {
-        trace!("validate_did >>> did: {:?}", did);
+    pub(crate) fn validate_did(&self, did: &DidValue) -> IndyResult<()> {
+        trace!("validate_did > did {:?}", did);
         // Useful method, huh?
         // Soon some state did validation will be put here
-        trace!("validate_did <<< res: ()");
 
-        Ok(())
+        let res = Ok(());
+        trace!("validate_did < {:?}", res);
+        res
     }
 
-    pub fn validate_opt_did(&self, did: Option<&DidValue>) -> IndyResult<()> {
+    pub(crate) fn validate_opt_did(&self, did: Option<&DidValue>) -> IndyResult<()> {
         match did {
             Some(did) => Ok(self.validate_did(did)?),
             None => Ok(()),
         }
     }
 
-    pub fn encrypt_plaintext(
+    pub(crate) fn encrypt_plaintext(
         &self,
         plaintext: Vec<u8>,
         aad: &str,
@@ -573,7 +566,7 @@ impl CryptoService {
     }
 
     /* ciphertext helper functions*/
-    pub fn decrypt_ciphertext(
+    pub(crate) fn decrypt_ciphertext(
         &self,
         ciphertext: &str,
         aad: &str,

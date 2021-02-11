@@ -1,33 +1,41 @@
-use crate::commands::Locator;
-use crate::domain::anoncreds::credential::{Credential, CredentialValues};
-use crate::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
-use crate::domain::anoncreds::credential_definition::{
-    CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId, CredentialDefinitions,
-};
-use crate::domain::anoncreds::credential_offer::CredentialOffer;
-use crate::domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
-use crate::domain::anoncreds::proof::Proof;
-use crate::domain::anoncreds::proof_request::{ProofRequest, ProofRequestExtraQuery};
-use crate::domain::anoncreds::requested_credential::RequestedCredentials;
-use crate::domain::anoncreds::revocation_registry::RevocationRegistries;
-use crate::domain::anoncreds::revocation_registry_definition::{
-    RevocationRegistryConfig, RevocationRegistryDefinition, RevocationRegistryDefinitions,
-    RevocationRegistryId,
-};
-use crate::domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
-use crate::domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
-use crate::domain::anoncreds::schema::{AttributeNames, Schema, Schemas};
-use crate::domain::crypto::did::DidValue;
-use indy_api_types::errors::prelude::*;
-use indy_api_types::{
-    CommandHandle, ErrorCode, IndyHandle, SearchHandle, WalletHandle, INVALID_SEARCH_HANDLE,
-};
-use indy_utils::ctypes;
-
-use libc::c_char;
 use std::ptr;
 
-use crate::indy_api_types::validation::Validatable;
+use indy_api_types::{
+    errors::prelude::*, validation::Validatable, CommandHandle, ErrorCode, IndyHandle,
+    SearchHandle, WalletHandle, INVALID_SEARCH_HANDLE,
+};
+
+use indy_utils::ctypes;
+use libc::c_char;
+
+use crate::{
+    domain::{
+        anoncreds::{
+            credential::{Credential, CredentialValues},
+            credential_attr_tag_policy::CredentialAttrTagPolicy,
+            credential_definition::{
+                CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId,
+                CredentialDefinitions,
+            },
+            credential_offer::CredentialOffer,
+            credential_request::{CredentialRequest, CredentialRequestMetadata},
+            proof::Proof,
+            proof_request::{ProofRequest, ProofRequestExtraQuery},
+            requested_credential::RequestedCredentials,
+            revocation_registry::RevocationRegistries,
+            revocation_registry_definition::{
+                RevocationRegistryConfig, RevocationRegistryDefinition,
+                RevocationRegistryDefinitions, RevocationRegistryId,
+            },
+            revocation_registry_delta::RevocationRegistryDelta,
+            revocation_state::{RevocationState, RevocationStates},
+            schema::{AttributeNames, Schema, Schemas},
+        },
+        crypto::did::DidValue,
+    },
+    services::AnoncredsHelpers,
+    Locator,
+};
 
 /*
 These functions wrap the Ursa algorithm as documented in this paper:
@@ -86,12 +94,9 @@ pub extern "C" fn indy_issuer_create_schema(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_issuer_create_schema > issuer_did {:?} name {:?} version {:?} attrs {:?}",
-        issuer_did,
-        name,
-        version,
-        attrs
+        issuer_did, name, version, attrs
     );
 
     check_useful_validatable_string!(issuer_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -100,31 +105,23 @@ pub extern "C" fn indy_issuer_create_schema(
     check_useful_validatable_json!(attrs, ErrorCode::CommonInvalidParam5, AttributeNames);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!(
+    debug!(
         "indy_issuer_create_schema ? issuer_did {:?} name {:?} version {:?} attrs {:?}",
-        issuer_did,
-        name,
-        version,
-        attrs
+        issuer_did, name, version, attrs
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.issuer_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.create_schema(issuer_did, name, version, attrs);
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .issuer_controller
+            .create_schema(issuer_did, name, version, attrs);
 
         let (err, id, schema_json) = prepare_result_2!(res, String::new(), String::new());
 
-        trace!(
+        debug!(
             "indy_issuer_create_schema ? err {:?} id {:?} schema_json {:?}",
-            err,
-            id,
-            schema_json
+            err, id, schema_json
         );
 
         let id = ctypes::string_to_cstring(id);
@@ -133,7 +130,7 @@ pub extern "C" fn indy_issuer_create_schema(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_issuer_create_schema > {:?}", res);
+    debug!("indy_issuer_create_schema > {:?}", res);
     res
 }
 
@@ -215,16 +212,11 @@ pub extern "C" fn indy_issuer_create_and_store_credential_def(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_issuer_create_and_store_credential_def > wallet_handle {:?} \
             issuer_did {:?} schema_json {:?} tag {:?} \
             signature_type {:?} config_json {:?}",
-        wallet_handle,
-        issuer_did,
-        schema_json,
-        tag,
-        signature_type,
-        config_json
+        wallet_handle, issuer_did, schema_json, tag, signature_type, config_json
     );
 
     check_useful_validatable_string!(issuer_did, ErrorCode::CommonInvalidParam3, DidValue);
@@ -240,27 +232,18 @@ pub extern "C" fn indy_issuer_create_and_store_credential_def(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!(
+    debug!(
         "indy_issuer_create_and_store_credential_def ? wallet_handle {:?} \
             issuer_did {:?} schema_json {:?} tag {:?} \
             signature_type {:?} config_json {:?}",
-        wallet_handle,
-        issuer_did,
-        schema_json,
-        tag,
-        signature_type,
-        config_json
+        wallet_handle, issuer_did, schema_json, tag, signature_type, config_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.issuer_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .issuer_controller
             .create_and_store_credential_definition(
                 wallet_handle,
                 issuer_did,
@@ -274,12 +257,10 @@ pub extern "C" fn indy_issuer_create_and_store_credential_def(
         let (err, cred_def_id, cred_def_json) =
             prepare_result_2!(res, String::new(), String::new());
 
-        trace!(
+        debug!(
             "indy_issuer_create_and_store_credential_def ? err {:?} \
                 cred_def_id {:?} cred_def_json {:?}",
-            err,
-            cred_def_id,
-            cred_def_json
+            err, cred_def_id, cred_def_json
         );
 
         let cred_def_id = ctypes::string_to_cstring(cred_def_id);
@@ -294,7 +275,7 @@ pub extern "C" fn indy_issuer_create_and_store_credential_def(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_issuer_create_and_store_credential_def > {:?}", res);
+    debug!("indy_issuer_create_and_store_credential_def > {:?}", res);
     res
 }
 
@@ -346,7 +327,7 @@ pub extern "C" fn indy_issuer_rotate_credential_def_start(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, cred_def_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!("indy_issuer_rotate_credential_def_start > wallet_handle {:?} cred_def_id {:?} config_json {:?}",
+    debug!("indy_issuer_rotate_credential_def_start > wallet_handle {:?} cred_def_id {:?} config_json {:?}",
            wallet_handle, cred_def_id, config_json);
 
     check_useful_validatable_string!(
@@ -363,27 +344,22 @@ pub extern "C" fn indy_issuer_rotate_credential_def_start(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_issuer_rotate_credential_def_start ? wallet_handle {:?} cred_def_id {:?} config_json {:?}",
+    debug!("indy_issuer_rotate_credential_def_start ? wallet_handle {:?} cred_def_id {:?} config_json {:?}",
            wallet_handle, cred_def_id, config_json);
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.issuer_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .issuer_controller
             .rotate_credential_definition_start(wallet_handle, cred_def_id, config_json)
             .await;
 
         let (err, cred_def_json) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_issuer_rotate_credential_def_start ? err {:?} cred_def_json {:?}",
-            err,
-            cred_def_json
+            err, cred_def_json
         );
 
         let cred_def_json = ctypes::string_to_cstring(cred_def_json);
@@ -391,7 +367,7 @@ pub extern "C" fn indy_issuer_rotate_credential_def_start(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_issuer_rotate_credential_def_star < {:?}", res);
+    debug!("indy_issuer_rotate_credential_def_star < {:?}", res);
     res
 }
 
@@ -418,10 +394,9 @@ pub extern "C" fn indy_issuer_rotate_credential_def_apply(
     cred_def_id: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_issuer_rotate_credential_def_apply > wallet_handle {:?} cred_def_id {:?}",
-        wallet_handle,
-        cred_def_id
+        wallet_handle, cred_def_id
     );
 
     check_useful_validatable_string!(
@@ -432,31 +407,26 @@ pub extern "C" fn indy_issuer_rotate_credential_def_apply(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_issuer_rotate_credential_def_apply ? wallet_handle {:?} cred_def_id {:?}",
-        wallet_handle,
-        cred_def_id
+        wallet_handle, cred_def_id
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.issuer_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .issuer_controller
             .rotate_credential_definition_apply(wallet_handle, cred_def_id)
             .await;
 
         let err = prepare_result!(res);
-        trace!("indy_issuer_rotate_credential_def_apply ? err {:?}", err);
+        debug!("indy_issuer_rotate_credential_def_apply ? err {:?}", err);
         cb(command_handle, err)
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_issuer_rotate_credential_def_apply < {:?}", res);
+    debug!("indy_issuer_rotate_credential_def_apply < {:?}", res);
     res
 }
 
@@ -556,7 +526,7 @@ pub extern "C" fn indy_issuer_create_and_store_revoc_reg(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_issuer_create_and_store_credential_def > wallet_handle {:?} \
             issuer_did {:?} revoc_def_type {:?} tag {:?} \
             cred_def_id {:?} config_json {:?} tails_writer_handle {:?}",
@@ -587,7 +557,7 @@ pub extern "C" fn indy_issuer_create_and_store_revoc_reg(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
-    trace!(
+    debug!(
         "indy_issuer_create_and_store_credential_def ? wallet_handle {:?} \
             issuer_did {:?} revoc_def_type {:?} tag {:?} \
             cred_def_id {:?} config_json {:?} tails_writer_handle {:?}",
@@ -600,15 +570,11 @@ pub extern "C" fn indy_issuer_create_and_store_revoc_reg(
         tails_writer_handle
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.issuer_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .issuer_controller
             .create_and_store_revocation_registry(
                 wallet_handle,
                 issuer_did,
@@ -623,12 +589,10 @@ pub extern "C" fn indy_issuer_create_and_store_revoc_reg(
         let (err, revoc_reg_id, revoc_reg_def_json, revoc_reg_json) =
             prepare_result_3!(res, String::new(), String::new(), String::new());
 
-        trace!(
+        debug!(
             "indy_issuer_create_and_store_credential_def > revoc_reg_id {:?} \
                 revoc_reg_def_json {:?} revoc_reg_json {:?}",
-            revoc_reg_id,
-            revoc_reg_def_json,
-            revoc_reg_json
+            revoc_reg_id, revoc_reg_def_json, revoc_reg_json
         );
 
         let revoc_reg_id = ctypes::string_to_cstring(revoc_reg_id);
@@ -645,7 +609,7 @@ pub extern "C" fn indy_issuer_create_and_store_revoc_reg(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_issuer_create_and_store_credential_def > {:?}", res);
+    debug!("indy_issuer_create_and_store_credential_def > {:?}", res);
     res
 }
 
@@ -688,10 +652,9 @@ pub extern "C" fn indy_issuer_create_credential_offer(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_issuer_create_credential_offer > wallet_handle {:?} cred_def_id {:?}",
-        wallet_handle,
-        cred_def_id
+        wallet_handle, cred_def_id
     );
 
     check_useful_validatable_string!(
@@ -702,30 +665,24 @@ pub extern "C" fn indy_issuer_create_credential_offer(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_issuer_create_credential_offer > wallet_handle {:?} cred_def_id {:?}",
-        wallet_handle,
-        cred_def_id
+        wallet_handle, cred_def_id
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.issuer_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .issuer_controller
             .create_credential_offer(wallet_handle, cred_def_id)
             .await;
 
         let (err, cred_offer_json) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_issuer_create_credential_offer ? err {:?} cred_offer_json {:?}",
-            err,
-            cred_offer_json
+            err, cred_offer_json
         );
 
         let cred_offer_json = ctypes::string_to_cstring(cred_offer_json);
@@ -733,7 +690,7 @@ pub extern "C" fn indy_issuer_create_credential_offer(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_issuer_create_credential_offer < {:?}", res);
+    debug!("indy_issuer_create_credential_offer < {:?}", res);
     res
 }
 
@@ -811,7 +768,7 @@ pub extern "C" fn indy_issuer_create_credential(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_issuer_create_credential > wallet_handle {:?} \
             cred_offer_json {:?} cred_req_json {:?} \
             cred_values_json {:?} rev_reg_id {:?} \
@@ -856,7 +813,7 @@ pub extern "C" fn indy_issuer_create_credential(
         None
     };
 
-    trace!(
+    debug!(
         "indy_issuer_create_credential ? wallet_handle {:?} \
             cred_offer_json {:?} cred_req_json {:?} \
             cred_values_json {:?} rev_reg_id {:?} \
@@ -869,15 +826,11 @@ pub extern "C" fn indy_issuer_create_credential(
         blob_storage_reader_handle
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.issuer_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .issuer_controller
             .new_credential(
                 wallet_handle,
                 cred_offer_json,
@@ -891,7 +844,7 @@ pub extern "C" fn indy_issuer_create_credential(
         let (err, cred_json, revoc_id, revoc_reg_delta_json) =
             prepare_result_3!(res, String::new(), None, None);
 
-        trace!(
+        debug!(
             "indy_issuer_create_credential ? err {:?} \
                 cred_json {:?} revoc_id {:?} revoc_reg_delta_json {:?}",
             err,
@@ -920,7 +873,7 @@ pub extern "C" fn indy_issuer_create_credential(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_issuer_create_credential < {:?}", res);
+    debug!("indy_issuer_create_credential < {:?}", res);
     res
 }
 
@@ -970,14 +923,11 @@ pub extern "C" fn indy_issuer_revoke_credential(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_issuer_revoke_credential > wallet_handle {:?} \
             blob_storage_reader_cfg_handle {:?} rev_reg_id {:?} \
             cred_revoc_id {:?}",
-        wallet_handle,
-        blob_storage_reader_cfg_handle,
-        rev_reg_id,
-        cred_revoc_id
+        wallet_handle, blob_storage_reader_cfg_handle, rev_reg_id, cred_revoc_id
     );
 
     check_useful_validatable_string!(
@@ -989,7 +939,7 @@ pub extern "C" fn indy_issuer_revoke_credential(
     check_useful_c_str!(cred_revoc_id, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!(
+    debug!(
         "indy_issuer_revoke_credential ? wallet_handle {:?} \
             blob_storage_reader_cfg_handle {:?} rev_reg_id {:?} \
             cred_revoc_id {:?}",
@@ -999,15 +949,11 @@ pub extern "C" fn indy_issuer_revoke_credential(
         secret!(cred_revoc_id.as_str())
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.issuer_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .issuer_controller
             .revoke_credential(
                 wallet_handle,
                 blob_storage_reader_cfg_handle,
@@ -1018,11 +964,10 @@ pub extern "C" fn indy_issuer_revoke_credential(
 
         let (err, revoc_reg_delta_json) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_issuer_revoke_credential ? err {:?} \
                 revoc_reg_delta_json {:?}",
-            err,
-            revoc_reg_delta_json
+            err, revoc_reg_delta_json
         );
 
         let revoc_reg_delta_json = ctypes::string_to_cstring(revoc_reg_delta_json);
@@ -1030,7 +975,7 @@ pub extern "C" fn indy_issuer_revoke_credential(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_issuer_revoke_credential < {:?}", res);
+    debug!("indy_issuer_revoke_credential < {:?}", res);
     res
 }
 
@@ -1144,11 +1089,10 @@ pub extern "C" fn indy_issuer_merge_revocation_registry_deltas(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_issuer_merge_revocation_registry_deltas > \
             rev_reg_delta_json {:?} other_rev_reg_delta_json {:?}",
-        rev_reg_delta_json,
-        other_rev_reg_delta_json
+        rev_reg_delta_json, other_rev_reg_delta_json
     );
 
     check_useful_validatable_json!(
@@ -1165,31 +1109,25 @@ pub extern "C" fn indy_issuer_merge_revocation_registry_deltas(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_issuer_merge_revocation_registry_deltas ? \
             rev_reg_delta_json {:?} other_rev_reg_delta_json {:?}",
-        rev_reg_delta_json,
-        other_rev_reg_delta_json
+        rev_reg_delta_json, other_rev_reg_delta_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.issuer_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .issuer_controller
             .merge_revocation_registry_deltas(rev_reg_delta_json, other_rev_reg_delta_json);
 
         let (err, merged_rev_reg_delta) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_issuer_merge_revocation_registry_deltas ? err {:?} \
                 merged_rev_reg_delta {:?}",
-            err,
-            merged_rev_reg_delta
+            err, merged_rev_reg_delta
         );
 
         let merged_rev_reg_delta = ctypes::string_to_cstring(merged_rev_reg_delta);
@@ -1197,7 +1135,7 @@ pub extern "C" fn indy_issuer_merge_revocation_registry_deltas(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_issuer_merge_revocation_registry_deltas < {:?}", res);
+    debug!("indy_issuer_merge_revocation_registry_deltas < {:?}", res);
     res
 }
 
@@ -1229,41 +1167,34 @@ pub extern "C" fn indy_prover_create_master_secret(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_create_master_secret > wallet_handle {:?} \
             master_secret_id {:?}",
-        wallet_handle,
-        master_secret_id
+        wallet_handle, master_secret_id
     );
 
     check_useful_opt_c_str!(master_secret_id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_prover_create_master_secret ? wallet_handle {:?} \
             master_secret_id {:?}",
-        wallet_handle,
-        master_secret_id
+        wallet_handle, master_secret_id
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
             .create_master_secret(wallet_handle, master_secret_id)
             .await;
 
         let (err, master_secret_id) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_prover_create_master_secret ? err {:?} master_secret_id {:?}",
-            err,
-            master_secret_id
+            err, master_secret_id
         );
 
         let master_secret_id = ctypes::string_to_cstring(master_secret_id);
@@ -1271,7 +1202,7 @@ pub extern "C" fn indy_prover_create_master_secret(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_create_master_secret < {:?}", res);
+    debug!("indy_prover_create_master_secret < {:?}", res);
     res
 }
 
@@ -1336,15 +1267,11 @@ pub extern "C" fn indy_prover_create_credential_req(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_create_credential_req > wallet_handle {:?} \
             prover_did {:?} cred_offer_json {:?} cred_def_json {:?} \
             master_secret_id {:?}",
-        wallet_handle,
-        prover_did,
-        cred_offer_json,
-        cred_def_json,
-        master_secret_id
+        wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id
     );
 
     check_useful_validatable_string!(prover_did, ErrorCode::CommonInvalidParam3, DidValue);
@@ -1364,18 +1291,14 @@ pub extern "C" fn indy_prover_create_credential_req(
     check_useful_c_str!(master_secret_id, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_prover_create_credential_req ? wallet_handle {:?} prover_did {:?} cred_offer_json {:?} cred_def_json {:?} master_secret_id {:?}",
+    debug!("indy_prover_create_credential_req ? wallet_handle {:?} prover_did {:?} cred_offer_json {:?} cred_def_json {:?} master_secret_id {:?}",
            wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id);
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
             .create_credential_request(
                 wallet_handle,
                 prover_did,
@@ -1388,12 +1311,10 @@ pub extern "C" fn indy_prover_create_credential_req(
         let (err, cred_req_json, cred_req_metadata_json) =
             prepare_result_2!(res, String::new(), String::new());
 
-        trace!(
+        debug!(
             "indy_prover_create_credential_req ? err {:?} \
                 cred_req_json {:?} cred_req_metadata_json {:?}",
-            err,
-            cred_req_json,
-            cred_req_metadata_json,
+            err, cred_req_json, cred_req_metadata_json,
         );
 
         let cred_req_json = ctypes::string_to_cstring(cred_req_json);
@@ -1408,7 +1329,7 @@ pub extern "C" fn indy_prover_create_credential_req(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_create_credential_req < {:?}", res);
+    debug!("indy_prover_create_credential_req < {:?}", res);
     res
 }
 
@@ -1457,13 +1378,10 @@ pub extern "C" fn indy_prover_set_credential_attr_tag_policy(
     retroactive: bool,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_set_credential_attr_tag_policy > wallet_handle {:?} \
             cred_def_id {:?} tag_attrs_json {:?} retroactive {:?}",
-        wallet_handle,
-        cred_def_id,
-        tag_attrs_json,
-        retroactive
+        wallet_handle, cred_def_id, tag_attrs_json, retroactive
     );
 
     check_useful_validatable_string!(
@@ -1480,30 +1398,23 @@ pub extern "C" fn indy_prover_set_credential_attr_tag_policy(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!(
+    debug!(
         "indy_prover_set_credential_attr_tag_policy ? wallet_handle {:?} \
             cred_def_id {:?} tag_attrs_json {:?} retroactive {:?}",
-        wallet_handle,
-        cred_def_id,
-        tag_attrs_json,
-        retroactive
+        wallet_handle, cred_def_id, tag_attrs_json, retroactive
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
             .set_credential_attr_tag_policy(wallet_handle, cred_def_id, tag_attrs_json, retroactive)
             .await;
 
         let err = prepare_result!(res);
 
-        trace!(
+        debug!(
             "indy_prover_set_credential_attr_tag_policy ? err {:?} ",
             err
         );
@@ -1512,7 +1423,7 @@ pub extern "C" fn indy_prover_set_credential_attr_tag_policy(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_set_credential_attr_tag_policy < {:?}", res);
+    debug!("indy_prover_set_credential_attr_tag_policy < {:?}", res);
     res
 }
 
@@ -1543,10 +1454,9 @@ pub extern "C" fn indy_prover_get_credential_attr_tag_policy(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, catpol_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_get_credential_attr_tag_policy > wallet_handle {:?} cred_def_id {:?}",
-        wallet_handle,
-        cred_def_id
+        wallet_handle, cred_def_id
     );
 
     check_useful_validatable_string!(
@@ -1557,31 +1467,25 @@ pub extern "C" fn indy_prover_get_credential_attr_tag_policy(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_prover_get_credential_attr_tag_policy ? wallet_handle {:?} \
             cred_def_id {:?}",
-        wallet_handle,
-        cred_def_id
+        wallet_handle, cred_def_id
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
             .get_credential_attr_tag_policy(wallet_handle, cred_def_id)
             .await;
 
         let (err, catpol) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_prover_set_credential_attr_tag_policy ? err {:?} catpol {:?}",
-            err,
-            catpol
+            err, catpol
         );
 
         let catpol = ctypes::string_to_cstring(catpol);
@@ -1589,7 +1493,7 @@ pub extern "C" fn indy_prover_get_credential_attr_tag_policy(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_get_credential_attr_tag_policy < {:?}", res);
+    debug!("indy_prover_get_credential_attr_tag_policy < {:?}", res);
     res
 }
 
@@ -1653,17 +1557,12 @@ pub extern "C" fn indy_prover_store_credential(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, out_cred_id: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_store_credential > wallet_handle {:?} \
             cred_id {:?} cred_req_metadata_json {:?} \
             cred_json {:?} cred_def_json {:?} \
             cred_def_json {:?}",
-        wallet_handle,
-        cred_id,
-        cred_req_metadata_json,
-        cred_json,
-        cred_def_json,
-        rev_reg_def_json
+        wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json
     );
 
     check_useful_opt_c_str!(cred_id, ErrorCode::CommonInvalidParam3);
@@ -1690,28 +1589,19 @@ pub extern "C" fn indy_prover_store_credential(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!(
+    debug!(
         "indy_prover_store_credential ? wallet_handle {:?} \
             cred_id {:?} cred_req_metadata_json {:?} cred_json {:?} \
             cred_def_json {:?} \
             rev_reg_def_json {:?}",
-        wallet_handle,
-        cred_id,
-        cred_req_metadata_json,
-        cred_json,
-        cred_def_json,
-        rev_reg_def_json
+        wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
             .store_credential(
                 wallet_handle,
                 cred_id,
@@ -1724,10 +1614,9 @@ pub extern "C" fn indy_prover_store_credential(
 
         let (err, cred_id) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_prover_store_credential ? err {:?} cred_id {:?}",
-            err,
-            cred_id
+            err, cred_id
         );
 
         let cred_id = ctypes::string_to_cstring(cred_id);
@@ -1735,7 +1624,7 @@ pub extern "C" fn indy_prover_store_credential(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_store_credential < {:?}", res);
+    debug!("indy_prover_store_credential < {:?}", res);
     res
 }
 
@@ -1774,36 +1663,31 @@ pub extern "C" fn indy_prover_get_credential(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_get_credential > wallet_handle {:?} cred_id {:?}",
-        wallet_handle,
-        cred_id
+        wallet_handle, cred_id
     );
 
     check_useful_c_str!(cred_id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_prover_get_credential ? wallet_handle {:?} cred_id {:?}",
-        wallet_handle,
-        cred_id
+        wallet_handle, cred_id
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.get_credential(wallet_handle, cred_id).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
+            .get_credential(wallet_handle, cred_id)
+            .await;
         let (err, credential) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_prover_get_credential ? err {:?} credential {:?}",
-            err,
-            credential
+            err, credential
         );
 
         let credential = ctypes::string_to_cstring(credential);
@@ -1811,7 +1695,7 @@ pub extern "C" fn indy_prover_get_credential(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_get_credential < {:?}", res);
+    debug!("indy_prover_get_credential < {:?}", res);
     res
 }
 
@@ -1833,31 +1717,28 @@ pub extern "C" fn indy_prover_delete_credential(
     cred_id: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_delete_credential > wallet_handle {:?} cred_id {:?}",
-        wallet_handle,
-        cred_id
+        wallet_handle, cred_id
     );
 
     check_useful_c_str!(cred_id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.delete_credential(wallet_handle, cred_id).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
+            .delete_credential(wallet_handle, cred_id)
+            .await;
         let err = prepare_result!(res);
-        trace!("indy_prover_delete_credential ? err {:?} ", err);
+        debug!("indy_prover_delete_credential ? err {:?} ", err);
         cb(command_handle, err)
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_delete_credential < {:?}", res);
+    debug!("indy_prover_delete_credential < {:?}", res);
     res
 }
 
@@ -1913,36 +1794,31 @@ pub extern "C" fn indy_prover_get_credentials(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_get_credentials > wallet_handle {:?} filter_json {:?}",
-        wallet_handle,
-        filter_json
+        wallet_handle, filter_json
     );
 
     check_useful_opt_c_str!(filter_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_prover_get_credentials ? wallet_handle {:?} filter_json {:?}",
-        wallet_handle,
-        filter_json
+        wallet_handle, filter_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.get_credentials(wallet_handle, filter_json).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
+            .get_credentials(wallet_handle, filter_json)
+            .await;
         let (err, credentials) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_prover_get_credentials ? err {:?} credentials {:?}",
-            err,
-            credentials
+            err, credentials
         );
 
         let credentials = ctypes::string_to_cstring(credentials);
@@ -1950,7 +1826,7 @@ pub extern "C" fn indy_prover_get_credentials(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_get_credentials < {:?}", res);
+    debug!("indy_prover_get_credentials < {:?}", res);
     res
 }
 
@@ -1989,47 +1865,39 @@ pub extern "C" fn indy_prover_search_credentials(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_search_credentials > wallet_handle {:?} query_json {:?}",
-        wallet_handle,
-        query_json
+        wallet_handle, query_json
     );
 
     check_useful_opt_c_str!(query_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_prover_search_credentials ? wallet_handle {:?} query_json {:?}",
-        wallet_handle,
-        query_json
+        wallet_handle, query_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
             .search_credentials(wallet_handle, query_json)
             .await;
 
         let (err, handle, total_count) = prepare_result_2!(res, INVALID_SEARCH_HANDLE, 0);
 
-        trace!(
+        debug!(
             "indy_prover_search_credentials ? err {:?} handle {:?} total_count {:?}",
-            err,
-            handle,
-            total_count
+            err, handle, total_count
         );
 
         cb(command_handle, err, handle, total_count);
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_search_credentials < {:?}", res);
+    debug!("indy_prover_search_credentials < {:?}", res);
     res
 }
 
@@ -2069,35 +1937,30 @@ pub extern "C" fn indy_prover_fetch_credentials(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_fetch_credentials > search_handle {:?} count {:?}",
-        search_handle,
-        count
+        search_handle, count
     );
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_prover_fetch_credentials ? search_handle {:?} count:{:?}",
-        search_handle,
-        count
+        search_handle, count
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.fetch_credentials(search_handle, count).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
+            .fetch_credentials(search_handle, count)
+            .await;
         let (err, credentials) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_prover_fetch_credentials ? err {:?} credentials {:?}",
-            err,
-            credentials
+            err, credentials
         );
 
         let credentials = ctypes::string_to_cstring(credentials);
@@ -2105,7 +1968,7 @@ pub extern "C" fn indy_prover_fetch_credentials(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_fetch_credentials < {:?}", res);
+    debug!("indy_prover_fetch_credentials < {:?}", res);
     res
 }
 
@@ -2124,34 +1987,32 @@ pub extern "C" fn indy_prover_close_credentials_search(
     search_handle: SearchHandle,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_close_credentials_search > search_handle {:?}",
         search_handle
     );
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_prover_close_credentials_search ? search_handle {:?}",
         search_handle
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.close_credentials_search(search_handle).await;
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
+            .close_credentials_search(search_handle)
+            .await;
         let err = prepare_result!(res);
-        trace!("indy_prover_close_credentials_search ? err {:?}", err);
+        debug!("indy_prover_close_credentials_search ? err {:?}", err);
         cb(command_handle, err)
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_close_credentials_search < {:?}", res);
+    debug!("indy_prover_close_credentials_search < {:?}", res);
     res
 }
 
@@ -2268,11 +2129,10 @@ pub extern "C" fn indy_prover_get_credentials_for_proof_req(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_get_credentials_for_proof_req > wallet_handle {:?} \
             proof_request_json {:?}",
-        wallet_handle,
-        proof_request_json
+        wallet_handle, proof_request_json
     );
 
     check_useful_validatable_json!(
@@ -2283,31 +2143,25 @@ pub extern "C" fn indy_prover_get_credentials_for_proof_req(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_prover_get_credentials_for_proof_req ? wallet_handle {:?} \
             proof_request_json {:?}",
-        wallet_handle,
-        proof_request_json
+        wallet_handle, proof_request_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
             .get_credentials_for_proof_req(wallet_handle, proof_request_json)
             .await;
 
         let (err, credentials) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_prover_get_credentials_for_proof_req ? err {:?} credentials {:?}",
-            err,
-            credentials
+            err, credentials
         );
 
         let credentials = ctypes::string_to_cstring(credentials);
@@ -2315,7 +2169,7 @@ pub extern "C" fn indy_prover_get_credentials_for_proof_req(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_get_credentials_for_proof_req < {:?}", res);
+    debug!("indy_prover_get_credentials_for_proof_req < {:?}", res);
     res
 }
 
@@ -2417,12 +2271,10 @@ pub extern "C" fn indy_prover_search_credentials_for_proof_req(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, search_handle: SearchHandle),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_search_credentials_for_proof_req > wallet_handle {:?} \
             proof_request_json {:?} extra_query_json {:?}",
-        wallet_handle,
-        proof_request_json,
-        extra_query_json
+        wallet_handle, proof_request_json, extra_query_json
     );
 
     check_useful_validatable_json!(
@@ -2439,39 +2291,32 @@ pub extern "C" fn indy_prover_search_credentials_for_proof_req(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_prover_search_credentials_for_proof_req ? wallet_handle {:?} \
             proof_request_json {:?} extra_query_json {:?}",
-        wallet_handle,
-        proof_request_json,
-        extra_query_json
+        wallet_handle, proof_request_json, extra_query_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
             .search_credentials_for_proof_req(wallet_handle, proof_request_json, extra_query_json)
             .await;
 
         let (err, search_handle) = prepare_result_1!(res, INVALID_SEARCH_HANDLE);
 
-        trace!(
+        debug!(
             "indy_prover_search_credentials_for_proof_req ? err {:?} search_handle {:?}",
-            err,
-            search_handle
+            err, search_handle
         );
 
         cb(command_handle, err, search_handle)
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_search_credentials_for_proof_req < {:?}", res);
+    debug!("indy_prover_search_credentials_for_proof_req < {:?}", res);
     res
 }
 
@@ -2526,41 +2371,33 @@ pub extern "C" fn indy_prover_fetch_credentials_for_proof_req(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_fetch_credentials_for_proof_req > search_handle {:?} count {:?}",
-        search_handle,
-        count
+        search_handle, count
     );
 
     check_useful_c_str!(item_referent, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_prover_fetch_credentials_for_proof_req ? search_handle {:?} \
             item_referent {:?} count {:?}",
-        search_handle,
-        item_referent,
-        count
+        search_handle, item_referent, count
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
             .fetch_credential_for_proof_request(search_handle, item_referent, count)
             .await;
 
         let (err, credentials) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_prover_fetch_credentials_for_proof_request ? err {:?} credentials {:?}",
-            err,
-            credentials
+            err, credentials
         );
 
         let credentials = ctypes::string_to_cstring(credentials);
@@ -2568,7 +2405,7 @@ pub extern "C" fn indy_prover_fetch_credentials_for_proof_req(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_fetch_credentials_for_proof_req < {:?}", res);
+    debug!("indy_prover_fetch_credentials_for_proof_req < {:?}", res);
     res
 }
 
@@ -2587,32 +2424,28 @@ pub extern "C" fn indy_prover_close_credentials_search_for_proof_req(
     search_handle: SearchHandle,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_close_credentials_search_for_proof_req > search_handle {:?}",
         search_handle
     );
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_prover_close_credentials_search_for_proof_req ? search_handle {:?}",
         search_handle
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
             .close_credentials_search_for_proof_req(search_handle)
             .await;
 
         let err = prepare_result!(res);
-        trace!(
+        debug!(
             "indy_prover_close_credentials_search_for_proof_req ? err {:?}",
             err
         );
@@ -2621,7 +2454,7 @@ pub extern "C" fn indy_prover_close_credentials_search_for_proof_req(
 
     let res = ErrorCode::Success;
 
-    trace!(
+    debug!(
         "indy_prover_close_credentials_search_for_proof_req < {:?}",
         res
     );
@@ -2808,7 +2641,7 @@ pub extern "C" fn indy_prover_create_proof(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, proof_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_prover_create_proof > wallet_handle {:?} \
             proof_req_json {:?} requested_credentials_json {:?} \
             master_secret_id {:?} schemas_json {:?} \
@@ -2847,7 +2680,7 @@ pub extern "C" fn indy_prover_create_proof(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
-    trace!(
+    debug!(
         "indy_prover_create_proof ? wallet_handle {:?} \
             proof_req_json {:?} requested_credentials_json {:?} \
             master_secret_id {:?} schemas_json {:?} \
@@ -2861,15 +2694,11 @@ pub extern "C" fn indy_prover_create_proof(
         rev_states_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
             .create_proof(
                 wallet_handle,
                 proof_req_json,
@@ -2882,13 +2711,13 @@ pub extern "C" fn indy_prover_create_proof(
             .await;
 
         let (err, proof) = prepare_result_1!(res, String::new());
-        trace!("indy_prover_create_proof ? err {:?} proof {:?}", err, proof);
+        debug!("indy_prover_create_proof ? err {:?} proof {:?}", err, proof);
         let proof = ctypes::string_to_cstring(proof);
         cb(command_handle, err, proof.as_ptr())
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_prover_create_proof < {:?}", res);
+    debug!("indy_prover_create_proof < {:?}", res);
     res
 }
 
@@ -3052,7 +2881,7 @@ pub extern "C" fn indy_verifier_verify_proof(
     rev_regs_json: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, valid: bool)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_verifier_verify_proof > proof_request_json {:?} \
             proof_json {:?} schemas_json {:?} credential_defs_json {:?} \
             rev_reg_defs_json {:?} rev_regs_json {:?}",
@@ -3093,7 +2922,7 @@ pub extern "C" fn indy_verifier_verify_proof(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!(
+    debug!(
         "indy_verifier_verify_proof ? proof_request_json {:?} \
             proof_json {:?} schemas_json {:?} credential_defs_json {:?} \
             rev_reg_defs_json {:?} rev_regs_json {:?}",
@@ -3105,15 +2934,10 @@ pub extern "C" fn indy_verifier_verify_proof(
         rev_regs_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.verifier_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.verify_proof(
+    locator.executor.spawn_ok(async move {
+        let res = locator.verifier_controller.verify_proof(
             proof_request_json,
             proof_json,
             schemas_json,
@@ -3124,17 +2948,16 @@ pub extern "C" fn indy_verifier_verify_proof(
 
         let (err, valid) = prepare_result_1!(res, false);
 
-        trace!(
+        debug!(
             "indy_verifier_verify_proof ? err {:?} valid {:?}",
-            err,
-            valid
+            err, valid
         );
 
         cb(command_handle, err, valid)
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_verifier_verify_proof < {:?}", res);
+    debug!("indy_verifier_verify_proof < {:?}", res);
     res
 }
 
@@ -3185,15 +3008,11 @@ pub extern "C" fn indy_create_revocation_state(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_create_revocation_state > blob_storage_reader_handle {:?} \
             rev_reg_def_json {:?} rev_reg_delta_json {:?} timestamp {:?} \
             cred_rev_id {:?}",
-        blob_storage_reader_handle,
-        rev_reg_def_json,
-        rev_reg_delta_json,
-        timestamp,
-        cred_rev_id
+        blob_storage_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id
     );
 
     check_useful_validatable_json!(
@@ -3211,26 +3030,18 @@ pub extern "C" fn indy_create_revocation_state(
     check_useful_c_str!(cred_rev_id, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!(
+    debug!(
         "indy_create_revocation_state ? blob_storage_reader_handle {:?} \
             rev_reg_def_json {:?} rev_reg_delta_json {:?} timestamp {:?} \
             cred_rev_id {:?}",
-        blob_storage_reader_handle,
-        rev_reg_def_json,
-        rev_reg_delta_json,
-        timestamp,
-        cred_rev_id
+        blob_storage_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
             .create_revocation_state(
                 blob_storage_reader_handle,
                 rev_reg_def_json,
@@ -3242,10 +3053,9 @@ pub extern "C" fn indy_create_revocation_state(
 
         let (err, rev_state) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_create_revocation_state ? err {:?} rev_state {:?}",
-            err,
-            rev_state
+            err, rev_state
         );
 
         let rev_state = ctypes::string_to_cstring(rev_state);
@@ -3253,7 +3063,7 @@ pub extern "C" fn indy_create_revocation_state(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_create_revocation_state < {:?}", res);
+    debug!("indy_create_revocation_state < {:?}", res);
     res
 }
 
@@ -3305,7 +3115,7 @@ pub extern "C" fn indy_update_revocation_state(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_update_revocation_state > blob_storage_reader_handle {:?} \
             rev_state_json {:?} rev_reg_def_json {:?} rev_reg_delta_json {:?} \
             timestamp {:?} cred_rev_id {:?}",
@@ -3338,7 +3148,7 @@ pub extern "C" fn indy_update_revocation_state(
     check_useful_c_str!(cred_rev_id, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!(
+    debug!(
         "indy_update_revocation_state ? blob_storage_reader_handle {:?} \
             rev_state_json {:?} rev_reg_def_json {:?} rev_reg_delta_json {:?} \
             timestamp {:?} cred_rev_id {:?}",
@@ -3350,15 +3160,11 @@ pub extern "C" fn indy_update_revocation_state(
         cred_rev_id
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.prover_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller
+    locator.executor.spawn_ok(async move {
+        let res = locator
+            .prover_controller
             .update_revocation_state(
                 blob_storage_reader_handle,
                 rev_state_json,
@@ -3371,10 +3177,9 @@ pub extern "C" fn indy_update_revocation_state(
 
         let (err, rev_state) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_update_revocation_state ? err {:?} rev_state {:?}",
-            err,
-            rev_state
+            err, rev_state
         );
 
         let rev_state = ctypes::string_to_cstring(rev_state);
@@ -3382,7 +3187,7 @@ pub extern "C" fn indy_update_revocation_state(
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_update_revocation_state < {:?}", res);
+    debug!("indy_update_revocation_state < {:?}", res);
     res
 }
 
@@ -3400,29 +3205,24 @@ pub extern "C" fn indy_generate_nonce(
     command_handle: CommandHandle,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, nonce: *const c_char)>,
 ) -> ErrorCode {
-    trace!("indy_generate_nonce >");
+    debug!("indy_generate_nonce >");
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.verifier_command_cxecutor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        let res = controller.generate_nonce();
+    locator.executor.spawn_ok(async move {
+        let res = locator.verifier_controller.generate_nonce();
         let (err, nonce) = prepare_result_1!(res, String::new());
 
-        trace!("indy_generate_nonce ? err {:?} nonce {:?}", err, nonce);
+        debug!("indy_generate_nonce ? err {:?} nonce {:?}", err, nonce);
 
         let nonce = ctypes::string_to_cstring(nonce);
         cb(command_handle, err, nonce.as_ptr())
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_generate_nonce < {:?}", res);
+    debug!("indy_generate_nonce < {:?}", res);
     res
 }
 
@@ -3455,30 +3255,27 @@ pub extern "C" fn indy_to_unqualified(
     entity: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, res: *const c_char)>,
 ) -> ErrorCode {
-
-    trace!("indy_to_unqualified > entity {:?}", entity);
+    debug!("indy_to_unqualified > entity {:?}", entity);
 
     check_useful_c_str!(entity, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_to_unqualified ? entity {:?}", entity);
+    debug!("indy_to_unqualified ? entity {:?}", entity);
 
-    let executor = Locator::instance().executor.clone();
+    let locator = Locator::instance();
 
-    executor.spawn_ok(async move {
-        use crate::services::anoncreds::helpers::to_unqualified;
-
+    locator.executor.spawn_ok(async move {
         // FIXME: Ideally it should be dedicated controller call
-        let res = to_unqualified(&entity);
+        let res = AnoncredsHelpers::to_unqualified(&entity);
         let (err, did) = prepare_result_1!(res, String::new());
 
-        trace!("indy_to_unqualified ? err {:?} did {:?}", err, did);
+        debug!("indy_to_unqualified ? err {:?} did {:?}", err, did);
 
         let did = ctypes::string_to_cstring(did);
         cb(command_handle, err, did.as_ptr())
     });
 
     let res = ErrorCode::Success;
-    trace!("indy_to_unqualified < {:?}", res);
+    debug!("indy_to_unqualified < {:?}", res);
     res
 }

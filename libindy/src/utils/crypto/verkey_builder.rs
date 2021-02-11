@@ -1,6 +1,6 @@
 use indy_api_types::errors::prelude::*;
 use rust_base58::{FromBase58, ToBase58};
-use crate::services::crypto::DEFAULT_CRYPTO_TYPE;
+use crate::services::CryptoService;
 
 
 pub fn build_full_verkey(dest: &str, verkey: Option<&str>) -> Result<String, IndyError> {
@@ -41,7 +41,7 @@ pub fn split_verkey(verkey: &str) -> (&str, &str) {
             let cryptoname = if p + 1 < verkey.len() {
                 verkey[p + 1..].as_ref()
             } else {
-                DEFAULT_CRYPTO_TYPE
+                CryptoService::defualt_crypto_type()
             };
             let v = if p > 0 {
                 verkey[..p].as_ref()
@@ -50,7 +50,7 @@ pub fn split_verkey(verkey: &str) -> (&str, &str) {
             };
             (v, cryptoname)
         },
-        None => (verkey, DEFAULT_CRYPTO_TYPE)
+        None => (verkey, CryptoService::defualt_crypto_type())
     }
 }
 
@@ -61,10 +61,10 @@ pub fn verkey_get_cryptoname(verkey: &str) -> &str {
             if p + 1 < verkey.len() {
                 verkey[p + 1..].as_ref()
             } else {
-                DEFAULT_CRYPTO_TYPE
+                CryptoService::defualt_crypto_type()
             }
     },
-        None => DEFAULT_CRYPTO_TYPE
+        None => CryptoService::defualt_crypto_type()
     }
 }
 
@@ -74,17 +74,17 @@ mod tests {
 
     # [test]
     fn split_verkey_empty() {
-        assert_eq!(split_verkey(""), ("", DEFAULT_CRYPTO_TYPE))
+        assert_eq!(split_verkey(""), ("", CryptoService::defualt_crypto_type()))
     }
 
     # [test]
     fn split_verkey_single_colon() {
-        assert_eq!(split_verkey(":"), ("", DEFAULT_CRYPTO_TYPE))
+        assert_eq!(split_verkey(":"), ("", CryptoService::defualt_crypto_type()))
     }
 
     # [test]
     fn split_verkey_ends_with_colon() {
-        assert_eq!(split_verkey("foo:"), ("foo", DEFAULT_CRYPTO_TYPE))
+        assert_eq!(split_verkey("foo:"), ("foo", CryptoService::defualt_crypto_type()))
     }
 
     # [test]
@@ -99,17 +99,17 @@ mod tests {
 
     # [test]
     fn verkey_get_cryptoname_empty() {
-        assert_eq!(verkey_get_cryptoname(""), DEFAULT_CRYPTO_TYPE)
+        assert_eq!(verkey_get_cryptoname(""), CryptoService::defualt_crypto_type())
     }
 
     # [test]
     fn verkey_get_cryptoname_single_colon() {
-        assert_eq!(verkey_get_cryptoname(":"), DEFAULT_CRYPTO_TYPE)
+        assert_eq!(verkey_get_cryptoname(":"), CryptoService::defualt_crypto_type())
     }
 
     # [test]
     fn verkey_get_cryptoname_ends_with_colon() {
-        assert_eq!(verkey_get_cryptoname("foo:"), DEFAULT_CRYPTO_TYPE)
+        assert_eq!(verkey_get_cryptoname("foo:"), CryptoService::defualt_crypto_type())
     }
 
     # [test]

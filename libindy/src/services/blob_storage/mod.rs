@@ -1,18 +1,17 @@
-use std::collections::HashMap;
+mod default_reader;
+mod default_writer;
+
+use std::{collections::HashMap, sync::Mutex as SyncMutex};
 
 use async_trait::async_trait;
+use futures::lock::Mutex;
 use indy_api_types::errors::prelude::*;
 use indy_utils::sequence;
 
-use std::sync::Mutex as SyncMutex;
-use futures::lock::Mutex;
 use sha2::{
     digest::{FixedOutput, Update},
     Sha256,
 };
-
-mod default_reader;
-mod default_writer;
 
 #[async_trait]
 trait WriterType: Send + Sync {
@@ -47,7 +46,7 @@ trait ReadableBlob: Send + Sync {
     fn close(&self) -> IndyResult<()>;
 }
 
-pub struct BlobStorageService {
+pub(crate) struct BlobStorageService {
     writer_types: Mutex<HashMap<String, Box<dyn WriterType>>>,
     writer_configs: Mutex<HashMap<i32, Box<dyn Writer>>>,
     writer_blobs: Mutex<HashMap<i32, (Box<dyn WritableBlob>, Sha256)>>,
@@ -58,7 +57,7 @@ pub struct BlobStorageService {
 }
 
 impl BlobStorageService {
-    pub fn new() -> BlobStorageService {
+    pub(crate) fn new() -> BlobStorageService {
         let mut writer_types: HashMap<String, Box<dyn WriterType>> = HashMap::new();
         writer_types.insert(
             "default".to_owned(),
@@ -85,7 +84,7 @@ impl BlobStorageService {
 
 /* Writer */
 impl BlobStorageService {
-    pub async fn open_writer(&self, type_: &str, config: &str) -> IndyResult<i32> {
+    pub(crate) async fn open_writer(&self, type_: &str, config: &str) -> IndyResult<i32> {
         let writer_config = self
             .writer_types
             .lock()
@@ -110,7 +109,7 @@ impl BlobStorageService {
         Ok(config_handle)
     }
 
-    pub async fn create_blob(&self, config_handle: i32) -> IndyResult<i32> {
+    pub(crate) async fn create_blob(&self, config_handle: i32) -> IndyResult<i32> {
         let blob_handle = sequence::get_next_id();
 
         let writer = self
@@ -135,7 +134,7 @@ impl BlobStorageService {
         Ok(blob_handle)
     }
 
-    pub async fn append(&self, handle: i32, bytes: &[u8]) -> IndyResult<usize> {
+    pub(crate) async fn append(&self, handle: i32, bytes: &[u8]) -> IndyResult<usize> {
         let mut writers = self.writer_blobs.lock().await;
 
         let &mut (ref mut writer, ref mut hasher) = writers.get_mut(&handle).ok_or_else(|| {
@@ -150,7 +149,7 @@ impl BlobStorageService {
         Ok(res)
     }
 
-    pub async fn finalize(&self, handle: i32) -> IndyResult<(String, Vec<u8>)> {
+    pub(crate) async fn finalize(&self, handle: i32) -> IndyResult<(String, Vec<u8>)> {
         let mut writers = self.writer_blobs.lock().await;
 
         let (mut writer, hasher) = writers.remove(&handle).ok_or_else(|| {
@@ -171,7 +170,7 @@ impl BlobStorageService {
 
 /* Reader */
 impl BlobStorageService {
-    pub async fn open_reader(&self, type_: &str, config: &str) -> IndyResult<i32> {
+    pub(crate) async fn open_reader(&self, type_: &str, config: &str) -> IndyResult<i32> {
         let reader_config = self
             .reader_types
             .lock()
@@ -196,7 +195,7 @@ impl BlobStorageService {
         Ok(config_handle)
     }
 
-    pub async fn open_blob(
+    pub(crate) async fn open_blob(
         &self,
         config_handle: i32,
         location: &str,
@@ -217,14 +216,18 @@ impl BlobStorageService {
             .await?;
 
         let reader_handle = sequence::get_next_id();
-        self.reader_blobs.lock().unwrap().insert(reader_handle, reader);
+        self.reader_blobs
+            .lock()
+            .unwrap()
+            .insert(reader_handle, reader);
 
         Ok(reader_handle)
     }
 
-    pub fn read(&self, handle: i32, size: usize, offset: usize) -> IndyResult<Vec<u8>> {
+    pub(crate) fn read(&self, handle: i32, size: usize, offset: usize) -> IndyResult<Vec<u8>> {
         self.reader_blobs
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .get_mut(&handle)
             .ok_or_else(|| {
                 err_msg(
@@ -235,10 +238,11 @@ impl BlobStorageService {
             .read(size, offset)
     }
 
-    pub async fn _verify(&self, handle: i32) -> IndyResult<bool> {
+    pub(crate) async fn _verify(&self, handle: i32) -> IndyResult<bool> {
         let res = self
             .reader_blobs
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .get_mut(&handle)
             .ok_or_else(|| {
                 err_msg(
@@ -252,9 +256,10 @@ impl BlobStorageService {
         Ok(res)
     }
 
-    pub fn close(&self, handle: i32) -> IndyResult<()> {
+    pub(crate) fn close(&self, handle: i32) -> IndyResult<()> {
         self.reader_blobs
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .remove(&handle)
             .ok_or_else(|| {
                 err_msg(

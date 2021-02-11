@@ -16,7 +16,7 @@ pub extern fn indy_collect_metrics(command_handle: CommandHandle,
                                    cb: Option<extern fn(command_handle_: CommandHandle,
                                                         err: ErrorCode,
                                                         metrics_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_collect_metrics: >>> command_handle: {:?}, cb: {:?}",
+    debug!("indy_collect_metrics: >>> command_handle: {:?}, cb: {:?}",
            command_handle, cb);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
@@ -26,6 +26,6 @@ pub extern fn indy_collect_metrics(command_handle: CommandHandle,
             boxed_callback_string!("indy_collect_metrics", cb, command_handle)
         )));
     let res = prepare_result!(result);
-    trace!("indy_collect_metrics: <<< res: {:?}", res);
+    debug!("indy_collect_metrics: <<< res: {:?}", res);
     res
 }
