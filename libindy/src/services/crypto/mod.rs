@@ -36,7 +36,6 @@ trait CryptoType: Send + Sync {
         doc: &[u8],
         nonce: &ed25519_box::Nonce,
     ) -> IndyResult<Vec<u8>>;
-
     fn crypto_box_open(
         &self,
         sk: &ed25519_sign::SecretKey,
@@ -181,7 +180,10 @@ impl CryptoService {
         res
     }
 
-    pub(crate) async fn create_their_did(&self, their_did_info: &TheirDidInfo) -> IndyResult<TheirDid> {
+    pub(crate) async fn create_their_did(
+        &self,
+        their_did_info: &TheirDidInfo,
+    ) -> IndyResult<TheirDid> {
         trace!("create_their_did > their_did_info {:?}", their_did_info);
 
         // Check did is correct Base58
@@ -231,7 +233,12 @@ impl CryptoService {
         res
     }
 
-    pub(crate) async fn verify(&self, their_vk: &str, msg: &[u8], signature: &[u8]) -> IndyResult<bool> {
+    pub(crate) async fn verify(
+        &self,
+        their_vk: &str,
+        msg: &[u8],
+        signature: &[u8],
+    ) -> IndyResult<bool> {
         trace!(
             "verify > their_vk {:?} msg {:?} signature {:?}",
             their_vk,
@@ -419,7 +426,11 @@ impl CryptoService {
         res
     }
 
-    pub(crate) async fn crypto_box_seal_open(&self, my_key: &Key, doc: &[u8]) -> IndyResult<Vec<u8>> {
+    pub(crate) async fn crypto_box_seal_open(
+        &self,
+        my_key: &Key,
+        doc: &[u8],
+    ) -> IndyResult<Vec<u8>> {
         trace!("crypto_box_seal_open > my_key {:?} doc {:?}", my_key, doc);
 
         let (my_vk, crypto_type_name) = split_verkey(&my_key.verkey);
@@ -448,7 +459,10 @@ impl CryptoService {
         res
     }
 
-    pub(crate) fn convert_seed(&self, seed: Option<&str>) -> IndyResult<Option<ed25519_sign::Seed>> {
+    pub(crate) fn convert_seed(
+        &self,
+        seed: Option<&str>,
+    ) -> IndyResult<Option<ed25519_sign::Seed>> {
         trace!("convert_seed > seed {:?}", secret!(seed));
 
         if seed.is_none() {

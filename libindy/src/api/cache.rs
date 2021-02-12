@@ -207,6 +207,7 @@ pub extern "C" fn indy_purge_cred_def_cache(
 
         let err = prepare_result!(res);
         debug!("indy_purge_cred_def_cache ? err {:?}", err);
+
         cb(command_handle, err)
     });
 

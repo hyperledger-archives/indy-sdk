@@ -1814,6 +1814,7 @@ pub extern "C" fn indy_prover_get_credentials(
             .prover_controller
             .get_credentials(wallet_handle, filter_json)
             .await;
+
         let (err, credentials) = prepare_result_1!(res, String::new());
 
         debug!(
@@ -1956,6 +1957,7 @@ pub extern "C" fn indy_prover_fetch_credentials(
             .prover_controller
             .fetch_credentials(search_handle, count)
             .await;
+
         let (err, credentials) = prepare_result_1!(res, String::new());
 
         debug!(
@@ -2445,10 +2447,12 @@ pub extern "C" fn indy_prover_close_credentials_search_for_proof_req(
             .await;
 
         let err = prepare_result!(res);
+
         debug!(
             "indy_prover_close_credentials_search_for_proof_req ? err {:?}",
             err
         );
+
         cb(command_handle, err)
     });
 
@@ -2712,6 +2716,7 @@ pub extern "C" fn indy_prover_create_proof(
 
         let (err, proof) = prepare_result_1!(res, String::new());
         debug!("indy_prover_create_proof ? err {:?} proof {:?}", err, proof);
+
         let proof = ctypes::string_to_cstring(proof);
         cb(command_handle, err, proof.as_ptr())
     });

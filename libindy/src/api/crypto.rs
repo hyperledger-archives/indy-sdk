@@ -234,7 +234,8 @@ pub extern "C" fn indy_crypto_sign(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_crypto_sign > wallet_handle {:?} signer_vk {:?} message_raw {:?} message_len {:?}",
+        "indy_crypto_sign > wallet_handle {:?} signer_vk {:?} \
+            message_raw {:?} message_len {:?}",
         wallet_handle, signer_vk, message_raw, message_len
     );
 
@@ -310,8 +311,11 @@ pub extern "C" fn indy_crypto_verify(
     signature_len: u32,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, valid: bool)>,
 ) -> ErrorCode {
-    debug!("indy_crypto_verify > signer_vk {:?} message_raw {:?} message_len {:?} signature_raw {:?} signature_len{:?}",
-           signer_vk, message_raw, message_len, signature_raw, signature_len);
+    debug!(
+        "indy_crypto_verify > signer_vk {:?} message_raw {:?} \
+            message_len {:?} signature_raw {:?} signature_len{:?}",
+        signer_vk, message_raw, message_len, signature_raw, signature_len
+    );
 
     check_useful_c_str!(signer_vk, ErrorCode::CommonInvalidParam2);
 
@@ -401,8 +405,11 @@ pub extern "C" fn indy_crypto_auth_crypt(
         ),
     >,
 ) -> ErrorCode {
-    debug!("indy_crypto_auth_crypt > wallet_handle {:?} sender_vk {:?} recipient_vk {:?} msg_data {:?} msg_len{:?}",
-           wallet_handle, sender_vk, recipient_vk, msg_data, msg_len);
+    debug!(
+        "indy_crypto_auth_crypt > wallet_handle {:?} \
+            sender_vk {:?} recipient_vk {:?} msg_data {:?} msg_len{:?}",
+        wallet_handle, sender_vk, recipient_vk, msg_data, msg_len
+    );
 
     check_useful_c_str!(sender_vk, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam4);
@@ -416,8 +423,11 @@ pub extern "C" fn indy_crypto_auth_crypt(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    debug!("indy_crypto_auth_crypt ? wallet_handle {:?} sender_vk {:?} recipient_vk {:?} msg_data {:?}",
-           wallet_handle, sender_vk, recipient_vk, msg_data);
+    debug!(
+        "indy_crypto_auth_crypt ? wallet_handle {:?} \
+            sender_vk {:?} recipient_vk {:?} msg_data {:?}",
+        wallet_handle, sender_vk, recipient_vk, msg_data
+    );
 
     let locator = Locator::instance();
 
@@ -487,8 +497,11 @@ pub extern "C" fn indy_crypto_auth_decrypt(
         ),
     >,
 ) -> ErrorCode {
-    debug!("indy_crypto_auth_decrypt > wallet_handle {:?} recipient_vk {:?} encrypted_msg {:?} encrypted_len {:?}",
-           wallet_handle, recipient_vk, encrypted_msg, encrypted_len);
+    debug!(
+        "indy_crypto_auth_decrypt > wallet_handle {:?} \
+            recipient_vk {:?} encrypted_msg {:?} encrypted_len {:?}",
+        wallet_handle, recipient_vk, encrypted_msg, encrypted_len
+    );
 
     check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam3);
 
@@ -502,7 +515,8 @@ pub extern "C" fn indy_crypto_auth_decrypt(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     debug!(
-        "indy_crypto_auth_decrypt ? wallet_handle {:?} recipient_vk {:?} encrypted_msg {:?}",
+        "indy_crypto_auth_decrypt ? wallet_handle {:?} \
+            recipient_vk {:?} encrypted_msg {:?}",
         wallet_handle, recipient_vk, encrypted_msg
     );
 
@@ -600,6 +614,7 @@ pub extern "C" fn indy_crypto_anon_crypt(
             .crypto_controller
             .anonymous_encrypt(&recipient_vk, &msg_data)
             .await;
+
         let (err, encrypted_msg) = prepare_result_1!(res, Vec::new());
 
         debug!(
@@ -658,8 +673,11 @@ pub extern "C" fn indy_crypto_anon_decrypt(
         ),
     >,
 ) -> ErrorCode {
-    debug!("indy_crypto_anon_decrypt > wallet_handle {:?} recipient_vk {:?} encrypted_msg {:?} encrypted_len {:?}",
-           wallet_handle, recipient_vk, encrypted_msg, encrypted_len);
+    debug!(
+        "indy_crypto_anon_decrypt > wallet_handle {:?} \
+            recipient_vk {:?} encrypted_msg {:?} encrypted_len {:?}",
+        wallet_handle, recipient_vk, encrypted_msg, encrypted_len
+    );
 
     check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam3);
 

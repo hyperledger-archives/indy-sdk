@@ -1,3 +1,13 @@
+mod catchup;
+mod commander;
+mod events;
+mod merkle_tree_factory;
+mod networker;
+mod pool;
+mod request_handler;
+mod state_proof;
+mod types;
+
 use std::{
     collections::{HashMap, HashSet},
     fs, io,
@@ -28,16 +38,6 @@ use self::{
     events::{COMMAND_CONNECT, COMMAND_EXIT, COMMAND_REFRESH},
     pool::{Pool, ZMQPool},
 };
-
-mod catchup;
-mod commander;
-mod events;
-mod merkle_tree_factory;
-mod networker;
-mod pool;
-mod request_handler;
-mod state_proof;
-mod types;
 
 lazy_static! {
     //static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new()); FXIME: !!!
@@ -805,7 +805,8 @@ pub mod tests {
             ps.send_action(pool_id, test_data, None, None)
                 .await
                 .unwrap();
-            //            pool_mock.join().unwrap();
+            
+            // pool_mock.join().unwrap();
         }
 
         #[test]

@@ -32,8 +32,8 @@ pub extern "C" fn indy_open_blob_storage_reader(
             .blob_storage_controller
             .open_reader(type_, config_json)
             .await;
-        
-            let (err, handle) = prepare_result_1!(res, 0);
+
+        let (err, handle) = prepare_result_1!(res, 0);
 
         debug!(
             "indy_open_blob_storage_reader ? err {:?} handle {:?}",

@@ -272,14 +272,18 @@ pub extern "C" fn indy_delete_wallet_record_tags(
     tag_names_json: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    debug!("indy_delete_wallet_record_tags > wallet_handle {:?} type_ {:?} id {:?} tag_names_json {:?}", wallet_handle, type_, id, tag_names_json);
+    debug!(
+        "indy_delete_wallet_record_tags > wallet_handle {:?} \
+            type_ {:?} id {:?} tag_names_json {:?}", wallet_handle, type_, id, tag_names_json);
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(tag_names_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    debug!("indy_delete_wallet_record_tags ? wallet_handle {:?} type_ {:?} id {:?} tag_names_json {:?}", wallet_handle, type_, id, tag_names_json);
+    debug!(
+        "indy_delete_wallet_record_tags ? wallet_handle {:?} \
+            type_ {:?} id {:?} tag_names_json {:?}", wallet_handle, type_, id, tag_names_json);
 
     let locator = Locator::instance();
 
@@ -384,7 +388,8 @@ pub extern "C" fn indy_get_wallet_record(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_get_wallet_record > wallet_handle {:?} type_ {:?} id {:?} options_json {:?}",
+        "indy_get_wallet_record > wallet_handle {:?} type_ {:?} \
+            id {:?} options_json {:?}",
         wallet_handle, type_, id, options_json
     );
 
@@ -394,7 +399,8 @@ pub extern "C" fn indy_get_wallet_record(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     debug!(
-        "indy_get_wallet_record ? wallet_handle {:?} type_ {:?} id {:?} options_json {:?}",
+        "indy_get_wallet_record ? wallet_handle {:?} \
+            type_ {:?} id {:?} options_json {:?}",
         wallet_handle, type_, id, options_json
     );
 
