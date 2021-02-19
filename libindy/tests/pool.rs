@@ -1,17 +1,21 @@
 #[macro_use]
+extern crate derivative;
+
+#[macro_use]
+extern crate serde_derive;
+
+#[macro_use]
+extern crate serde_json;
+
+#[macro_use]
 mod utils;
 
-inject_indy_dependencies!();
+use indyrs::ErrorCode;
 
-extern crate indyrs as indy;
-extern crate indyrs as api;
+#[cfg(not(feature = "only_high_cases"))]
+use utils::constants::*;
 
-use self::indy::ErrorCode;
-
-use crate::utils::{environment, pool};
-#[cfg(not(feature="only_high_cases"))]
-use crate::utils::constants::*;
-use crate::utils::Setup;
+use utils::{environment, pool, Setup};
 
 mod high_cases {
     use super::*;
@@ -24,7 +28,8 @@ mod high_cases {
         fn create_pool_ledger_config_works() {
             let setup = Setup::empty();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
 
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
@@ -35,7 +40,11 @@ mod high_cases {
             let setup = Setup::empty();
 
             let txn_file_path = environment::tmp_file_path("specific_filename.txn");
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, Some(txn_file_path.as_path()));
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(
+                &setup.name,
+                None,
+                Some(txn_file_path.as_path()),
+            );
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
 
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
@@ -52,7 +61,8 @@ mod high_cases {
         fn open_pool_ledger_works() {
             let setup = Setup::empty();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
@@ -66,7 +76,8 @@ mod high_cases {
 
             let config = r#"{"timeout": 20}"#;
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
@@ -78,7 +89,8 @@ mod high_cases {
         fn open_pool_ledger_works_for_two_nodes() {
             let setup = Setup::empty();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, Some(2), None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool(&setup.name, Some(2), None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
@@ -90,7 +102,8 @@ mod high_cases {
         fn open_pool_ledger_works_for_three_nodes() {
             let setup = Setup::empty();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, Some(3), None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool(&setup.name, Some(3), None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
@@ -102,7 +115,8 @@ mod high_cases {
         pub fn open_pool_ledger_works_for_cached_txns() {
             let setup = Setup::empty();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
             pool::dump_correct_genesis_txns_to_cache(&setup.name).unwrap();
@@ -148,7 +162,8 @@ mod high_cases {
         fn indy_delete_pool_ledger_config_works() {
             let setup = Setup::empty();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
@@ -197,7 +212,8 @@ mod medium_cases {
         fn create_pool_ledger_config_works_for_empty_genesis_txns() {
             let setup = Setup::empty();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, Some(0), None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool(&setup.name, Some(0), None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             let res = pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str()));
             assert_code!(ErrorCode::CommonInvalidStructure, res);
@@ -225,7 +241,8 @@ mod medium_cases {
         fn create_pool_ledger_config_works_for_twice() {
             let setup = Setup::empty();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
 
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
@@ -261,7 +278,8 @@ mod medium_cases {
         pub fn open_pool_ledger_works_for_corrupted_cached_txns() {
             let setup = Setup::empty();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
             pool::dump_incorrect_genesis_txns_to_cache(&setup.name).unwrap();
@@ -296,7 +314,8 @@ mod medium_cases {
         fn open_pool_ledger_works_for_invalid_nodes_file() {
             let setup = Setup::empty();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool_with_invalid_nodes(&setup.name, None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool_with_invalid_nodes(&setup.name, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
@@ -309,7 +328,8 @@ mod medium_cases {
         fn open_pool_ledger_works_for_wrong_alias() {
             let setup = Setup::empty();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool_with_wrong_alias(&setup.name, None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool_with_wrong_alias(&setup.name, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
@@ -324,7 +344,8 @@ mod medium_cases {
 
             let config = r#"{"timeout": "true"}"#;
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
@@ -339,7 +360,8 @@ mod medium_cases {
 
             pool::set_protocol_version(1).unwrap();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
@@ -347,7 +369,6 @@ mod medium_cases {
             assert_code!(ErrorCode::PoolIncompatibleProtocolVersion, res);
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
-
         }
 
         #[test]
@@ -355,7 +376,8 @@ mod medium_cases {
         fn open_pool_ledger_works_for_wrong_ips() {
             let setup = Setup::empty();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool_with_wrong_ips(&setup.name, None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool_with_wrong_ips(&setup.name, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
@@ -370,7 +392,8 @@ mod medium_cases {
 
             let config = json!({"read_nodes_count": 3}).to_string();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
+            let txn_file_path =
+                pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
@@ -385,8 +408,6 @@ mod medium_cases {
 
     mod close {
         use super::*;
-
-        extern crate futures;
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -404,7 +425,7 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         //FIXME: test
         fn indy_close_pool_ledger_works_for_pending_request() {
-            use crate::indy::future::Future;
+            use indyrs::{future::Future, self as indy};
 
             let setup = Setup::empty();
 
@@ -420,7 +441,7 @@ mod medium_cases {
             assert_code!(ErrorCode::PoolLedgerTerminated, res);
 
             /* Now any request to API can failed, if pool::close works incorrect in case of pending requests.
-               For example try to delete the pool. */
+            For example try to delete the pool. */
             pool::delete(&setup.name).unwrap();
         }
 

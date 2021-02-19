@@ -1,17 +1,17 @@
-use serde_json;
+use std::collections::{HashMap, HashSet};
 
-use std::collections::{HashSet, HashMap};
+use serde_json;
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub enum ResponseType {
     REQNACK,
     REPLY,
-    REJECT
+    REJECT,
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub struct Response {
-    pub op: ResponseType
+    pub op: ResponseType,
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
@@ -23,13 +23,13 @@ pub struct Reply<T> {
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GetAttribReplyResult {
-    pub     identifier: String,
-    pub   req_id: u64,
+    pub identifier: String,
+    pub req_id: u64,
     #[serde(rename = "type")]
-    pub   _type: String,
-    pub   data: Option<String>,
-    pub  dest: String,
-    pub  seq_no: Option<i32>
+    pub _type: String,
+    pub data: Option<String>,
+    pub dest: String,
+    pub seq_no: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -41,7 +41,7 @@ pub struct GetValidatorInfoResult {
     pub seq_no: Option<i32>,
     #[serde(rename = "type")]
     pub type_: String,
-    pub data: Option<serde_json::Value>
+    pub data: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -53,19 +53,19 @@ pub struct GetTxnResult {
     pub seq_no: Option<i32>,
     #[serde(rename = "type")]
     pub _type: String,
-    pub data: Option<serde_json::Value>
+    pub data: Option<serde_json::Value>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SchemaData {
     pub name: String,
     pub version: String,
-    pub attr_names: HashSet<String>
+    pub attr_names: HashSet<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct CredentialOfferInfo {
-    pub cred_def_id: String
+    pub cred_def_id: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Clone)]
@@ -74,12 +74,12 @@ pub struct WalletRecord {
     #[serde(rename = "type")]
     pub type_: Option<String>,
     pub value: Option<String>,
-    pub tags: Option<HashMap<String, String>>
+    pub tags: Option<HashMap<String, String>>,
 }
 
 #[serde(rename_all = "camelCase")]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SearchRecords {
     pub total_count: Option<i32>,
-    pub records: Option<Vec<WalletRecord>>
+    pub records: Option<Vec<WalletRecord>>,
 }

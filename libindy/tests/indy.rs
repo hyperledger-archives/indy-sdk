@@ -1,4 +1,4 @@
-extern crate indyrs as indy;
+use indyrs as indy;
 
 #[test]
 fn set_runtime_config_works() {

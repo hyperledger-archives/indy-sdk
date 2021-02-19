@@ -1,16 +1,31 @@
 #[macro_use]
+extern crate derivative;
+
+#[macro_use]
+extern crate serde_derive;
+
+#[macro_use]
+extern crate serde_json;
+
+#[macro_use]
 mod utils;
 
-inject_indy_dependencies!();
+use std::thread::sleep;
 
-extern crate indyrs as indy;
-extern crate indyrs as api;
+use indyrs::ErrorCode;
 
-use crate::utils::cache::*;
-use crate::utils::Setup;
-use crate::utils::domain::crypto::did::DidValue;
-
-use self::indy::ErrorCode;
+use utils::{
+    cache::*,
+    constants::*,
+    domain::{
+        anoncreds::{
+            credential_definition::{CredentialDefinition, CredentialDefinitionV1},
+            schema::{SchemaId, SchemaV1},
+        },
+        crypto::did::DidValue,
+    },
+    Setup,
+};
 
 pub const FORBIDDEN_TYPE: &'static str = "Indy::Test";
 
@@ -19,9 +34,6 @@ mod high_cases {
 
     mod schema_cache {
         use super::*;
-        use crate::utils::domain::anoncreds::schema::{SchemaV1, SchemaId};
-        use crate::utils::constants::*;
-        use std::thread::sleep;
 
         #[test]
         fn indy_get_schema_empty_options() {
@@ -36,7 +48,9 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 schema_id,
-                &options_json).unwrap();
+                &options_json,
+            )
+            .unwrap();
 
             let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
         }
@@ -52,7 +66,8 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 &SchemaId::new(&DidValue(DID.to_string()), "other_schema", "1.0").0,
-                &options_json);
+                &options_json,
+            );
 
             assert_code!(ErrorCode::LedgerNotFound, res);
         }
@@ -70,7 +85,8 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 schema_id,
-                &options_json);
+                &options_json,
+            );
 
             assert_code!(ErrorCode::LedgerNotFound, res);
         }
@@ -87,8 +103,9 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 schema_id,
-                &options_json
-            ).unwrap();
+                &options_json,
+            )
+            .unwrap();
             let _schema: SchemaV1 = serde_json::from_str(&schema_json1).unwrap();
 
             // now retrieve it from cache
@@ -98,8 +115,9 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 schema_id,
-                &options_json
-            ).unwrap();
+                &options_json,
+            )
+            .unwrap();
             let _schema: SchemaV1 = serde_json::from_str(&schema_json2).unwrap();
 
             assert_eq!(schema_json1, schema_json2);
@@ -117,8 +135,9 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 schema_id,
-                &options_json
-            ).unwrap();
+                &options_json,
+            )
+            .unwrap();
             let _schema: SchemaV1 = serde_json::from_str(&schema_json1).unwrap();
 
             // it should not be present inside of cache, because of noStore option in previous request.
@@ -128,7 +147,7 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 schema_id,
-                &options_json
+                &options_json,
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
         }
@@ -145,8 +164,9 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 schema_id,
-                &options_json
-            ).unwrap();
+                &options_json,
+            )
+            .unwrap();
             let _schema: SchemaV1 = serde_json::from_str(&schema_json1).unwrap();
 
             // it should not be present inside of cache, because of noStore option in previous request.
@@ -156,7 +176,7 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 schema_id,
-                &options_json
+                &options_json,
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
         }
@@ -174,7 +194,9 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1_V1,
                 &schema_id,
-                &options_json).unwrap();
+                &options_json,
+            )
+            .unwrap();
 
             let schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
             assert_eq!(schema_id, schema.id.0);
@@ -192,8 +214,9 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 schema_id,
-                &options_json
-            ).unwrap();
+                &options_json,
+            )
+            .unwrap();
             let _schema: SchemaV1 = serde_json::from_str(&schema_json1).unwrap();
 
             sleep(std::time::Duration::from_secs(2));
@@ -205,7 +228,7 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 schema_id,
-                &options_json
+                &options_json,
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
         }
@@ -225,16 +248,13 @@ mod high_cases {
         #[test]
         fn indy_purge_schema_cache_older_than_1000_seconds() {
             let setup = Setup::wallet();
-            purge_schema_cache(setup.wallet_handle, &json!({"minFresh": 1000}).to_string()).unwrap();
+            purge_schema_cache(setup.wallet_handle, &json!({"minFresh": 1000}).to_string())
+                .unwrap();
         }
     }
 
     mod cred_def_cache {
         use super::*;
-        use crate::utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
-        use crate::utils::constants::*;
-        use std::thread::sleep;
-
 
         #[test]
         fn indy_get_cred_def_empty_options() {
@@ -249,7 +269,9 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
-                &options_json).unwrap();
+                &options_json,
+            )
+            .unwrap();
 
             let _cred_def: CredentialDefinition = serde_json::from_str(&cred_def_json).unwrap();
         }
@@ -267,7 +289,8 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
-                &options_json);
+                &options_json,
+            );
 
             assert_code!(ErrorCode::LedgerNotFound, res);
         }
@@ -284,8 +307,9 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
-                &options_json
-            ).unwrap();
+                &options_json,
+            )
+            .unwrap();
             let _cred_def: CredentialDefinition = serde_json::from_str(&cred_def_json1).unwrap();
 
             // now retrieve it from cache
@@ -295,8 +319,9 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
-                &options_json
-            ).unwrap();
+                &options_json,
+            )
+            .unwrap();
             let _cred_def: CredentialDefinition = serde_json::from_str(&cred_def_json2).unwrap();
 
             assert_eq!(cred_def_json1, cred_def_json2);
@@ -314,8 +339,9 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
-                &options_json
-            ).unwrap();
+                &options_json,
+            )
+            .unwrap();
             let _cred_def: CredentialDefinition = serde_json::from_str(&cred_def_json1).unwrap();
 
             // it should not be present inside of cache, because of noStore option in previous request.
@@ -325,7 +351,7 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
-                &options_json
+                &options_json,
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
         }
@@ -342,8 +368,9 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
-                &options_json
-            ).unwrap();
+                &options_json,
+            )
+            .unwrap();
             let _cred_def: CredentialDefinition = serde_json::from_str(&cred_def_json1).unwrap();
 
             // it should not be present inside of cache, because of noStore option in previous request.
@@ -353,7 +380,7 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
-                &options_json
+                &options_json,
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
         }
@@ -370,8 +397,9 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
-                &options_json
-            ).unwrap();
+                &options_json,
+            )
+            .unwrap();
             let _cred_def: CredentialDefinition = serde_json::from_str(&cred_def_json1).unwrap();
 
             sleep(std::time::Duration::from_secs(2));
@@ -383,7 +411,7 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
-                &options_json
+                &options_json,
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
         }
@@ -401,11 +429,12 @@ mod high_cases {
                 setup.wallet_handle,
                 DID_MY1_V1,
                 &cred_def_id,
-                &options_json).unwrap();
+                &options_json,
+            )
+            .unwrap();
 
             let cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
             assert_eq!(cred_def_id, cred_def.id.0);
-
         }
 
         #[test]
@@ -417,13 +446,15 @@ mod high_cases {
         #[test]
         fn indy_purge_cred_def_cache_all_data() {
             let setup = Setup::wallet();
-            purge_cred_def_cache(setup.wallet_handle, &json!({"minFresh": -1}).to_string()).unwrap();
+            purge_cred_def_cache(setup.wallet_handle, &json!({"minFresh": -1}).to_string())
+                .unwrap();
         }
 
         #[test]
         fn indy_purge_cred_def_cache_older_than_1000_seconds() {
             let setup = Setup::wallet();
-            purge_cred_def_cache(setup.wallet_handle, &json!({"minFresh": 1000}).to_string()).unwrap();
+            purge_cred_def_cache(setup.wallet_handle, &json!({"minFresh": 1000}).to_string())
+                .unwrap();
         }
     }
 }

@@ -1,9 +1,9 @@
-pub mod tree;
-pub mod proof;
 pub mod merkletree;
+pub mod proof;
+pub mod tree;
 
-use self::tree::*;
 use self::merkletree::*;
+use self::tree::*;
 use indy_api_types::errors::prelude::*;
 use indy_utils::crypto::hash::Hash;
 
@@ -24,24 +24,23 @@ impl MerkleTree {
                 assert!(false);
                 None
             }
-            Tree::Node { ref left, ref right, ref hash, .. } => {
+            Tree::Node {
+                ref left,
+                ref right,
+                ref hash,
+                ..
+            } => {
                 if hash == required_hash {
                     Some(from)
                 } else {
                     let right = MerkleTree::find_hash(right, required_hash);
                     match right {
-                        Some(r) => {
-                            Some(r)
-                        }
+                        Some(r) => Some(r),
                         None => {
                             let left = MerkleTree::find_hash(left, required_hash);
                             match left {
-                                Some(r) => {
-                                    Some(r)
-                                }
-                                None => {
-                                    None
-                                }
+                                Some(r) => Some(r),
+                                None => None,
                             }
                         }
                     }
@@ -57,9 +56,12 @@ impl MerkleTree {
         }
     }
 
-    pub fn consistency_proof(&self,
-                             new_root_hash: &Vec<u8>, new_size: usize,
-                             proof: &Vec<Vec<u8>>) -> IndyResult<bool> {
+    pub fn consistency_proof(
+        &self,
+        new_root_hash: &Vec<u8>,
+        new_size: usize,
+        proof: &Vec<Vec<u8>>,
+    ) -> IndyResult<bool> {
         if self.count == 0 {
             // empty old tree
             return Ok(true);
@@ -100,8 +102,9 @@ impl MerkleTree {
                 old_hash = Hash::hash_nodes(next_proof, &old_hash)?.to_vec();
                 new_hash = Hash::hash_nodes(next_proof, &new_hash)?.to_vec();
             } else if old_node < new_node {
-                new_hash = Hash::hash_nodes(&new_hash,
-                                            unwrap_opt_or_return!(proofs.next(), Ok(false)))?.to_vec();
+                new_hash =
+                    Hash::hash_nodes(&new_hash, unwrap_opt_or_return!(proofs.next(), Ok(false)))?
+                        .to_vec();
             }
             old_node /= 2;
             new_node /= 2;
@@ -134,18 +137,23 @@ impl MerkleTree {
         } else if Self::count_bits(self.count) != 1 {
             // add to right subtree
             match self.root.clone() {
-                Tree::Node { ref left, ref right, .. } => {
-                    let mut iter = right.iter().map(|x| (*x).clone()).collect::<Vec<TreeLeafData>>();
+                Tree::Node {
+                    ref left,
+                    ref right,
+                    ..
+                } => {
+                    let mut iter = right
+                        .iter()
+                        .map(|x| (*x).clone())
+                        .collect::<Vec<TreeLeafData>>();
                     iter.push(node);
                     let new_right = MerkleTree::from_vec(iter)?;
-                    let combined_hash = Hash::hash_nodes(
-                        left.hash(),
-                        new_right.root_hash() as &Vec<u8>
-                    )?;
+                    let combined_hash =
+                        Hash::hash_nodes(left.hash(), new_right.root_hash() as &Vec<u8>)?;
                     self.root = Tree::Node {
                         left: (*left).clone(),
                         right: Box::new(new_right.root),
-                        hash: combined_hash.to_vec()
+                        hash: combined_hash.to_vec(),
                     };
                     self.count += 1;
                     self.nodes_count += 1;
@@ -159,27 +167,24 @@ impl MerkleTree {
             let new_right = MerkleTree::from_vec(vec![node])?;
             match self.root.clone() {
                 Tree::Node { ref hash, .. } => {
-                    let combined_hash = Hash::hash_nodes(
-                        hash,
-                        new_right.root_hash()
-                    )?;
+                    let combined_hash = Hash::hash_nodes(hash, new_right.root_hash())?;
                     self.root = Tree::Node {
                         left: Box::new(self.root.clone()),
                         right: Box::new(new_right.root),
-                        hash: combined_hash.to_vec()
+                        hash: combined_hash.to_vec(),
                     };
                     self.count += 1;
                     self.nodes_count += 1;
                 }
-                Tree::Leaf { ref hash, ref value } => {
-                    let combined_hash = Hash::hash_nodes(
-                        hash,
-                        new_right.root_hash()
-                    )?;
+                Tree::Leaf {
+                    ref hash,
+                    ref value,
+                } => {
+                    let combined_hash = Hash::hash_nodes(hash, new_right.root_hash())?;
                     self.root = Tree::Node {
                         left: Box::new(Tree::new_leaf((*value).clone())?),
                         right: Box::new(new_right.root),
-                        hash: combined_hash.to_vec()
+                        hash: combined_hash.to_vec(),
                     };
                     self.count += 1;
                     self.nodes_count += 1;
@@ -193,7 +198,6 @@ impl MerkleTree {
         Ok(())
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -212,7 +216,10 @@ mod tests {
         for i in values {
             mt.append(String::from(i).as_bytes().to_vec()).unwrap();
         }
-        assert_eq!(mt.root_hash_hex(), "1285070cf01debc1155cef8dfd5ba54c05abb919a4c08c8632b079fb1e1e5e7c");
+        assert_eq!(
+            mt.root_hash_hex(),
+            "1285070cf01debc1155cef8dfd5ba54c05abb919a4c08c8632b079fb1e1e5e7c"
+        );
     }
 
     #[test]
@@ -229,22 +236,25 @@ mod tests {
 
         let mut rh: Vec<u8>;
 
-        rh = vec![0xe8, 0xbc, 0xd9, 0x7e, 0x34, 0x96, 0x93, 0xdc,
-                  0xfe, 0xc0, 0x54, 0xfe, 0x21, 0x9a, 0xb3, 0x57,
-                  0xb7, 0x5d, 0x3c, 0x1c, 0xd9, 0xf8, 0xbe, 0x17,
-                  0x67, 0xf6, 0x09, 0x0f, 0x9c, 0x86, 0xf9, 0xfd];
+        rh = vec![
+            0xe8, 0xbc, 0xd9, 0x7e, 0x34, 0x96, 0x93, 0xdc, 0xfe, 0xc0, 0x54, 0xfe, 0x21, 0x9a,
+            0xb3, 0x57, 0xb7, 0x5d, 0x3c, 0x1c, 0xd9, 0xf8, 0xbe, 0x17, 0x67, 0xf6, 0x09, 0x0f,
+            0x9c, 0x86, 0xf9, 0xfd,
+        ];
         assert_ne!(MerkleTree::find_hash(&mt.root, &rh), None);
 
-        rh = vec![0x22, 0x15, 0xe8, 0xac, 0x4e, 0x2b, 0x87, 0x1c,
-                  0x2a, 0x48, 0x18, 0x9e, 0x79, 0x73, 0x8c, 0x95,
-                  0x6c, 0x08, 0x1e, 0x23, 0xac, 0x2f, 0x24, 0x15,
-                  0xbf, 0x77, 0xda, 0x19, 0x9d, 0xfd, 0x92, 0x0c];
+        rh = vec![
+            0x22, 0x15, 0xe8, 0xac, 0x4e, 0x2b, 0x87, 0x1c, 0x2a, 0x48, 0x18, 0x9e, 0x79, 0x73,
+            0x8c, 0x95, 0x6c, 0x08, 0x1e, 0x23, 0xac, 0x2f, 0x24, 0x15, 0xbf, 0x77, 0xda, 0x19,
+            0x9d, 0xfd, 0x92, 0x0c,
+        ];
         assert_ne!(MerkleTree::find_hash(&mt.root, &rh), None);
 
-        rh = vec![0x23, 0x15, 0xe8, 0xac, 0x4e, 0x2b, 0x87, 0x1c,
-                  0x2a, 0x48, 0x18, 0x9e, 0x79, 0x73, 0x8c, 0x95,
-                  0x6c, 0x08, 0x1e, 0x23, 0xac, 0x2f, 0x24, 0x15,
-                  0xbf, 0x77, 0xda, 0x19, 0x9d, 0xfd, 0x92, 0x0d];
+        rh = vec![
+            0x23, 0x15, 0xe8, 0xac, 0x4e, 0x2b, 0x87, 0x1c, 0x2a, 0x48, 0x18, 0x9e, 0x79, 0x73,
+            0x8c, 0x95, 0x6c, 0x08, 0x1e, 0x23, 0xac, 0x2f, 0x24, 0x15, 0xbf, 0x77, 0xda, 0x19,
+            0x9d, 0xfd, 0x92, 0x0d,
+        ];
         assert_eq!(MerkleTree::find_hash(&mt.root, &rh), None);
     }
 
@@ -260,26 +270,34 @@ mod tests {
         }
 
         let proofs: Vec<Vec<u8>> = vec![
-            vec![0x26, 0x06, 0x53, 0x99, 0xf1, 0xe9, 0x0d, 0xba,
-                 0x37, 0xe1, 0x86, 0xd8, 0x83, 0x3c, 0x07, 0x21,
-                 0x26, 0xe3, 0xf4, 0xdf, 0xe6, 0x03, 0xe4, 0x1b,
-                 0x41, 0x27, 0x1d, 0x83, 0x74, 0x72, 0x6f, 0x74],
-            vec![0xf1, 0xb0, 0x51, 0xa9, 0x11, 0x4b, 0x69, 0xa7,
-                 0x0f, 0x82, 0x91, 0xe3, 0x77, 0xf0, 0x78, 0x1f,
-                 0x06, 0x63, 0xe6, 0x5c, 0x8b, 0xbc, 0x11, 0xe9,
-                 0x00, 0x74, 0x8b, 0xb7, 0x55, 0xf3, 0xcd, 0x6e],
-            vec![0x22, 0x6c, 0x66, 0x53, 0x08, 0xe4, 0xa8, 0x5a,
-                 0x01, 0x7d, 0x52, 0x24, 0x24, 0x17, 0x91, 0xdc,
-                 0xfa, 0x9e, 0x38, 0x55, 0x5a, 0x38, 0x7b, 0x33,
-                 0x61, 0x4d, 0x7f, 0x5a, 0x68, 0x72, 0x60, 0xd6]
+            vec![
+                0x26, 0x06, 0x53, 0x99, 0xf1, 0xe9, 0x0d, 0xba, 0x37, 0xe1, 0x86, 0xd8, 0x83, 0x3c,
+                0x07, 0x21, 0x26, 0xe3, 0xf4, 0xdf, 0xe6, 0x03, 0xe4, 0x1b, 0x41, 0x27, 0x1d, 0x83,
+                0x74, 0x72, 0x6f, 0x74,
+            ],
+            vec![
+                0xf1, 0xb0, 0x51, 0xa9, 0x11, 0x4b, 0x69, 0xa7, 0x0f, 0x82, 0x91, 0xe3, 0x77, 0xf0,
+                0x78, 0x1f, 0x06, 0x63, 0xe6, 0x5c, 0x8b, 0xbc, 0x11, 0xe9, 0x00, 0x74, 0x8b, 0xb7,
+                0x55, 0xf3, 0xcd, 0x6e,
+            ],
+            vec![
+                0x22, 0x6c, 0x66, 0x53, 0x08, 0xe4, 0xa8, 0x5a, 0x01, 0x7d, 0x52, 0x24, 0x24, 0x17,
+                0x91, 0xdc, 0xfa, 0x9e, 0x38, 0x55, 0x5a, 0x38, 0x7b, 0x33, 0x61, 0x4d, 0x7f, 0x5a,
+                0x68, 0x72, 0x60, 0xd6,
+            ],
         ];
 
-        assert!(mt.consistency_proof(&vec![0x77 as u8, 0xf1, 0x5a, 0x58, 0x07, 0xfd, 0xaa, 0x56,
-                                           0x51, 0x28, 0xc5, 0x8f, 0x59, 0x1f, 0x4f, 0x03,
-                                           0x25, 0x81, 0xfe, 0xe7, 0xd8, 0x61, 0x99, 0xae,
-                                           0xf8, 0xae, 0xac, 0x7b, 0x05, 0x80, 0xbe, 0x0a],
-                                     4,
-                                     &proofs).unwrap());
+        assert!(mt
+            .consistency_proof(
+                &vec![
+                    0x77 as u8, 0xf1, 0x5a, 0x58, 0x07, 0xfd, 0xaa, 0x56, 0x51, 0x28, 0xc5, 0x8f,
+                    0x59, 0x1f, 0x4f, 0x03, 0x25, 0x81, 0xfe, 0xe7, 0xd8, 0x61, 0x99, 0xae, 0xf8,
+                    0xae, 0xac, 0x7b, 0x05, 0x80, 0xbe, 0x0a
+                ],
+                4,
+                &proofs
+            )
+            .unwrap());
     }
 
     #[test] // IS-708 Crash while consistency proof include empty 'proof' and invalid root_hash
@@ -295,21 +313,28 @@ mod tests {
 
         let proofs: Vec<Vec<u8>> = vec![];
 
-        assert_eq!(false, mt.consistency_proof(&vec![0x77 as u8, 0xf1, 0x5a],
-                                               4,
-                                               &proofs).unwrap());
+        assert_eq!(
+            false,
+            mt.consistency_proof(&vec![0x77 as u8, 0xf1, 0x5a], 4, &proofs)
+                .unwrap()
+        );
     }
 
     #[test]
     fn gen_proof_and_proof_validate_work() {
         let strvals = vec!["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
-        let values = strvals.iter().map(|x| String::from(*x).as_bytes().to_vec()).collect::<Vec<_>>();
+        let values = strvals
+            .iter()
+            .map(|x| String::from(*x).as_bytes().to_vec())
+            .collect::<Vec<_>>();
         let tree = MerkleTree::from_vec(values.clone()).unwrap();
         let root_hash = tree.root_hash();
 
         for value in values {
             let proof = tree.gen_proof(value).unwrap();
-            let is_valid = proof.map(|p| p.validate(&root_hash).unwrap()).unwrap_or(false);
+            let is_valid = proof
+                .map(|p| p.validate(&root_hash).unwrap())
+                .unwrap_or(false);
 
             assert!(is_valid);
         }
@@ -318,7 +343,10 @@ mod tests {
     #[test]
     fn serialize_works() {
         let strvals = vec!["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
-        let values = strvals.iter().map(|x| String::from(*x).as_bytes().to_vec()).collect::<Vec<_>>();
+        let values = strvals
+            .iter()
+            .map(|x| String::from(*x).as_bytes().to_vec())
+            .collect::<Vec<_>>();
         let mt = MerkleTree::from_vec(values.clone()).unwrap();
         let serialized = serde_json::to_string(&mt).unwrap();
         let newmt: MerkleTree = serde_json::from_str(serialized.as_str()).unwrap();
@@ -345,7 +373,10 @@ mod tests {
             r#"{"data":{"alias":"Node7","client_ip":"10.0.0.2","client_port":9714,"node_ip":"10.0.0.2","node_port":9713,"services":["VALIDATOR"]},"dest":"BM8dTooz5uykCbYSAAFwKNkYfT4koomBHsSWHTDtkjhW","identifier":"6pYGZXnqXLxLAhrEBhVjyvuhnV2LUgM9iw1gHds8JDqT","txnId":"e5f11aa7ec7091ca6c31a826eec885da7fcaa47611d03fdc3562b48247f179cf","type":"0"}"#,
             r#"{"data":{"alias":"Node8","client_ip":"10.0.0.2","client_port":9716,"node_ip":"10.0.0.2","node_port":9715,"services":["VALIDATOR"]},"dest":"98VysG35LxrutKTNXvhaztPFHnx5u9kHtT7PnUGqDa8x","identifier":"B4xQBURedpCS3r6v8YxTyz5RYh3Nh5Jt2MxsmtAUr1rH","txnId":"2b01e69f89514be94ebf24bfa270abbe1c5abc72415801da3f0d58e71aaa33a2","type":"0"}"#,
         ];
-        let all_values: Vec<Vec<u8>> = all_str_values.iter().map(|x| String::from(*x).as_bytes().to_vec()).collect::<Vec<_>>();
+        let all_values: Vec<Vec<u8>> = all_str_values
+            .iter()
+            .map(|x| String::from(*x).as_bytes().to_vec())
+            .collect::<Vec<_>>();
         let mt_full = MerkleTree::from_vec(all_values.clone()).unwrap();
         let full_root_hash = mt_full.root_hash();
         let mut start_values = all_values.clone();
@@ -356,40 +387,57 @@ mod tests {
             "9fVeiDkVJ4YrNB1cy9PEeRYXE5BhxapQsGu85WZ8MyiE",
             "8p6GotiwYFiWgjMvY7KYNYcbz6hCFBJhcD9Sjo1PQANU",
             "BqHByHYX9gAHye1SoKKiLXLFB7TDntyUoMtZQjMW2w7U",
-            "BhXMcoxZ9eu3Cu85bzr4G4Msrw77BT3R6Mw6P6bM9wQe"
+            "BhXMcoxZ9eu3Cu85bzr4G4Msrw77BT3R6Mw6P6bM9wQe",
         ];
-        let proofs_for_5: Vec<Vec<u8>> = proofs_for_5.into_iter().map(|x| x.from_base58().unwrap()).collect();
+        let proofs_for_5: Vec<Vec<u8>> = proofs_for_5
+            .into_iter()
+            .map(|x| x.from_base58().unwrap())
+            .collect();
         //add 5th node
         mt.append(all_values[5 - 1].clone()).unwrap();
-        assert!(mt.consistency_proof(&full_root_hash, 8, &proofs_for_5).unwrap());
+        assert!(mt
+            .consistency_proof(&full_root_hash, 8, &proofs_for_5)
+            .unwrap());
 
         //try to add 6th node
         let proofs_for_6: Vec<&str> = vec![
             "HhkWitSAXG12Ugn4KFtrUyhbZHi9XrP4jnbLuSthynSu",
             "BqHByHYX9gAHye1SoKKiLXLFB7TDntyUoMtZQjMW2w7U",
-            "BhXMcoxZ9eu3Cu85bzr4G4Msrw77BT3R6Mw6P6bM9wQe"
+            "BhXMcoxZ9eu3Cu85bzr4G4Msrw77BT3R6Mw6P6bM9wQe",
         ];
-        let proofs_for_6: Vec<Vec<u8>> = proofs_for_6.into_iter().map(|x| x.from_base58().unwrap()).collect();
+        let proofs_for_6: Vec<Vec<u8>> = proofs_for_6
+            .into_iter()
+            .map(|x| x.from_base58().unwrap())
+            .collect();
         //add 6th node
         mt.append(all_values[6 - 1].clone()).unwrap();
-        assert!(mt.consistency_proof(&full_root_hash, 8, &proofs_for_6).unwrap());
+        assert!(mt
+            .consistency_proof(&full_root_hash, 8, &proofs_for_6)
+            .unwrap());
 
         //try to add 7th node
         let proofs_for_7: Vec<&str> = vec![
             "2D1aU5DeP8uPmaisGSpNoF2tNS35YhaRvfk2KPZzY2ue",
             "5cVBJRrdFraAtDzUhezeifS6W4Gsgo3TdPXs8847p95L",
             "HhkWitSAXG12Ugn4KFtrUyhbZHi9XrP4jnbLuSthynSu",
-            "BhXMcoxZ9eu3Cu85bzr4G4Msrw77BT3R6Mw6P6bM9wQe"
+            "BhXMcoxZ9eu3Cu85bzr4G4Msrw77BT3R6Mw6P6bM9wQe",
         ];
-        let proofs_for_7: Vec<Vec<u8>> = proofs_for_7.into_iter().map(|x| x.from_base58().unwrap()).collect();
+        let proofs_for_7: Vec<Vec<u8>> = proofs_for_7
+            .into_iter()
+            .map(|x| x.from_base58().unwrap())
+            .collect();
         //add 7th node
         mt.append(all_values[7 - 1].clone()).unwrap();
-        assert!(mt.consistency_proof(&full_root_hash, 8, &proofs_for_7).unwrap());
+        assert!(mt
+            .consistency_proof(&full_root_hash, 8, &proofs_for_7)
+            .unwrap());
 
         //try to add 8th node, empty proof
         let proofs_for_8: Vec<Vec<u8>> = Vec::new();
         //add 7th node
         mt.append(all_values[8 - 1].clone()).unwrap();
-        assert!(mt.consistency_proof(&full_root_hash, 8, &proofs_for_8).unwrap());
+        assert!(mt
+            .consistency_proof(&full_root_hash, 8, &proofs_for_8)
+            .unwrap());
     }
 }

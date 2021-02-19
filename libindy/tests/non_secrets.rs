@@ -1,25 +1,28 @@
 #[macro_use]
+extern crate derivative;
+
+#[macro_use]
+extern crate serde_json;
+
+#[macro_use]
+extern crate serde_derive;
+
+#[macro_use]
 mod utils;
-
-inject_indy_dependencies!();
-
-extern crate indyrs as indy;
-extern crate indyrs as api;
-
-use crate::utils::constants::WALLET_CREDENTIALS;
-use crate::utils::wallet;
-use crate::utils::non_secrets::*;
-use crate::utils::types::{WalletRecord, SearchRecords};
 
 use std::collections::HashMap;
 
-use self::indy::ErrorCode;
+use indyrs::{ErrorCode, SearchHandle, WalletHandle, INVALID_WALLET_HANDLE};
+
+use utils::{
+    constants::WALLET_CREDENTIALS,
+    non_secrets::*,
+    test::cleanup_wallet,
+    types::{SearchRecords, WalletRecord},
+    wallet, Setup,
+};
 
 pub const FORBIDDEN_TYPE: &'static str = "Indy::Test";
-
-use indy::WalletHandle;
-use crate::utils::test::cleanup_wallet;
-use crate::utils::Setup;
 
 mod high_cases {
     use super::*;
@@ -188,7 +191,13 @@ mod high_cases {
 
             add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
 
-            delete_wallet_record_tags(setup.wallet_handle, TYPE, ID, r#"["tagName1", "~tagName2", "~tagName3"]"#).unwrap();
+            delete_wallet_record_tags(
+                setup.wallet_handle,
+                TYPE,
+                ID,
+                r#"["tagName1", "~tagName2", "~tagName3"]"#,
+            )
+            .unwrap();
             check_record_field(setup.wallet_handle, TYPE, ID, "tags", TAGS_EMPTY);
         }
 
@@ -239,7 +248,7 @@ mod high_cases {
     mod get_record {
         use super::*;
 
-        fn check_record(record: &str, expected_record: WalletRecord){
+        fn check_record(record: &str, expected_record: WalletRecord) {
             let record: WalletRecord = serde_json::from_str(&record).unwrap();
             assert_eq!(expected_record, record);
         }
@@ -252,7 +261,12 @@ mod high_cases {
 
             let record = get_wallet_record(setup.wallet_handle, TYPE, ID, OPTIONS_EMPTY).unwrap();
 
-            let expected_record = WalletRecord { id: ID.to_string(), value: Some(VALUE.to_string()), tags: None, type_: None };
+            let expected_record = WalletRecord {
+                id: ID.to_string(),
+                value: Some(VALUE.to_string()),
+                tags: None,
+                type_: None,
+            };
             check_record(&record, expected_record);
         }
 
@@ -266,7 +280,12 @@ mod high_cases {
 
             let record = get_wallet_record(setup.wallet_handle, TYPE, ID, OPTIONS_EMPTY).unwrap();
 
-            let expected_record = WalletRecord { id: ID.to_string(), value: Some(VALUE.to_string()), tags: None, type_: None };
+            let expected_record = WalletRecord {
+                id: ID.to_string(),
+                value: Some(VALUE.to_string()),
+                tags: None,
+                type_: None,
+            };
             check_record(&record, expected_record);
         }
 
@@ -280,11 +299,17 @@ mod high_cases {
                 "retrieveType": false,
                 "retrieveValue": false,
                 "retrieveTags": false
-            }).to_string();
+            })
+            .to_string();
 
             let record = get_wallet_record(setup.wallet_handle, TYPE, ID, &options).unwrap();
 
-            let expected_record = WalletRecord { id: ID.to_string(), value: None, tags: None, type_: None };
+            let expected_record = WalletRecord {
+                id: ID.to_string(),
+                value: None,
+                tags: None,
+                type_: None,
+            };
             check_record(&record, expected_record);
         }
 
@@ -298,11 +323,17 @@ mod high_cases {
                 "retrieveType": false,
                 "retrieveValue": true,
                 "retrieveTags": false
-            }).to_string();
+            })
+            .to_string();
 
             let record = get_wallet_record(setup.wallet_handle, TYPE, ID, &options).unwrap();
 
-            let expected_record = WalletRecord { id: ID.to_string(), value: Some(VALUE.to_string()), tags: None, type_: None };
+            let expected_record = WalletRecord {
+                id: ID.to_string(),
+                value: Some(VALUE.to_string()),
+                tags: None,
+                type_: None,
+            };
             check_record(&record, expected_record);
         }
 
@@ -316,11 +347,17 @@ mod high_cases {
                 "retrieveType": false,
                 "retrieveValue": false,
                 "retrieveTags": true
-            }).to_string();
+            })
+            .to_string();
 
             let record = get_wallet_record(setup.wallet_handle, TYPE, ID, &options).unwrap();
 
-            let expected_record = WalletRecord { id: ID.to_string(), value: None, tags: Some(HashMap::new()), type_: None };
+            let expected_record = WalletRecord {
+                id: ID.to_string(),
+                value: None,
+                tags: Some(HashMap::new()),
+                type_: None,
+            };
             check_record(&record, expected_record);
         }
 
@@ -334,11 +371,17 @@ mod high_cases {
                 "retrieveType": true,
                 "retrieveValue": true,
                 "retrieveTags": true
-            }).to_string();
+            })
+            .to_string();
 
             let record = get_wallet_record(setup.wallet_handle, TYPE, ID, &options).unwrap();
 
-            let expected_record = WalletRecord { id: ID.to_string(), value: Some(VALUE.to_string()), tags: Some(HashMap::new()), type_: Some(TYPE.to_string()) };
+            let expected_record = WalletRecord {
+                id: ID.to_string(),
+                value: Some(VALUE.to_string()),
+                tags: Some(HashMap::new()),
+                type_: Some(TYPE.to_string()),
+            };
             check_record(&record, expected_record);
         }
 
@@ -353,7 +396,6 @@ mod high_cases {
 
     mod search {
         use super::*;
-        use indy::{WalletHandle, SearchHandle};
 
         fn setup(name: &str, wallet_config: &str) -> WalletHandle {
             init_non_secret_test_wallet(name, wallet_config);
@@ -378,17 +420,19 @@ mod high_cases {
             #[test]
             fn indy_wallet_search_for_empty_query() {
                 const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_empty_query"}"#;
-                let wallet_handle = setup("indy_wallet_search_for_empty_query", SEARCH_WALLET_CONFIG);
+                let wallet_handle =
+                    setup("indy_wallet_search_for_empty_query", SEARCH_WALLET_CONFIG);
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_FULL).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_FULL).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
-                check_search_records(&search_records, vec![record_1(),
-                                                           record_2(),
-                                                           record_3(),
-                                                           record_4(),
-                                                           record_5()]);
+                check_search_records(
+                    &search_records,
+                    vec![record_1(), record_2(), record_3(), record_4(), record_5()],
+                );
 
                 tear_down(wallet_handle, search_handle);
                 cleanup_wallet("indy_wallet_search_for_empty_query");
@@ -403,12 +447,13 @@ mod high_cases {
                     "tagName1": "str1"
                 }"#;
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
-                check_search_records(&search_records, vec![record_1(),
-                                                           record_3()]);
+                check_search_records(&search_records, vec![record_1(), record_3()]);
 
                 tear_down(wallet_handle, search_handle);
                 cleanup_wallet("indy_wallet_search_for_eq_query");
@@ -423,13 +468,13 @@ mod high_cases {
                     "tagName1": {"$neq": "str1"}
                 }"#;
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, &query_json, OPTIONS_FULL).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, &query_json, OPTIONS_FULL).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
-                check_search_records(&search_records, vec![record_2(),
-                                                           record_4(),
-                                                           record_5()]);
+                check_search_records(&search_records, vec![record_2(), record_4(), record_5()]);
 
                 tear_down(wallet_handle, search_handle);
                 cleanup_wallet("indy_wallet_search_for_neq_query");
@@ -444,9 +489,11 @@ mod high_cases {
                     "~tagName3": {"$gt": "6"}
                 }"#;
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
                 check_search_records(&search_records, vec![record_1()]);
 
@@ -463,12 +510,13 @@ mod high_cases {
                     "~tagName3": {"$gte": "6"}
                 }"#;
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
-                check_search_records(&search_records, vec![record_1(),
-                                                           record_5()]);
+                check_search_records(&search_records, vec![record_1(), record_5()]);
 
                 tear_down(wallet_handle, search_handle);
                 cleanup_wallet("indy_wallet_search_for_gte_query");
@@ -483,9 +531,11 @@ mod high_cases {
                     "~tagName3": {"$lt": "5"}
                 }"#;
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
                 check_search_records(&search_records, vec![record_2()]);
 
@@ -503,12 +553,13 @@ mod high_cases {
                     "~tagName3": {"$lte": "5"}
                 }"#;
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
-                check_search_records(&search_records, vec![record_2(),
-                                                           record_4()]);
+                check_search_records(&search_records, vec![record_2(), record_4()]);
 
                 tear_down(wallet_handle, search_handle);
                 cleanup_wallet("indy_wallet_search_for_lte_query");
@@ -523,12 +574,13 @@ mod high_cases {
                     "~tagName2": {"$like": "%str3%"}
                 }"#;
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
-                check_search_records(&search_records, vec![record_2(),
-                                                           record_5()]);
+                check_search_records(&search_records, vec![record_2(), record_5()]);
 
                 tear_down(wallet_handle, search_handle);
             }
@@ -542,13 +594,13 @@ mod high_cases {
                     "tagName1": {"$in": ["str1", "str2"]}
                 }"#;
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
-                check_search_records(&search_records, vec![record_1(),
-                                                           record_2(),
-                                                           record_3()]);
+                check_search_records(&search_records, vec![record_1(), record_2(), record_3()]);
 
                 tear_down(wallet_handle, search_handle);
                 cleanup_wallet("indy_wallet_search_for_in_query");
@@ -564,9 +616,11 @@ mod high_cases {
                     "tagName2": "str2"
                 }"#;
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
                 check_search_records(&search_records, vec![record_3()]);
 
@@ -586,12 +640,13 @@ mod high_cases {
                     ]
                 }"#;
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
-                check_search_records(&search_records, vec![record_2(),
-                                                           record_3()]);
+                check_search_records(&search_records, vec![record_2(), record_3()]);
 
                 tear_down(wallet_handle, search_handle);
                 cleanup_wallet("indy_wallet_search_for_or_query");
@@ -606,13 +661,13 @@ mod high_cases {
                     "$not": {"tagName1": "str1"}
                 }"#;
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
-                check_search_records(&search_records, vec![record_2(),
-                                                           record_4(),
-                                                           record_5()]);
+                check_search_records(&search_records, vec![record_2(), record_4(), record_5()]);
 
                 tear_down(wallet_handle, search_handle);
                 cleanup_wallet("indy_wallet_search_for_not_query");
@@ -620,8 +675,12 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_mix_and_or_query() {
-                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_mix_and_or_query"}"#;
-                let wallet_handle = setup("indy_wallet_search_for_mix_and_or_query", SEARCH_WALLET_CONFIG);
+                const SEARCH_WALLET_CONFIG: &str =
+                    r#"{"id":"indy_wallet_search_for_mix_and_or_query"}"#;
+                let wallet_handle = setup(
+                    "indy_wallet_search_for_mix_and_or_query",
+                    SEARCH_WALLET_CONFIG,
+                );
 
                 let query_json = r#"{
                     "$and": [
@@ -640,9 +699,11 @@ mod high_cases {
                     ]
                 }"#;
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
                 check_search_records(&search_records, vec![record_3()]);
 
@@ -653,15 +714,18 @@ mod high_cases {
             #[test]
             fn indy_wallet_search_for_no_records() {
                 const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_no_records"}"#;
-                let wallet_handle = setup("indy_wallet_search_for_no_records", SEARCH_WALLET_CONFIG);
+                let wallet_handle =
+                    setup("indy_wallet_search_for_no_records", SEARCH_WALLET_CONFIG);
 
                 let query_json = r#"{
                     "tagName1": "no_records"
                 }"#;
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
                 let search_records: SearchRecords = serde_json::from_str(&search_records).unwrap();
 
                 assert_eq!(0, search_records.total_count.unwrap());
@@ -677,19 +741,54 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_default_options() {
-                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_default_options"}"#;
-                let wallet_handle = setup("indy_wallet_search_for_default_options", SEARCH_WALLET_CONFIG);
+                const SEARCH_WALLET_CONFIG: &str =
+                    r#"{"id":"indy_wallet_search_for_default_options"}"#;
+                let wallet_handle = setup(
+                    "indy_wallet_search_for_default_options",
+                    SEARCH_WALLET_CONFIG,
+                );
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
-                let records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
-                check_search_records(&records, vec![
-                    WalletRecord { id: ID.to_string(), type_: None, value: Some(VALUE.to_string()), tags: None },
-                    WalletRecord { id: ID_2.to_string(), type_: None, value: Some(VALUE_2.to_string()), tags: None },
-                    WalletRecord { id: ID_3.to_string(), type_: None, value: Some(VALUE_3.to_string()), tags: None },
-                    WalletRecord { id: ID_4.to_string(), type_: None, value: Some(VALUE_4.to_string()), tags: None },
-                    WalletRecord { id: ID_5.to_string(), type_: None, value: Some(VALUE_5.to_string()), tags: None }]);
+                check_search_records(
+                    &records,
+                    vec![
+                        WalletRecord {
+                            id: ID.to_string(),
+                            type_: None,
+                            value: Some(VALUE.to_string()),
+                            tags: None,
+                        },
+                        WalletRecord {
+                            id: ID_2.to_string(),
+                            type_: None,
+                            value: Some(VALUE_2.to_string()),
+                            tags: None,
+                        },
+                        WalletRecord {
+                            id: ID_3.to_string(),
+                            type_: None,
+                            value: Some(VALUE_3.to_string()),
+                            tags: None,
+                        },
+                        WalletRecord {
+                            id: ID_4.to_string(),
+                            type_: None,
+                            value: Some(VALUE_4.to_string()),
+                            tags: None,
+                        },
+                        WalletRecord {
+                            id: ID_5.to_string(),
+                            type_: None,
+                            value: Some(VALUE_5.to_string()),
+                            tags: None,
+                        },
+                    ],
+                );
 
                 tear_down(wallet_handle, search_handle);
                 cleanup_wallet("indy_wallet_search_for_default_options");
@@ -697,8 +796,12 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_retrieve_id_value() {
-                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_retrieve_id_value"}"#;
-                let wallet_handle = setup("indy_wallet_search_for_retrieve_id_value", SEARCH_WALLET_CONFIG);
+                const SEARCH_WALLET_CONFIG: &str =
+                    r#"{"id":"indy_wallet_search_for_retrieve_id_value"}"#;
+                let wallet_handle = setup(
+                    "indy_wallet_search_for_retrieve_id_value",
+                    SEARCH_WALLET_CONFIG,
+                );
 
                 let options = json!({
                     "retrieveRecords": true,
@@ -706,18 +809,50 @@ mod high_cases {
                     "retrieveType": false,
                     "retrieveValue": true,
                     "retrieveTags": false
-                }).to_string();
+                })
+                .to_string();
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, &options).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, &options).unwrap();
 
-                let records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
-                check_search_records(&records, vec![
-                    WalletRecord { id: ID.to_string(), type_: None, value: Some(VALUE.to_string()), tags: None },
-                    WalletRecord { id: ID_2.to_string(), type_: None, value: Some(VALUE_2.to_string()), tags: None },
-                    WalletRecord { id: ID_3.to_string(), type_: None, value: Some(VALUE_3.to_string()), tags: None },
-                    WalletRecord { id: ID_4.to_string(), type_: None, value: Some(VALUE_4.to_string()), tags: None },
-                    WalletRecord { id: ID_5.to_string(), type_: None, value: Some(VALUE_5.to_string()), tags: None }]);
+                check_search_records(
+                    &records,
+                    vec![
+                        WalletRecord {
+                            id: ID.to_string(),
+                            type_: None,
+                            value: Some(VALUE.to_string()),
+                            tags: None,
+                        },
+                        WalletRecord {
+                            id: ID_2.to_string(),
+                            type_: None,
+                            value: Some(VALUE_2.to_string()),
+                            tags: None,
+                        },
+                        WalletRecord {
+                            id: ID_3.to_string(),
+                            type_: None,
+                            value: Some(VALUE_3.to_string()),
+                            tags: None,
+                        },
+                        WalletRecord {
+                            id: ID_4.to_string(),
+                            type_: None,
+                            value: Some(VALUE_4.to_string()),
+                            tags: None,
+                        },
+                        WalletRecord {
+                            id: ID_5.to_string(),
+                            type_: None,
+                            value: Some(VALUE_5.to_string()),
+                            tags: None,
+                        },
+                    ],
+                );
 
                 tear_down(wallet_handle, search_handle);
                 cleanup_wallet("indy_wallet_search_for_retrieve_id_value");
@@ -725,8 +860,12 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_retrieve_id_value_tags() {
-                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_retrieve_id_value_tags"}"#;
-                let wallet_handle = setup("indy_wallet_search_for_retrieve_id_value_tags", SEARCH_WALLET_CONFIG);
+                const SEARCH_WALLET_CONFIG: &str =
+                    r#"{"id":"indy_wallet_search_for_retrieve_id_value_tags"}"#;
+                let wallet_handle = setup(
+                    "indy_wallet_search_for_retrieve_id_value_tags",
+                    SEARCH_WALLET_CONFIG,
+                );
 
                 let options = json!({
                     "retrieveRecords": true,
@@ -734,18 +873,50 @@ mod high_cases {
                     "retrieveType": false,
                     "retrieveValue": true,
                     "retrieveTags": true
-                }).to_string();
+                })
+                .to_string();
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, &options).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, &options).unwrap();
 
-                let records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
-                check_search_records(&records, vec![
-                    WalletRecord { id: ID.to_string(), type_: None, value: Some(VALUE.to_string()), tags: Some(tags_1()) },
-                    WalletRecord { id: ID_2.to_string(), type_: None, value: Some(VALUE_2.to_string()), tags: Some(tags_2()) },
-                    WalletRecord { id: ID_3.to_string(), type_: None, value: Some(VALUE_3.to_string()), tags: Some(tags_3()) },
-                    WalletRecord { id: ID_4.to_string(), type_: None, value: Some(VALUE_4.to_string()), tags: Some(tags_4()) },
-                    WalletRecord { id: ID_5.to_string(), type_: None, value: Some(VALUE_5.to_string()), tags: Some(tags_5()) }]);
+                check_search_records(
+                    &records,
+                    vec![
+                        WalletRecord {
+                            id: ID.to_string(),
+                            type_: None,
+                            value: Some(VALUE.to_string()),
+                            tags: Some(tags_1()),
+                        },
+                        WalletRecord {
+                            id: ID_2.to_string(),
+                            type_: None,
+                            value: Some(VALUE_2.to_string()),
+                            tags: Some(tags_2()),
+                        },
+                        WalletRecord {
+                            id: ID_3.to_string(),
+                            type_: None,
+                            value: Some(VALUE_3.to_string()),
+                            tags: Some(tags_3()),
+                        },
+                        WalletRecord {
+                            id: ID_4.to_string(),
+                            type_: None,
+                            value: Some(VALUE_4.to_string()),
+                            tags: Some(tags_4()),
+                        },
+                        WalletRecord {
+                            id: ID_5.to_string(),
+                            type_: None,
+                            value: Some(VALUE_5.to_string()),
+                            tags: Some(tags_5()),
+                        },
+                    ],
+                );
 
                 tear_down(wallet_handle, search_handle);
                 cleanup_wallet("indy_wallet_search_for_retrieve_id_value_tags");
@@ -753,8 +924,12 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_retrieve_full_record() {
-                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_retrieve_full_record"}"#;
-                let wallet_handle = setup("indy_wallet_search_for_retrieve_full_record", SEARCH_WALLET_CONFIG);
+                const SEARCH_WALLET_CONFIG: &str =
+                    r#"{"id":"indy_wallet_search_for_retrieve_full_record"}"#;
+                let wallet_handle = setup(
+                    "indy_wallet_search_for_retrieve_full_record",
+                    SEARCH_WALLET_CONFIG,
+                );
 
                 let options = json!({
                     "retrieveRecords": true,
@@ -762,17 +937,19 @@ mod high_cases {
                     "retrieveType": true,
                     "retrieveValue": true,
                     "retrieveTags": true
-                }).to_string();
+                })
+                .to_string();
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, &options).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, &options).unwrap();
 
-                let records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
-                check_search_records(&records, vec![record_1(),
-                                                    record_2(),
-                                                    record_3(),
-                                                    record_4(),
-                                                    record_5()]);
+                check_search_records(
+                    &records,
+                    vec![record_1(), record_2(), record_3(), record_4(), record_5()],
+                );
 
                 tear_down(wallet_handle, search_handle);
                 cleanup_wallet("indy_wallet_search_for_retrieve_full_record");
@@ -780,8 +957,12 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_retrieve_total_count_only() {
-                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_retrieve_total_count_only"}"#;
-                let wallet_handle = setup("indy_wallet_search_for_retrieve_total_count_only", SEARCH_WALLET_CONFIG);
+                const SEARCH_WALLET_CONFIG: &str =
+                    r#"{"id":"indy_wallet_search_for_retrieve_total_count_only"}"#;
+                let wallet_handle = setup(
+                    "indy_wallet_search_for_retrieve_total_count_only",
+                    SEARCH_WALLET_CONFIG,
+                );
 
                 let options = json!({
                     "retrieveRecords": false,
@@ -789,11 +970,14 @@ mod high_cases {
                     "retrieveType": false,
                     "retrieveValue": false,
                     "retrieveTags": false
-                }).to_string();
+                })
+                .to_string();
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, &options).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, &options).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
                 let search_records: SearchRecords = serde_json::from_str(&search_records).unwrap();
                 assert_eq!(5, search_records.total_count.unwrap());
@@ -805,8 +989,12 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_retrieve_records_only() {
-                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_retrieve_records_only"}"#;
-                let wallet_handle = setup("indy_wallet_search_for_retrieve_records_only", SEARCH_WALLET_CONFIG);
+                const SEARCH_WALLET_CONFIG: &str =
+                    r#"{"id":"indy_wallet_search_for_retrieve_records_only"}"#;
+                let wallet_handle = setup(
+                    "indy_wallet_search_for_retrieve_records_only",
+                    SEARCH_WALLET_CONFIG,
+                );
 
                 let options = json!({
                     "retrieveRecords": true,
@@ -814,11 +1002,14 @@ mod high_cases {
                     "retrieveType": false,
                     "retrieveValue": false,
                     "retrieveTags": false
-                }).to_string();
+                })
+                .to_string();
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, &options).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, &options).unwrap();
 
-                let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+                let search_records =
+                    fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
                 let search_records: SearchRecords = serde_json::from_str(&search_records).unwrap();
                 assert!(search_records.total_count.is_none());
@@ -837,7 +1028,8 @@ mod high_cases {
                 const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_close_wallet_search_works"}"#;
                 let wallet_handle = setup("indy_close_wallet_search_works", SEARCH_WALLET_CONFIG);
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
                 close_wallet_search(search_handle).unwrap();
                 wallet::close_wallet(wallet_handle).unwrap();
@@ -846,10 +1038,13 @@ mod high_cases {
 
             #[test]
             fn close_wallet_search_works_for_twice() {
-                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"close_wallet_search_works_for_twice"}"#;
-                let wallet_handle = setup("close_wallet_search_works_for_twice", SEARCH_WALLET_CONFIG);
+                const SEARCH_WALLET_CONFIG: &str =
+                    r#"{"id":"close_wallet_search_works_for_twice"}"#;
+                let wallet_handle =
+                    setup("close_wallet_search_works_for_twice", SEARCH_WALLET_CONFIG);
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
+                let search_handle =
+                    open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
                 close_wallet_search(search_handle).unwrap();
 
@@ -866,7 +1061,6 @@ mod high_cases {
 #[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
-    use crate::api::INVALID_WALLET_HANDLE;
 
     mod add_record {
         use super::*;
@@ -1077,7 +1271,12 @@ mod medium_cases {
         fn indy_delete_wallet_record_tags_works_for_invalid_type() {
             let setup = Setup::wallet();
 
-            let res = delete_wallet_record_tags(setup.wallet_handle, FORBIDDEN_TYPE, ID, r#"["tagName1"]"#);
+            let res = delete_wallet_record_tags(
+                setup.wallet_handle,
+                FORBIDDEN_TYPE,
+                ID,
+                r#"["tagName1"]"#,
+            );
             assert_code!(ErrorCode::WalletAccessFailed, res);
         }
     }
@@ -1151,7 +1350,6 @@ mod medium_cases {
 
     mod search {
         use super::*;
-        use indy::{WalletHandle, SearchHandle};
 
         fn setup(name: &str, wallet_config: &str) -> WalletHandle {
             init_non_secret_test_wallet(name, wallet_config);
@@ -1168,15 +1366,18 @@ mod medium_cases {
             const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_fetch_twice"}"#;
             let wallet_handle = setup("indy_wallet_search_for_fetch_twice", SEARCH_WALLET_CONFIG);
 
-            let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_FULL).unwrap();
+            let search_handle =
+                open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_FULL).unwrap();
 
-            let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 3).unwrap();
+            let search_records =
+                fetch_wallet_search_next_records(wallet_handle, search_handle, 3).unwrap();
 
             let search_records: SearchRecords = serde_json::from_str(&search_records).unwrap();
             assert_eq!(5, search_records.total_count.unwrap());
             assert_eq!(3, search_records.records.unwrap().len());
 
-            let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 2).unwrap();
+            let search_records =
+                fetch_wallet_search_next_records(wallet_handle, search_handle, 2).unwrap();
 
             let search_records: SearchRecords = serde_json::from_str(&search_records).unwrap();
             assert_eq!(5, search_records.total_count.unwrap());
@@ -1191,9 +1392,11 @@ mod medium_cases {
             const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_no_records"}"#;
             let wallet_handle = setup("indy_wallet_search_for_no_records", SEARCH_WALLET_CONFIG);
 
-            let search_handle = open_wallet_search(wallet_handle, TYPE_2, QUERY_EMPTY, OPTIONS_FULL).unwrap();
+            let search_handle =
+                open_wallet_search(wallet_handle, TYPE_2, QUERY_EMPTY, OPTIONS_FULL).unwrap();
 
-            let search_records = fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
+            let search_records =
+                fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
             let search_records: SearchRecords = serde_json::from_str(&search_records).unwrap();
             assert_eq!(0, search_records.total_count.unwrap());
@@ -1204,8 +1407,12 @@ mod medium_cases {
 
         #[test]
         fn indy_wallet_search_for_invalid_wallet_handle() {
-            const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_invalid_wallet_handle"}"#;
-            let wallet_handle = setup("indy_wallet_search_for_invalid_wallet_handle", SEARCH_WALLET_CONFIG);
+            const SEARCH_WALLET_CONFIG: &str =
+                r#"{"id":"indy_wallet_search_for_invalid_wallet_handle"}"#;
+            let wallet_handle = setup(
+                "indy_wallet_search_for_invalid_wallet_handle",
+                SEARCH_WALLET_CONFIG,
+            );
 
             let res = open_wallet_search(INVALID_WALLET_HANDLE, TYPE, QUERY_EMPTY, OPTIONS_EMPTY);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
@@ -1216,10 +1423,15 @@ mod medium_cases {
 
         #[test]
         fn indy_wallet_search_for_invalid_search_handle() {
-            const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_invalid_search_handle"}"#;
-            let wallet_handle = setup("indy_wallet_search_for_invalid_search_handle", SEARCH_WALLET_CONFIG);
+            const SEARCH_WALLET_CONFIG: &str =
+                r#"{"id":"indy_wallet_search_for_invalid_search_handle"}"#;
+            let wallet_handle = setup(
+                "indy_wallet_search_for_invalid_search_handle",
+                SEARCH_WALLET_CONFIG,
+            );
 
-            let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
+            let search_handle =
+                open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
             let res = fetch_wallet_search_next_records(wallet_handle, search_handle + 1, 5);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
@@ -1242,10 +1454,15 @@ mod medium_cases {
 
         #[test]
         fn indy_close_wallet_search_works_for_invalid_handle() {
-            const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_close_wallet_search_works_for_invalid_handle"}"#;
-            let wallet_handle = setup("indy_close_wallet_search_works_for_invalid_handle", SEARCH_WALLET_CONFIG);
+            const SEARCH_WALLET_CONFIG: &str =
+                r#"{"id":"indy_close_wallet_search_works_for_invalid_handle"}"#;
+            let wallet_handle = setup(
+                "indy_close_wallet_search_works_for_invalid_handle",
+                SEARCH_WALLET_CONFIG,
+            );
 
-            let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
+            let search_handle =
+                open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
             let res = close_wallet_search(search_handle + 1);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
@@ -1266,7 +1483,8 @@ mod medium_cases {
             add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None).unwrap();
             add_wallet_record(setup.wallet_handle, TYPE, ID_2, VALUE_2, None).unwrap();
 
-            let search_handle = open_wallet_search(setup.wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
+            let search_handle =
+                open_wallet_search(setup.wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
             add_wallet_record(setup.wallet_handle, TYPE, "IDSPEC", VALUE, Some(TAGS_2)).unwrap();
 
@@ -1275,15 +1493,23 @@ mod medium_cases {
     }
 }
 
-fn check_record_field(wallet_handle: WalletHandle, type_: &str, id: &str, field: &str, expected_value: &str) {
+fn check_record_field(
+    wallet_handle: WalletHandle,
+    type_: &str,
+    id: &str,
+    field: &str,
+    expected_value: &str,
+) {
     let record = get_wallet_record(wallet_handle, type_, id, OPTIONS_FULL).unwrap();
     let record = serde_json::from_str::<WalletRecord>(&record).unwrap();
 
     match field {
         "value" => assert_eq!(expected_value, record.value.unwrap()),
-        "tags" => assert_eq!(serde_json::from_str::<HashMap<String, String>>(&expected_value).unwrap(),
-                             record.tags.unwrap()),
-        _ => panic!()
+        "tags" => assert_eq!(
+            serde_json::from_str::<HashMap<String, String>>(&expected_value).unwrap(),
+            record.tags.unwrap()
+        ),
+        _ => panic!(),
     };
 }
 
@@ -1296,4 +1522,3 @@ fn check_search_records(search_records: &str, expected_records: Vec<WalletRecord
     assert_eq!(records.len(), expected_records.len());
     assert_eq!(records, expected_records);
 }
-

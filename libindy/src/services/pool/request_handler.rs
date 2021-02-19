@@ -1215,7 +1215,6 @@ pub mod tests {
 
     mod single {
         use super::*;
-        use crate::services::PoolService;
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_consensus_reached() {
@@ -1226,6 +1225,8 @@ pub mod tests {
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
+        // TODO: FIXME: Re-check if required
+        #[allow(dead_code)]
         fn correct_state_proof_reply(timestamp: u64) -> String {
             json!({
                 "result": {

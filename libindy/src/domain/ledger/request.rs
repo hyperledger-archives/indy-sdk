@@ -9,7 +9,7 @@ use std::{
 
 use lazy_static::lazy_static;
 
-use crate::domain::crypto::did::{DidValue, ShortDidValue};
+use super::super::crypto::did::{DidValue, ShortDidValue};
 
 pub const DEFAULT_LIBIDY_DID: &str = "LibindyDid111111111111";
 

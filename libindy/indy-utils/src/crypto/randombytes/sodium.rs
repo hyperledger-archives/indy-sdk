@@ -1,8 +1,5 @@
-extern crate sodiumoxide;
-
-use crate::indy_api_types::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use libc::size_t;
-
 use zeroize::Zeroize;
 
 pub const SEEDBYTES: usize = 32; // randombytes_seedbytes
@@ -29,7 +26,7 @@ impl Seed {
 }
 
 pub fn randombytes(size: usize) -> Vec<u8> {
-    self::sodiumoxide::randombytes::randombytes(size)
+    sodiumoxide::randombytes::randombytes(size)
 }
 
 pub fn randombytes_deterministic(size: usize, seed: &Seed) -> Vec<u8> {

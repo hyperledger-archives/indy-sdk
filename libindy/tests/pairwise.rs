@@ -1,16 +1,18 @@
 #[macro_use]
+extern crate derivative;
+
+#[macro_use]
+extern crate serde_derive;
+
+#[macro_use]
+extern crate serde_json;
+
+#[macro_use]
 mod utils;
 
-inject_indy_dependencies!();
+use indyrs::{ErrorCode, INVALID_WALLET_HANDLE};
 
-extern crate indyrs as indy;
-extern crate indyrs as api;
-
-use crate::utils::{did, pairwise};
-use crate::utils::constants::*;
-use crate::utils::Setup;
-
-use self::indy::ErrorCode;
+use utils::{constants::*, did, pairwise, Setup};
 
 mod high_cases {
     use super::*;
@@ -22,19 +24,22 @@ mod high_cases {
         fn indy_create_pairwise_works() {
             let setup = Setup::did();
 
-            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
+            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE)
+                .unwrap();
 
-            pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, Some(METADATA)).unwrap();
+            pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, Some(METADATA))
+                .unwrap();
         }
 
         #[test]
         fn indy_create_pairwise_works_for_not_found_my_did() {
             let setup = Setup::wallet();
 
-            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
+            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE)
+                .unwrap();
 
             let res = pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, DID, None);
-            assert_code!(ErrorCode::WalletItemNotFound,res);
+            assert_code!(ErrorCode::WalletItemNotFound, res);
         }
 
         #[test]
@@ -50,11 +55,12 @@ mod high_cases {
             let setup = Setup::did_fully_qualified();
 
             did::store_their_did_from_parts(setup.wallet_handle, DID_MY1_V1, VERKEY_MY1).unwrap();
-            pairwise::create_pairwise(setup.wallet_handle, DID_MY1_V1, &setup.did, Some(METADATA)).unwrap();
+            pairwise::create_pairwise(setup.wallet_handle, DID_MY1_V1, &setup.did, Some(METADATA))
+                .unwrap();
 
             did::store_their_did_from_parts(setup.wallet_handle, DID, VERKEY).unwrap();
-            pairwise::create_pairwise(setup.wallet_handle, DID, &setup.did, Some(METADATA)).unwrap();
-
+            pairwise::create_pairwise(setup.wallet_handle, DID, &setup.did, Some(METADATA))
+                .unwrap();
         }
     }
 
@@ -65,7 +71,8 @@ mod high_cases {
         fn indy_list_pairwise_works() {
             let setup = Setup::did();
 
-            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
+            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE)
+                .unwrap();
 
             pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, None).unwrap();
 
@@ -73,7 +80,10 @@ mod high_cases {
             let list_pairwise: Vec<String> = serde_json::from_str(&list_pairwise_json).unwrap();
 
             assert_eq!(list_pairwise.len(), 1);
-            assert!(list_pairwise.contains(&format!(r#"{{"my_did":"{}","their_did":"{}"}}"#, setup.did, DID_TRUSTEE)));
+            assert!(list_pairwise.contains(&format!(
+                r#"{{"my_did":"{}","their_did":"{}"}}"#,
+                setup.did, DID_TRUSTEE
+            )));
         }
 
         #[test]
@@ -94,7 +104,8 @@ mod high_cases {
         fn indy_is_pairwise_exists_works() {
             let setup = Setup::did();
 
-            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
+            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE)
+                .unwrap();
 
             pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, None).unwrap();
 
@@ -116,12 +127,18 @@ mod high_cases {
         fn indy_get_pairwise_works() {
             let setup = Setup::did();
 
-            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
+            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE)
+                .unwrap();
 
-            pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, Some(METADATA)).unwrap();
+            pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, Some(METADATA))
+                .unwrap();
 
-            let pairwise_info_json = pairwise::get_pairwise(setup.wallet_handle, DID_TRUSTEE).unwrap();
-            assert_eq!(format!(r#"{{"my_did":"{}","metadata":"{}"}}"#, setup.did, METADATA), pairwise_info_json);
+            let pairwise_info_json =
+                pairwise::get_pairwise(setup.wallet_handle, DID_TRUSTEE).unwrap();
+            assert_eq!(
+                format!(r#"{{"my_did":"{}","metadata":"{}"}}"#, setup.did, METADATA),
+                pairwise_info_json
+            );
         }
 
         #[test]
@@ -140,25 +157,36 @@ mod high_cases {
         fn indy_set_pairwise_metadata_works() {
             let setup = Setup::did();
 
-            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
+            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE)
+                .unwrap();
 
             pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, None).unwrap();
 
-            let pairwise_info_without_metadata = pairwise::get_pairwise(setup.wallet_handle, DID_TRUSTEE).unwrap();
-            assert_eq!(format!(r#"{{"my_did":"{}"}}"#, setup.did), pairwise_info_without_metadata);
+            let pairwise_info_without_metadata =
+                pairwise::get_pairwise(setup.wallet_handle, DID_TRUSTEE).unwrap();
+            assert_eq!(
+                format!(r#"{{"my_did":"{}"}}"#, setup.did),
+                pairwise_info_without_metadata
+            );
 
-            pairwise::set_pairwise_metadata(setup.wallet_handle, DID_TRUSTEE, Some(METADATA)).unwrap();
+            pairwise::set_pairwise_metadata(setup.wallet_handle, DID_TRUSTEE, Some(METADATA))
+                .unwrap();
 
-            let pairwise_info_with_metadata = pairwise::get_pairwise(setup.wallet_handle, DID_TRUSTEE).unwrap();
+            let pairwise_info_with_metadata =
+                pairwise::get_pairwise(setup.wallet_handle, DID_TRUSTEE).unwrap();
             assert_ne!(pairwise_info_without_metadata, pairwise_info_with_metadata);
-            assert_eq!(format!(r#"{{"my_did":"{}","metadata":"{}"}}"#, setup.did, METADATA), pairwise_info_with_metadata);
+            assert_eq!(
+                format!(r#"{{"my_did":"{}","metadata":"{}"}}"#, setup.did, METADATA),
+                pairwise_info_with_metadata
+            );
         }
 
         #[test]
         fn indy_set_pairwise_metadata_works_for_not_created_pairwise() {
             let setup = Setup::wallet();
 
-            let res = pairwise::set_pairwise_metadata(setup.wallet_handle, DID_TRUSTEE, Some(METADATA));
+            let res =
+                pairwise::set_pairwise_metadata(setup.wallet_handle, DID_TRUSTEE, Some(METADATA));
             assert_code!(ErrorCode::WalletItemNotFound, res);
         }
     }
@@ -167,8 +195,6 @@ mod high_cases {
 #[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
-    use crate::api::INVALID_WALLET_HANDLE;
-
 
     mod create_pairwise {
         use super::*;
@@ -177,7 +203,8 @@ mod medium_cases {
         fn indy_create_pairwise_works_for_empty_metadata() {
             let setup = Setup::did();
 
-            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
+            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE)
+                .unwrap();
 
             pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, None).unwrap();
         }
@@ -194,9 +221,11 @@ mod medium_cases {
         fn indy_create_pairwise_works_for_twice() {
             let setup = Setup::did();
 
-            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
+            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE)
+                .unwrap();
 
-            pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, Some(METADATA)).unwrap();
+            pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, Some(METADATA))
+                .unwrap();
 
             let res = pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, None);
             assert_code!(ErrorCode::WalletItemAlreadyExists, res);
@@ -246,25 +275,36 @@ mod medium_cases {
         fn indy_set_pairwise_metadata_works_for_reset() {
             let setup = Setup::did();
 
-            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
+            did::store_their_did_from_parts(setup.wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE)
+                .unwrap();
 
-            pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, Some(METADATA)).unwrap();
+            pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, Some(METADATA))
+                .unwrap();
 
-            let pairwise_info_with_metadata = pairwise::get_pairwise(setup.wallet_handle, DID_TRUSTEE).unwrap();
-            assert_eq!(format!(r#"{{"my_did":"{}","metadata":"{}"}}"#, setup.did, METADATA), pairwise_info_with_metadata);
+            let pairwise_info_with_metadata =
+                pairwise::get_pairwise(setup.wallet_handle, DID_TRUSTEE).unwrap();
+            assert_eq!(
+                format!(r#"{{"my_did":"{}","metadata":"{}"}}"#, setup.did, METADATA),
+                pairwise_info_with_metadata
+            );
 
             pairwise::set_pairwise_metadata(setup.wallet_handle, DID_TRUSTEE, None).unwrap();
 
-            let pairwise_info_without_metadata = pairwise::get_pairwise(setup.wallet_handle, DID_TRUSTEE).unwrap();
+            let pairwise_info_without_metadata =
+                pairwise::get_pairwise(setup.wallet_handle, DID_TRUSTEE).unwrap();
             assert_ne!(pairwise_info_with_metadata, pairwise_info_without_metadata);
-            assert_eq!(format!(r#"{{"my_did":"{}"}}"#, setup.did), pairwise_info_without_metadata);
+            assert_eq!(
+                format!(r#"{{"my_did":"{}"}}"#, setup.did),
+                pairwise_info_without_metadata
+            );
         }
 
         #[test]
         fn indy_set_pairwise_metadata_works_for_invalid_wallet_handle() {
             Setup::empty();
 
-            let res = pairwise::set_pairwise_metadata(INVALID_WALLET_HANDLE, DID_TRUSTEE, Some(METADATA));
+            let res =
+                pairwise::set_pairwise_metadata(INVALID_WALLET_HANDLE, DID_TRUSTEE, Some(METADATA));
             assert_code!(ErrorCode::WalletInvalidHandle, res);
         }
     }

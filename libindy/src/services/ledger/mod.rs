@@ -944,12 +944,12 @@ impl LedgerService {
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::anoncreds::schema::AttributeNames;
-    use crate::domain::ledger::constants::*;
-    use crate::domain::ledger::node::Services;
-    use crate::domain::ledger::request::ProtocolVersion;
-
     use super::*;
+
+    use crate::domain::{
+        anoncreds::schema::AttributeNames,
+        ledger::{constants::*, node::Services, request::ProtocolVersion},
+    };
 
     const IDENTIFIER: &str = "NcYxiDXkpYi6ov5FcYDi1e";
     const DEST: &str = "VsKV7grR1BUE29mG2Fm2kX";
@@ -961,32 +961,6 @@ mod tests {
 
     fn dest() -> DidValue {
         DidValue(DEST.to_string())
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-
-        #[async_std::test]
-        async fn ledger_service_allows_send() {
-            use futures::{channel::oneshot, executor::ThreadPool, future::join_all};
-            use std::{sync::Arc, time::SystemTime};
-
-            let executor = Arc::new(ThreadPool::new().expect("Failed to new ThreadPool"));
-            let service = Arc::new(Box::new(LedgerService::new()));
-            let s = service.clone();
-            let (tx, rx) = oneshot::channel::<IndyResult<()>>();
-
-            let future = async move {
-                let res = s.validate_action("default");
-                tx.send(res);
-            };
-
-            executor.spawn_ok(future);
-
-            let res = rx.await;
-            println!("-------> {:?}", res);
-        }
     }
 
     #[test]
@@ -1001,6 +975,7 @@ mod tests {
         let request = ledger_service
             .build_nym_request(&identifier(), &dest(), None, None, None)
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1017,6 +992,7 @@ mod tests {
         let request = ledger_service
             .build_nym_request(&identifier(), &dest(), None, None, Some(""))
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1041,6 +1017,7 @@ mod tests {
                 Some(""),
             )
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1056,6 +1033,7 @@ mod tests {
         let request = ledger_service
             .build_get_nym_request(Some(&identifier()), &dest())
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1071,6 +1049,7 @@ mod tests {
         let request = ledger_service
             .build_get_ddo_request(Some(&identifier()), &dest())
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1087,6 +1066,7 @@ mod tests {
         let request = ledger_service
             .build_attrib_request(&identifier(), &dest(), Some("hash"), None, None)
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1103,6 +1083,7 @@ mod tests {
         let request = ledger_service
             .build_get_attrib_request(Some(&identifier()), &dest(), Some("raw"), None, None)
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1119,6 +1100,7 @@ mod tests {
         let request = ledger_service
             .build_get_attrib_request(Some(&identifier()), &dest(), None, Some("hash"), None)
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1135,6 +1117,7 @@ mod tests {
         let request = ledger_service
             .build_get_attrib_request(Some(&identifier()), &dest(), None, None, Some("enc"))
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1165,6 +1148,7 @@ mod tests {
         let request = ledger_service
             .build_schema_request(&identifier(), data)
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1186,6 +1170,7 @@ mod tests {
         let request = ledger_service
             .build_get_schema_request(Some(&identifier()), &id)
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1213,6 +1198,7 @@ mod tests {
         let request = ledger_service
             .build_get_cred_def_request(Some(&identifier()), &id)
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1249,6 +1235,7 @@ mod tests {
         let request = ledger_service
             .build_node_request(&identifier(), &dest(), data)
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1265,6 +1252,7 @@ mod tests {
         let request = ledger_service
             .build_get_txn_request(Some(&identifier()), None, 1)
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1281,6 +1269,7 @@ mod tests {
         let request = ledger_service
             .build_get_txn_request(Some(&identifier()), Some("POOL"), 1)
             .unwrap();
+
         check_request(&request, expected_result);
     }
 
@@ -1297,6 +1286,7 @@ mod tests {
         let request = ledger_service
             .build_get_txn_request(Some(&identifier()), Some("10"), 1)
             .unwrap();
+
         check_request(&request, expected_result);
     }
 

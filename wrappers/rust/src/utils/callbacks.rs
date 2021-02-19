@@ -76,9 +76,10 @@ impl ClosureHandler {
            CALLBACKS_STR,
            rust_str!(str1));
 
-    cb_ec!(cb_ec_string_i64(str1:*const c_char, num: i64)->(String, i64),
-           CALLBACKS_STR_I64,
-           (rust_str!(str1), num));
+    // TODO: FIXME: re-check it is needed
+    // cb_ec!(cb_ec_string_i64(str1:*const c_char, num: i64)->(String, i64),
+    //        CALLBACKS_STR_I64,
+    //        (rust_str!(str1), num));
 
     cb_ec!(cb_ec_string_string(str1:*const c_char, str2:*const c_char)->(String, String),
            CALLBACKS_STR_STR,
@@ -136,7 +137,10 @@ impl ResultHandler {
     result_handler!(slice(Vec<u8>), CALLBACKS_SLICE);
     result_handler!(bool(bool), CALLBACKS_BOOL);
     result_handler!(str(String), CALLBACKS_STR);
-    result_handler!(str_i64((String, i64)), CALLBACKS_STR_I64);
+    
+    // TODO: FIXME: Re-check if needed
+    //result_handler!(str_i64((String, i64)), CALLBACKS_STR_I64);
+   
     result_handler!(handle_usize((CommandHandle, usize)), CALLBACKS_HANDLE_USIZE);
     result_handler!(str_slice((String, Vec<u8>)), CALLBACKS_STR_SLICE);
     result_handler!(str_str((String, String)), CALLBACKS_STR_STR);

@@ -1,29 +1,29 @@
-extern crate byteorder;
-extern crate futures;
-extern crate rmp_serde;
+use std::{
+    fs,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
-use std::fs;
-use std::io::Write;
-use std::path::{Path, PathBuf};
-
+use byteorder::{LittleEndian, WriteBytesExt};
+use indyrs::{future::Future, pool, ErrorCode, IndyError, PoolHandle};
 use serde_json;
 
-use crate::utils::types::{Response, ResponseType};
-use crate::utils::{environment, test};
-use crate::api::PoolHandle;
-use crate::indy::future::Future;
-use indy::{pool, ErrorCode, IndyError};
-use byteorder::{LittleEndian, WriteBytesExt};
+use crate::utils::{
+    environment, test,
+    types::{Response, ResponseType},
+};
 
 #[derive(Serialize, Deserialize)]
 struct PoolConfig {
-    pub genesis_txn: String
+    pub genesis_txn: String,
 }
 
-pub fn create_genesis_txn_file(pool_name: &str,
-                               txn_file_data: &str,
-                               txn_file_path: Option<&Path>) -> PathBuf {
-    let txn_file_path= match txn_file_path {
+pub fn create_genesis_txn_file(
+    pool_name: &str,
+    txn_file_data: &str,
+    txn_file_path: Option<&Path>,
+) -> PathBuf {
+    let txn_file_path = match txn_file_path {
         Some(path) => path.to_path_buf(),
         None => {
             let mut pool_path = environment::tmp_file_path(pool_name);
@@ -42,9 +42,11 @@ pub fn create_genesis_txn_file(pool_name: &str,
     txn_file_path
 }
 
-pub fn create_genesis_txn_file_for_test_pool(pool_name: &str,
-                                             nodes_count: Option<u8>,
-                                             txn_file_path: Option<&Path>) -> PathBuf {
+pub fn create_genesis_txn_file_for_test_pool(
+    pool_name: &str,
+    nodes_count: Option<u8>,
+    txn_file_path: Option<&Path>,
+) -> PathBuf {
     let nodes_count = nodes_count.unwrap_or(4);
 
     let node_txns = test::gen_txns();
@@ -54,21 +56,35 @@ pub fn create_genesis_txn_file_for_test_pool(pool_name: &str,
     create_genesis_txn_file(pool_name, txn_file_data.as_str(), txn_file_path)
 }
 
-pub fn create_genesis_txn_file_for_test_pool_with_invalid_nodes(pool_name: &str,
-                                                                txn_file_path: Option<&Path>) -> PathBuf {
+pub fn create_genesis_txn_file_for_test_pool_with_invalid_nodes(
+    pool_name: &str,
+    txn_file_path: Option<&Path>,
+) -> PathBuf {
     let test_pool_ip = environment::test_pool_ip();
     let node_txns = test::gen_txns();
 
-    let node_txns = node_txns.iter().map(|txn|
-        txn.replace(format!(r#""client_ip":"{0}","client_port":9702,"node_ip":"{0}","node_port":9701"#, test_pool_ip).as_str(), r#""node_port":9701"#))
+    let node_txns = node_txns
+        .iter()
+        .map(|txn| {
+            txn.replace(
+                format!(
+                    r#""client_ip":"{0}","client_port":9702,"node_ip":"{0}","node_port":9701"#,
+                    test_pool_ip
+                )
+                .as_str(),
+                r#""node_port":9701"#,
+            )
+        })
         .collect::<Vec<String>>();
 
     let txn_file_data = node_txns.join("\n");
     create_genesis_txn_file(pool_name, txn_file_data.as_str(), txn_file_path)
 }
 
-pub fn create_genesis_txn_file_for_empty_lines(pool_name: &str,
-                                               txn_file_path: Option<&Path>) -> PathBuf {
+pub fn create_genesis_txn_file_for_empty_lines(
+    pool_name: &str,
+    txn_file_path: Option<&Path>,
+) -> PathBuf {
     let mut node_txns = test::gen_txns();
     node_txns.insert(0, "      \n".to_string());
     node_txns.insert(2, "\n".to_string());
@@ -79,8 +95,10 @@ pub fn create_genesis_txn_file_for_empty_lines(pool_name: &str,
     create_genesis_txn_file(pool_name, txn_file_data.as_str(), txn_file_path)
 }
 
-pub fn create_genesis_txn_file_for_test_pool_with_wrong_alias(pool_name: &str,
-                                                              txn_file_path: Option<&Path>) -> PathBuf {
+pub fn create_genesis_txn_file_for_test_pool_with_wrong_alias(
+    pool_name: &str,
+    txn_file_path: Option<&Path>,
+) -> PathBuf {
     let mut node_txns = test::gen_txns();
     node_txns[0] = node_txns[0].replace("Node1", "ALIAS_NODE");
 
@@ -88,11 +106,15 @@ pub fn create_genesis_txn_file_for_test_pool_with_wrong_alias(pool_name: &str,
     create_genesis_txn_file(pool_name, txn_file_data.as_str(), txn_file_path)
 }
 
-pub fn create_genesis_txn_file_for_test_pool_with_wrong_ips(pool_name: &str,
-                                                            txn_file_path: Option<&Path>) -> PathBuf {
+pub fn create_genesis_txn_file_for_test_pool_with_wrong_ips(
+    pool_name: &str,
+    txn_file_path: Option<&Path>,
+) -> PathBuf {
     let node_txns = test::gen_txns();
-    let node_txns = node_txns.iter().map(|txn|
-        txn.replace(environment::test_pool_ip().as_str(), "aa")).collect::<Vec<String>>();
+    let node_txns = node_txns
+        .iter()
+        .map(|txn| txn.replace(environment::test_pool_ip().as_str(), "aa"))
+        .collect::<Vec<String>>();
 
     let txn_file_data = node_txns.join("\n");
 
@@ -102,13 +124,16 @@ pub fn create_genesis_txn_file_for_test_pool_with_wrong_ips(pool_name: &str,
 // Note that to be config valid it assumes genesis txt file is already exists
 pub fn pool_config_json(txn_file_path: &Path) -> String {
     let config = PoolConfig {
-        genesis_txn: txn_file_path.to_string_lossy().to_string()
+        genesis_txn: txn_file_path.to_string_lossy().to_string(),
     };
 
     serde_json::to_string(&config).unwrap()
 }
 
-pub fn create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Result<(), IndyError> {
+pub fn create_pool_ledger_config(
+    pool_name: &str,
+    pool_config: Option<&str>,
+) -> Result<(), IndyError> {
     pool::create_pool_ledger_config(pool_name, pool_config).wait()
 }
 
@@ -136,21 +161,24 @@ fn _dump_genesis_txns_to_cache(pool_name: &str, node_txns: &Vec<String>) -> Resu
     if !txn_file_path.parent().unwrap().exists() {
         fs::DirBuilder::new()
             .recursive(true)
-            .create(txn_file_path.parent().unwrap()).unwrap();
+            .create(txn_file_path.parent().unwrap())
+            .unwrap();
     }
 
-    let txns = node_txns.iter().map(|txn| {
-        let txn_json = serde_json::from_str::<serde_json::Value>(txn).map_err(|_| ErrorCode::CommonInvalidStructure)?;
-        rmp_serde::to_vec_named(&txn_json).map_err(|_| ErrorCode::CommonInvalidStructure)
-    }).fold(Ok(vec![]), |acc, next| {
-        match (acc, next) {
+    let txns = node_txns
+        .iter()
+        .map(|txn| {
+            let txn_json = serde_json::from_str::<serde_json::Value>(txn)
+                .map_err(|_| ErrorCode::CommonInvalidStructure)?;
+            rmp_serde::to_vec_named(&txn_json).map_err(|_| ErrorCode::CommonInvalidStructure)
+        })
+        .fold(Ok(vec![]), |acc, next| match (acc, next) {
             (Err(e), _) | (_, Err(e)) => Err(e),
             (Ok(mut acc), Ok(next)) => {
                 acc.push(next);
                 Ok(acc)
             }
-        }
-    })?;
+        })?;
 
     let mut f = fs::File::create(&txn_file_path).map_err(|_| ErrorCode::CommonIOError)?;
     txns.iter().for_each(|vec| {

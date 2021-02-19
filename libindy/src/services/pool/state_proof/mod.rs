@@ -892,7 +892,6 @@ mod tests {
     use super::*;
 
     use hex::FromHex;
-    use libc::c_char;
 
     /// For audit proofs tree looks like this
     ///         12345

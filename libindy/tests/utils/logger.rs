@@ -1,8 +1,4 @@
-extern crate futures;
-extern crate log;
-extern crate time;
-
-use indy::logger;
+use indyrs::logger;
 
 pub struct SimpleLogger;
 

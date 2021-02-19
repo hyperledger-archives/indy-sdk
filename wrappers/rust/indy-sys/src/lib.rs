@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate serde_derive;
+
 extern crate libc;
 
 pub mod anoncreds;
@@ -14,12 +17,7 @@ pub mod logger;
 pub mod cache;
 //pub mod metrics;
 
-extern crate serde;
-
-#[macro_use]
-extern crate serde_derive;
-
-use self::libc::{c_void, c_char};
+use libc::{c_void, c_char};
 
 pub type CVoid = c_void;
 pub type BString = *const u8;
@@ -64,9 +62,7 @@ pub type ResponseStringStringU64CB = extern fn(xcommand_handle: CommandHandle, e
 pub type ResponseStringI64CB = extern fn(xcommand_handle: CommandHandle, err: Error, arg1: CString, arg3: i64);
 
 extern {
-    #[no_mangle]
     pub fn indy_set_runtime_config(config: CString) -> Error;
 
-    #[no_mangle]
     pub fn indy_get_current_error(error_json_p: *mut CString);
 }

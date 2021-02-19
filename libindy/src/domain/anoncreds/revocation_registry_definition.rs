@@ -5,13 +5,12 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use ursa::cl::{RevocationKeyPrivate, RevocationKeyPublic};
 
-use crate::{
-    domain::{
+use super::super::{
         anoncreds::{credential_definition::CredentialDefinitionId, DELIMITER},
         crypto::did::DidValue,
-    },
-    utils::qualifier,
 };
+
+use crate::utils::qualifier;
 
 pub const CL_ACCUM: &str = "CL_ACCUM";
 pub const REV_REG_DEG_MARKER: &str = "4";

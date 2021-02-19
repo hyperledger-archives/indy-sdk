@@ -1,19 +1,31 @@
 #[macro_use]
+extern crate derivative;
+
+#[macro_use]
+extern crate serde_derive;
+
+#[macro_use]
+extern crate serde_json;
+
+#[macro_use]
 mod utils;
 
-inject_indy_dependencies!();
+use indyrs::ErrorCode;
 
-extern crate indyrs as indy;
-extern crate indyrs as api;
+use utils::{constants::*, crypto, Setup};
 
-use crate::utils::crypto;
-use crate::utils::constants::*;
-use crate::utils::Setup;
+pub const ENCRYPTED_MESSAGE: &'static [u8; 45] = &[
+    187, 227, 10, 29, 46, 178, 12, 179, 197, 69, 171, 70, 228, 204, 52, 22, 199, 54, 62, 13, 115,
+    5, 216, 66, 20, 131, 121, 29, 251, 224, 253, 201, 75, 73, 225, 237, 219, 133, 35, 217, 131,
+    135, 232, 129, 32,
+];
 
-use self::indy::ErrorCode;
-
-pub const ENCRYPTED_MESSAGE: &'static [u8; 45] = &[187, 227, 10, 29, 46, 178, 12, 179, 197, 69, 171, 70, 228, 204, 52, 22, 199, 54, 62, 13, 115, 5, 216, 66, 20, 131, 121, 29, 251, 224, 253, 201, 75, 73, 225, 237, 219, 133, 35, 217, 131, 135, 232, 129, 32];
-pub const SIGNATURE: &'static [u8; 64] = &[169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8, 211, 55, 27, 120, 94, 204, 147, 53, 104, 103, 61, 60, 249, 237, 127, 103, 46, 220, 223, 10, 95, 75, 53, 245, 210, 241, 151, 191, 41, 48, 30, 9, 16, 78, 252, 157, 206, 210, 145, 125, 133, 109, 11];
+pub const SIGNATURE: &'static [u8; 64] = &[
+    169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8,
+    211, 55, 27, 120, 94, 204, 147, 53, 104, 103, 61, 60, 249, 237, 127, 103, 46, 220, 223, 10, 95,
+    75, 53, 245, 210, 241, 151, 191, 41, 48, 30, 9, 16, 78, 252, 157, 206, 210, 145, 125, 133, 109,
+    11,
+];
 
 mod high_cases {
     use super::*;
@@ -56,7 +68,8 @@ mod high_cases {
 
             let new_metadata = "updated metadata";
             crypto::set_key_metadata(setup.wallet_handle, &setup.verkey, new_metadata).unwrap();
-            let updated_metadata = crypto::get_key_metadata(setup.wallet_handle, &setup.verkey).unwrap();
+            let updated_metadata =
+                crypto::get_key_metadata(setup.wallet_handle, &setup.verkey).unwrap();
             assert_eq!(new_metadata, updated_metadata);
         }
     }
@@ -121,7 +134,10 @@ mod high_cases {
 
         #[test]
         fn indy_crypto_verify_works_for_invalid_signature_len() {
-            let signature: Vec<u8> = vec![20, 191, 100, 213, 101, 12, 197, 198, 203, 49, 89, 220, 205, 192, 224, 221, 97, 77, 220, 190];
+            let signature: Vec<u8> = vec![
+                20, 191, 100, 213, 101, 12, 197, 198, 203, 49, 89, 220, 205, 192, 224, 221, 97, 77,
+                220, 190,
+            ];
             let res = crypto::verify(&VERKEY_MY1, MESSAGE.as_bytes(), &signature);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
@@ -134,19 +150,27 @@ mod high_cases {
         fn indy_crypto_auth_crypt_works_for_created_key() {
             let setup = Setup::wallet();
             let verkey = crypto::create_key(setup.wallet_handle, Some(MY1_SEED)).unwrap();
-            crypto::auth_crypt(setup.wallet_handle, &verkey, VERKEY_MY2, MESSAGE.as_bytes()).unwrap();
+            crypto::auth_crypt(setup.wallet_handle, &verkey, VERKEY_MY2, MESSAGE.as_bytes())
+                .unwrap();
         }
 
         #[test]
         fn indy_crypto_auth_crypt_works_for_created_did() {
             let setup = Setup::did();
-            crypto::auth_crypt(setup.wallet_handle, &setup.verkey, VERKEY_MY2, MESSAGE.as_bytes()).unwrap();
+            crypto::auth_crypt(
+                setup.wallet_handle,
+                &setup.verkey,
+                VERKEY_MY2,
+                MESSAGE.as_bytes(),
+            )
+            .unwrap();
         }
 
         #[test]
         fn indy_crypto_auth_crypt_works_for_unknown_sender_verkey() {
             let setup = Setup::wallet();
-            let res = crypto::auth_crypt(setup.wallet_handle, VERKEY_MY2, VERKEY, MESSAGE.as_bytes());
+            let res =
+                crypto::auth_crypt(setup.wallet_handle, VERKEY_MY2, VERKEY, MESSAGE.as_bytes());
             assert_code!(ErrorCode::WalletItemNotFound, res);
         }
     }
@@ -159,9 +183,20 @@ mod high_cases {
             let sender_setup = Setup::key();
             let recipient_setup = Setup::key();
 
-            let encrypted_msg = crypto::auth_crypt(sender_setup.wallet_handle, &sender_setup.verkey, &recipient_setup.verkey, MESSAGE.as_bytes()).unwrap();
+            let encrypted_msg = crypto::auth_crypt(
+                sender_setup.wallet_handle,
+                &sender_setup.verkey,
+                &recipient_setup.verkey,
+                MESSAGE.as_bytes(),
+            )
+            .unwrap();
 
-            let (vk, msg) = crypto::auth_decrypt(recipient_setup.wallet_handle, &recipient_setup.verkey, &encrypted_msg).unwrap();
+            let (vk, msg) = crypto::auth_decrypt(
+                recipient_setup.wallet_handle,
+                &recipient_setup.verkey,
+                &encrypted_msg,
+            )
+            .unwrap();
             assert_eq!(MESSAGE.as_bytes().to_vec(), msg);
             assert_eq!(sender_setup.verkey, vk);
         }
@@ -170,7 +205,13 @@ mod high_cases {
         fn indy_crypto_auth_decrypt_works_for_unknown_recipient_vk() {
             let setup = Setup::key();
 
-            let encrypted_msg = crypto::auth_crypt(setup.wallet_handle, &setup.verkey, &VERKEY_TRUSTEE, MESSAGE.as_bytes()).unwrap();
+            let encrypted_msg = crypto::auth_crypt(
+                setup.wallet_handle,
+                &setup.verkey,
+                &VERKEY_TRUSTEE,
+                MESSAGE.as_bytes(),
+            )
+            .unwrap();
 
             let res = crypto::anon_decrypt(setup.wallet_handle, &VERKEY_TRUSTEE, &encrypted_msg);
             assert_code!(ErrorCode::WalletItemNotFound, res);
@@ -196,7 +237,8 @@ mod high_cases {
 
             let encrypted_msg = crypto::anon_crypt(&setup.verkey, MESSAGE.as_bytes()).unwrap();
 
-            let msg = crypto::anon_decrypt(setup.wallet_handle, &setup.verkey, &encrypted_msg).unwrap();
+            let msg =
+                crypto::anon_decrypt(setup.wallet_handle, &setup.verkey, &encrypted_msg).unwrap();
             assert_eq!(MESSAGE.as_bytes().to_vec(), msg);
         }
 
@@ -220,7 +262,12 @@ mod high_cases {
             let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
-            let res = crypto::pack_message(setup.wallet_handle, message, &receiver_keys, Some(&setup.verkey));
+            let res = crypto::pack_message(
+                setup.wallet_handle,
+                message,
+                &receiver_keys,
+                Some(&setup.verkey),
+            );
             assert!(res.is_ok());
         }
     }
@@ -257,10 +304,17 @@ mod high_cases {
 
             let rec_key_vec = vec![VERKEY_TRUSTEE, &receiver_setup.verkey];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
-            let pack_message = crypto::pack_message(sender_setup.wallet_handle, AGENT_MESSAGE.as_bytes(), &receiver_keys, Some(&sender_setup.verkey)).unwrap();
+            let pack_message = crypto::pack_message(
+                sender_setup.wallet_handle,
+                AGENT_MESSAGE.as_bytes(),
+                &receiver_keys,
+                Some(&sender_setup.verkey),
+            )
+            .unwrap();
 
             //execute function
-            let res = crypto::unpack_message(receiver_setup.wallet_handle, pack_message.as_slice()).unwrap();
+            let res = crypto::unpack_message(receiver_setup.wallet_handle, pack_message.as_slice())
+                .unwrap();
             let res_serialized: UnpackMessage = serde_json::from_slice(res.as_slice()).unwrap();
 
             //verify unpack ran correctly
@@ -278,7 +332,13 @@ mod high_cases {
             let rec_key_vec = vec![VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
-            let pack_message = crypto::pack_message(sender_setup.wallet_handle, message, &receiver_keys, Some(&sender_setup.verkey)).unwrap();
+            let pack_message = crypto::pack_message(
+                sender_setup.wallet_handle,
+                message,
+                &receiver_keys,
+                Some(&sender_setup.verkey),
+            )
+            .unwrap();
 
             //execute function
             let res = crypto::unpack_message(receiver_setup.wallet_handle, pack_message.as_slice());
@@ -302,8 +362,15 @@ mod high_cases {
 
             let rec_key_vec = vec![VERKEY_TRUSTEE, &receiver_setup.verkey];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
-            let pack_message = crypto::pack_message(sender_setup.wallet_handle, AGENT_MESSAGE.as_bytes(), &receiver_keys, None).unwrap();
-            let res = crypto::unpack_message(receiver_setup.wallet_handle, pack_message.as_slice()).unwrap();
+            let pack_message = crypto::pack_message(
+                sender_setup.wallet_handle,
+                AGENT_MESSAGE.as_bytes(),
+                &receiver_keys,
+                None,
+            )
+            .unwrap();
+            let res = crypto::unpack_message(receiver_setup.wallet_handle, pack_message.as_slice())
+                .unwrap();
             let res_serialized: UnpackMessage = serde_json::from_slice(res.as_slice()).unwrap();
 
             assert_eq!(res_serialized.message, AGENT_MESSAGE.to_string());
@@ -319,7 +386,9 @@ mod high_cases {
             let rec_key_vec = vec![VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
-            let pack_message = crypto::pack_message(sender_setup.wallet_handle, message, &receiver_keys, None).unwrap();
+            let pack_message =
+                crypto::pack_message(sender_setup.wallet_handle, message, &receiver_keys, None)
+                    .unwrap();
 
             //execute function
             let res = crypto::unpack_message(receiver_setup.wallet_handle, pack_message.as_slice());
@@ -331,8 +400,10 @@ mod high_cases {
 #[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
-    use crate::utils::did;
-    use crate::api::INVALID_WALLET_HANDLE;
+
+    use indyrs::INVALID_WALLET_HANDLE;
+
+    use utils::did;
 
     mod create_key {
         use super::*;
@@ -361,11 +432,11 @@ mod medium_cases {
             crypto::set_key_metadata(setup.wallet_handle, &setup.verkey, "").unwrap();
         }
 
-
         #[test]
         fn indy_set_key_metadata_works_for_invalid_key() {
             let setup = Setup::did();
-            let res = crypto::set_key_metadata(setup.wallet_handle, INVALID_BASE58_VERKEY, METADATA);
+            let res =
+                crypto::set_key_metadata(setup.wallet_handle, INVALID_BASE58_VERKEY, METADATA);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
@@ -429,21 +500,36 @@ mod medium_cases {
         #[test]
         fn indy_crypto_auth_crypt_works_for_created_did_as_cid() {
             let setup = Setup::wallet();
-            let (_, verkey) = did::create_my_did(setup.wallet_handle, &json!({ "seed": MY1_SEED, "cid": true }).to_string()).unwrap();
-            crypto::auth_crypt(setup.wallet_handle, &verkey, VERKEY_MY2, MESSAGE.as_bytes()).unwrap();
+            let (_, verkey) = did::create_my_did(
+                setup.wallet_handle,
+                &json!({ "seed": MY1_SEED, "cid": true }).to_string(),
+            )
+            .unwrap();
+            crypto::auth_crypt(setup.wallet_handle, &verkey, VERKEY_MY2, MESSAGE.as_bytes())
+                .unwrap();
         }
 
         #[test]
         fn indy_crypto_auth_crypt_works_for_invalid_wallet_handle() {
             let setup = Setup::did();
-            let res = crypto::auth_crypt(INVALID_WALLET_HANDLE, &setup.verkey, VERKEY, MESSAGE.as_bytes());
+            let res = crypto::auth_crypt(
+                INVALID_WALLET_HANDLE,
+                &setup.verkey,
+                VERKEY,
+                MESSAGE.as_bytes(),
+            );
             assert_code!(ErrorCode::WalletInvalidHandle, res);
         }
 
         #[test]
         fn indy_crypto_auth_crypt_works_for_invalid_recipient_vk() {
             let setup = Setup::did();
-            let res = crypto::auth_crypt(setup.wallet_handle, &setup.verkey, INVALID_BASE58_VERKEY, MESSAGE.as_bytes());
+            let res = crypto::auth_crypt(
+                setup.wallet_handle,
+                &setup.verkey,
+                INVALID_BASE58_VERKEY,
+                MESSAGE.as_bytes(),
+            );
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
@@ -456,11 +542,24 @@ mod medium_cases {
             let sender_setup = Setup::key();
             let recipient_setup = Setup::did();
 
-            did::store_their_did_from_parts(sender_setup.wallet_handle, &recipient_setup.did, &recipient_setup.verkey).unwrap();
+            did::store_their_did_from_parts(
+                sender_setup.wallet_handle,
+                &recipient_setup.did,
+                &recipient_setup.verkey,
+            )
+            .unwrap();
 
-            let encrypted_msg = format!(r#"{{"nonce":"Th7MpTaRZVRYnPiabds81Y12","sender":"{:?}","msg":"{:?}"}}"#, VERKEY, ENCRYPTED_MESSAGE.to_vec());
+            let encrypted_msg = format!(
+                r#"{{"nonce":"Th7MpTaRZVRYnPiabds81Y12","sender":"{:?}","msg":"{:?}"}}"#,
+                VERKEY,
+                ENCRYPTED_MESSAGE.to_vec()
+            );
 
-            let res = crypto::auth_decrypt(recipient_setup.wallet_handle, &recipient_setup.verkey, &encrypted_msg.as_bytes());
+            let res = crypto::auth_decrypt(
+                recipient_setup.wallet_handle,
+                &recipient_setup.verkey,
+                &encrypted_msg.as_bytes(),
+            );
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
@@ -469,9 +568,19 @@ mod medium_cases {
             let sender_setup = Setup::key();
             let recipient_setup = Setup::key();
 
-            let encrypted_msg = crypto::auth_crypt(sender_setup.wallet_handle, &sender_setup.verkey, &recipient_setup.verkey, MESSAGE.as_bytes()).unwrap();
+            let encrypted_msg = crypto::auth_crypt(
+                sender_setup.wallet_handle,
+                &sender_setup.verkey,
+                &recipient_setup.verkey,
+                MESSAGE.as_bytes(),
+            )
+            .unwrap();
 
-            let res = crypto::auth_decrypt(INVALID_WALLET_HANDLE, &recipient_setup.verkey, &encrypted_msg);
+            let res = crypto::auth_decrypt(
+                INVALID_WALLET_HANDLE,
+                &recipient_setup.verkey,
+                &encrypted_msg,
+            );
             assert_code!(ErrorCode::WalletInvalidHandle, res);
         }
     }
@@ -498,7 +607,11 @@ mod medium_cases {
         fn indy_crypto_anon_decrypt_works_for_invalid_msg() {
             let setup = Setup::key();
 
-            let res = crypto::anon_decrypt(setup.wallet_handle, &setup.verkey, &"unencrypted message".as_bytes());
+            let res = crypto::anon_decrypt(
+                setup.wallet_handle,
+                &setup.verkey,
+                &"unencrypted message".as_bytes(),
+            );
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
@@ -522,7 +635,12 @@ mod medium_cases {
             let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "".as_bytes();
-            let res = crypto::pack_message(setup.wallet_handle, message, &receiver_keys, Some(&setup.verkey));
+            let res = crypto::pack_message(
+                setup.wallet_handle,
+                message,
+                &receiver_keys,
+                Some(&setup.verkey),
+            );
             assert_code!(ErrorCode::CommonInvalidParam3, res);
         }
 
@@ -531,7 +649,12 @@ mod medium_cases {
             let setup = Setup::key();
             let receiver_keys = "[]";
             let message = "Hello World".as_bytes();
-            let res = crypto::pack_message(setup.wallet_handle, message, &receiver_keys, Some(&setup.verkey));
+            let res = crypto::pack_message(
+                setup.wallet_handle,
+                message,
+                &receiver_keys,
+                Some(&setup.verkey),
+            );
             assert_code!(ErrorCode::CommonInvalidParam4, res);
         }
 
@@ -541,7 +664,12 @@ mod medium_cases {
             let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
-            let res = crypto::pack_message(INVALID_WALLET_HANDLE, message, &receiver_keys, Some(&setup.verkey));
+            let res = crypto::pack_message(
+                INVALID_WALLET_HANDLE,
+                message,
+                &receiver_keys,
+                Some(&setup.verkey),
+            );
             assert_code!(ErrorCode::WalletInvalidHandle, res);
         }
 
@@ -551,7 +679,12 @@ mod medium_cases {
             let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
-            let res = crypto::pack_message(setup.wallet_handle, message, &receiver_keys, Some(INVALID_BASE58_VERKEY));
+            let res = crypto::pack_message(
+                setup.wallet_handle,
+                message,
+                &receiver_keys,
+                Some(INVALID_BASE58_VERKEY),
+            );
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
@@ -592,18 +725,17 @@ mod medium_cases {
 
 #[cfg(not(feature = "only_high_cases"))]
 mod load {
-    extern crate rand;
-
     use super::*;
 
-    use self::rand::RngCore;
-    use self::rand::rngs::OsRng;
+    use std::{
+        cmp::max,
+        thread,
+        time::{Duration, SystemTime},
+    };
 
-    use std::cmp::max;
-    use std::thread;
-    use std::time::{Duration, SystemTime};
+    use rand::{rngs::OsRng, RngCore};
 
-    use crate::utils::{wallet, did};
+    use utils::{did, wallet};
 
     const AGENT_CNT: usize = 5;
     const DATA_SZ: usize = 1000;
@@ -619,15 +751,26 @@ mod load {
     fn parallel_auth_encrypt() {
         Setup::empty();
 
-        let agent_cnt = std::env::var("AGENTS_CNT").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(AGENT_CNT);
-        let data_sz = std::env::var("DATA_SZ").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(DATA_SZ);
-        let operations_cnt = std::env::var("OPERATIONS_CNT").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(OPERATIONS_CNT);
+        let agent_cnt = std::env::var("AGENTS_CNT")
+            .ok()
+            .and_then(|s| s.parse::<usize>().ok())
+            .unwrap_or(AGENT_CNT);
+        let data_sz = std::env::var("DATA_SZ")
+            .ok()
+            .and_then(|s| s.parse::<usize>().ok())
+            .unwrap_or(DATA_SZ);
+        let operations_cnt = std::env::var("OPERATIONS_CNT")
+            .ok()
+            .and_then(|s| s.parse::<usize>().ok())
+            .unwrap_or(OPERATIONS_CNT);
 
         let mut agents = Vec::new();
         let mut os_rng = OsRng;
-       
+
         for i in 0..agent_cnt {
-            let (wallet, wallet_config) = wallet::create_and_open_default_wallet(&format!("parallel_auth_encrypt-{}", i)).unwrap();
+            let (wallet, wallet_config) =
+                wallet::create_and_open_default_wallet(&format!("parallel_auth_encrypt-{}", i))
+                    .unwrap();
             let (_did, verkey) = did::create_and_store_my_did(wallet, None).unwrap();
             let mut data = vec![0u8; data_sz];
             os_rng.fill_bytes(&mut data.as_mut_slice());
@@ -641,10 +784,11 @@ mod load {
         for (wallet, verkey, data, wallet_config) in agents {
             let thread = thread::spawn(move || {
                 let mut time_diffs = Vec::new();
-              
+
                 for _ in 0..operations_cnt {
                     let time = SystemTime::now();
-                    let _encrypted = crypto::auth_crypt(wallet, &verkey, &verkey, data.as_slice()).unwrap();
+                    let _encrypted =
+                        crypto::auth_crypt(wallet, &verkey, &verkey, data.as_slice()).unwrap();
                     let time_diff = SystemTime::now().duration_since(time).unwrap();
                     time_diffs.push(time_diff);
                 }
@@ -653,41 +797,49 @@ mod load {
                 wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
                 time_diffs
             });
-          
+
             results.push(thread);
         }
 
         let mut all_diffs = Vec::new();
-       
+
         for result in results {
             all_diffs.push(result.join().unwrap());
         }
-        
+
         let total_duration = SystemTime::now().duration_since(start_time).unwrap();
 
         let mut time_diff_max = Duration::from_secs(0);
         let mut time_sum_diff = Duration::from_secs(0);
-        
+
         for time_diffs in all_diffs {
             println!("{:?}", time_diffs);
-            time_diff_max = time_diffs.iter().fold(time_diff_max, |acc, cur| max(acc, *cur));
+            time_diff_max = time_diffs
+                .iter()
+                .fold(time_diff_max, |acc, cur| max(acc, *cur));
             time_sum_diff = time_diffs.iter().fold(time_sum_diff, |acc, cur| acc + *cur);
         }
 
-        println!("================= Settings =================\n\
+        println!(
+            "================= Settings =================\n\
         Agent cnt:               \t{:?}\n\
         Operations per agent cnt:\t{:?}\n\
         Data size:               \t{:?}",
-              agent_cnt, operations_cnt, data_sz);
+            agent_cnt, operations_cnt, data_sz
+        );
 
-        println!("================= Summary =================\n\
+        println!(
+            "================= Summary =================\n\
         Max pending:   \t{:?}\n\
         Total ops cnt: \t{:?}\n\
         Sum pending:   \t{:?}\n\
         Total duration:\t{:?}",
-              time_diff_max, agent_cnt * operations_cnt, time_sum_diff, total_duration);
+            time_diff_max,
+            agent_cnt * operations_cnt,
+            time_sum_diff,
+            total_duration
+        );
     }
-
 
     /**
      Environment variables can be used for tuning this test:
@@ -699,15 +851,28 @@ mod load {
     fn parallel_auth_encrypt_mysql() {
         Setup::empty();
 
-        let agent_cnt = std::env::var("AGENTS_CNT").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(AGENT_CNT);
-        let data_sz = std::env::var("DATA_SZ").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(DATA_SZ);
-        let operations_cnt = std::env::var("OPERATIONS_CNT").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(OPERATIONS_CNT);
+        let agent_cnt = std::env::var("AGENTS_CNT")
+            .ok()
+            .and_then(|s| s.parse::<usize>().ok())
+            .unwrap_or(AGENT_CNT);
+
+        let data_sz = std::env::var("DATA_SZ")
+            .ok()
+            .and_then(|s| s.parse::<usize>().ok())
+            .unwrap_or(DATA_SZ);
+
+        let operations_cnt = std::env::var("OPERATIONS_CNT")
+            .ok()
+            .and_then(|s| s.parse::<usize>().ok())
+            .unwrap_or(OPERATIONS_CNT);
 
         let mut agents = Vec::new();
         let mut os_rng = OsRng;
-        
+
         for i in 0..agent_cnt {
-            let (wallet, wallet_config, wallet_credentials) = wallet::create_and_open_mysql_wallet(&format!("parallel_auth_encrypt_mysql-{}", i)).unwrap();
+            let (wallet, wallet_config, wallet_credentials) =
+                wallet::create_and_open_mysql_wallet(&format!("parallel_auth_encrypt_mysql-{}", i))
+                    .unwrap();
             let (_did, verkey) = did::create_and_store_my_did(wallet, None).unwrap();
             let mut data = vec![0u8; data_sz];
             os_rng.fill_bytes(&mut data.as_mut_slice());
@@ -721,10 +886,11 @@ mod load {
         for (wallet, verkey, data, wallet_config, wallet_credentials) in agents {
             let thread = thread::spawn(move || {
                 let mut time_diffs = Vec::new();
-                
+
                 for _ in 0..operations_cnt {
                     let time = SystemTime::now();
-                    let _encrypted = crypto::auth_crypt(wallet, &verkey, &verkey, data.as_slice()).unwrap();
+                    let _encrypted =
+                        crypto::auth_crypt(wallet, &verkey, &verkey, data.as_slice()).unwrap();
                     let time_diff = SystemTime::now().duration_since(time).unwrap();
                     time_diffs.push(time_diff);
                 }
@@ -733,39 +899,48 @@ mod load {
                 wallet::delete_wallet(&wallet_config, &wallet_credentials).unwrap();
                 time_diffs
             });
-         
+
             results.push(thread);
         }
 
         let mut all_diffs = Vec::new();
-       
+
         for result in results {
             all_diffs.push(result.join().unwrap());
         }
-     
+
         let total_duration = SystemTime::now().duration_since(start_time).unwrap();
 
         let mut time_diff_max = Duration::from_secs(0);
         let mut time_sum_diff = Duration::from_secs(0);
-      
+
         for time_diffs in all_diffs {
             println!("{:?}", time_diffs);
-            time_diff_max = time_diffs.iter().fold(time_diff_max, |acc, cur| max(acc, *cur));
+            time_diff_max = time_diffs
+                .iter()
+                .fold(time_diff_max, |acc, cur| max(acc, *cur));
             time_sum_diff = time_diffs.iter().fold(time_sum_diff, |acc, cur| acc + *cur);
         }
 
-        println!("================= Settings =================\n\
+        println!(
+            "================= Settings =================\n\
         Agent cnt:               \t{:?}\n\
         Operations per agent cnt:\t{:?}\n\
         Data size:               \t{:?}",
-              agent_cnt, operations_cnt, data_sz);
+            agent_cnt, operations_cnt, data_sz
+        );
 
-        println!("================= Summary =================\n\
+        println!(
+            "================= Summary =================\n\
         Max pending:   \t{:?}\n\
         Total ops cnt: \t{:?}\n\
         Sum pending:   \t{:?}\n\
         Total duration:\t{:?}",
-              time_diff_max, agent_cnt * operations_cnt, time_sum_diff, total_duration);
+            time_diff_max,
+            agent_cnt * operations_cnt,
+            time_sum_diff,
+            total_duration
+        );
     }
 }
 

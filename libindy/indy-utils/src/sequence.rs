@@ -1,5 +1,7 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use lazy_static::lazy_static;
+
 lazy_static! {
     static ref IDS_COUNTER: AtomicUsize = AtomicUsize::new(1);
 }

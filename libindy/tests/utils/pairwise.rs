@@ -1,16 +1,15 @@
-extern crate futures;
-
-use indy::IndyError;
-use indy::pairwise;
-use crate::indy::future::Future;
-
-use indy::WalletHandle;
+use indyrs::{future::Future, pairwise, IndyError, WalletHandle};
 
 pub fn pairwise_exists(wallet_handle: WalletHandle, their_did: &str) -> Result<bool, IndyError> {
     pairwise::is_pairwise_exists(wallet_handle, their_did).wait()
 }
 
-pub fn create_pairwise(wallet_handle: WalletHandle, their_did: &str, my_did: &str, metadata: Option<&str>) -> Result<(), IndyError> {
+pub fn create_pairwise(
+    wallet_handle: WalletHandle,
+    their_did: &str,
+    my_did: &str,
+    metadata: Option<&str>,
+) -> Result<(), IndyError> {
     pairwise::create_pairwise(wallet_handle, their_did, my_did, metadata).wait()
 }
 
@@ -22,6 +21,10 @@ pub fn get_pairwise(wallet_handle: WalletHandle, their_did: &str) -> Result<Stri
     pairwise::get_pairwise(wallet_handle, their_did).wait()
 }
 
-pub fn set_pairwise_metadata(wallet_handle: WalletHandle, their_did: &str, metadata: Option<&str>) -> Result<(), IndyError> {
+pub fn set_pairwise_metadata(
+    wallet_handle: WalletHandle,
+    their_did: &str,
+    metadata: Option<&str>,
+) -> Result<(), IndyError> {
     pairwise::set_pairwise_metadata(wallet_handle, their_did, metadata).wait()
 }

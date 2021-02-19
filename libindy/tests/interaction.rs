@@ -1,7 +1,14 @@
 #[macro_use]
-mod utils;
+extern crate derivative;
 
-inject_indy_dependencies!();
+#[macro_use]
+extern crate serde_derive;
+
+#[macro_use]
+extern crate serde_json;
+
+#[macro_use]
+mod utils;
 
 extern crate indyrs as indy;
 extern crate indyrs as api;
@@ -587,7 +594,7 @@ fn anoncreds_revocation_interaction_test_one_prover(revocation_registry_config: 
            "non_revoked": json!({ "to": to.clone() })
         }).to_string();
 
-    let verifier = VerifierService::new(&proof_request);
+    let verifier = Verifier::new(&proof_request);
 
     let proof_json = prover.make_proof(&pool, &proof_request, "attr1_referent", None, to);
 
@@ -696,7 +703,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
            "non_revoked": json!({ "to": to.clone() })
         }).to_string();
 
-    let verifier = VerifierService::new(&proof_request);
+    let verifier = Verifier::new(&proof_request);
 
     let proof_json = prover1.make_proof(&pool, &proof_request, "attr1_referent", None, to);
 
@@ -782,7 +789,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
            "non_revoked": json!({ "to": to.clone() })
         }).to_string();
 
-    let verifier = VerifierService::new(&proof_request);
+    let verifier = Verifier::new(&proof_request);
 
     let proof_json = prover1.make_proof(&pool, &proof_request, "attr1_referent", None, to);
 
@@ -914,7 +921,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_did(
 
     let proof_request = anoncreds::to_unqualified(&proof_request).unwrap();
 
-    let verifier = VerifierService::new(&proof_request);
+    let verifier = Verifier::new(&proof_request);
 
     let proof_json = prover.make_proof(&pool, &proof_request, "attr1_referent", None, to);
 
@@ -944,7 +951,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_did(
            "ver": "2.0"
         }).to_string();
 
-    let verifier = VerifierService::new(&proof_request);
+    let verifier = Verifier::new(&proof_request);
 
     let proof_json = prover.make_proof(&pool, &proof_request, "attr1_referent", None, to);
 
@@ -1061,7 +1068,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_issu
 
     let proof_request = anoncreds::to_unqualified(&proof_request).unwrap();
 
-    let verifier = VerifierService::new(&proof_request);
+    let verifier = Verifier::new(&proof_request);
 
     let proof_json = prover.make_proof(&pool, &proof_request, "attr1_referent", None, to);
 

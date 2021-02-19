@@ -7,13 +7,12 @@ use ursa::cl::{
     CredentialRevocationPublicKey,
 };
 
-use crate::{
-    domain::{
-        anoncreds::{schema::SchemaId, DELIMITER},
-        crypto::did::DidValue,
-        ledger::request::ProtocolVersion,
-    },
-    utils::qualifier,
+use crate::utils::qualifier;
+
+use super::super::{
+    anoncreds::{schema::SchemaId, DELIMITER},
+    crypto::did::DidValue,
+    ledger::request::ProtocolVersion,
 };
 
 pub const CL_SIGNATURE_TYPE: &str = "CL";

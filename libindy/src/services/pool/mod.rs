@@ -54,14 +54,14 @@ pub(crate) struct PoolService {
 }
 
 impl PoolService {
-     pub(crate) fn new() -> PoolService {
+    pub(crate) fn new() -> PoolService {
         PoolService {
             open_pools: Mutex::new(HashMap::new()),
             pending_pools: Mutex::new(HashSet::new()),
         }
     }
 
-     pub(crate) fn create(&self, name: &str, config: Option<PoolConfig>) -> IndyResult<()> {
+    pub(crate) fn create(&self, name: &str, config: Option<PoolConfig>) -> IndyResult<()> {
         //TODO: initialize all state machines
         trace!("PoolService::create {} with config {:?}", name, config);
 
@@ -141,7 +141,7 @@ impl PoolService {
         Ok(())
     }
 
-     pub(crate) async fn delete(&self, name: &str) -> IndyResult<()> {
+    pub(crate) async fn delete(&self, name: &str) -> IndyResult<()> {
         if self
             .open_pools
             .lock()
@@ -162,7 +162,7 @@ impl PoolService {
             .to_indy(IndyErrorKind::IOError, "Can't delete pool config directory")
     }
 
-     pub(crate) async fn open(
+    pub(crate) async fn open(
         &self,
         name: String,
         config: Option<PoolOpenConfig>,
@@ -219,7 +219,7 @@ impl PoolService {
     }
 
     //#[logfn(trace)] FIXME:
-     pub(crate) async fn open_ack(pool_hanlde: PoolHandle, result: IndyResult<()>) {
+    pub(crate) async fn open_ack(pool_hanlde: PoolHandle, result: IndyResult<()>) {
         let sender: futures::channel::oneshot::Sender<IndyResult<PoolHandle>> = POOL_HANDLE_SENDERS
             .lock()
             .await
@@ -229,17 +229,17 @@ impl PoolService {
     }
 
     //#[logfn(trace)] FIXME:
-     pub(crate) async fn refresh_ack(cmd_id: CommandHandle, result: IndyResult<()>) {
+    pub(crate) async fn refresh_ack(cmd_id: CommandHandle, result: IndyResult<()>) {
         let sender: futures::channel::oneshot::Sender<IndyResult<String>> =
             SUBMIT_SENDERS.lock().await.remove(&cmd_id).unwrap();
         sender.send(result.map(|()| String::new())).unwrap(); //FIXME
     }
 
-     pub(crate) async fn send_tx(&self, handle: PoolHandle, msg: &str) -> IndyResult<String> {
+    pub(crate) async fn send_tx(&self, handle: PoolHandle, msg: &str) -> IndyResult<String> {
         self.send_action(handle, msg, None, None).await
     }
 
-     pub(crate) async fn send_action(
+    pub(crate) async fn send_action(
         &self,
         handle: PoolHandle,
         msg: &str,
@@ -314,7 +314,7 @@ impl PoolService {
     //     parsers.get(txn_type).map(Clone::clone)
     // }
 
-     pub(crate) async fn close(&self, handle: PoolHandle) -> IndyResult<()> {
+    pub(crate) async fn close(&self, handle: PoolHandle) -> IndyResult<()> {
         let pool = self.open_pools.lock().await.remove(&handle);
 
         let (sender, receiver) = oneshot::channel::<IndyResult<()>>();
@@ -346,7 +346,7 @@ impl PoolService {
         sender.send(result).unwrap(); //FIXME
     }
 
-     pub(crate) async fn refresh(&self, handle: PoolHandle) -> IndyResult<()> {
+    pub(crate) async fn refresh(&self, handle: PoolHandle) -> IndyResult<()> {
         self.send_action(handle, COMMAND_REFRESH, None, None)
             .await
             .map(|_| ())
@@ -375,7 +375,7 @@ impl PoolService {
         }
     }
 
-     pub(crate) fn list(&self) -> IndyResult<Vec<serde_json::Value>> {
+    pub(crate) fn list(&self) -> IndyResult<Vec<serde_json::Value>> {
         let mut pool = Vec::new();
         let pool_home_path = environment::pool_home_path();
 
@@ -495,7 +495,7 @@ pub fn pool_create_pair_of_sockets(addr: &str) -> (zmq::Socket, zmq::Socket) {
 pub mod test_utils {
     use super::*;
 
-     pub(crate) async fn fake_pool_handle_for_poolsm() -> (
+    pub(crate) async fn fake_pool_handle_for_poolsm() -> (
         indy_api_types::PoolHandle,
         oneshot::Receiver<IndyResult<indy_api_types::PoolHandle>>,
     ) {
@@ -508,7 +508,7 @@ pub mod test_utils {
         (pool_handle, receiver)
     }
 
-     pub(crate) async fn fake_cmd_id() -> (
+    pub(crate) async fn fake_cmd_id() -> (
         indy_api_types::CommandHandle,
         oneshot::Receiver<IndyResult<String>>,
     ) {
@@ -518,7 +518,7 @@ pub mod test_utils {
         (cmd_id, receiver)
     }
 
-     pub(crate) async fn fake_pool_handle_for_close_cmd() -> (
+    pub(crate) async fn fake_pool_handle_for_close_cmd() -> (
         indy_api_types::CommandHandle,
         oneshot::Receiver<IndyResult<()>>,
     ) {
@@ -575,13 +575,11 @@ pub mod tests {
     }
 
     mod pool_service {
+        use super::*;
+
         use std::path;
 
-        use libc::c_char;
-
-        use indy_api_types::{ErrorCode, INVALID_POOL_HANDLE};
-
-        use super::*;
+        use indy_api_types::INVALID_POOL_HANDLE;
 
         #[test]
         fn pool_service_new_works() {
@@ -787,25 +785,28 @@ pub mod tests {
 
             let test_data = "str_instead_of_tx_json";
 
-            let pool_mock = thread::spawn(move || {
+            let _pool_mock = thread::spawn(move || {
                 assert_eq!(
                     1,
                     zmq::poll(&mut [recv_cmd_sock.as_poll_item(zmq::POLLIN)], 10_000).unwrap()
                 );
+
                 assert_eq!(
                     recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(),
                     test_data
                 );
+
                 let cmd_id = LittleEndian::read_i32(
                     recv_cmd_sock.recv_bytes(zmq::DONTWAIT).unwrap().as_slice(),
                 );
+
                 block_on(PoolService::submit_ack(cmd_id, Ok("".to_owned())));
             });
 
             ps.send_action(pool_id, test_data, None, None)
                 .await
                 .unwrap();
-            
+
             // pool_mock.join().unwrap();
         }
 
@@ -911,7 +912,7 @@ pub mod tests {
         test::cleanup_storage("pool_drop_works_for_after_close");
     }
 
-     pub(crate) mod nodes_emulator {
+    pub(crate) mod nodes_emulator {
         use indy_utils::crypto::ed25519_sign;
         use rust_base58::{FromBase58, ToBase58};
 
@@ -920,9 +921,9 @@ pub mod tests {
         use crate::services::pool::request_handler::DEFAULT_GENERATOR;
         use ursa::bls::{Generator, SignKey, VerKey};
 
-         pub(crate) static POLL_TIMEOUT: i64 = 1_000; /* in ms */
+        pub(crate) static POLL_TIMEOUT: i64 = 1_000; /* in ms */
 
-         pub(crate) fn node() -> NodeTransactionV1 {
+        pub(crate) fn node() -> NodeTransactionV1 {
             let blskey = VerKey::new(
                 &Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap(),
                 &SignKey::new(None).unwrap(),
@@ -967,7 +968,7 @@ pub mod tests {
             }
         }
 
-         pub(crate) fn node_2() -> NodeTransactionV1 {
+        pub(crate) fn node_2() -> NodeTransactionV1 {
             let blskey = VerKey::new(
                 &Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap(),
                 &SignKey::new(None).unwrap(),
@@ -1012,7 +1013,7 @@ pub mod tests {
             }
         }
 
-         pub(crate) fn start(gt: &mut NodeTransactionV1) -> zmq::Socket {
+        pub(crate) fn start(gt: &mut NodeTransactionV1) -> zmq::Socket {
             let (vk, sk) = ed25519_sign::create_key_pair_for_signature(None).unwrap();
             let pkc = ed25519_sign::vk_to_curve25519(&vk).expect("Invalid pkc");
             let skc = ed25519_sign::sk_to_curve25519(&sk).expect("Invalid skc");
@@ -1037,7 +1038,7 @@ pub mod tests {
             s
         }
 
-         pub(crate) fn next(s: &zmq::Socket) -> Option<String> {
+        pub(crate) fn next(s: &zmq::Socket) -> Option<String> {
             let poll_res = s.poll(zmq::POLLIN, POLL_TIMEOUT).expect("poll");
             if poll_res == 1 {
                 let v = s.recv_multipart(zmq::DONTWAIT).expect("recv mulp");
