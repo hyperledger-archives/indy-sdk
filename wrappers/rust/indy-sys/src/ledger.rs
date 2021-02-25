@@ -305,6 +305,17 @@ extern {
                                         request_json: CString,
                                         endorser_did: CString,
                                         cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_build_ledgers_freeze_request(command_handle: CommandHandle,
+                                       submitter_did: CString,
+                                       ledgers_ids: CString,
+                                       cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_build_get_frozen_ledgers_request(command_handle: CommandHandle,
+                                        submitter_did: CString,
+                                        cb: Option<ResponseStringCB>) -> Error;
 }
 
 pub type CustomTransactionParser = extern fn(reply_from_node: CString, parsed_sp: *mut CString) -> Error;

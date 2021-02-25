@@ -166,6 +166,30 @@ pub fn get_str_tuple_array_param<'a>(name: &'a str, params: &'a CommandParams) -
     }
 }
 
+pub fn get_number_tuple_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Vec<u64>, ()> {
+    match params.get(name) {
+        Some(v) if !v.is_empty() => {
+            let tuples: Vec<&str> = v.split(",").collect();
+            if tuples.is_empty() {
+                println_err!("Parameter \"{}\" has invalid format", name);
+                Err(())
+            } else {
+                let mut result: Vec<u64> = Vec::new();
+                for item in tuples {
+                    println!("{:?}",item);
+                    result.push(item.parse::<u64>().map_err(|err|
+                        println_err!("Can't parse number parameter \"{}\": value: \"{}\", err \"{}\"", name, item, err))?);
+                }
+                Ok(result)
+            }
+        }
+        _ => {
+            println_err!("No required \"{}\" parameter present", name);
+            Err(())
+        }
+    }
+}
+
 pub fn get_opt_str_tuple_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Option<Vec<String>>, ()> {
     match params.get(name) {
         Some(v) =>
