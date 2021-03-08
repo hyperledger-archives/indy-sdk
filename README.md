@@ -1,5 +1,5 @@
 # Indy SDK Status
-The Indy community is transitioning to a new approach to Indy client applications, and so new releases of the Indy SDK are currently only created as they are needed. We are actively seeking contributors to take ownership of creating new releases. If you are interested in helping with a new release of the Indy-SDK,please reach out using the contact information below.
+The Indy community is transitioning to a new approach to Indy client applications, and so new releases of the Indy SDK are currently only created as they are needed. We are actively seeking contributors to take ownership of creating new releases. If you are interested in helping with a new release of the Indy-SDK, please reach out using the contact information below.
 
 Hyperledger Indy's ledger implementation, [Indy Node](https://github.com/hyperledger/indy-node) and related codebases, continue to be maintained and improved.
 
