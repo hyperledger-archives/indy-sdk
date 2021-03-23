@@ -41,11 +41,11 @@ IPHONE_SDK=iphoneos
 for arch in ${archs[*]}
 do
     rm -rf vcx.framework
-    if [ "${arch}" = "i386" ] || [ "${arch}" = "x86_64" ]; then
-        # This sdk supports i386 and x86_64
+    if [ "${arch}" = "x86_64" ]; then
+        # This sdk supports x86_64
         IPHONE_SDK=iphonesimulator
-    elif [ "${arch}" = "armv7" ] || [ "${arch}" = "armv7s" ] || [ "${arch}" = "arm64" ]; then
-        # This sdk supports armv7, armv7s, and arm64
+    elif [ "${arch}" = "arm64" ]; then
+        # This sdk supports arm64
         IPHONE_SDK=iphoneos
     fi
     xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Debug -arch ${arch} -sdk ${IPHONE_SDK} CONFIGURATION_BUILD_DIR=. build
@@ -60,8 +60,8 @@ done
 
 #export GEM_HOME=${HOME}/.gem
 #export PATH=${GEM_HOME}/bin:$PATH
-# Test the libvcx.a file if the ${IOS_ARCHS} contains i386 or x86_64
-if [[ "${IOS_ARCHS}" == *"i386"* ]] || [[ "${IOS_ARCHS}" == *"x86_64"* ]]; then
+# Test the libvcx.a file if the ${IOS_ARCHS} contains x86_64
+if [[ "${IOS_ARCHS}" == *"x86_64"* ]]; then
     #xcodebuild -project vcx.xcodeproj -scheme vcx-demo -sdk iphonesimulator build-for-testing
     xcodebuild -project vcx.xcodeproj -scheme vcx-demo -destination 'platform=iOS Simulator,name=iPhone 5s' test
     ## Need to do:

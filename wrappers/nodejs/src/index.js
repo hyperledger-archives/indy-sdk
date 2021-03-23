@@ -185,6 +185,12 @@ indy.proverCloseCredentialsSearchForProofReq = function proverCloseCredentialsSe
   return cb.promise
 }
 
+indy.proverDeleteCredential = function proverDeleteCredential (wh, credId, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.proverDeleteCredential(wh, credId, cb)
+  return cb.promise
+}
+
 indy.proverCreateProof = function proverCreateProof (wh, proofReq, requestedCredentials, masterSecretName, schemas, credentialDefs, revStates, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.proverCreateProof(wh, toJson(proofReq), toJson(requestedCredentials), masterSecretName, toJson(schemas), toJson(credentialDefs), toJson(revStates), cb)
@@ -627,6 +633,18 @@ indy.buildAcceptanceMechanismsRequest = function buildAcceptanceMechanismsReques
 indy.buildGetAcceptanceMechanismsRequest = function buildGetAcceptanceMechanismsRequest (submitterDid, timestamp, version, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.buildGetAcceptanceMechanismsRequest(submitterDid, timestamp == null ? -1 : timestamp, version, cb)
+  return cb.promise
+}
+
+indy.buildLedgersFreezeRequest = function buildLedgersFreezeRequest (submitterDid, ledgersIds, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildLedgersFreezeRequest(submitterDid, JSON.stringify(ledgersIds), cb)
+  return cb.promise
+}
+
+indy.buildGetFrozenLedgersRequest = function buildGetFrozenLedgersRequest (submitterDid, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildGetFrozenLedgersRequest(submitterDid, cb)
   return cb.promise
 }
 

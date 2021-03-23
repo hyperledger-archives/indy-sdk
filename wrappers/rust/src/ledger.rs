@@ -1,3 +1,4 @@
+use serde_json::json;
 use {ErrorCode, IndyError};
 
 use std::ffi::CString;
@@ -1508,6 +1509,67 @@ fn _append_request_endorser(command_handle: CommandHandle,
         ledger::indy_append_request_endorser(command_handle,
                                              request_json.as_ptr(),
                                              endorser_did.as_ptr(),
+                                             cb)
+    })
+}
+/// Request to freeze list of ledgers.
+///
+/// # Arguments
+/// * `command_handle`: command handle to map callback to caller context.
+/// * `submitter_did`: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
+/// * `ledgers_ids`: list of ledgers IDs for freezing.
+/// * `cb`: Callback that takes command result as parameter.
+///
+/// # Returns
+/// Updated request result as json.
+pub fn build_ledgers_freeze_request(submitter_did: &str, ledgers_ids: Vec<u64>) -> Box<dyn Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+    let json_ledgers_ids: &str = &json!(ledgers_ids).to_string();
+    let err = _build_ledgers_freeze_request(command_handle, submitter_did, json_ledgers_ids, cb);
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_ledgers_freeze_request(command_handle: CommandHandle, submitter_did: &str, ledgers_ids: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did = c_str!(submitter_did);
+    let ledgers_ids = c_str!(ledgers_ids);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_ledgers_freeze_request(command_handle,
+                                                submitter_did.as_ptr(),
+                                                ledgers_ids.as_ptr(),
+                                                cb)
+    })
+}
+
+/// Request to get list of frozen ledgers.
+///
+/// # Arguments
+/// * `command_handle`: command handle to map callback to caller context.
+/// * `submitter_did`: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
+/// * `cb`: Callback that takes command result as parameter.
+///
+/// # Returns
+/// Request result as json.
+///  {
+///     <ledger_id>: {
+///         "ledger": String - Ledger root hash,
+///         "state": String - State root hash,
+///         "seq_no": u64 - the latest transaction seqNo for particular Node,
+///     },
+///     ...
+/// }
+pub fn build_get_frozen_ledgers_request(submitter_did: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+    let err = _build_get_frozen_ledgers_request(command_handle, submitter_did, cb);
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_get_frozen_ledgers_request(command_handle: CommandHandle, submitter_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did = c_str!(submitter_did);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_get_frozen_ledgers_request(command_handle,
+                                             submitter_did.as_ptr(),
                                              cb)
     })
 }
