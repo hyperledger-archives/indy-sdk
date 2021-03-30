@@ -2371,6 +2371,41 @@ NAN_METHOD(buildGetAcceptanceMechanismsRequest) {
   delete arg2;
 }
 
+void buildLedgersFreezeRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(buildLedgersFreezeRequest) {
+  INDY_ASSERT_NARGS(buildLedgersFreezeRequest, 3)
+  INDY_ASSERT_STRING(buildLedgersFreezeRequest, 0, submitterDid)
+  INDY_ASSERT_STRING(buildLedgersFreezeRequest, 1, ledgersIds)
+  INDY_ASSERT_FUNCTION(buildLedgersFreezeRequest, 2)
+  const char* arg0 = argToCString(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  IndyCallback* icb = argToIndyCb(info[2]);
+  indyCalled(icb, indy_build_ledgers_freeze_request(icb->handle, arg0, arg1, buildLedgersFreezeRequest_cb));
+  delete arg0;
+  delete arg1;
+}
+
+void buildGetFrozenLedgersRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(buildGetFrozenLedgersRequest) {
+  INDY_ASSERT_NARGS(buildGetFrozenLedgersRequest, 2)
+  INDY_ASSERT_STRING(buildGetFrozenLedgersRequest, 0, submitterDid)
+  INDY_ASSERT_FUNCTION(buildGetFrozenLedgersRequest, 1)
+  const char* arg0 = argToCString(info[0]);
+  IndyCallback* icb = argToIndyCb(info[1]);
+  indyCalled(icb, indy_build_get_frozen_ledgers_request(icb->handle, arg0, buildGetFrozenLedgersRequest_cb));
+  delete arg0;
+}
+
 void appendTxnAuthorAgreementAcceptanceToRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3732,6 +3767,8 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildGetTxnAuthorAgreementRequest", buildGetTxnAuthorAgreementRequest);
   Nan::Export(target, "buildAcceptanceMechanismsRequest", buildAcceptanceMechanismsRequest);
   Nan::Export(target, "buildGetAcceptanceMechanismsRequest", buildGetAcceptanceMechanismsRequest);
+  Nan::Export(target, "buildLedgersFreezeRequest", buildLedgersFreezeRequest);
+  Nan::Export(target, "buildGetFrozenLedgersRequest", buildGetFrozenLedgersRequest);
   Nan::Export(target, "appendTxnAuthorAgreementAcceptanceToRequest", appendTxnAuthorAgreementAcceptanceToRequest);
   Nan::Export(target, "appendRequestEndorser", appendRequestEndorser);
   Nan::Export(target, "getResponseMetadata", getResponseMetadata);

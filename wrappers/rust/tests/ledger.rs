@@ -565,6 +565,57 @@ mod test_build_cred_def_request {
 }
 
 #[cfg(test)]
+mod test_build_ledgers_freeze_request {
+    use super::*;
+
+    #[test]
+    pub fn test_build_ledgers_freeze_request() {
+        let wallet = Wallet::new();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
+        let ledgers_ids: Vec<u64> = vec![0u64, 1u64, 10u64, 236u64];
+
+        match ledger::build_ledgers_freeze_request(&did, ledgers_ids).wait() {
+            Ok(_) => {},
+            Err(ec) => {
+                assert!(false, "build_ledgers_freeze_request returned error_code {:?}", ec);
+            }
+        }
+    }
+
+    #[test]
+    pub fn test_build_ledgers_freeze_request_with_empty_data() {
+        let wallet = Wallet::new();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
+        let ledgers_ids: Vec<u64> = vec![];
+
+        match ledger::build_ledgers_freeze_request(&did, ledgers_ids).wait() {
+            Ok(_) => {},
+            Err(ec) => {
+                assert!(false, "test_build_ledgers_freeze_request_with_empty_data returned error_code {:?}", ec);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_build_get_frozen_ledgers_request {
+    use super::*;
+
+    #[test]
+    pub fn test_build_get_frozen_ledgers_request() {
+        let wallet = Wallet::new();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
+
+        match ledger::build_get_frozen_ledgers_request(&did).wait() {
+            Ok(_) => {},
+            Err(ec) => {
+                assert!(false, "build_get_frozen_ledgers_request returned error_code {:?}", ec);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
 mod test_build_get_cred_def_request {}
 
 #[cfg(test)]
