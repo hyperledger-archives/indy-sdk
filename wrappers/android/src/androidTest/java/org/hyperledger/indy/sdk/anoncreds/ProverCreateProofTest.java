@@ -1,9 +1,10 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
-import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
-import org.junit.Test;
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.Test;
+
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
@@ -16,6 +17,9 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 			"\"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true}}," +
 			"\"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}}" +
 			"}", credentialId1, credentialId1);
+
+	public ProverCreateProofTest() throws JSONException {
+	}
 
 	@Test
 	public void testProverCreateProofWorks() throws Exception {

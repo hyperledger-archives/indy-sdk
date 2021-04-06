@@ -1,6 +1,6 @@
 package org.hyperledger.indy.sdk.pairwise;
 
-import com.sun.jna.Callback;
+import java9.util.concurrent.CompletableFuture;
 
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
@@ -8,7 +8,7 @@ import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.ParamGuard;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
-import java9.util.concurrent.CompletableFuture;
+import com.sun.jna.Callback;
 
 import static org.hyperledger.indy.sdk.Callbacks.boolCallback;
 

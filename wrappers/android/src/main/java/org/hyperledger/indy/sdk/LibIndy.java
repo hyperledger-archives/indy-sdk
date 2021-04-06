@@ -1,11 +1,6 @@
 package org.hyperledger.indy.sdk;
 
-import com.sun.jna.Callback;
-import com.sun.jna.DefaultTypeMapper;
-import com.sun.jna.Library;
-import com.sun.jna.Native;
-import com.sun.jna.NativeLibrary;
-import com.sun.jna.Pointer;
+import com.sun.jna.*;
 import com.sun.jna.ptr.PointerByReference;
 
 import java.io.File;
@@ -37,6 +32,7 @@ public abstract class LibIndy {
 		public int indy_close_pool_ledger(int command_handle, int handle, Callback cb);
 		public int indy_delete_pool_ledger_config(int command_handle, String config_name, Callback cb);
 		public int indy_set_protocol_version(int command_handle, int protocol_version, Callback cb);
+		public int indy_list_pools(int command_handle, Callback cb);
 
 		// wallet.rs
 
@@ -92,6 +88,8 @@ public abstract class LibIndy {
 		public int indy_build_get_acceptance_mechanisms_request(int command_handle, String submitter_did, int timestamp, String version, Callback cb);
 		public int indy_append_txn_author_agreement_acceptance_to_request(int command_handle, String request_json, String text, String version, String hash, String acc_mech_type, long time_of_acceptance, Callback cb);
 		public int indy_append_request_endorser(int command_handle, String request_json, String endorser_did, Callback cb);
+		public int indy_build_ledgers_freeze_request(int command_handle, String submitter_did, String ledgers_ids, Callback cb);
+		public int indy_build_get_frozen_ledgers_request(int command_handle, String submitter_did, Callback cb);
 
 		// did.rs
 
@@ -206,6 +204,9 @@ public abstract class LibIndy {
 		int indy_get_request_info(int command_handle, String get_auth_rule_response_json, String requester_info_json, String fees_json, Callback cb);
 		int indy_sign_with_address(int command_handle, int wallet_handle, String address, byte[] message_raw, int message_len, Callback cb);
 		int indy_verify_with_address(int command_handle, String address, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
+
+		// metrics.rs
+		int indy_collect_metrics(int command_handle, Callback cb);
 
 		int indy_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
 		int indy_set_logger_with_max_lvl(Pointer context, Callback enabled, Callback log, Callback flush, int max_lvl);
@@ -338,8 +339,7 @@ public abstract class LibIndy {
 		} else { // Off
 			logLevel = 0;
 		}
-		api.indy_set_logger(null, Logger.enabled, Logger.log, Logger.flush);
-		api.indy_set_log_max_lvl(logLevel); // TODO this does not appear to be working
+		api.indy_set_logger_with_max_lvl(null, Logger.enabled, Logger.log, Logger.flush, logLevel);
 	}
 
 	/**

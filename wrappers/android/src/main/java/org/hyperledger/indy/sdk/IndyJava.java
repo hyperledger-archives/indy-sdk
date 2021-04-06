@@ -88,7 +88,7 @@ public class IndyJava {
 		protected static boolean checkResult(CompletableFuture<?> future, int err) {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (!ErrorCode.Success.equals(errorCode)) {
+			if (! ErrorCode.Success.equals(errorCode)) {
 
 				IndyException indyException = IndyException.fromSdkError(err);
 				future.completeExceptionally(indyException);

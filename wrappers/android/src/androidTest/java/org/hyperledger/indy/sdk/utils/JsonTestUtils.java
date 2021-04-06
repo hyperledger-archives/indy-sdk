@@ -1,4 +1,4 @@
-package org.hyperledger.indy.sdk;
+package org.hyperledger.indy.sdk.utils;
 
 import com.google.gson.Gson;
 

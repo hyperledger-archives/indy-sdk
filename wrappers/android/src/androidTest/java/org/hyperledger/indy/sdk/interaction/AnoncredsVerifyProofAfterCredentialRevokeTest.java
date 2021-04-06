@@ -1,7 +1,5 @@
 package org.hyperledger.indy.sdk.interaction;
 
-import android.util.Log;
-
 import org.apache.commons.io.FileUtils;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.anoncreds.Anoncreds;
@@ -31,7 +29,7 @@ import static org.junit.Assert.assertFalse;
 public class AnoncredsVerifyProofAfterCredentialRevokeTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 	// This test is a copy of a project attached to IS-1368. We omitted pool and wallet preparation.
 
-	private static String indyClientPath = EnvironmentUtils.getTmpPath();
+	private static final String indyClientPath = EnvironmentUtils.getTmpPath();
 
 	@Test
 	public void testAnoncredsVerifyProofAfterCredentialRevoke() throws Exception {
@@ -50,6 +48,7 @@ public class AnoncredsVerifyProofAfterCredentialRevokeTest extends IndyIntegrati
 		String keyTrustAnchor = createDidResult.getVerkey();
 		String request = Ledger.buildNymRequest(didSteward, didTrustAnchor, keyTrustAnchor, null, "TRUST_ANCHOR").get();
 		String response = Ledger.signAndSubmitRequest(pool, wallet, didSteward, request).get();
+
 
 		// trust anchor creates schema and credential definition and writes them to the
 		// ledger
@@ -93,7 +92,7 @@ public class AnoncredsVerifyProofAfterCredentialRevokeTest extends IndyIntegrati
 
 
 		// now the trust anchor creates a revReg and writes the definition to the ledger
-		String revocDir = indyClientPath + "revoc_dir";
+		String revocDir = indyClientPath + "/" + "revoc_dir";
 		File revocDirPath = new File(revocDir);
 		if (!revocDirPath.exists()) {
 			revocDirPath.mkdir();
@@ -135,7 +134,6 @@ public class AnoncredsVerifyProofAfterCredentialRevokeTest extends IndyIntegrati
 		request = Ledger.buildGetRevocRegRequest(didTrustAnchor, revRegDefId, timestampAfterCreatingRevDef).get();
 		response = PoolUtils.ensurePreviousRequestApplied(pool, request, innerResponse -> {
 			JSONObject innerResponseObject = new JSONObject(innerResponse);
-			Log.d("Indy Test Log", innerResponse);
 			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
 		});
 		LedgerResults.ParseRegistryResponseResult resultAfterCreatingRevDef = Ledger.parseGetRevocRegResponse(response).get();

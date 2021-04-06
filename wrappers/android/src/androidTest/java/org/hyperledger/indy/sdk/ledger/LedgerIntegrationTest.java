@@ -18,7 +18,7 @@ public class LedgerIntegrationTest extends IndyIntegrationTestWithPoolAndSingleW
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(5, TimeUnit.MINUTES);
+	public Timeout globalTimeout = new Timeout(10, TimeUnit.MINUTES);
 
 	private static Boolean entitiesPosted = false;
 

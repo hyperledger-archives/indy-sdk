@@ -3,9 +3,9 @@ package org.hyperledger.indy.sdk.pairwise;
 import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.isA;
-
 import java.util.concurrent.ExecutionException;
+
+import static org.hamcrest.CoreMatchers.isA;
 
 public class CreatePairwiseTest extends PairwiseIntegrationTest {
 

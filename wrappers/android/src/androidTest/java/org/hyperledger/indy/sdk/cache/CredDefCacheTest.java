@@ -1,14 +1,7 @@
 package org.hyperledger.indy.sdk.cache;
 
-import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
-import org.json.JSONObject;
-import org.junit.*;
-
-import java.util.concurrent.ExecutionException;
-
-import static org.hamcrest.CoreMatchers.isA;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 public class CredDefCacheTest extends CacheIntegrationTest {
 

@@ -3,6 +3,7 @@ package org.hyperledger.indy.sdk.anoncreds;
 
 import org.hyperledger.indy.sdk.wallet.WalletInvalidQueryException;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -12,6 +13,9 @@ import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 
 public class ProverGetCredentialsTest extends AnoncredsIntegrationTest {
+
+	public ProverGetCredentialsTest() throws JSONException {
+	}
 
 	@Test
 	public void testProverGetCredentialsWorksForEmptyFilter() throws Exception {

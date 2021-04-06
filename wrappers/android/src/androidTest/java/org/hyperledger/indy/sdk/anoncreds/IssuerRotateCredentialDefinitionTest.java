@@ -2,12 +2,16 @@ package org.hyperledger.indy.sdk.anoncreds;
 
 import org.hyperledger.indy.sdk.JsonObjectSimilar;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 
 public class IssuerRotateCredentialDefinitionTest extends AnoncredsIntegrationTest {
+
+	public IssuerRotateCredentialDefinitionTest() throws JSONException {
+	}
 
 	@Test
 	public void testIssuerRotateCredentialDefinitionWorks() throws Exception {

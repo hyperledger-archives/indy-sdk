@@ -1,7 +1,9 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
 
+import org.hyperledger.indy.sdk.JsonObjectSimilar;
 import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -10,9 +12,10 @@ import java.util.concurrent.ExecutionException;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertTrue;
 
-import org.hyperledger.indy.sdk.JsonObjectSimilar;
-
 public class ProverGetCredentialTest extends AnoncredsIntegrationTest {
+
+	public ProverGetCredentialTest() throws JSONException {
+	}
 
 	@Test
 	public void testProverGetCredentialWorks() throws Exception {

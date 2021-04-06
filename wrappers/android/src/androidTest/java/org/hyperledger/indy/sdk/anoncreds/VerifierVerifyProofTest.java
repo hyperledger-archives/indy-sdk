@@ -58,22 +58,17 @@ public class VerifierVerifyProofTest extends AnoncredsIntegrationTest {
 			"   ]" +
 			"}\n";
 
-	private String verifierProofRequest;
+	private String verifierProofRequest = new JSONObject("{\n" +
+			"                   \"nonce\":\"123432421212\",\n" +
+			"                   \"name\":\"proof_req_1\",\n" +
+			"                   \"version\":\"0.1\", " +
+			"                   \"requested_attributes\":{" +
+			"                          \"attr1_referent\":{\"name\":\"name\"}" +
+			"                    },\n" +
+			"                    \"requested_predicates\":{}" +
+			"               }").toString();
 
-	{
-		try {
-			verifierProofRequest = new JSONObject("{\n" +
-						"                   \"nonce\":\"123432421212\",\n" +
-						"                   \"name\":\"proof_req_1\",\n" +
-						"                   \"version\":\"0.1\", " +
-						"                   \"requested_attributes\":{" +
-						"                          \"attr1_referent\":{\"name\":\"name\"}" +
-						"                    },\n" +
-						"                    \"requested_predicates\":{}" +
-						"               }").toString();
-		} catch (JSONException e) {
-			e.printStackTrace();
-		}
+	public VerifierVerifyProofTest() throws JSONException {
 	}
 
 	@Test

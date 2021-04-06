@@ -16,14 +16,9 @@ import static org.junit.Assert.assertFalse;
 public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 
 	/* FIXME: getIndyHomePath hard coded forward slash "/". It will not work for Windows. */
-	private String tailsWriterConfig;
+	private String tailsWriterConfig = new JSONObject(String.format("{\"base_dir\":\"%s\", \"uri_pattern\":\"\"}", getIndyHomePath("tails")).replace('\\', '/')).toString();
 
-	{
-		try {
-			tailsWriterConfig = new JSONObject(String.format("{\"base_dir\":\"%s\", \"uri_pattern\":\"\"}", getIndyHomePath("tails")).replace('\\', '/')).toString();
-		} catch (JSONException e) {
-			e.printStackTrace();
-		}
+	public IssuerRevokeCredentialTest() throws JSONException {
 	}
 
 	@Test

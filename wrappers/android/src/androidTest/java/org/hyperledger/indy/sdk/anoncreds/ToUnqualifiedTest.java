@@ -1,11 +1,15 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
+import org.json.JSONException;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 
 public class ToUnqualifiedTest extends AnoncredsIntegrationTest {
+
+	public ToUnqualifiedTest() throws JSONException {
+	}
 
 	@Test
 	public void testToUnqualifiedWorks() throws Exception {

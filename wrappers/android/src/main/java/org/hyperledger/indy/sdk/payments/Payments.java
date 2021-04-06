@@ -2,14 +2,19 @@ package org.hyperledger.indy.sdk.payments;
 
 import com.sun.jna.Callback;
 import com.sun.jna.Pointer;
+
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.ParamGuard;
-import org.hyperledger.indy.sdk.payments.PaymentsResults.*;
+import org.hyperledger.indy.sdk.payments.PaymentsResults.AddRequestFeesResult;
+import org.hyperledger.indy.sdk.payments.PaymentsResults.BuildGetPaymentSourcesRequestResult;
+import org.hyperledger.indy.sdk.payments.PaymentsResults.BuildMintReqResult;
+import org.hyperledger.indy.sdk.payments.PaymentsResults.BuildPaymentReqResult;
+import org.hyperledger.indy.sdk.payments.PaymentsResults.BuildVerifyPaymentReqResult;
+import org.hyperledger.indy.sdk.payments.PaymentsResults.ParseGetPaymentSourcesWithFromResponseResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
-import java.util.Optional;
 import java9.util.concurrent.CompletableFuture;
 
 import static org.hyperledger.indy.sdk.Callbacks.boolCallback;
@@ -81,6 +86,22 @@ public class Payments extends IndyJava.API {
             future.complete(addRequestFeesResult);
         }
     };
+
+    /**
+     * Callback used when buildGetPaymentSourcesRequest completes.
+     */
+    private static Callback buildGetPaymentSourcesWithFromRequestCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommandHandle, int err, String sourcesJson, String paymentMethod) {
+            CompletableFuture<BuildGetPaymentSourcesRequestResult> future = (CompletableFuture<BuildGetPaymentSourcesRequestResult>) removeFuture(xcommandHandle);
+            if (!checkResult(future, err)) return;
+
+            BuildGetPaymentSourcesRequestResult addRequestFeesResult = new BuildGetPaymentSourcesRequestResult(sourcesJson, paymentMethod);
+
+            future.complete(addRequestFeesResult);
+        }
+    };
+
 
     /**
      * Callback used when buildPaymentRequest completes.
@@ -366,7 +387,7 @@ public class Payments extends IndyJava.API {
                 submitterDid,
                 paymentAddress,
                 from,
-                BuildGetPaymentSourcesRequestCB);
+                buildGetPaymentSourcesWithFromRequestCB);
 
         checkResult(future, result);
 

@@ -1,18 +1,14 @@
 package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
-import org.hyperledger.indy.sdk.JsonTestUtils;
+import org.hyperledger.indy.sdk.utils.JsonTestUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
-@RunWith(AndroidJUnit4.class)
 public class AuthRuleRequestsTest extends IndyIntegrationTest {
 
 	private String txnType = "NYM";
@@ -22,18 +18,13 @@ public class AuthRuleRequestsTest extends IndyIntegrationTest {
 	private String field = "role";
 	private String oldValue = "0";
 	private String newValue = "101";
-	private JSONObject constraint;
+	private JSONObject constraint = new JSONObject()
+			.put("sig_count", 1)
+			.put("role", "0")
+			.put("constraint_id", "ROLE")
+			.put("need_to_be_owner", false);
 
-	{
-		try {
-			constraint = new JSONObject()
-						.put("sig_count", 1)
-						.put("role", "0")
-						.put("constraint_id", "ROLE")
-						.put("need_to_be_owner", false);
-		} catch (JSONException e) {
-			e.printStackTrace();
-		}
+	public AuthRuleRequestsTest() throws JSONException {
 	}
 
 	@Test
@@ -131,8 +122,8 @@ public class AuthRuleRequestsTest extends IndyIntegrationTest {
 
 		String request = Ledger.buildAuthRulesRequest(DID, data.toString()).get();
 
-		assert  JsonTestUtils.toJsonMap(request).entrySet()
+		assert (JsonTestUtils.toJsonMap(request).entrySet()
 				.containsAll(
-						JsonTestUtils.toJsonMap(expectedResult).entrySet());
+						JsonTestUtils.toJsonMap(expectedResult).entrySet()));
 	}
 }

@@ -1,14 +1,13 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
-import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreCredentialDefResult;
-import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.ProverCreateCredentialRequestResult;
 import org.hyperledger.indy.sdk.utils.AndroidInitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreCredentialDefResult;
+import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.ProverCreateCredentialRequestResult;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
@@ -20,7 +19,7 @@ public class AnoncredsIntegrationTest {
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(2, TimeUnit.MINUTES);
+	public Timeout globalTimeout = new Timeout(10, TimeUnit.MINUTES);
 
 	private static Boolean walletOpened = false;
 
@@ -49,60 +48,34 @@ public class AnoncredsIntegrationTest {
 	String credentialId2 = "id2";
     String credentialIdX = "idX";
 	// note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
-	String gvtCredentialValuesJson;
+	String gvtCredentialValuesJson = new JSONObject("{\n" +
+			"               \"sex\":{\"raw\":\"male\",\"encoded\":\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"},\n" +
+			"               \"name\":{\"raw\":\"Alex\",\"encoded\":\"1139481716457488690172217916278103335\"},\n" +
+			"               \"height\":{\"raw\":\"175\",\"encoded\":\"175\"},\n" +
+			"               \"age\":{\"raw\":\"28\",\"encoded\":\"28\"}\n" +
+			"        }").toString();
+	String xyzCredentialValuesJson = new JSONObject("{\n" +
+			"               \"status\":{\"raw\":\"partial\",\"encoded\":\"51792877103171595686471452153480627530895\"},\n" +
+			"               \"period\":{\"raw\":\"8\",\"encoded\":\"8\"}\n" +
+			"        }").toString();
+	String proofRequest = new JSONObject("{\n" +
+			"                   \"nonce\":\"123432421212\",\n" +
+			"                   \"name\":\"proof_req_1\",\n" +
+			"                   \"version\":\"0.1\", " +
+			"                   \"requested_attributes\":{" +
+			"                          \"attr1_referent\":{\"name\":\"name\"}" +
+			"                    },\n" +
+			"                    \"requested_predicates\":{" +
+			"                          \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
+			"                    }" +
+			"               }").toString();
 
-	{
-		try {
-			gvtCredentialValuesJson = new JSONObject("{\n" +
-					"               \"sex\":{\"raw\":\"male\",\"encoded\":\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"},\n" +
-					"               \"name\":{\"raw\":\"Alex\",\"encoded\":\"1139481716457488690172217916278103335\"},\n" +
-					"               \"height\":{\"raw\":\"175\",\"encoded\":\"175\"},\n" +
-					"               \"age\":{\"raw\":\"28\",\"encoded\":\"28\"}\n" +
-					"        }").toString();
-		} catch (JSONException e) {
-			e.printStackTrace();
-		}
-	}
-
-	String xyzCredentialValuesJson;
-
-	{
-		try {
-			xyzCredentialValuesJson = new JSONObject("{\n" +
-						"               \"status\":{\"raw\":\"partial\",\"encoded\":\"51792877103171595686471452153480627530895\"},\n" +
-						"               \"period\":{\"raw\":\"8\",\"encoded\":\"8\"}\n" +
-						"        }").toString();
-		} catch (JSONException e) {
-			e.printStackTrace();
-		}
-	}
-
-	String proofRequest;
-
-	{
-		try {
-			proofRequest = new JSONObject("{\n" +
-						"                   \"nonce\":\"123432421212\",\n" +
-						"                   \"name\":\"proof_req_1\",\n" +
-						"                   \"version\":\"0.1\", " +
-						"                   \"requested_attributes\":{" +
-						"                          \"attr1_referent\":{\"name\":\"name\"}" +
-						"                    },\n" +
-						"                    \"requested_predicates\":{" +
-						"                          \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
-						"                    }" +
-						"               }").toString();
-		} catch (JSONException e) {
-			e.printStackTrace();
-		}
+	public AnoncredsIntegrationTest() throws JSONException {
 	}
 
 	@Before
 	public void setUp() throws Exception {
-		StorageUtils.cleanupStorage();
-
 		AndroidInitHelper.init();
-
 		initCommonWallet();
 	}
 
@@ -111,6 +84,8 @@ public class AnoncredsIntegrationTest {
 		if (walletOpened) {
 			return;
 		}
+
+		StorageUtils.cleanupStorage();
 
 		String walletConfig =
 				new JSONObject()
@@ -145,7 +120,7 @@ public class AnoncredsIntegrationTest {
 
 		//Issue GVT issuer1GvtCredential by Issuer2
 		String issuerDid2 = "VsKV7grR1BUE29mG2Fm2kX";
-		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult issuer2CreateGvtCredDefResult =
+		IssuerCreateAndStoreCredentialDefResult issuer2CreateGvtCredDefResult =
 				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid2, gvtSchema, tag, null, defaultCredentialDefinitionConfig).get();
 		String issuer2gvtCredDefId = issuer2CreateGvtCredDefResult.getCredDefId();
 		String issuer2gvtCredDef = issuer2CreateGvtCredDefResult.getCredDefJson();

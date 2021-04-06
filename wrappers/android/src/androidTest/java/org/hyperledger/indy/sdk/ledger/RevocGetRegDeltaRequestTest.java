@@ -1,6 +1,6 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import org.hyperledger.indy.sdk.JsonTestUtils;
+import org.hyperledger.indy.sdk.utils.JsonTestUtils;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.Test;

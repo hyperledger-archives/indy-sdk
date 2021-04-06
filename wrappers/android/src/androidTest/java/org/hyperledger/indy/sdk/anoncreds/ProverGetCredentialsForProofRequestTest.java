@@ -1,16 +1,16 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
-import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Test;
 
-import java.util.concurrent.ExecutionException;
-
-import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 
 public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegrationTest {
+
+	public ProverGetCredentialsForProofRequestTest() throws JSONException {
+	}
 
 	@Test
 	public void testProverGetCredentialsForProofRequestWorksForRevealedAttribute() throws Exception {

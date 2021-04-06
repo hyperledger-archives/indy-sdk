@@ -1,18 +1,17 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import java9.util.concurrent.CompletableFuture;
-
+import com.sun.jna.Callback;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.ParamGuard;
+import org.hyperledger.indy.sdk.ledger.LedgerResults.ParseRegistryResponseResult;
+import org.hyperledger.indy.sdk.ledger.LedgerResults.ParseResponseResult;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
-import org.hyperledger.indy.sdk.ledger.LedgerResults.ParseResponseResult;
-import org.hyperledger.indy.sdk.ledger.LedgerResults.ParseRegistryResponseResult;
-
-import com.sun.jna.Callback;
+import java.util.List;
+import java9.util.concurrent.CompletableFuture;
 
 /**
  * ledger.rs API
@@ -1779,6 +1778,70 @@ public class Ledger extends IndyJava.API {
 				commandHandle,
 				requestJson,
 				endorserDid,
+				buildRequestCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Request to freeze list of ledgers.
+	 *
+	 * @param command_handle - command handle to map callback to caller context.
+	 * @param submitter_did - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
+	 * @param ledgers_ids - List of ledgers IDs for freezing.
+	 * @param cb - Callback that takes command result as parameter.
+	 *
+	 * @return A future resolving to a request result as json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildLedgersFreezeRequest(String submitterDid, List<Integer> ledgersIds) throws IndyException {
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_ledgers_freeze_request(
+				commandHandle,
+				submitterDid,
+				ledgersIds.toString(),
+				buildRequestCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Request to get list of frozen ledgers.
+	 * Frozen ledgers are defined by ledgers freeze request.
+	 *
+	 * @param command_handle - command handle to map callback to caller context.
+	 * @param submitter_did - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
+	 * @param cb - Callback that takes command result as parameter.
+	 *
+	 * @return A future resolving to a request result as json.
+	 * {
+	 *     <ledger_id>: {
+	 *         "ledger": String - Ledger root hash,
+	 *         "state": String - State root hash,
+	 *         "seq_no": u64 - the latest transaction seqNo for particular Node,
+	 *     },
+	 *     ...
+	 * }
+	 *
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildGetFrozenLedgersRequest(String submitterDid) throws IndyException {
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_get_frozen_ledgers_request(
+				commandHandle,
+				submitterDid,
 				buildRequestCb);
 
 		checkResult(future, result);

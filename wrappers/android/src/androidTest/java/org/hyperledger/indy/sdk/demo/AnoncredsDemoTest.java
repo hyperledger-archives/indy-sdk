@@ -28,13 +28,13 @@ import java.util.concurrent.TimeUnit;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.hyperledger.indy.sdk.utils.EnvironmentUtils.getIndyHomePath;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
 public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(2, TimeUnit.MINUTES);
+	public Timeout globalTimeout = new Timeout(10, TimeUnit.MINUTES);
 
 	private Pool pool;
 	private String issuerWalletConfig = new JSONObject().put("id", "issuerWallet").toString();
@@ -56,7 +56,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 	}
 
 	@Before
-	public void createWallet() throws Exception {	
+	public void createWallet() throws Exception {
 		// Set protocol version
 		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
 
@@ -448,7 +448,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		// Issuer create credential definition
 		String revocationCredentialDefConfig = "{\"support_revocation\":true}";
-		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredentialDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, schemaJson, TAG, null, revocationCredentialDefConfig).get();
+		IssuerCreateAndStoreCredentialDefResult createCredentialDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, schemaJson, TAG, null, revocationCredentialDefConfig).get();
 		String credDefId = createCredentialDefResult.getCredDefId();
 		String credDef = createCredentialDefResult.getCredDefJson();
 

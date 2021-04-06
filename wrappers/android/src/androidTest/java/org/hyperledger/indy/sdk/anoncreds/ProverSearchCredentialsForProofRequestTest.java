@@ -1,12 +1,16 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 public class ProverSearchCredentialsForProofRequestTest extends AnoncredsIntegrationTest {
+
+	public ProverSearchCredentialsForProofRequestTest() throws JSONException {
+	}
 
 	@Test
 	public void testProverSearchCredentialsForProofRequestWorks() throws Exception {

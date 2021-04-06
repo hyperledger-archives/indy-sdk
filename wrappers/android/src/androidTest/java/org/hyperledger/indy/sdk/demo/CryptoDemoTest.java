@@ -21,7 +21,7 @@ import static org.junit.Assert.assertTrue;
 public class CryptoDemoTest extends IndyIntegrationTest {
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
+	public Timeout globalTimeout = new Timeout(10, TimeUnit.MINUTES);
 
 	@Test
 	public void testCryptoDemo() throws Exception {

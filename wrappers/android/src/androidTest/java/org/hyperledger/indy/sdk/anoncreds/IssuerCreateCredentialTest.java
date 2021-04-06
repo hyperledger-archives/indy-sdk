@@ -1,6 +1,7 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
 import org.hyperledger.indy.sdk.InvalidStructureException;
+import org.json.JSONException;
 import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
@@ -8,6 +9,9 @@ import java.util.concurrent.ExecutionException;
 import static org.hamcrest.CoreMatchers.isA;
 
 public class IssuerCreateCredentialTest extends AnoncredsIntegrationTest {
+
+	public IssuerCreateCredentialTest() throws JSONException {
+	}
 
 	@Test
 	public void testIssuerCreateCredentialWorks() throws Exception {}

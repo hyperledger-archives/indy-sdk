@@ -1,7 +1,7 @@
 package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
-import org.hyperledger.indy.sdk.JsonTestUtils;
+import org.hyperledger.indy.sdk.utils.JsonTestUtils;
 import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.did.DidResults;
 import org.hyperledger.indy.sdk.utils.PoolUtils;

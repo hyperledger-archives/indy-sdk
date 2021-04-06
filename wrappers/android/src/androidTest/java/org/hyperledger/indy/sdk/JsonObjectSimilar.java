@@ -1,5 +1,6 @@
 package org.hyperledger.indy.sdk;
 
+import org.hyperledger.indy.sdk.utils.JsonTestUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;

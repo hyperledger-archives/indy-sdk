@@ -2,13 +2,17 @@ package org.hyperledger.indy.sdk.anoncreds;
 
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
+import org.json.JSONException;
 import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.isA;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.hamcrest.CoreMatchers.isA;
+
 public class ProverCreateCredentialRequestTest extends AnoncredsIntegrationTest {
+
+	public ProverCreateCredentialRequestTest() throws JSONException {
+	}
 
 	@Test
 	public void testProverCreateAndStoreCredentialReqWorks() throws Exception {

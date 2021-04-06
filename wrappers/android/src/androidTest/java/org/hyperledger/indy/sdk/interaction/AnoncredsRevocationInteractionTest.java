@@ -25,16 +25,11 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 	private final String COMMON_MASTER_SECRET = "common_master_secret_name";
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(3, TimeUnit.MINUTES);
+	public Timeout globalTimeout = new Timeout(10	, TimeUnit.MINUTES);
 	private Wallet proverWallet;
-	private String proverWalletConfig;
+	private String proverWalletConfig = new JSONObject().put("id", "proverWallet").toString();
 
-	{
-		try {
-			proverWalletConfig = new JSONObject().put("id", "proverWallet").toString();
-		} catch (JSONException e) {
-			e.printStackTrace();
-		}
+	public AnoncredsRevocationInteractionTest() throws JSONException {
 	}
 
 	@Before
@@ -280,7 +275,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 			JSONObject innerResponseObject = new JSONObject(innerResponse);
 			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
 		});
-		LedgerResults.ParseResponseResult schemaInfo3 = Ledger.parseGetSchemaResponse(getSchemaResp).get();
+		ParseResponseResult schemaInfo3 = Ledger.parseGetSchemaResponse(getSchemaResp).get();
 		schemaId = schemaInfo3.getId();
 		schemaJson = schemaInfo3.getObjectJson();
 
@@ -290,7 +285,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 			JSONObject innerResponseObject = new JSONObject(innerResponse);
 			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
 		});
-		LedgerResults.ParseResponseResult credDefInfo3 = Ledger.parseGetCredDefResponse(getCredDefResp).get();
+		ParseResponseResult credDefInfo3 = Ledger.parseGetCredDefResponse(getCredDefResp).get();
 		credDefId = credDefInfo3.getId();
 		credDefJson = credDefInfo3.getObjectJson();
 

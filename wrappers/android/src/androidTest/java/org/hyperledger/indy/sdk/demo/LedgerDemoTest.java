@@ -22,7 +22,7 @@ import static org.junit.Assert.assertNotNull;
 public class LedgerDemoTest extends IndyIntegrationTest {
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
+	public Timeout globalTimeout = new Timeout(10, TimeUnit.MINUTES);
 
 	@Test
 	public void testLedgerDemo() throws Exception {

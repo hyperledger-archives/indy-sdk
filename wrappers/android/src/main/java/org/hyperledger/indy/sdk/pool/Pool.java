@@ -1,14 +1,15 @@
 package org.hyperledger.indy.sdk.pool;
 
-import java9.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import com.sun.jna.Callback;
 
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.ParamGuard;
 
-import com.sun.jna.Callback;
+import java.util.concurrent.ExecutionException;
+
+import java9.util.concurrent.CompletableFuture;
 
 /**
  * pool.rs API
@@ -70,6 +71,22 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 			if (! checkResult(future, err)) return;
 
 			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback used when listPools completes.
+	 */
+	private static Callback listPoolsCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String metadata) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkResult(future, err)) return;
+
+			String result = metadata;
 			future.complete(result);
 		}
 	};
@@ -253,6 +270,28 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 				commandHandle,
 				protocolVersion,
 				voidCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Lists names of created pool ledgers
+	 *
+	 * @return A future resolving to a list of pools: [{
+	 *     "pool": string - Name of pool ledger stored in the wallet.
+	 *   }]
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> listPools() throws IndyException {
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_list_pools(
+				commandHandle,
+				listPoolsCb);
 
 		checkResult(future, result);
 
