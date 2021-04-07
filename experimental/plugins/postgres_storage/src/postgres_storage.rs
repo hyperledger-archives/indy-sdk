@@ -196,7 +196,7 @@ const _CREATE_SCHEMA_MULTI: [&str; 14] = [
             ON UPDATE CASCADE
     )",
     "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_name ON tags_encrypted(wallet_id, name)",
-    "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_value ON tags_encrypted(wallet_id, value)",
+    "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_value ON tags_encrypted(wallet_id, md5(value))",
     "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_wallet_id_item_id ON tags_encrypted(wallet_id, item_id)",
     "CREATE TABLE IF NOT EXISTS tags_plaintext(
         wallet_id VARCHAR(64) NOT NULL,
@@ -1045,7 +1045,8 @@ impl PostgresStorageType {
         }
         url_base.push_str("@");
         url_base.push_str(&config.url[..]);
-        url_base.push_str("/postgres");
+        url_base.push_str("/");
+        url_base.push_str(_POSTGRES_DB);
         url_base
     }
 
