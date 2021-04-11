@@ -2,6 +2,7 @@ extern crate owning_ref;
 extern crate sodiumoxide;
 extern crate r2d2;
 extern crate r2d2_postgres;
+extern crate percent_encoding;
 
 use ::std::sync::RwLock;
 
@@ -12,6 +13,8 @@ use serde_json;
 use self::owning_ref::OwningHandle;
 use std::rc::Rc;
 use std::time::Duration;
+
+use self::percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 
 use errors::wallet::WalletStorageError;
 use errors::common::CommonError;
@@ -193,7 +196,7 @@ const _CREATE_SCHEMA_MULTI: [&str; 14] = [
             ON UPDATE CASCADE
     )",
     "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_name ON tags_encrypted(wallet_id, name)",
-    "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_value ON tags_encrypted(wallet_id, value)",
+    "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_value ON tags_encrypted(wallet_id, md5(value))",
     "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_wallet_id_item_id ON tags_encrypted(wallet_id, item_id)",
     "CREATE TABLE IF NOT EXISTS tags_plaintext(
         wallet_id VARCHAR(64) NOT NULL,
@@ -1037,11 +1040,13 @@ impl PostgresStorageType {
         }
         url_base.push_str(":");
         match credentials.admin_password {
-            Some(ref password) => url_base.push_str(&password[..]),
+            Some(ref password) => url_base.push_str(&utf8_percent_encode(&password[..], &NON_ALPHANUMERIC).to_string()),
             None => ()
         }
         url_base.push_str("@");
         url_base.push_str(&config.url[..]);
+        url_base.push_str("/");
+        url_base.push_str(_POSTGRES_DB);
         url_base
     }
 
@@ -1049,7 +1054,7 @@ impl PostgresStorageType {
         let mut url_base = "postgresql://".to_owned();
         url_base.push_str(&credentials.account[..]);
         url_base.push_str(":");
-        url_base.push_str(&credentials.password[..]);
+        url_base.push_str(&utf8_percent_encode(&credentials.password[..], &NON_ALPHANUMERIC).to_string());
         url_base.push_str("@");
         url_base.push_str(&config.url[..]);
         url_base
