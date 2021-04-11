@@ -16,50 +16,65 @@ mod collect {
     use serde_json::Value;
 
     #[test]
-    fn collect_metrics_contains_thread_pool_and_wallet_service_statistics() {
+    fn test_metrics_schema() {
+        let setup = Setup::empty();
+        let config = config(&setup.name);
+        wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+
+        let result_metrics = metrics::collect_metrics().unwrap();
+        let metrics_map = serde_json::from_str::<HashMap<String, Value>>(&result_metrics)
+            .expect("Top level object should be a dictionary");
+
+        for metrics_set in metrics_map.values() {
+            let metrics_set = metrics_set.as_array().expect("Metrics set should be an array");
+
+            for metric in metrics_set.iter() {
+                let metrics = metric.as_object().expect("Metrics should be an object");
+                metrics.contains_key("value");
+                metrics.contains_key("tags");
+            }
+        }
+    }
+
+    #[test]
+    fn collect_metrics_contains_wallet_service_statistics() {
         let result_metrics = metrics::collect_metrics().unwrap();
         let metrics_map = serde_json::from_str::<HashMap<String, Value>>(&result_metrics).unwrap();
 
-        assert!(metrics_map.contains_key("threadpool_threads_count"));
         assert!(metrics_map.contains_key("wallet_count"));
 
-        let threadpool_threads_count = metrics_map
-            .get("threadpool_threads_count")
-            .unwrap()
-            .as_array()
-            .unwrap();
         let wallet_count = metrics_map
             .get("wallet_count")
             .unwrap()
             .as_array()
             .unwrap();
 
-        let expected_threadpool_threads_count = [
-            json!({"tags":{"label":"threadpool_active_count"},"value":0}),
-            json!({"tags":{"label":"threadpool_queued_count"},"value":0}),
-            json!({"tags":{"label":"threadpool_max_count"},"value":4}),
-            json!({"tags":{"label":"threadpool_panic_count"},"value":0}),
-        ];
-
-        let expected_wallet_count = [
-            json!({"tags":{"label":"opened_wallets_count"},"value":0}),
-            json!({"tags":{"label":"opened_wallet_ids_count"},"value":0}),
-            json!({"tags":{"label":"pending_for_import_wallets_count"},"value":0}),
-            json!({"tags":{"label":"pending_for_open_wallets_count"},"value":0}),
-        ];
-
-        for command in &expected_threadpool_threads_count {
-            assert!(threadpool_threads_count.contains(&command));
-        }
-
-        for command in &expected_wallet_count {
-            assert!(wallet_count.contains(&command));
-        }
-
+        assert!(wallet_count.contains(&json!({"tags":{"label":"opened"},"value":0})));
+        assert!(wallet_count.contains(&json!({"tags":{"label":"opened_ids"},"value":0})));
+        assert!(wallet_count.contains(&json!({"tags":{"label":"pending_for_import"},"value":0})));
+        assert!(wallet_count.contains(&json!({"tags":{"label":"pending_for_open"},"value":0})));
     }
 
     #[test]
-    fn collect_metrics_includes_statistics_for_wallet_command() {
+    fn collect_metrics_contains_thread_pool_service_statistics() {
+        let result_metrics = metrics::collect_metrics().unwrap();
+        let metrics_map = serde_json::from_str::<HashMap<String, Value>>(&result_metrics).unwrap();
+
+        assert!(metrics_map.contains_key("threadpool_threads_count"));
+
+        let threadpool_threads_count = metrics_map
+            .get("threadpool_threads_count")
+            .unwrap()
+            .as_array()
+            .unwrap();
+
+        assert!(threadpool_threads_count.contains(&json!({"tags":{"label":"active"},"value":0})));
+        assert!(threadpool_threads_count.contains(&json!({"tags":{"label":"queued"},"value":0})));
+        assert!(threadpool_threads_count.contains(&json!({"tags":{"label":"panic"},"value":0})));
+    }
+
+    #[test]
+    fn collect_metrics_includes_commands_count() {
         let setup = Setup::empty();
         let config = config(&setup.name);
         wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
@@ -68,42 +83,66 @@ mod collect {
         let metrics_map = serde_json::from_str::<HashMap<String, Value>>(&result_metrics).unwrap();
 
         assert!(metrics_map.contains_key("commands_count"));
-        assert!(metrics_map.contains_key("commands_duration_ms"));
 
         let commands_count = metrics_map
             .get("commands_count")
             .unwrap()
             .as_array()
             .unwrap();
+
+        assert!(commands_count.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "executed"} ,"value": 0})));
+        assert!(commands_count.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "queued"} ,"value": 0})));
+        assert!(commands_count.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "executed"} ,"value": 0})));
+        assert!(commands_count.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "queued"} ,"value": 0})));
+    }
+
+    #[test]
+    fn collect_metrics_includes_commands_duration_ms() {
+        let setup = Setup::empty();
+        let config = config(&setup.name);
+        wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+
+        let result_metrics = metrics::collect_metrics().unwrap();
+        let metrics_map = serde_json::from_str::<HashMap<String, Value>>(&result_metrics).unwrap();
+
+        assert!(metrics_map.contains_key("commands_duration_ms"));
+
         let commands_duration_ms = metrics_map
             .get("commands_duration_ms")
             .unwrap()
             .as_array()
             .unwrap();
 
-        let expected_commands_count = [
-            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"pairwise_command_pairwise_exists","stage":"queued"},"value":0}),
-            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
-        ];
-
-        let expected_commands_duration_ms = [
-            json!({"tags":{"command":"payments_command_build_set_txn_fees_req_ack","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"pairwise_command_pairwise_exists","stage":"queued"},"value":0}),
-            json!({"tags":{"command":"cache_command_purge_cred_def_cache","stage":"executed"},"value":0}),
-            json!({"tags":{"command":"non_secrets_command_fetch_search_next_records","stage":"queued"},"value":0}),
-        ];
-
-        for command in &expected_commands_count {
-            assert!(commands_count.contains(&command));
-        }
-
-        for command in &expected_commands_duration_ms {
-            assert!(commands_duration_ms.contains(&command));
-        }
+        assert!(commands_duration_ms.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "executed"} ,"value": 0})));
+        assert!(commands_duration_ms.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "queued"} ,"value": 0})));
+        assert!(commands_duration_ms.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "executed"} ,"value": 0})));
+        assert!(commands_duration_ms.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "queued"} ,"value": 0})));
     }
+
+    #[test]
+    fn collect_metrics_includes_commands_duration_ms_bucket() {
+        let setup = Setup::empty();
+        let config = config(&setup.name);
+        wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+
+        let result_metrics = metrics::collect_metrics().unwrap();
+        let metrics_map = serde_json::from_str::<HashMap<String, Value>>(&result_metrics).unwrap();
+
+        assert!(metrics_map.contains_key("commands_duration_ms_bucket"));
+
+        let commands_duration_ms_bucket = metrics_map
+            .get("commands_duration_ms_bucket")
+            .unwrap()
+            .as_array()
+            .unwrap();
+
+        assert!(commands_duration_ms_bucket.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "executed"} ,"value": 0})));
+        assert!(commands_duration_ms_bucket.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "queued"} ,"value": 0})));
+        assert!(commands_duration_ms_bucket.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "executed"} ,"value": 0})));
+        assert!(commands_duration_ms_bucket.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "queued"} ,"value": 0})));
+    }
+
     fn config(name: &str) -> String {
-        json!({"id": name}).to_string()
+        json!({ "id": name }).to_string()
     }
 }

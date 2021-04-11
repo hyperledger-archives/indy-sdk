@@ -6,14 +6,14 @@ use serde_json::{Map, Value};
 use std::collections::HashMap;
 use std::rc::Rc;
 
-const THREADPOOL_ACTIVE_COUNT: &str = "threadpool_active_count";
-const THREADPOOL_QUEUED_COUNT: &str = "threadpool_queued_count";
-const THREADPOOL_MAX_COUNT: &str = "threadpool_max_count";
-const THREADPOOL_PANIC_COUNT: &str = "threadpool_panic_count";
-const OPENED_WALLETS_COUNT: &str = "opened_wallets_count";
-const OPENED_WALLET_IDS_COUNT: &str = "opened_wallet_ids_count";
-const PENDING_FOR_IMPORT_WALLETS_COUNT: &str = "pending_for_import_wallets_count";
-const PENDING_FOR_OPEN_WALLETS_COUNT: &str = "pending_for_open_wallets_count";
+const THREADPOOL_ACTIVE_COUNT: &str = "active";
+const THREADPOOL_QUEUED_COUNT: &str = "queued";
+const THREADPOOL_MAX_COUNT: &str = "max";
+const THREADPOOL_PANIC_COUNT: &str = "panic";
+const OPENED_WALLETS_COUNT: &str = "opened";
+const OPENED_WALLET_IDS_COUNT: &str = "opened_ids";
+const PENDING_FOR_IMPORT_WALLETS_COUNT: &str = "pending_for_import";
+const PENDING_FOR_OPEN_WALLETS_COUNT: &str = "pending_for_open";
 
 pub enum MetricsCommand {
     CollectMetrics(Box<dyn Fn(IndyResult<String>) + Send>),
@@ -66,32 +66,27 @@ impl MetricsCommandExecutor {
         }
 
         let tp_instance = crate::commands::THREADPOOL.lock().unwrap();
-        let mut threadpool_threads_count = Vec::new();
-        let mut tag = HashMap::<String, String>::new();
+        let mut threadpool_threads_count: Vec<Value> = Vec::new();
 
-        tag.insert(String::from("label"), String::from(THREADPOOL_ACTIVE_COUNT));
-        threadpool_threads_count.push(
-            serde_json::to_value(MetricsValue::new(tp_instance.active_count(), tag.clone()))
-                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-        );
+        threadpool_threads_count.push( self.get_metric_json(
+            THREADPOOL_ACTIVE_COUNT,
+            tp_instance.active_count()
+        )?);
 
-        tag.insert(String::from("label"), String::from(THREADPOOL_QUEUED_COUNT));
-        threadpool_threads_count.push(
-            serde_json::to_value(MetricsValue::new(tp_instance.queued_count(), tag.clone()))
-                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-        );
+        threadpool_threads_count.push(self.get_metric_json(
+            THREADPOOL_QUEUED_COUNT,
+            tp_instance.queued_count()
+        )?);
 
-        tag.insert(String::from("label"), String::from(THREADPOOL_MAX_COUNT));
-        threadpool_threads_count.push(
-            serde_json::to_value(MetricsValue::new(tp_instance.max_count(), tag.clone()))
-                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-        );
+        threadpool_threads_count.push(self.get_metric_json(
+            THREADPOOL_MAX_COUNT,
+            tp_instance.max_count()
+        )?);
 
-        tag.insert(String::from("label"), String::from(THREADPOOL_PANIC_COUNT));
-        threadpool_threads_count.push(
-            serde_json::to_value(MetricsValue::new(tp_instance.panic_count(), tag.clone()))
-                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-        );
+        threadpool_threads_count.push(self.get_metric_json(
+            THREADPOOL_PANIC_COUNT,
+            tp_instance.panic_count()
+        )?);
 
         metrics_map.insert(
             String::from("threadpool_threads_count"),
@@ -108,43 +103,26 @@ impl MetricsCommandExecutor {
             label: String,
         }
         let mut wallet_count = Vec::new();
-        let mut tag = HashMap::<String, String>::new();
 
-        tag.insert(String::from("label"), String::from(OPENED_WALLETS_COUNT));
-        wallet_count.push(
-            serde_json::to_value(MetricsValue::new(
-                self.wallet_service.get_wallets_count(),
-                tag.clone(),
-            ))
-            .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-        );
+        wallet_count.push(self.get_metric_json(
+            OPENED_WALLETS_COUNT,
+            self.wallet_service.get_wallets_count()
+        )?);
 
-        tag.insert(String::from("label"), String::from(OPENED_WALLET_IDS_COUNT));
-        wallet_count.push(
-            serde_json::to_value(MetricsValue::new(
-                self.wallet_service.get_wallet_ids_count(),
-                tag.clone(),
-            ))
-            .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-        );
+        wallet_count.push(self.get_metric_json(
+            OPENED_WALLET_IDS_COUNT,
+            self.wallet_service.get_wallet_ids_count()
+        )?);
 
-        tag.insert(String::from("label"), String::from(PENDING_FOR_IMPORT_WALLETS_COUNT));
-        wallet_count.push(
-            serde_json::to_value(MetricsValue::new(
-                self.wallet_service.get_pending_for_import_count(),
-                tag.clone(),
-            ))
-            .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-        );
+        wallet_count.push(self.get_metric_json(
+            PENDING_FOR_IMPORT_WALLETS_COUNT,
+            self.wallet_service.get_pending_for_import_count()
+        )?);
 
-        tag.insert(String::from("label"), String::from(PENDING_FOR_OPEN_WALLETS_COUNT));
-        wallet_count.push(
-            serde_json::to_value(MetricsValue::new(
-                self.wallet_service.get_pending_for_open_count(),
-                tag.clone(),
-            ))
-            .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-        );
+        wallet_count.push(self.get_metric_json(
+        PENDING_FOR_OPEN_WALLETS_COUNT,
+        self.wallet_service.get_pending_for_open_count()
+        )?);
 
         metrics_map.insert(
             String::from("wallet_count"),
@@ -153,5 +131,14 @@ impl MetricsCommandExecutor {
         );
 
         Ok(())
+    }
+
+    fn get_metric_json(&self, label: &str, value: usize) -> IndyResult<Value> {
+        let mut tag = HashMap::<String, String>::new();
+        tag.insert(String::from("label"), String::from(label));
+        let res = serde_json::to_value(MetricsValue::new(value, tag))
+            .to_indy(IndyErrorKind::IOError, "Unable to convert json")?;
+
+        Ok(res)
     }
 }

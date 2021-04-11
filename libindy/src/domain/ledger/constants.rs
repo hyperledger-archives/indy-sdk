@@ -6,6 +6,8 @@ pub const TXN_AUTHR_AGRMT_AML: &str = "5";
 pub const GET_TXN_AUTHR_AGRMT: &str = "6";
 pub const GET_TXN_AUTHR_AGRMT_AML: &str = "7";
 pub const DISABLE_ALL_TXN_AUTHR_AGRMTS: &str = "8";
+pub const LEDGERS_FREEZE: &str = "9";
+pub const GET_FROZEN_LEDGERS: &str = "10";
 pub const ATTRIB: &str = "100";
 pub const SCHEMA: &str = "101";
 pub const CRED_DEF: &str = "102";
@@ -27,10 +29,10 @@ pub const GET_AUTH_RULE: &str = "121";
 pub const AUTH_RULES: &str = "122";
 pub const GET_DDO: &str = "120";//TODO change number
 
-pub const REQUESTS: [&str; 25] = [NODE, NYM, GET_TXN, ATTRIB, SCHEMA, CRED_DEF, GET_ATTR, GET_NYM, GET_SCHEMA,
+pub const REQUESTS: [&str; 27] = [NODE, NYM, GET_TXN, ATTRIB, SCHEMA, CRED_DEF, GET_ATTR, GET_NYM, GET_SCHEMA,
     GET_CRED_DEF, POOL_UPGRADE, POOL_RESTART, POOL_CONFIG, REVOC_REG_DEF, REVOC_REG_ENTRY, GET_REVOC_REG_DEF,
     GET_REVOC_REG, GET_REVOC_REG_DELTA, GET_VALIDATOR_INFO, AUTH_RULE, GET_DDO, TXN_AUTHR_AGRMT, TXN_AUTHR_AGRMT_AML,
-    GET_TXN_AUTHR_AGRMT, GET_TXN_AUTHR_AGRMT_AML];
+    GET_TXN_AUTHR_AGRMT, GET_TXN_AUTHR_AGRMT_AML, LEDGERS_FREEZE, GET_FROZEN_LEDGERS];
 
 pub const TRUSTEE: &str = "0";
 pub const STEWARD: &str = "2";
@@ -71,6 +73,8 @@ pub fn txn_name_to_code(txn: &str) -> Option<&str> {
         "TXN_AUTHR_AGRMT_AML" => Some(TXN_AUTHR_AGRMT_AML),
         "GET_TXN_AUTHR_AGRMT" => Some(GET_TXN_AUTHR_AGRMT),
         "GET_TXN_AUTHR_AGRMT_AML" => Some(GET_TXN_AUTHR_AGRMT_AML),
+        "LEDGERS_FREEZE" => Some(LEDGERS_FREEZE),
+        "GET_FROZEN_LEDGERS" => Some(GET_FROZEN_LEDGERS),
         val => Some(val)
     }
 }

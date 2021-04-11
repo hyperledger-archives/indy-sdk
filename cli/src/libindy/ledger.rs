@@ -147,4 +147,12 @@ impl Ledger {
                                    endorser_did: &str) -> Result<String, IndyError> {
         ledger::append_request_endorser(request_json, endorser_did).wait()
     }
+
+    pub fn build_ledgers_freeze_request(submitter_did: &str, ledgers_ids: Vec<u64>) -> Result<String, IndyError> {
+        ledger::build_ledgers_freeze_request(submitter_did, ledgers_ids).wait()
+    }
+
+    pub fn build_get_frozen_ledgers_request(submitter_did: &str) -> Result<String, IndyError> {
+        ledger::build_get_frozen_ledgers_request(submitter_did).wait()
+    }
 }

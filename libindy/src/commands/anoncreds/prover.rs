@@ -532,12 +532,12 @@ impl ProverCommandExecutor {
         let mut credentials_for_proof_request: CredentialsForProofRequest = CredentialsForProofRequest::default();
 
         for (attr_id, requested_attr) in proof_req.requested_attributes.iter() {
-            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&proof_req_version,
-                                                                                        &requested_attr.name,
-                                                                                        &requested_attr.names,
-                                                                                        &attr_id,
-                                                                                        &requested_attr.restrictions,
-                                                                                        &None)?;
+            let query = self.anoncreds_service.prover.process_proof_request_restrictions(&proof_req_version,
+                                                                                         &requested_attr.name,
+                                                                                         &requested_attr.names,
+                                                                                         &attr_id,
+                                                                                         &requested_attr.restrictions,
+                                                                                         &None)?;
             let interval = get_non_revoc_interval(&proof_req.non_revoked, &requested_attr.non_revoked);
 
             let credentials_for_attribute = self._query_requested_credentials(wallet_handle, &query, None, &interval)?;
@@ -546,12 +546,12 @@ impl ProverCommandExecutor {
         }
 
         for (predicate_id, requested_predicate) in proof_req.requested_predicates.iter() {
-            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&proof_req_version,
-                                                                                        &Some(requested_predicate.name.clone()),
-                                                                                        &None,
-                                                                                        &predicate_id,
-                                                                                        &requested_predicate.restrictions,
-                                                                                        &None)?;
+            let query = self.anoncreds_service.prover.process_proof_request_restrictions(&proof_req_version,
+                                                                                         &Some(requested_predicate.name.clone()),
+                                                                                         &None,
+                                                                                         &predicate_id,
+                                                                                         &requested_predicate.restrictions,
+                                                                                         &None)?;
 
             let interval = get_non_revoc_interval(&proof_req.non_revoked, &requested_predicate.non_revoked);
 
@@ -581,12 +581,12 @@ impl ProverCommandExecutor {
         let mut credentials_for_proof_request_search = HashMap::<String, SearchForProofRequest>::new();
 
         for (attr_id, requested_attr) in proof_req.requested_attributes.iter() {
-            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
-                                                                                        &requested_attr.name,
-                                                                                        &requested_attr.names,
-                                                                                        &attr_id,
-                                                                                        &requested_attr.restrictions,
-                                                                                        &extra_query)?;
+            let query = self.anoncreds_service.prover.process_proof_request_restrictions(&version,
+                                                                                         &requested_attr.name,
+                                                                                         &requested_attr.names,
+                                                                                         &attr_id,
+                                                                                         &requested_attr.restrictions,
+                                                                                         &extra_query)?;
 
             let credentials_search =
                 self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query.to_string(), &SearchOptions::id_value())?;
@@ -599,12 +599,12 @@ impl ProverCommandExecutor {
         }
 
         for (predicate_id, requested_predicate) in proof_req.requested_predicates.iter() {
-            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
-                                                                                        &Some(requested_predicate.name.clone()),
-                                                                                        &None,
-                                                                                        &predicate_id,
-                                                                                        &requested_predicate.restrictions,
-                                                                                        &extra_query)?;
+            let query = self.anoncreds_service.prover.process_proof_request_restrictions(&version,
+                                                                                         &Some(requested_predicate.name.clone()),
+                                                                                         &None,
+                                                                                         &predicate_id,
+                                                                                         &requested_predicate.restrictions,
+                                                                                         &extra_query)?;
 
             let credentials_search =
                 self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query.to_string(), &SearchOptions::id_value())?;
