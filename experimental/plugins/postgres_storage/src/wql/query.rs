@@ -231,31 +231,3 @@ fn join_operators<'a>(operators: &'a [Operator], join_str: &str, arguments: &mut
     }
     Ok(s)
 }
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn simple_and_convert_args_works() {
-        assert_eq!("This $1 is $2 a $3 string!", convert_query_to_psql_args("This $$ is $$ a $$ string!"));
-        assert_eq!("This is a string!", convert_query_to_psql_args("This is a string!"));
-    }
-
-    #[test]
-    fn simple_and() {
-        let condition_1 = Operator::And(vec![
-            Operator::Eq(TagName::EncryptedTagName(vec![1,2,3]), TargetValue::Encrypted(vec![4,5,6])),
-            Operator::Eq(TagName::PlainTagName(vec![7,8,9]), TargetValue::Unencrypted("spam".to_string())),
-        ]);
-        let condition_2 = Operator::And(vec![
-            Operator::Eq(TagName::EncryptedTagName(vec![10,11,12]), TargetValue::Encrypted(vec![13,14,15])),
-            Operator::Not(Box::new(Operator::Eq(TagName::PlainTagName(vec![16,17,18]), TargetValue::Unencrypted("eggs".to_string()))))
-        ]);
-        let query = Operator::Or(vec![condition_1, condition_2]);
-        let class = vec![100,100,100];
-        let (query, _arguments) = wql_to_sql(&class, &query, None).unwrap();
-        assert_eq!(query, "SELECT i.id, i.name, i.value, i.key, i.type FROM items as i WHERE i.type = $1 AND (((i.id in (SELECT item_id FROM tags_encrypted WHERE name = $2 AND value = $3)) AND (i.id in (SELECT item_id FROM tags_plaintext WHERE name = $4 AND value = $5))) OR ((i.id in (SELECT item_id FROM tags_encrypted WHERE name = $6 AND value = $7)) AND NOT ((i.id in (SELECT item_id FROM tags_plaintext WHERE name = $8 AND value = $9)))))")
-    }
-}
