@@ -1716,15 +1716,11 @@ impl WalletStorage for PostgresStorage {
 
             let (query_string, query_arguments) = match query_qualifier {
                 Some(_) => {
-                    let (mut query_string, mut query_arguments) = query::wql_to_sql(&wallet_id_arg, query, options)?;
-
-                    query_arguments.push(&type_);
-                    query_arguments.push(&wallet_id_arg);
-                    query_string.push_str(" WHERE i.type = ? AND i.wallet_id = ? ");
+                    let (mut query_string, mut query_arguments) = query::wql_to_sql(&type_, &wallet_id_arg, query, options)?;
 
                     (query_string, query_arguments)
                 }
-                None => query::wql_to_sql(&type_, query, options)?
+                None => query::wql_to_sql(&type_, &wallet_id_arg, query, options)?
             };
 
             let statement = self._prepare_statement(&query_string)?;
