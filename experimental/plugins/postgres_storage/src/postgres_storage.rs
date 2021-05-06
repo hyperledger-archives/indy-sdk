@@ -1661,10 +1661,11 @@ impl WalletStorage for PostgresStorage {
             Some(option_str) => serde_json::from_str(option_str)?
         };
 
+
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
         let query_qualifier = get_wallet_strategy_qualifier();
-        let wallet_id_arg = self.wallet_id.clone().as_bytes();
+        let wallet_id_arg = self.wallet_id.clone().as_bytes().to_vec();
         let total_count: Option<usize> = if search_options.retrieve_total_count {
             let (query_string, query_arguments) = match query_qualifier {
                 Some(_) => {
@@ -1715,11 +1716,11 @@ impl WalletStorage for PostgresStorage {
 
             let (query_string, query_arguments) = match query_qualifier {
                 Some(_) => {
-                    let (mut query_string, mut query_arguments) = query::wql_to_sql(&wallet_id_arg.as_bytes().to_vec(), query, options)?;
+                    let (mut query_string, mut query_arguments) = query::wql_to_sql(&wallet_id_arg, query, options)?;
 
                     query_arguments.push(&type_);
-                    query_arguments.push(&self.wallet_id.as_bytes().to_vec());
-                    query_string.push_str("WHERE i.type = ? AND i.wallet_id = ?");
+                    query_arguments.push(&wallet_id_arg);
+                    query_string.push_str(" WHERE i.type = ? AND i.wallet_id = ? ");
 
                     (query_string, query_arguments)
                 }
