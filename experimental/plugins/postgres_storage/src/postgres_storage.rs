@@ -1720,10 +1720,11 @@ impl WalletStorage for PostgresStorage {
 
                     (query_string, query_arguments)
                 }
-                None => query::wql_to_sql(&type_, &wallet_id_arg, query, options)?
+                None => query::wql_to_sql(&type_,&wallet_id_arg, query, options)?
             };
 
             let statement = self._prepare_statement(&query_string)?;
+
             let tag_retriever = if fetch_options.retrieve_tags {
                 let pool = self.pool.clone();
                 match query_qualifier {

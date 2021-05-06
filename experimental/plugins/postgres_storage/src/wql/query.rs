@@ -3,7 +3,6 @@ use postgres::types::ToSql;
 use errors::wallet::WalletQueryError;
 use language::{Operator,TagName,TargetValue};
 
-
 // Translates Wallet Query Language to SQL
 // WQL input is provided as a reference to a top level Operator
 // Result is a tuple of query string and query arguments
@@ -72,6 +71,7 @@ fn eq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<
             Ok("tags_plaintext as ta ON ta.item_id = i.id AND ta.wallet_id = $$ AND ta.name = $$ AND ta.value = $$".to_string())
         },
         (&TagName::EncryptedTagName(ref queried_name), &TargetValue::Encrypted(ref queried_value)) => {
+            arguments.push(wallet_id);
             arguments.push(queried_name);
             arguments.push(queried_value);
             Ok("tags_encrypted as ta ON ta.item_id = i.id AND ta.wallet_id = $$ AND ta.name = $$ AND ta.value = $$".to_string())
