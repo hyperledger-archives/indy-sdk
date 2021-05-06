@@ -25,6 +25,7 @@ use wql::transaction;
 use wql::storage::{StorageIterator, WalletStorage, StorageRecord, EncryptedValue, Tag, TagName};
 use self::r2d2_postgres::r2d2::Pool;
 use errors::wallet::WalletStorageError::{ConfigError};
+use std::borrow::Borrow;
 
 fn default_true() -> bool { true }
 
@@ -1663,7 +1664,7 @@ impl WalletStorage for PostgresStorage {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
         let query_qualifier = get_wallet_strategy_qualifier();
-        let wallet_id_arg = self.wallet_id.to_owned();
+        let wallet_id_arg = self.wallet_id.clone().as_bytes();
         let total_count: Option<usize> = if search_options.retrieve_total_count {
             let (query_string, query_arguments) = match query_qualifier {
                 Some(_) => {
@@ -1714,27 +1715,12 @@ impl WalletStorage for PostgresStorage {
 
             let (query_string, query_arguments) = match query_qualifier {
                 Some(_) => {
-                    let (mut query_string, mut query_arguments) = query::wql_to_sql(&type_, query, options)?;
-                    query_arguments.push(&wallet_id_arg);
-                    let arg_str = format!(" AND i.wallet_id = ${}", query_arguments.len());
-                    query_string.push_str(&arg_str);
-                    let mut with_clause = false;
-                    if query_string.contains("tags_plaintext") {
-                        query_arguments.push(&wallet_id_arg);
-                        query_string = format!("tags_plaintext as (select * from tags_plaintext where wallet_id = ${}) {}", query_arguments.len(), query_string);
-                        with_clause = true;
-                    }
-                    if query_string.contains("tags_encrypted") {
-                        if with_clause {
-                            query_string = format!(", {}", query_string);
-                        }
-                        query_arguments.push(&wallet_id_arg);
-                        query_string = format!("tags_encrypted as (select * from tags_encrypted where wallet_id = ${}) {}", query_arguments.len(), query_string);
-                        with_clause = true;
-                    }
-                    if with_clause {
-                        query_string = format!("WITH {}", query_string);
-                    }
+                    let (mut query_string, mut query_arguments) = query::wql_to_sql(&wallet_id_arg.as_bytes().to_vec(), query, options)?;
+
+                    query_arguments.push(&type_);
+                    query_arguments.push(&self.wallet_id.as_bytes().to_vec());
+                    query_string.push_str("WHERE i.type = ? AND i.wallet_id = ?");
+
                     (query_string, query_arguments)
                 }
                 None => query::wql_to_sql(&type_, query, options)?
