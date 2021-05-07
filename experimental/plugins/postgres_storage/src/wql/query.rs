@@ -528,4 +528,25 @@ mod tests {
 
         wql_to_sql(&class, &wallet_id, &condition, None).unwrap();
     }
+
+    #[test]
+    #[should_panic(expected = "$or operation not supported")]
+    fn should_panic_on_or_operation_since_not_supported() {
+        let condition = Operator::Or(vec![
+            Operator::Eq(TagName::EncryptedTagName(vec![1,2,3]), TargetValue::Encrypted(vec![4,5,6])),
+            Operator::Eq(TagName::PlainTagName(vec![7,8,9]), TargetValue::Unencrypted("spam".to_string())),
+        ]);
+        let (wallet_id, class) = setup_tag_search();
+
+        wql_to_sql(&class, &wallet_id, &condition, None).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "$not operation not supported")]
+    fn should_panic_on_not_operation_since_not_supported() {
+        let condition = Operator::Not(Box::from(Operator::Eq(TagName::EncryptedTagName(vec![1, 2, 3]), TargetValue::Encrypted(vec![4, 5, 6]))));
+        let (wallet_id, class) = setup_tag_search();
+
+        wql_to_sql(&class, &wallet_id, &condition, None).unwrap();
+    }
 }
