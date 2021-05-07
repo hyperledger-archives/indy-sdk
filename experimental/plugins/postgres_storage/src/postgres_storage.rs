@@ -1665,34 +1665,16 @@ impl WalletStorage for PostgresStorage {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
         let query_qualifier = get_wallet_strategy_qualifier();
-        let wallet_id_arg = self.wallet_id.clone().as_bytes().to_vec();
+        let wallet_id_arg = self.wallet_id.to_owned();
+
         let total_count: Option<usize> = if search_options.retrieve_total_count {
             let (query_string, query_arguments) = match query_qualifier {
                 Some(_) => {
-                    let (mut query_string, mut query_arguments) = query::wql_to_sql_count(&type_, query)?;
-                    query_arguments.push(&wallet_id_arg);
-                    let arg_str = format!(" AND i.wallet_id = ${}", query_arguments.len());
-                    query_string.push_str(&arg_str);
-                    let mut with_clause = false;
-                    if query_string.contains("tags_plaintext") {
-                        query_arguments.push(&wallet_id_arg);
-                        query_string = format!("tags_plaintext as (select * from tags_plaintext where wallet_id = ${}) {}", query_arguments.len(), query_string);
-                        with_clause = true;
-                    }
-                    if query_string.contains("tags_encrypted") {
-                        if with_clause {
-                            query_string = format!(", {}", query_string);
-                        }
-                        query_arguments.push(&wallet_id_arg);
-                        query_string = format!("tags_encrypted as (select * from tags_encrypted where wallet_id = ${}) {}", query_arguments.len(), query_string);
-                        with_clause = true;
-                    }
-                    if with_clause {
-                        query_string = format!("WITH {}", query_string);
-                    }
+                    let (mut query_string, mut query_arguments) = query::wql_to_sql_count(&type_, &self.wallet_id, query)?;
+
                     (query_string, query_arguments)
                 }
-                None => query::wql_to_sql_count(&type_, query)?
+                None => query::wql_to_sql_count(&type_, &self.wallet_id, query)?
             };
 
             let mut rows = conn.query(
@@ -1716,11 +1698,11 @@ impl WalletStorage for PostgresStorage {
 
             let (query_string, query_arguments) = match query_qualifier {
                 Some(_) => {
-                    let (mut query_string, mut query_arguments) = query::wql_to_sql(&type_, &wallet_id_arg, query, options)?;
+                    let (mut query_string, mut query_arguments) = query::wql_to_sql(&type_, &self.wallet_id, query, options)?;
 
                     (query_string, query_arguments)
                 }
-                None => query::wql_to_sql(&type_,&wallet_id_arg, query, options)?
+                None => query::wql_to_sql(&type_, &self.wallet_id, query, options)?
             };
 
             let statement = self._prepare_statement(&query_string)?;
