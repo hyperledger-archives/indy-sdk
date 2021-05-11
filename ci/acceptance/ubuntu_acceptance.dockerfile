@@ -17,6 +17,7 @@ RUN apt-get update && \
       python3-pip \
       vim
 
+RUN pip3 install --upgrade pip
 RUN pip3 install -U pip
 
 ARG indy_sdk_deb
