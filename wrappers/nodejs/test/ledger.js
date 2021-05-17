@@ -207,15 +207,15 @@ test('ledger', async function (t) {
   t.deepEqual(req.operation, { type: '7', timestamp: 123379200 })
 
   // ledgers freeze
-  var ledgersIds = [0, 3, 76, 874]
+  let ledgersIds = [0, 3, 76, 874]
   req = await indy.buildLedgersFreezeRequest(trusteeDid, ledgersIds)
-  t.deepEqual(req['operation'], { 'type': '9', 'ledgers_ids': ledgersIds })
+  t.deepEqual(req.operation, { type: '9', ledgers_ids: ledgersIds })
 
   ledgersIds = []
   req = await indy.buildLedgersFreezeRequest(trusteeDid, ledgersIds)
-  t.deepEqual(req['operation'], { 'type': '9', 'ledgers_ids': ledgersIds })
+  t.deepEqual(req.operation, { type: '9', ledgers_ids: ledgersIds })
 
-  var err = await t.throwsAsync(indy.buildLedgersFreezeRequest(trusteeDid, ['0', '3', '76', '874']))
+  let err = await t.throwsAsync(indy.buildLedgersFreezeRequest(trusteeDid, ['0', '3', '76', '874']))
   t.is(err.indyName, 'CommonInvalidStructure')
 
   err = await t.throwsAsync(indy.buildLedgersFreezeRequest(trusteeDid, '[0, 3, 76, 874]'))
@@ -223,7 +223,7 @@ test('ledger', async function (t) {
 
   // frozen ledgers
   req = await indy.buildGetFrozenLedgersRequest(trusteeDid)
-  t.deepEqual(req['operation'], { 'type': '10' })
+  t.deepEqual(req.operation, { type: '10' })
 
   // author agreement acceptance data
   req = await indy.appendTxnAuthorAgreementAcceptanceToRequest(req, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123379200)
