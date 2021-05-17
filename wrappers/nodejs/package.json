@@ -15,7 +15,7 @@
   "main": "src/index.js",
   "gypfile": true,
   "engines": {
-    "node": ">=8"
+    "node": ">=10"
   },
   "files": [
     "src",
@@ -33,7 +33,7 @@
     "node-gyp": "^8.0.0"
   },
   "devDependencies": {
-    "ava": "^1.4.1",
+    "ava": "^3.15.0",
     "cuid": "^2.1.4",
     "home-dir": "^1.0.0",
     "standard": "^16.0.3",
