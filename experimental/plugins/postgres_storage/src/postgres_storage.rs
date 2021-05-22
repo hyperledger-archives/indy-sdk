@@ -1035,7 +1035,7 @@ impl PostgresStorageType {
         let mut url_base = "postgresql://".to_owned();
 
         match credentials.admin_account {
-            Some(ref account) => url_base.push_str(&account[..]),
+            Some(ref account) =>url_base.push_str(&utf8_percent_encode(&account[..], &NON_ALPHANUMERIC).to_string()),
             None => ()
         }
         url_base.push_str(":");
@@ -1052,7 +1052,7 @@ impl PostgresStorageType {
 
     fn _base_postgres_url(config: &PostgresConfig, credentials: &PostgresCredentials) -> String {
         let mut url_base = "postgresql://".to_owned();
-        url_base.push_str(&credentials.account[..]);
+        url_base.push_str(&utf8_percent_encode(&credentials.account[..], &NON_ALPHANUMERIC).to_string());
         url_base.push_str(":");
         url_base.push_str(&utf8_percent_encode(&credentials.password[..], &NON_ALPHANUMERIC).to_string());
         url_base.push_str("@");
