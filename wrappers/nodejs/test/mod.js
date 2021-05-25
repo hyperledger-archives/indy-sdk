@@ -1,5 +1,5 @@
-var test = require('ava')
-var indy = require('../')
+const test = require('ava')
+const indy = require('../')
 
 test('setRuntimeConfig', async function (t) {
   t.notThrows(function () {

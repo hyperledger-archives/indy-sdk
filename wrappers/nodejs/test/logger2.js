@@ -1,11 +1,11 @@
 // NOTE: there are 2 test files for logger so ava can run them in separate nodejs processes
 //       why? setLogger and setDefaultLogger cannot be both called in the same process
-var test = require('ava')
-var indy = require('../')
-var IndyError = require('../src/IndyError')
+const test = require('ava')
+const indy = require('../')
+const IndyError = require('../src/IndyError')
 
 test('setLogger', async function (t) {
-  var nEntries = 0
+  let nEntries = 0
   function logFn (level, target, message, modulePath, file, line) {
     nEntries++
     t.is(typeof level, 'number')
@@ -23,8 +23,8 @@ test('setLogger', async function (t) {
   await indy.abbreviateVerkey('VsKV7grR1BUE29mG2Fm2kX', 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa')
   t.true(nEntries > 0)
 
-  var err = t.throws(function () {
+  const err = t.throws(function () {
     indy.setLogger(function () {})
-  }, IndyError)
+  }, { instanceOf: IndyError })
   t.is(err.indyName, 'CommonInvalidState')
 })
