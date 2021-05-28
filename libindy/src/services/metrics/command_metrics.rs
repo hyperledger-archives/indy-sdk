@@ -78,7 +78,7 @@ impl From<&ProverCommand> for CommandMetric {
     fn from(cmd: &ProverCommand) -> Self {
         match cmd {
             ProverCommand::CreateMasterSecret(_, _, _) => { CommandMetric::ProverCommandCreateMasterSecret }
-            ProverCommand::CreateCredentialRequest(_, _, _, _, _, _) => { CommandMetric::ProverCommandCreateCredentialRequest }
+            ProverCommand::CreateCredentialRequest(_, _, _, _, _, _, _) => { CommandMetric::ProverCommandCreateCredentialRequest }
             ProverCommand::SetCredentialAttrTagPolicy(_, _, _, _, _) => { CommandMetric::ProverCommandSetCredentialAttrTagPolicy }
             ProverCommand::GetCredentialAttrTagPolicy(_, _, _) => { CommandMetric::ProverCommandGetCredentialAttrTagPolicy }
             ProverCommand::StoreCredential(_, _, _, _, _, _, _) => { CommandMetric::ProverCommandStoreCredential }

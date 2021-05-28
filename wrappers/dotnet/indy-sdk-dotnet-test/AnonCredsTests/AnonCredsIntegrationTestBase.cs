@@ -25,6 +25,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         protected static string issuer2GvtCredOffer;
         protected static string issuer1GvtCredReq;
         protected static string issuer1GvtCredReqMetadata;
+        protected static string issuer1GvtCredential;
         protected static string CREDENTIALS = "{\"key\":\"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY\", \"key_derivation_method\":\"RAW\"}";
         protected static string masterSecretId = "master_secret_name";
         protected static string issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
@@ -33,7 +34,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         protected static string tag = "tag1";
         protected static string gvtSchemaName = "gvt";
         protected static string schemaVersion = "1.0";
-        protected static string gvtSchemaAttributes = "[\"name\", \"age\", \"sex\", \"height\"]";
+        protected static string gvtSchemaAttributes = "[\"name\", \"age\", \"sex\", \"height\", \"device_key\"]";
         protected static string credentialId1 = "id1";
         protected static string credentialId2 = "id2";
         // note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
@@ -41,7 +42,8 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "               \"sex\":{\"raw\":\"male\",\"encoded\":\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"},\n" +
                 "               \"name\":{\"raw\":\"Alex\",\"encoded\":\"1139481716457488690172217916278103335\"},\n" +
                 "               \"height\":{\"raw\":\"175\",\"encoded\":\"175\"},\n" +
-                "               \"age\":{\"raw\":\"28\",\"encoded\":\"28\"}\n" +
+                "               \"age\":{\"raw\":\"28\",\"encoded\":\"28\"},\n" +
+                "               \"device_key\":{\"raw\":\"1\",\"encoded\":\"1\"}\n" +
                 "        }").ToString();
         protected static string xyzCredentialValuesJson = JObject.Parse("{\n" +
                 "               \"status\":{\"raw\":\"partial\",\"encoded\":\"51792877103171595686471452153480627530895\"},\n" +
@@ -111,12 +113,12 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
             await AnonCreds.ProverCreateMasterSecretAsync(wallet, masterSecretId);
 
-            var createCredReqResult = await AnonCreds.ProverCreateCredentialReqAsync(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId);
+            var createCredReqResult = await AnonCreds.ProverCreateCredentialReqAsync(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId, "test");
             issuer1GvtCredReq = createCredReqResult.CredentialRequestJson;
             issuer1GvtCredReqMetadata = createCredReqResult.CredentialRequestMetadataJson;
 
             var createCredResult = await AnonCreds.IssuerCreateCredentialAsync(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, gvtCredentialValuesJson, null, null);
-            var issuer1GvtCredential = createCredResult.CredentialJson;
+            issuer1GvtCredential = createCredResult.CredentialJson;
 
             await AnonCreds.ProverStoreCredentialAsync(wallet, credentialId1, issuer1GvtCredReqMetadata, issuer1GvtCredential, issuer1gvtCredDef, null);
 

@@ -5,10 +5,10 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <title>Class NativeMethods.ParseResponseWithFeesDelegate
+    <title>Delegate NativeMethods.ParseResponseWithFeesDelegate
    | Hyperledger Indy .NET Wrapper </title>
     <meta name="viewport" content="width=device-width">
-    <meta name="title" content="Class NativeMethods.ParseResponseWithFeesDelegate
+    <meta name="title" content="Delegate NativeMethods.ParseResponseWithFeesDelegate
    | Hyperledger Indy .NET Wrapper ">
     <meta name="generator" content="docfx 2.25.1.0">
     
@@ -79,21 +79,43 @@
             <article class="content wrap" id="_content" data-uid="Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate">
   
   
-  <h1 id="Hyperledger_Indy_PaymentsApi_NativeMethods_ParseResponseWithFeesDelegate" data-uid="Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate" class="text-break">Class NativeMethods.ParseResponseWithFeesDelegate
+  <h1 id="Hyperledger_Indy_PaymentsApi_NativeMethods_ParseResponseWithFeesDelegate" data-uid="Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate" class="text-break">Delegate NativeMethods.ParseResponseWithFeesDelegate
   </h1>
   <div class="markdown level0 summary"></div>
   <div class="markdown level0 conceptual"></div>
-  <div class="inheritance">
-    <h5>Inheritance</h5>
-    <div class="level0"><span class="xref">System.MulticastDelegate</span></div>
-    <div class="level1"><span class="xref">NativeMethods.ParseResponseWithFeesDelegate</span></div>
-  </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.PaymentsApi.html">Hyperledger.Indy.PaymentsApi</a></h6>
   <h6><strong>Assembly</strong>: Hyperledger.Indy.Sdk.dll</h6>
   <h5 id="Hyperledger_Indy_PaymentsApi_NativeMethods_ParseResponseWithFeesDelegate_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public sealed class ParseResponseWithFeesDelegate : MulticastDelegate</code></pre>
+    <pre><code class="lang-csharp hljs">public delegate void ParseResponseWithFeesDelegate(int command_handle, int err, string receipts_json);</code></pre>
   </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Int32</span></td>
+        <td><span class="parametername">command_handle</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Int32</span></td>
+        <td><span class="parametername">err</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">receipts_json</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   <h3 id="constructors">Constructors
   </h3>
   <a id="Hyperledger_Indy_PaymentsApi_NativeMethods_ParseResponseWithFeesDelegate__ctor_" data-uid="Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.#ctor*"></a>
@@ -134,7 +156,7 @@
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public virtual IAsyncResult BeginInvoke(int command_handle, int err, string utxo_json, AsyncCallback callback, object object)</code></pre>
+    <pre><code class="lang-csharp hljs">public virtual IAsyncResult BeginInvoke(int command_handle, int err, string receipts_json, AsyncCallback callback, object object)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -158,7 +180,7 @@
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
-        <td><span class="parametername">utxo_json</span></td>
+        <td><span class="parametername">receipts_json</span></td>
         <td></td>
       </tr>
       <tr>
@@ -219,7 +241,7 @@
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public virtual void Invoke(int command_handle, int err, string utxo_json)</code></pre>
+    <pre><code class="lang-csharp hljs">public virtual void Invoke(int command_handle, int err, string receipts_json)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -243,7 +265,7 @@
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
-        <td><span class="parametername">utxo_json</span></td>
+        <td><span class="parametername">receipts_json</span></td>
         <td></td>
       </tr>
     </tbody>
