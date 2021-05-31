@@ -896,7 +896,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="credOfferJson">credential offer as a json containing information about the issuer and a credential.</param>
         /// <param name="credDefJson">credential definition json.</param>
         /// <param name="masterSecretId">the id of the master secret stored in the wallet.</param>
-        public static Task<ProverCreateCredentialRequestResult> ProverCreateCredentialReqAsync(Wallet wallet, string proverDid, string credOfferJson, string credDefJson, string masterSecretId, string hardwareKey = null)
+        public static Task<ProverCreateCredentialRequestResult> ProverCreateCredentialReqAsync(Wallet wallet, string proverDid, string credOfferJson, string credDefJson, string masterSecretId, string hardwareKey = "")
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(proverDid, "proverDid");
