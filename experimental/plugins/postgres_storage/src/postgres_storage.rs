@@ -666,12 +666,27 @@ impl WalletStrategy for DatabasePerWalletStrategy {
         debug!("connecting to postgres, url_base: {:?}", url_base);
         let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
 
+        debug!("creating wallets DB");
+        let create_db_sql = str::replace(_CREATE_WALLET_DATABASE, "$1", id);
+        // ignore errors at this step, in case the database has been pre-created by the DBA
+        // if the create db fails, the user login/table creation will fail
+        let _err = conn.execute(&create_db_sql, &[]);
+        conn.finish()?;
+
+        debug!("connecting to wallet as user");
+        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
+            Ok(conn) => conn,
+            Err(error) => {
+                return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
+            }
+        };
+
         // select metadata for this wallet to ensure it DOESN'T exist
         let mut schema_result = {
-            let mut rows = conn.query(
-                "SELECT value FROM metadata WHERE wallet_id",
-                &[&id]);
-            match rows.as_mut() {
+            let rows = conn.query(
+                "SELECT value FROM metadata",
+                &[]);
+            match rows {
                 Ok(rows_data) => {
                     match rows_data.iter().next() {
                         Some(_) => {
@@ -682,29 +697,6 @@ impl WalletStrategy for DatabasePerWalletStrategy {
                     }
                 },
                 Err(_) => Ok(())
-            }
-        };
-
-        match schema_result {
-            Ok(_) => {
-                debug!("creating wallets DB");
-                let create_db_sql = str::replace(_CREATE_WALLET_DATABASE, "$1", id);
-                schema_result = match conn.execute(&create_db_sql, &[]) {
-                    Ok(_) => Ok(()),
-                    Err(_error) => {
-                        Err(WalletStorageError::AlreadyExists)
-                    }
-                };
-            },
-            Err(_) => ()
-        };
-        conn.finish()?;
-
-        debug!("connecting to wallet as user");
-        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
-            Ok(conn) => conn,
-            Err(error) => {
-                return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
             }
         };
 
