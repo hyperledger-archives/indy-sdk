@@ -666,13 +666,37 @@ impl WalletStrategy for DatabasePerWalletStrategy {
         debug!("connecting to postgres, url_base: {:?}", url_base);
         let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
 
-        debug!("creating wallets DB");
-        let create_db_sql = str::replace(_CREATE_WALLET_DATABASE, "$1", id);
-        let mut schema_result = match conn.execute(&create_db_sql, &[]) {
-            Ok(_) => Ok(()),
-            Err(_error) => {
-                Err(WalletStorageError::AlreadyExists)
+        // select metadata for this wallet to ensure it DOESN'T exist
+        let mut schema_result = {
+            let mut rows = conn.query(
+                "SELECT value FROM metadata WHERE wallet_id",
+                &[&id]);
+            match rows.as_mut() {
+                Ok(rows_data) => {
+                    match rows_data.iter().next() {
+                        Some(_) => {
+                            error!("Metadata was found for wallet id '{}' which indicates this wallet already exists.", id);
+                            Err(WalletStorageError::AlreadyExists)
+                        },
+                        None => Ok(())
+                    }
+                },
+                Err(_) => Ok(())
             }
+        };
+
+        match schema_result {
+            Ok(_) => {
+                debug!("creating wallets DB");
+                let create_db_sql = str::replace(_CREATE_WALLET_DATABASE, "$1", id);
+                schema_result = match conn.execute(&create_db_sql, &[]) {
+                    Ok(_) => Ok(()),
+                    Err(_error) => {
+                        Err(WalletStorageError::AlreadyExists)
+                    }
+                };
+            },
+            Err(_) => ()
         };
         conn.finish()?;
 
