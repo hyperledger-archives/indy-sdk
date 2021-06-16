@@ -15,6 +15,7 @@ use super::time::Duration;
 
 use super::zmq::PollItem;
 use super::zmq::Socket as ZSocket;
+use std::env;
 
 pub trait Networker {
     fn new(active_timeout: i64, conn_limit: usize, preordered_nodes: Vec<String>) -> Self;
@@ -348,6 +349,15 @@ impl RemoteNode {
             .to_indy(IndyErrorKind::InvalidStructure, "Can't encode server key as z85")? // FIXME: review kind
             .as_bytes())?;
         s.set_linger(0)?; //TODO set correct timeout
+        let socks_proxy = env::var("ZMQ_SOCKS_PROXY");
+        if socks_proxy.is_ok() {
+            let proxy = socks_proxy.unwrap();
+            debug!("Use socks proxy: {}", &proxy);
+            let result = s.set_socks_proxy(Some(&proxy.as_str()));
+            if result.is_err() {
+                error!("socks error: {}", result.unwrap_err())
+            }
+        }
         s.connect(&self.zaddr)?;
         Ok(s)
     }
