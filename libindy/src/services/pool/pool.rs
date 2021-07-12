@@ -475,6 +475,7 @@ pub struct Pool<S: Networker, R: RequestHandler<S>> {
     conn_limit: usize,
     preordered_nodes: Vec<String>,
     number_read_nodes: u8,
+    socks_proxy: String,
 }
 
 impl<S: Networker, R: RequestHandler<S>> Pool<S, R> {
@@ -491,6 +492,7 @@ impl<S: Networker, R: RequestHandler<S>> Pool<S, R> {
             conn_limit: config.conn_limit,
             preordered_nodes: config.preordered_nodes,
             number_read_nodes: config.number_read_nodes,
+            socks_proxy: config.socks_proxy,
         }
     }
 
@@ -503,12 +505,14 @@ impl<S: Networker, R: RequestHandler<S>> Pool<S, R> {
         let conn_limit = self.conn_limit;
         let preordered_nodes = self.preordered_nodes.clone();
         let number_read_nodes = self.number_read_nodes;
+        let socks_proxy = self.socks_proxy.clone();
         self.worker = Some(thread::spawn(move || {
             let mut pool_thread: PoolThread<S, R> = PoolThread::new(cmd_socket, name, id,
                                                                     timeout, extended_timeout,
                                                                     active_timeout, conn_limit,
                                                                     preordered_nodes,
-                                                                    number_read_nodes);
+                                                                    number_read_nodes,
+                                                                    socks_proxy);
             pool_thread.work();
         }));
     }
@@ -530,8 +534,9 @@ struct PoolThread<S: Networker, R: RequestHandler<S>> {
 }
 
 impl<S: Networker, R: RequestHandler<S>> PoolThread<S, R> {
-    pub fn new(cmd_socket: zmq::Socket, name: String, id: PoolHandle, timeout: i64, extended_timeout: i64, active_timeout: i64, conn_limit: usize, preordered_nodes: Vec<String>, number_read_nodes: u8) -> Self {
-        let networker = Rc::new(RefCell::new(S::new(active_timeout, conn_limit, preordered_nodes)));
+    pub fn new(cmd_socket: zmq::Socket, name: String, id: PoolHandle, timeout: i64, extended_timeout: i64, active_timeout: i64, conn_limit: usize,
+               preordered_nodes: Vec<String>, number_read_nodes: u8, socks_proxy: String) -> Self {
+        let networker = Rc::new(RefCell::new(S::new(active_timeout, conn_limit, preordered_nodes, socks_proxy)));
         PoolThread {
             pool_sm: Some(PoolSM::new(networker.clone(), &name, id, timeout, extended_timeout, number_read_nodes)),
             events: VecDeque::new(),
@@ -809,7 +814,7 @@ mod tests {
 
         #[test]
         pub fn pool_wrapper_new_initialization_works() {
-            let _p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "name", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
+            let _p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![], String::new()))), "name", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
         }
 
         #[test]
@@ -819,7 +824,7 @@ mod tests {
             ProtocolVersion::set(2);
             _write_genesis_txns("pool_wrapper_check_cache_works");
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_check_cache_works", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![], String::new()))), "pool_wrapper_check_cache_works", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
             let cmd_id: CommandHandle = next_command_handle();
             let p = p.handle_event(PoolEvent::CheckCache(cmd_id));
             assert_match!(PoolState::GettingCatchupTarget(_), p.state);
@@ -830,7 +835,7 @@ mod tests {
         #[test]
         pub fn pool_wrapper_check_cache_works_for_no_pool_created() {
             let p: PoolSM<MockNetworker, MockRequestHandler> =
-                PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))),
+                PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![], String::new()))),
                             "pool_wrapper_check_cache_works_for_no_pool_created", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
             let cmd_id: CommandHandle = next_command_handle();
             let p = p.handle_event(PoolEvent::CheckCache(cmd_id));
@@ -839,7 +844,7 @@ mod tests {
 
         #[test]
         pub fn pool_wrapper_terminated_close_works() {
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_terminated_close_works", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![], String::new()))), "pool_wrapper_terminated_close_works", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
             let cmd_id: CommandHandle = next_command_handle();
             let p = p.handle_event(PoolEvent::CheckCache(cmd_id));
             let cmd_id: CommandHandle = next_command_handle();
@@ -850,7 +855,7 @@ mod tests {
         #[test]
         pub fn pool_wrapper_terminated_refresh_works() {
             test::cleanup_pool("pool_wrapper_terminated_refresh_works");
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_terminated_refresh_works", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![], String::new()))), "pool_wrapper_terminated_refresh_works", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
             let cmd_id: CommandHandle = next_command_handle();
             let p = p.handle_event(PoolEvent::CheckCache(cmd_id));
 
@@ -869,7 +874,7 @@ mod tests {
                 pool_name: "pool_wrapper_terminated_timeout_works".to_string(),
                 id: next_pool_handle(),
                 state: PoolState::Terminated(TerminatedState {
-                    networker: Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))),
+                    networker: Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![], String::new()))),
                 }),
                 timeout: 0,
                 extended_timeout: 0,
@@ -890,7 +895,7 @@ mod tests {
 
         #[test]
         pub fn pool_wrapper_cloe_works_from_initialization() {
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_cloe_works_from_initialization", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![], String::new()))), "pool_wrapper_cloe_works_from_initialization", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
             let cmd_id: CommandHandle = next_command_handle();
             let p = p.handle_event(PoolEvent::Close(cmd_id));
             assert_match!(PoolState::Closed(_), p.state);
@@ -904,7 +909,7 @@ mod tests {
             _write_genesis_txns("pool_wrapper_close_works_from_getting_catchup_target");
 
             let p: PoolSM<MockNetworker, MockRequestHandler> =
-                PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_close_works_from_getting_catchup_target", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
+                PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![], String::new()))), "pool_wrapper_close_works_from_getting_catchup_target", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
             let cmd_id: CommandHandle = next_command_handle();
             let p = p.handle_event(PoolEvent::CheckCache(cmd_id));
             let cmd_id: CommandHandle = next_command_handle();
@@ -922,7 +927,7 @@ mod tests {
             _write_genesis_txns("pool_wrapper_catchup_target_not_found_works");
 
             let p: PoolSM<MockNetworker, MockRequestHandler> =
-                PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_catchup_target_not_found_works", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
+                PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![], String::new()))), "pool_wrapper_catchup_target_not_found_works", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
             let cmd_id: CommandHandle = next_command_handle();
             let p = p.handle_event(PoolEvent::CheckCache(cmd_id));
             let p = p.handle_event(PoolEvent::CatchupTargetNotFound(err_msg(IndyErrorKind::PoolTimeout, "Pool timeout")));
@@ -939,7 +944,7 @@ mod tests {
             _write_genesis_txns("pool_wrapper_getting_catchup_target_synced_works");
 
             let p: PoolSM<MockNetworker, MockRequestHandler> =
-                PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_getting_catchup_target_synced_works", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
+                PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![], String::new()))), "pool_wrapper_getting_catchup_target_synced_works", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
             let cmd_id: CommandHandle = next_command_handle();
             let p = p.handle_event(PoolEvent::CheckCache(cmd_id));
             let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
@@ -958,7 +963,7 @@ mod tests {
             let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(
                 Rc::new(RefCell::new(
                     MockNetworker::new(0,
-                                       0, vec![]))),
+                                       0, vec![], String::new()))),
                 "pool_wrapper_getting_catchup_target_synced_works_for_node_state_error",
                 next_pool_handle(),
                 0,
@@ -985,7 +990,8 @@ mod tests {
                 Rc::new(RefCell::new(
                     MockNetworker::new(0,
                                        0,
-                                       vec![]))),
+                                       vec![],
+                                       String::new()))),
                 "pool_wrapper_getting_catchup_target_catchup_target_found_works",
                 next_pool_handle(),
                 0,
@@ -1009,7 +1015,7 @@ mod tests {
 
             let p: PoolSM<MockNetworker, MockRequestHandler> =
                 PoolSM::new(Rc::new(RefCell::new(
-                    MockNetworker::new(0, 0, vec![]))),
+                    MockNetworker::new(0, 0, vec![], String::new()))),
                             "pool_wrapper_getting_catchup_target_catchup_target_found_works_for_node_state_error",
                             next_pool_handle(),
                             0,
@@ -1037,7 +1043,8 @@ mod tests {
                     RefCell::new(
                         MockNetworker::new(0,
                                            0,
-                                           vec![]))),
+                                           vec![],
+                                           String::new()))),
                             "pool_wrapper_sync_catchup_close_works",
                             next_pool_handle(),
                             0,
@@ -1065,7 +1072,8 @@ mod tests {
                 Rc::new(RefCell::new(
                     MockNetworker::new(0,
                                        0,
-                                       vec![]))),
+                                       vec![],
+                                       String::new()))),
                 "pool_wrapper_sync_catchup_synced_works",
                 next_pool_handle(),
                 0,
@@ -1092,7 +1100,8 @@ mod tests {
                 Rc::new(RefCell::new(
                     MockNetworker::new(0,
                                        0,
-                                       vec![]))),
+                                       vec![],
+                                       String::new()))),
                 "pool_wrapper_sync_catchup_synced_works_for_node_state_error",
                 next_pool_handle(),
                 0,
@@ -1124,7 +1133,8 @@ mod tests {
             let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(
                 RefCell::new(MockNetworker::new(0,
                                                 0,
-                                                vec![]))),
+                                                vec![],
+                                                String::new()))),
                                                                            "pool_wrapper_active_send_request_works",
                                                                            next_pool_handle(),
                                                                            0,
@@ -1164,7 +1174,8 @@ mod tests {
                     MockNetworker::new(
                         0,
                         0,
-                        vec![]))),
+                        vec![],
+                        String::new()))),
                             "pool_wrapper_active_send_request_works_for_no_req_id",
                             next_pool_handle(),
                             0,
@@ -1217,7 +1228,8 @@ mod tests {
                 Rc::new(RefCell::new(
                     MockNetworker::new(0,
                                        0,
-                                       vec![]))),
+                                       vec![],
+                                       String::new()))),
                 "pool_wrapper_active_node_reply_works",
                 next_pool_handle(),
                 0,
@@ -1257,7 +1269,8 @@ mod tests {
                 PoolSM::new(Rc::new(RefCell::new(
                     MockNetworker::new(0,
                                        0,
-                                       vec![]))),
+                                       vec![],
+                                       String::new()))),
                             "pool_wrapper_sends_requests_to_two_nodes",
                             next_pool_handle(), 0, 0, NUMBER_READ_NODES);
             let cmd_id: CommandHandle = next_command_handle();
@@ -1307,7 +1320,8 @@ mod tests {
             let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(
                 RefCell::new(MockNetworker::new(0,
                                                 0,
-                                                vec![]))),
+                                                vec![],
+                                                String::new()))),
                                                                            "pool_wrapper_active_node_reply_works_for_no_request",
                                                                            next_pool_handle(),
                                                                            0,
@@ -1350,7 +1364,8 @@ mod tests {
                 PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(
                     0,
                     0,
-                    vec![]))),
+                    vec![],
+                    String::new()))),
                             "pool_wrapper_active_node_reply_works_for_invalid_reply",
                             next_pool_handle(),
                             0,
