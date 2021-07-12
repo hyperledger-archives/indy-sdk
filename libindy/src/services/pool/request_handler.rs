@@ -924,7 +924,7 @@ pub mod tests {
     }
 
     fn _request_handler(pool_name: &str, f: usize, nodes_cnt: usize) -> RequestHandlerImpl<MockNetworker> {
-        let networker = Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![])));
+        let networker = Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![], String::new())));
 
         let mut default_nodes: Nodes = HashMap::new();
         default_nodes.insert(NODE.to_string(), None);
