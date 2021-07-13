@@ -17,7 +17,7 @@ use super::zmq::PollItem;
 use super::zmq::Socket as ZSocket;
 
 pub trait Networker {
-    fn new(active_timeout: i64, conn_limit: usize, preordered_nodes: Vec<String>) -> Self;
+    fn new(active_timeout: i64, conn_limit: usize, preordered_nodes: Vec<String>, socks_proxy: String) -> Self;
     fn fetch_events(&self, poll_items: &[PollItem]) -> Vec<PoolEvent>;
     fn process_event(&mut self, pe: Option<NetworkerEvent>) -> Option<RequestEvent>;
     fn get_timeout(&self) -> ((String, String), i64);
@@ -31,10 +31,11 @@ pub struct ZMQNetworker {
     active_timeout: i64,
     conn_limit: usize,
     preordered_nodes: Vec<String>,
+    socks_proxy: String,
 }
 
 impl Networker for ZMQNetworker {
-    fn new(active_timeout: i64, conn_limit: usize, preordered_nodes: Vec<String>) -> Self {
+    fn new(active_timeout: i64, conn_limit: usize, preordered_nodes: Vec<String>, socks_proxy: String) -> Self {
         ZMQNetworker {
             req_id_mappings: HashMap::new(),
             pool_connections: BTreeMap::new(),
@@ -42,6 +43,7 @@ impl Networker for ZMQNetworker {
             active_timeout,
             conn_limit,
             preordered_nodes,
+            socks_proxy,
         }
     }
 
@@ -84,7 +86,7 @@ impl Networker for ZMQNetworker {
                     None => {
                         trace!("send request in new conn");
                         let pc_id = sequence::get_next_id();
-                        let mut pc = PoolConnection::new(self.nodes.clone(), self.active_timeout, self.preordered_nodes.clone());
+                        let mut pc = PoolConnection::new(self.nodes.clone(), self.active_timeout, self.preordered_nodes.clone(), self.socks_proxy.clone());
                         pc.send_request(pe).expect("FIXME");
                         self.pool_connections.insert(pc_id, pc);
                         self.req_id_mappings.insert(req_id.clone(), pc_id);
@@ -175,10 +177,11 @@ pub struct PoolConnection {
     time_created: time::Tm,
     req_cnt: usize,
     active_timeout: i64,
+    socks_proxy: String,
 }
 
 impl PoolConnection {
-    fn new(mut nodes: Vec<RemoteNode>, active_timeout: i64, preordered_nodes: Vec<String>) -> Self {
+    fn new(mut nodes: Vec<RemoteNode>, active_timeout: i64, preordered_nodes: Vec<String>, socks_proxy: String) -> Self {
         trace!("PoolConnection::new: from nodes {:?}", nodes);
 
         nodes.shuffle(&mut thread_rng());
@@ -205,6 +208,7 @@ impl PoolConnection {
             timeouts: RefCell::new(HashMap::new()),
             req_cnt: 0,
             active_timeout,
+            socks_proxy
         }
     }
 
@@ -331,7 +335,7 @@ impl PoolConnection {
     fn _get_socket(&mut self, idx: usize) -> IndyResult<&ZSocket> {
         if self.sockets[idx].is_none() {
             debug!("_get_socket: open new socket for node {}", idx);
-            let s: ZSocket = self.nodes[idx].connect(&self.ctx, &self.key_pair)?;
+            let s: ZSocket = self.nodes[idx].connect(&self.ctx, &self.key_pair, self.socks_proxy.clone())?;
             self.sockets[idx] = Some(s)
         }
         Ok(self.sockets[idx].as_ref().unwrap())
@@ -339,7 +343,7 @@ impl PoolConnection {
 }
 
 impl RemoteNode {
-    fn connect(&self, ctx: &zmq::Context, key_pair: &zmq::CurveKeyPair) -> IndyResult<ZSocket> {
+    fn connect(&self, ctx: &zmq::Context, key_pair: &zmq::CurveKeyPair, socks_proxy: String) -> IndyResult<ZSocket> {
         let s = ctx.socket(zmq::SocketType::DEALER)?;
         s.set_identity(base64::encode(&key_pair.public_key).as_bytes())?;
         s.set_curve_secretkey(&key_pair.secret_key)?;
@@ -348,6 +352,17 @@ impl RemoteNode {
             .to_indy(IndyErrorKind::InvalidStructure, "Can't encode server key as z85")? // FIXME: review kind
             .as_bytes())?;
         s.set_linger(0)?; //TODO set correct timeout
+
+        if !socks_proxy.is_empty() {
+            // let proxy = socks_proxy.unwrap();
+            debug!("Use socks proxy: {}", socks_proxy);
+            let result = s.set_socks_proxy(Some(&socks_proxy));
+            if result.is_err() {
+                error!("socks error: {}", result.unwrap_err())
+            }
+        } else {
+            debug!("Socks proxy is not configured");
+        }
         s.connect(&self.zaddr)?;
         Ok(s)
     }
@@ -360,7 +375,7 @@ pub struct MockNetworker {
 
 #[cfg(test)]
 impl Networker for MockNetworker {
-    fn new(_active_timeout: i64, _conn_limit: usize, _preordered_nodes: Vec<String>) -> Self {
+    fn new(_active_timeout: i64, _conn_limit: usize, _preordered_nodes: Vec<String>, _socks_proxy: String) -> Self {
         MockNetworker {
             events: Vec::new(),
         }
@@ -418,12 +433,12 @@ pub mod networker_tests {
 
         #[test]
         pub fn networker_new_works() {
-            ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+            ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![], String::new());
         }
 
         #[test]
         pub fn networker_process_event_works() {
-            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![], String::new());
             networker.process_event(None);
         }
 
@@ -432,7 +447,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![], String::new());
 
             assert_eq!(0, networker.nodes.len());
 
@@ -447,7 +462,7 @@ pub mod networker_tests {
             let handle = nodes_emulator::start(&mut txn);
             let rn = _remote_node(&txn);
 
-            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![], String::new());
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn])));
 
             assert!(networker.pool_connections.is_empty());
@@ -473,7 +488,7 @@ pub mod networker_tests {
             let handle_2 = nodes_emulator::start(&mut txn_2);
             let rn_2 = _remote_node(&txn_2);
 
-            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![], String::new());
 
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn_1, rn_2])));
             networker.process_event(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT, None)));
@@ -496,7 +511,7 @@ pub mod networker_tests {
 
             let send_cnt = 2;
 
-            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec!["n2".to_string(), "n1".to_string()]);
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec!["n2".to_string(), "n1".to_string()], String::new());
 
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn_1, rn_2])));
 
@@ -526,7 +541,7 @@ pub mod networker_tests {
             let handle_2 = nodes_emulator::start(&mut txn_2);
             let rn_2 = _remote_node(&txn_2);
 
-            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![], String::new());
 
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn_1, rn_2])));
             networker.process_event(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT, Some(vec![NODE_NAME.to_string()]))));
@@ -542,7 +557,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![], String::new());
 
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn])));
 
@@ -565,7 +580,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![], String::new());
 
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn])));
 
@@ -588,7 +603,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![], String::new());
 
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn])));
             networker.process_event(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT)));
@@ -615,9 +630,9 @@ pub mod networker_tests {
         fn networker_process_timeout_event_works() {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
-            let conn = PoolConnection::new(vec![rn.clone()], POOL_CON_ACTIVE_TO, vec![]);
+            let conn = PoolConnection::new(vec![rn.clone()], POOL_CON_ACTIVE_TO, vec![], String::new());
 
-            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![], String::new());
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn])));
 
             networker.pool_connections.insert(1, conn);
@@ -634,7 +649,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![], String::new());
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn])));
             networker.process_event(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT)));
 
@@ -650,7 +665,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![], String::new());
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn])));
 
             networker.process_event(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT)));
@@ -668,7 +683,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![], String::new());
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn])));
 
             networker.process_event(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT)));
@@ -687,7 +702,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![], String::new());
 
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn])));
 
@@ -712,7 +727,9 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let _socket = rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap()).unwrap();
+            let _socket: ZSocket = rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap(), String::new()).unwrap();
+            let socks_proxy = _socket.get_socks_proxy().unwrap().unwrap();
+            assert_eq!("", socks_proxy);
         }
 
         #[test]
@@ -721,8 +738,18 @@ pub mod networker_tests {
             let mut rn = _remote_node(&txn);
             rn.zaddr = "invalid_address".to_string();
 
-            let res = rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap());
+            let res = rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap(),String::new());
             assert_kind!(IndyErrorKind::IOError, res);
+        }
+
+        #[test]
+        fn remote_node_connect_via_socks_proxy() {
+            let txn = nodes_emulator::node();
+            let rn = _remote_node(&txn);
+
+            let _socket: ZSocket = rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap(), "proxy.internal.company:1080".to_string()).unwrap();
+            let socks_proxy = _socket.get_socks_proxy().unwrap().unwrap();
+            assert_eq!("proxy.internal.company:1080", socks_proxy);
         }
     }
 
@@ -737,7 +764,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
+            PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![], String::new());
         }
 
         #[test]
@@ -753,7 +780,7 @@ pub mod networker_tests {
                 nodes.push(_remote_node(&txn));
             }
 
-            let pc = PoolConnection::new(nodes, POOL_CON_ACTIVE_TO, vec![]);
+            let pc = PoolConnection::new(nodes, POOL_CON_ACTIVE_TO, vec![], String::new());
 
             let act_names: Vec<String> = pc.nodes.iter().map(|n| n.name.to_string()).collect();
 
@@ -781,7 +808,8 @@ pub mod networker_tests {
 
             let pc = PoolConnection::new(vec![rn_1.clone(), rn_2.clone(), rn_3.clone(), rn_4.clone(), rn_5.clone()],
                                          POOL_CON_ACTIVE_TO,
-                                         vec![rn_2.name.clone(), rn_1.name.clone(), rn_5.name.clone()]);
+                                         vec![rn_2.name.clone(), rn_1.name.clone(), rn_5.name.clone()],
+                                         String::new());
 
             assert_eq!(rn_2.name, pc.nodes[0].name);
             assert_eq!(rn_1.name, pc.nodes[1].name);
@@ -793,7 +821,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
+            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![], String::new());
 
             assert!(conn.is_active());
 
@@ -807,7 +835,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
+            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![], String::new());
 
             assert!(!conn.has_active_requests());
 
@@ -821,7 +849,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
+            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![], String::new());
 
             let ((req_id, node_alias), timeout) = conn.get_timeout();
             assert_eq!(req_id, "".to_string());
@@ -842,7 +870,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
+            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![], String::new());
 
             conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
 
@@ -862,7 +890,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
+            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![], String::new());
 
             conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
 
@@ -878,7 +906,7 @@ pub mod networker_tests {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
-            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
+            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![], String::new());
 
             let _socket = conn._get_socket(0).unwrap();
         }
@@ -889,7 +917,7 @@ pub mod networker_tests {
             let mut rn = _remote_node(&txn);
             rn.zaddr = "invalid_address".to_string();
 
-            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
+            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![], String::new());
 
             let res = conn._get_socket(0);
             assert_kind!(IndyErrorKind::IOError, res);
@@ -901,7 +929,7 @@ pub mod networker_tests {
             let handle = nodes_emulator::start(&mut txn);
             let rn = _remote_node(&txn);
 
-            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
+            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![], String::new());
 
             conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
             conn.send_request(Some(NetworkerEvent::SendOneRequest("msg2".to_string(), "12".to_string(), POOL_ACK_TIMEOUT))).unwrap();
@@ -921,7 +949,7 @@ pub mod networker_tests {
             let handle_2 = nodes_emulator::start(&mut txn_2);
             let rn_2 = _remote_node(&txn_2);
 
-            let mut conn = PoolConnection::new(vec![rn_1, rn_2], POOL_CON_ACTIVE_TO, vec!["n1".to_string(), "n2".to_string()]);
+            let mut conn = PoolConnection::new(vec![rn_1, rn_2], POOL_CON_ACTIVE_TO, vec!["n1".to_string(), "n2".to_string()], String::new());
 
             conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
 
@@ -941,7 +969,7 @@ pub mod networker_tests {
             let handle_2 = nodes_emulator::start(&mut txn_2);
             let rn_2 = _remote_node(&txn_2);
 
-            let mut conn = PoolConnection::new(vec![rn_1, rn_2], POOL_CON_ACTIVE_TO, vec![]);
+            let mut conn = PoolConnection::new(vec![rn_1, rn_2], POOL_CON_ACTIVE_TO, vec![], String::new());
 
             conn.send_request(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT, None))).unwrap();
 
@@ -957,7 +985,7 @@ pub mod networker_tests {
             let handle = nodes_emulator::start(&mut txn);
             let rn = _remote_node(&txn);
 
-            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
+            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![], String::new());
 
             conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
 
@@ -978,7 +1006,7 @@ pub mod networker_tests {
             let handle_2 = nodes_emulator::start(&mut txn_2);
             let rn_2 = _remote_node(&txn_2);
 
-            let mut conn = PoolConnection::new(vec![rn_1, rn_2], POOL_CON_ACTIVE_TO, vec![]);
+            let mut conn = PoolConnection::new(vec![rn_1, rn_2], POOL_CON_ACTIVE_TO, vec![], String::new());
 
             conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
 
@@ -996,7 +1024,7 @@ pub mod networker_tests {
             let mut rn = _remote_node(&txn);
             rn.zaddr = "invalid_address".to_string();
 
-            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
+            let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![], String::new());
 
             let res = conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT)));
             assert_kind!(IndyErrorKind::IOError, res);

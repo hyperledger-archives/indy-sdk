@@ -33,6 +33,8 @@ pub struct PoolOpenConfig {
     pub preordered_nodes: Vec<String>,
     #[serde(default = "PoolOpenConfig::default_number_read_nodes")]
     pub number_read_nodes: u8,
+    #[serde(default = "PoolOpenConfig::default_socks_proxy")]
+    pub socks_proxy: String,
 }
 
 impl Validatable for PoolOpenConfig {
@@ -65,6 +67,7 @@ impl Default for PoolOpenConfig {
             conn_active_timeout: PoolOpenConfig::default_conn_active_timeout(),
             preordered_nodes: PoolOpenConfig::default_preordered_nodes(),
             number_read_nodes: PoolOpenConfig::default_number_read_nodes(),
+            socks_proxy: PoolOpenConfig::default_socks_proxy(),
         }
     }
 }
@@ -91,4 +94,6 @@ impl PoolOpenConfig {
     }
 
     fn default_number_read_nodes() -> u8 { NUMBER_READ_NODES }
+
+    fn default_socks_proxy() -> String { String::new() }
 }
