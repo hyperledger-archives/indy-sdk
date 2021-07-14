@@ -188,6 +188,8 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::get_acceptance_mechanisms_command::new())
         .add_command(ledger::endorse_transaction_command::new())
         .add_command(ledger::taa_disable_all_command::new())
+        .add_command(ledger::ledgers_freeze_command::new())
+        .add_command(ledger::get_frozen_ledgers_command::new())
         .finalize_group()
         .add_group(payment_address::group::new())
         .add_command(payment_address::new_command::new())

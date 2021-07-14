@@ -213,6 +213,8 @@ class IndyCallback : public Nan::AsyncResource {
         IndyCallback* icb = static_cast<IndyCallback*>(async->data);
         icbmap.erase(icb->handle);
 
+        v8::Local<v8::Context> context = Nan::GetCurrentContext();
+
         v8::Local<v8::Array> tuple;
         v8::Local<v8::Value> argv[2];
         argv[0] = Nan::New<v8::Number>(icb->err);
@@ -231,8 +233,8 @@ class IndyCallback : public Nan::AsyncResource {
                 break;
             case CB_HANDLE_U32:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, Nan::New<v8::Number>(icb->handle0));
-                tuple->Set(1, Nan::New<v8::Number>(icb->u32int0));
+                (void)tuple->Set(context, 0, Nan::New<v8::Number>(icb->handle0));
+                (void)tuple->Set(context, 1, Nan::New<v8::Number>(icb->u32int0));
                 argv[1] = tuple;
                 break;
             case CB_I32:
@@ -240,8 +242,8 @@ class IndyCallback : public Nan::AsyncResource {
                 break;
             case CB_STRING_I64:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, toJSString(icb->str0));
-                tuple->Set(1, Nan::New<v8::Number>(icb->i64int0));
+                (void)tuple->Set(context, 0, toJSString(icb->str0));
+                (void)tuple->Set(context, 1, Nan::New<v8::Number>(icb->i64int0));
                 argv[1] = tuple;
                 break;
             case CB_BUFFER:
@@ -249,28 +251,28 @@ class IndyCallback : public Nan::AsyncResource {
                 break;
             case CB_STRING_BUFFER:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, toJSString(icb->str0));
-                tuple->Set(1, Nan::NewBuffer(icb->buffer0data, icb->buffer0len).ToLocalChecked());
+                (void)tuple->Set(context, 0, toJSString(icb->str0));
+                (void)tuple->Set(context, 1, Nan::NewBuffer(icb->buffer0data, icb->buffer0len).ToLocalChecked());
                 argv[1] = tuple;
                 break;
             case CB_STRING_STRING:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, toJSString(icb->str0));
-                tuple->Set(1, toJSString(icb->str1));
+                (void)tuple->Set(context, 0, toJSString(icb->str0));
+                (void)tuple->Set(context, 1, toJSString(icb->str1));
                 argv[1] = tuple;
                 break;
             case CB_STRING_STRING_TIMESTAMP:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, toJSString(icb->str0));
-                tuple->Set(1, toJSString(icb->str1));
-                tuple->Set(2, Nan::New<v8::Number>(icb->timestamp0));
+                (void)tuple->Set(context, 0, toJSString(icb->str0));
+                (void)tuple->Set(context, 1, toJSString(icb->str1));
+                (void)tuple->Set(context, 2, Nan::New<v8::Number>(icb->timestamp0));
                 argv[1] = tuple;
                 break;
             case CB_STRING_STRING_STRING:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, toJSString(icb->str0));
-                tuple->Set(1, toJSString(icb->str1));
-                tuple->Set(2, toJSString(icb->str2));
+                (void)tuple->Set(context, 0, toJSString(icb->str0));
+                (void)tuple->Set(context, 1, toJSString(icb->str1));
+                (void)tuple->Set(context, 2, toJSString(icb->str2));
                 argv[1] = tuple;
                 break;
         }
@@ -2371,6 +2373,41 @@ NAN_METHOD(buildGetAcceptanceMechanismsRequest) {
   delete arg2;
 }
 
+void buildLedgersFreezeRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(buildLedgersFreezeRequest) {
+  INDY_ASSERT_NARGS(buildLedgersFreezeRequest, 3)
+  INDY_ASSERT_STRING(buildLedgersFreezeRequest, 0, submitterDid)
+  INDY_ASSERT_STRING(buildLedgersFreezeRequest, 1, ledgersIds)
+  INDY_ASSERT_FUNCTION(buildLedgersFreezeRequest, 2)
+  const char* arg0 = argToCString(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  IndyCallback* icb = argToIndyCb(info[2]);
+  indyCalled(icb, indy_build_ledgers_freeze_request(icb->handle, arg0, arg1, buildLedgersFreezeRequest_cb));
+  delete arg0;
+  delete arg1;
+}
+
+void buildGetFrozenLedgersRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(buildGetFrozenLedgersRequest) {
+  INDY_ASSERT_NARGS(buildGetFrozenLedgersRequest, 2)
+  INDY_ASSERT_STRING(buildGetFrozenLedgersRequest, 0, submitterDid)
+  INDY_ASSERT_FUNCTION(buildGetFrozenLedgersRequest, 1)
+  const char* arg0 = argToCString(info[0]);
+  IndyCallback* icb = argToIndyCb(info[1]);
+  indyCalled(icb, indy_build_get_frozen_ledgers_request(icb->handle, arg0, buildGetFrozenLedgersRequest_cb));
+  delete arg0;
+}
+
 void appendTxnAuthorAgreementAcceptanceToRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3732,6 +3769,8 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildGetTxnAuthorAgreementRequest", buildGetTxnAuthorAgreementRequest);
   Nan::Export(target, "buildAcceptanceMechanismsRequest", buildAcceptanceMechanismsRequest);
   Nan::Export(target, "buildGetAcceptanceMechanismsRequest", buildGetAcceptanceMechanismsRequest);
+  Nan::Export(target, "buildLedgersFreezeRequest", buildLedgersFreezeRequest);
+  Nan::Export(target, "buildGetFrozenLedgersRequest", buildGetFrozenLedgersRequest);
   Nan::Export(target, "appendTxnAuthorAgreementAcceptanceToRequest", appendTxnAuthorAgreementAcceptanceToRequest);
   Nan::Export(target, "appendRequestEndorser", appendRequestEndorser);
   Nan::Export(target, "getResponseMetadata", getResponseMetadata);

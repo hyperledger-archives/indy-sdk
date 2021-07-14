@@ -31,7 +31,7 @@ This module has a native compile step. It compiles C++ code and dynamically link
 
 You will need:
 
-* C++ build tools and Python 2. See [this](https://github.com/nodejs/node-gyp#installation) for platform recommendations.
+* C++ build tools and Python 3.6+. See [this](https://github.com/nodejs/node-gyp#installation) for platform recommendations.
 * `libindy` v1.6+ in your system library path. (i.e. `/usr/lib/libindy.so` for linux)
 
 Then you can install via npm:

@@ -14,6 +14,7 @@ RUN apt-get update -y && apt-get install -y \
 	software-properties-common
 
 WORKDIR /home/indy
+
 RUN python3 --version
 RUN pip3 install --upgrade pip==9.0.3
 RUN pip3 install -U setuptools
@@ -22,6 +23,7 @@ RUN pip3 install -U ipython==7.9
 RUN pip3 install -U notebook
 RUN pip3 install -U jupyter
 RUN pip3 install -U python3-indy==1.11.0
+
 
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 \
     && add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable" \

@@ -14,6 +14,7 @@ impl<'conn> Transaction<'conn> {
             TransactionBehavior::Deferred => "BEGIN DEFERRED",
             TransactionBehavior::Immediate => "BEGIN IMMEDIATE",
             TransactionBehavior::Exclusive => "BEGIN EXCLUSIVE",
+            _ => ""
         };
         conn.execute_batch(query)
             .map(move |_| {
@@ -75,8 +76,8 @@ impl<'conn> Transaction<'conn> {
             DropBehavior::Commit => self.commit_(),
             DropBehavior::Rollback => self.rollback_(),
             DropBehavior::Ignore => Ok(()),
-            DropBehavior::Panic => {
-                panic!("drop behaviour is set to panic".to_string());
+            _ => {
+                panic!("internal error: unsupported drop behaviour");
             }
         }
     }

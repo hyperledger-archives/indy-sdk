@@ -27,6 +27,7 @@ use crate::domain::ledger::txn::{GetTxnOperation, LedgerType};
 use crate::domain::ledger::validator_info::GetValidatorInfoOperation;
 use crate::domain::ledger::auth_rule::*;
 use crate::domain::ledger::author_agreement::*;
+use crate::domain::ledger::ledgers_freeze::{LedgersFreezeOperation, GetFrozenLedgersOperation};
 use indy_api_types::errors::prelude::*;
 use indy_utils::crypto::hash::hash as openssl_hash;
 
@@ -392,6 +393,16 @@ impl LedgerService {
 
         build_result!(AuthRuleOperation, Some(submitter_did), txn_type.to_string(), field.to_string(), action,
                                                               old_value.map(String::from), new_value.map(String::from), constraint)
+    }
+
+    #[logfn(Info)]
+    pub fn build_ledgers_freeze_request(&self, submitter_did: &DidValue, ledgers_ids: Vec<u64>) -> IndyResult<String> {
+        build_result!(LedgersFreezeOperation, Some(submitter_did), ledgers_ids)
+    }
+
+    #[logfn(Info)]
+    pub fn build_get_frozen_ledgers_request(&self, submitter_did: &DidValue) -> IndyResult<String> {
+        build_result!(GetFrozenLedgersOperation, Some(submitter_did))
     }
 
     #[logfn(Info)]
@@ -864,6 +875,47 @@ mod tests {
         let ledger_service = LedgerService::new();
         let request = ledger_service.build_get_validator_info_request(&identifier()).unwrap();
         ledger_service.validate_action(&request).unwrap();
+    }
+
+    #[test]
+    fn build_ledgers_freeze_request_work_with_valid_data() {
+        let ledger_service = LedgerService::new();
+        let ledgers_ids = vec![0,1,50,873];
+        let res = ledger_service.build_ledgers_freeze_request(&identifier(), ledgers_ids);
+
+        match res {
+            Ok(_) => {},
+            Err(ec) => {
+                assert!(false, "build_ledgers_freeze_request_work_with_valid_data returned error_code {:?}", ec);
+            }
+        }
+    }
+
+    #[test]
+    fn build_get_frozen_ledgers_request_work_with_valid_data() {
+        let ledger_service = LedgerService::new();
+        let res = ledger_service.build_get_frozen_ledgers_request(&identifier());
+
+        match res {
+            Ok(_) => {},
+            Err(ec) => {
+                assert!(false, "build_get_frozen_ledgers_request_work_with_valid_data returned error_code {:?}", ec);
+            }
+        }
+    }
+
+    #[test]
+    fn build_ledgers_freeze_request_work_with_empty_data() {
+        let ledger_service = LedgerService::new();
+        let ledgers_ids = vec![];
+        let res = ledger_service.build_ledgers_freeze_request(&identifier(), ledgers_ids);
+
+        match res {
+            Ok(_) => {},
+            Err(ec) => {
+                assert!(false, "build_ledgers_freeze_request_work_with_empty_data returned error_code {:?}", ec);
+            }
+        }
     }
 
     mod auth_rule {
