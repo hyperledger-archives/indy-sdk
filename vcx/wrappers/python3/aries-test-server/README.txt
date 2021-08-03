@@ -1,1 +1,0 @@
-Simple HTTP server to run VCX against Aries Test Suite.

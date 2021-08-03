@@ -1,9 +1,0 @@
-{
-  "defaultSeverity": "error",
-  "extends": [
-    "../tslint.json"
-  ],
-  "rules": {
-    "no-console": false
-  }
-}

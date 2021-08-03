@@ -1,3 +1,0 @@
-"""
-Api calls for Libvcx
-"""
