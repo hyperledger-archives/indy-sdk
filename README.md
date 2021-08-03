@@ -59,40 +59,6 @@ Indy SDK provides libindy wrappers for the following programming languages and p
 
 [Libnullpay](/libnullpay/README.md) is a libindy plugin that can be used for development of applications that use the Payments API of Indy SDK.
 
-### Libvcx
-[Libvcx](/vcx/README.md) is a c-callable library built on top of libindy that provides a high-level
-credential exchange protocol. It simplifies creation of agent applications and provides
-better agent-2-agent interoperability for [Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy)
-infrastructure.
-
-This library is currently in an **experimental** state and is not part of official releases.
-
-### Libvcx wrappers
-
-A set of libvcx wrappers for developing vcx-based applications in your favorite programming language.
-
-Indy SDK provides libvcx wrappers for the following programming languages and platforms:
-
-* [Java](/vcx/wrappers/java/README.md)
-* [Python](/vcx/wrappers/python3/README.md)
-* [iOS](vcx/wrappers/ios/README.md)
-* [NodeJS](/vcx/wrappers/node/README.md)
-
-These wrappers are currently in **experimental** state and it is not part of official releases.
-
-##### Example use
-- For the main workflow example check [VCX Python demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
-- Another libvcx example is available as [VCX NodeJS demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/node#run-demo).
-- For mobile see [iOS Demo project](https://github.com/sktston/vcx-demo-ios) 
-
-### LibVCX Agency
-LibVCX can be used with 
-[mediator agency](https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0046-mediators-and-relays/README.md)
-which enables asynchronous communication between 2 parties. 
-- [Dummy Cloud Agent](/vcx/dummy-cloud-agent/README.md) is simple implementation of VCX compatible Cloud Agent.
-The main purpose of this implementation is VCX testing, demos and documentation of VCX protocol.
-- [NodeVCXAgency](https://github.com/AbsaOSS/vcxagencynode) is alternative implementation in NodeJS.
-
 ## How-To Tutorials
 Short, simple tutorials that demonstrate how to accomplish common tasks
 are also available. See the [docs/how-tos](docs/how-tos) folder.
@@ -122,7 +88,7 @@ It is recommended to install the SDK packages with APT:
     sudo apt-get update
     sudo apt-get install -y {library}
 
-* {library} must be replaced with libindy, libnullpay, libvcx or indy-cli.
+* {library} must be replaced with libindy, libnullpay or indy-cli.
 * (xenial|bionic) xenial for 16.04 Ubuntu and bionic for 18.04 Ubuntu.
 * {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 Please See the section "Release channels" above for more details.
@@ -154,7 +120,7 @@ that may be need for your applications.
 {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 See section "Release channels" for more details.
 
-{library} must be replaced with libindy, libnullpay, libvcx or indy-cli.
+{library} must be replaced with libindy, libnullpay or indy-cli.
 
 ### iOS
 
@@ -189,7 +155,7 @@ that may be need for your applications.
 
  * `libindy.a` - This is a static library, which is compiled with NDK.
 
-{library} must be replaced with libindy, libnullpay or libvcx.
+{library} must be replaced with libindy or libnullpay.
 
  [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/docs/build-guides/android-build.md#usage)  
 
@@ -207,7 +173,7 @@ See section "Release channels" for more details.
 2. Download and unzip the last version of library.
 3. Install with `rpm -i library-version.rpm`.
 
-{library} must be replaced with libindy, libnullpay, libvcx, indy-cli to define corresponded library.
+{library} must be replaced with libindy, libnullpay, indy-cli to define corresponded library.
 
 {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 See section "Release channels" for more details.
@@ -230,7 +196,7 @@ See section "Release channels" for more details.
 
 You need add the path to lib folder to LIBRARY_PATH environment variable. 
     
-{library} must be replaced with libindy, libnullpay, libvcx or indy-cli to define corresponded library.
+{library} must be replaced with libindy, libnullpay or indy-cli to define corresponded library.
 
 {release channel} must be replaced with master, rc or stable to define corresponded release channel.
     

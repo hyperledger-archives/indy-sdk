@@ -155,35 +155,3 @@ User either can accept it or skip and accept it later by `pool show-taa` command
     Actual TAA check will be performed on write requests sending only.
 
 1. On write request sending to Ledger: TAA will be appended to requests.
-
-### Libvcx
-
-VCX stores TAA data into internal settings which defines library behaviour and use it write transaction sending.
-
-There are two ways of setting TAA:
-
-1. using `vcx_init_with_config` function.
-This function is some kind of entry point which initializes library. 
-It accepts `config` as a parameter, does it processing and stores some values into the internal state for future needs.
-So, you can append the TAA data to this config:
-```
-{ 
- ...., 
- "author_agreement": "{
-    \"taaDigest\": \"string\", 
-    \"acceptanceMechanismType\":\ "string\", 
-    \"timeOfAcceptance\": u64}" 
- },
- ...
-}
-```
-This TAA data will be used for sending write transactions to Ledger. 
-You either can specify `taaDigest` or combination of `text: "string"` and `version: "string"` fields.
-
-Please NOTE that vcx config values must be represented as strings.
-
-2. using `vcx_set_active_txn_author_agreement_meta` function at any time after initialization 
-This function set transaction author agreement data as active (or change) which will be used for sending write transactions to Ledger. 
-
-
-Use `vcx_get_ledger_author_agreement` function to get author agreement and acceptance mechanisms set on the Ledger.

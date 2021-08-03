@@ -40,4 +40,4 @@ complex design decision or a controversial PR.
 
 * Slava - maintainer and scrum team lead. geo=Voronezh, Russia; github=vimmerru, rocket.chat=gudkov, jira=gudkov
 * Sergej - maintainer. geo=Voronezh, Russia; github=jovfer, rocket.chat=sergey.minaev, jira=sergey.minaev
-* Doug - vcx maintainer. geo=Utah, USA; github=glowkey; rocket.chat, jira=DouglasWightman
+

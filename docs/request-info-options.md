@@ -121,7 +121,6 @@ Cons:
     * does a lot of intermediate steps internally that contradicts to Indy functions pattern
     * many input parameters
     
-Note: This approach is implemented in Libvcx. The function definition is much simpler because Libvcx has the majority of these params in the context.  
     
 ```
 /// Gets request price correspondent to specific auth rule and
