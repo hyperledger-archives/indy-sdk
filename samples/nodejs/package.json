@@ -29,6 +29,7 @@
     "cryptiles": "^4.1.1",
     "home-dir": "^1.0.0",
     "indy-sdk": "^1.11.0",
+    "log-to-file": "^2.0.2",
     "mkdirp": "^0.5.3"
   }
 }

@@ -27,8 +27,13 @@
 const indy = require('indy-sdk')
 const util = require('./util')
 const COLOR = require('./colors')
+const { logFilePath } = require('./config')
+const fileLogger = require('log-to-file')
 
-const log = console.log
+const log = (...txt) => {
+    fileLogger(txt, logFilePath.toString());
+    console.log(txt.toString());
+}
 
 const ISSUER_COLOR = COLOR.CYAN
 const PROVER_COLOR = COLOR.MAGENTA

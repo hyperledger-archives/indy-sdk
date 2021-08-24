@@ -33,6 +33,7 @@ Inside `samples/nodejs/` :
 * If you get an error on the npm install, make sure that LD\_LIBRARY\_PATH is defined or that the library is in the correct directory. See above.
 * If you get an `CommonInvalidState` indy error, try rebuilding the ledger with the `--no-cache` docker flag.
 * If you get an `DidAlreadyExistsError` or `WalletAlreadyExistsError` indy error, try to remove directory `.indy_client` directory in your home.
+* To figure out the problem in process you can see the activity logs file in app path `/samples/nodejs/activityLogs.log`.
 * If you just can't figure out why you are getting an indy error, try it with `RUST_LOG=INFO` to see the rust logs.
 
 See documentation for the wrapper at [npmjs.com](https://www.npmjs.com/package/indy-sdk#installing).
