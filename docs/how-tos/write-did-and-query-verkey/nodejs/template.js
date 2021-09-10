@@ -41,5 +41,5 @@ async function run() {
 try {
     run()
 } catch (e) {
-    log("ERROR occured : e")
+    log("ERROR occured :", e)
 }
