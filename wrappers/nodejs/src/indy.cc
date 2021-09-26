@@ -213,6 +213,8 @@ class IndyCallback : public Nan::AsyncResource {
         IndyCallback* icb = static_cast<IndyCallback*>(async->data);
         icbmap.erase(icb->handle);
 
+        v8::Local<v8::Context> context = Nan::GetCurrentContext();
+
         v8::Local<v8::Array> tuple;
         v8::Local<v8::Value> argv[2];
         argv[0] = Nan::New<v8::Number>(icb->err);
@@ -231,8 +233,8 @@ class IndyCallback : public Nan::AsyncResource {
                 break;
             case CB_HANDLE_U32:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, Nan::New<v8::Number>(icb->handle0));
-                tuple->Set(1, Nan::New<v8::Number>(icb->u32int0));
+                (void)tuple->Set(context, 0, Nan::New<v8::Number>(icb->handle0));
+                (void)tuple->Set(context, 1, Nan::New<v8::Number>(icb->u32int0));
                 argv[1] = tuple;
                 break;
             case CB_I32:
@@ -240,8 +242,8 @@ class IndyCallback : public Nan::AsyncResource {
                 break;
             case CB_STRING_I64:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, toJSString(icb->str0));
-                tuple->Set(1, Nan::New<v8::Number>(icb->i64int0));
+                (void)tuple->Set(context, 0, toJSString(icb->str0));
+                (void)tuple->Set(context, 1, Nan::New<v8::Number>(icb->i64int0));
                 argv[1] = tuple;
                 break;
             case CB_BUFFER:
@@ -249,28 +251,28 @@ class IndyCallback : public Nan::AsyncResource {
                 break;
             case CB_STRING_BUFFER:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, toJSString(icb->str0));
-                tuple->Set(1, Nan::NewBuffer(icb->buffer0data, icb->buffer0len).ToLocalChecked());
+                (void)tuple->Set(context, 0, toJSString(icb->str0));
+                (void)tuple->Set(context, 1, Nan::NewBuffer(icb->buffer0data, icb->buffer0len).ToLocalChecked());
                 argv[1] = tuple;
                 break;
             case CB_STRING_STRING:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, toJSString(icb->str0));
-                tuple->Set(1, toJSString(icb->str1));
+                (void)tuple->Set(context, 0, toJSString(icb->str0));
+                (void)tuple->Set(context, 1, toJSString(icb->str1));
                 argv[1] = tuple;
                 break;
             case CB_STRING_STRING_TIMESTAMP:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, toJSString(icb->str0));
-                tuple->Set(1, toJSString(icb->str1));
-                tuple->Set(2, Nan::New<v8::Number>(icb->timestamp0));
+                (void)tuple->Set(context, 0, toJSString(icb->str0));
+                (void)tuple->Set(context, 1, toJSString(icb->str1));
+                (void)tuple->Set(context, 2, Nan::New<v8::Number>(icb->timestamp0));
                 argv[1] = tuple;
                 break;
             case CB_STRING_STRING_STRING:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, toJSString(icb->str0));
-                tuple->Set(1, toJSString(icb->str1));
-                tuple->Set(2, toJSString(icb->str2));
+                (void)tuple->Set(context, 0, toJSString(icb->str0));
+                (void)tuple->Set(context, 1, toJSString(icb->str1));
+                (void)tuple->Set(context, 2, toJSString(icb->str2));
                 argv[1] = tuple;
                 break;
         }

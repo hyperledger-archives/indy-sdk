@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.16.0 - 2020-11-17
+* Removed 32-bit iOS targets
+* Update Rust version to 1.46.0
+* Various documentation updates, including release acceptance testing
+* Add support for metrics to libindy and wrappers
+* Add support for attribute value resrictions to presentation predicate restrictions
+* Add support for custom loggers to libindy
+* Performance improvements when ssearching wallets with large number of DIDs
+* Added test_zmq tool
+* LibVCX: 
+    * Added `protocol_type:4.0` implying that all inputs and outputs are expected to be in the Aries message format.
+    * Added a new function `vcx_delete_credential` to delete credential from the wallet.
+    * Changed behavior of `vcx_*_update_state_with_message` functions to not update the status of messages on the Agency. Instead, the application using VCX should care about changing of message status.
+    * Bugfixes
+* Bugfixes
+
 ## 1.15.0 - 2020-03-25
 * Correction for `Fix proof verification in case of credential attribute encoded value contains leading zeros` (IS-1491).
   Indy 1.14.3 changes "0" to "" which leads to proof rejection. 

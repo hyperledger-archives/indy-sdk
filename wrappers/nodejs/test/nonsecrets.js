@@ -1,12 +1,12 @@
-var test = require('ava')
-var indy = require('../')
-var cuid = require('cuid')
+const test = require('ava')
+const indy = require('../')
+const cuid = require('cuid')
 
 test('nonsecrets', async function (t) {
-  var walletConfig = { 'id': 'wallet-' + cuid() }
-  var walletCredentials = { 'key': 'key' }
+  const walletConfig = { id: 'wallet-' + cuid() }
+  const walletCredentials = { key: 'key' }
   await indy.createWallet(walletConfig, walletCredentials)
-  var wh = await indy.openWallet(walletConfig, walletCredentials)
+  const wh = await indy.openWallet(walletConfig, walletCredentials)
 
   await indy.addWalletRecord(wh, 'contact', '1', 'john', JSON.stringify({
     '~score': 'aaa'
@@ -38,21 +38,21 @@ test('nonsecrets', async function (t) {
   })
   t.is(record2.type, 'contact')
 
-  const query = { '~score': { '$gte': 'bbb' } }
-  let searchHandle = await indy.openWalletSearch(wh, 'contact', JSON.stringify(query), JSON.stringify({
+  const query = { '~score': { $gte: 'bbb' } }
+  const searchHandle = await indy.openWalletSearch(wh, 'contact', JSON.stringify(query), JSON.stringify({
     retrieveRecords: true,
     retrieveTotalCount: true,
     retrieveType: true,
     retrieveValue: true,
     retrieveTags: true
   }))
-  let searchResult = await indy.fetchWalletSearchNextRecords(wh, searchHandle, 10)
+  const searchResult = await indy.fetchWalletSearchNextRecords(wh, searchHandle, 10)
   t.is(searchResult.totalCount, 2)
-  let jessica = searchResult.records.find(r => r.value === 'jessica')
+  const jessica = searchResult.records.find(r => r.value === 'jessica')
   t.is(jessica.id, '2')
   t.is(jessica.type, 'contact')
   t.is(jessica.tags['~score'], 'ccc')
-  let jack = searchResult.records.find(r => r.value === 'george')
+  const jack = searchResult.records.find(r => r.value === 'george')
   t.is(jack.id, '3')
   t.is(jack.type, 'contact')
   t.is(jack.tags['~score'], 'fff')

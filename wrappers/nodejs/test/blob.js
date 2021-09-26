@@ -1,22 +1,22 @@
-var test = require('ava')
-var indy = require('../')
-var tempy = require('tempy')
+const test = require('ava')
+const indy = require('../')
+const tempy = require('tempy')
 
 test('blob_storage', async function (t) {
-  var config = {
-    'base_dir': tempy.directory(),
-    'uri_pattern': ''
+  const config = {
+    base_dir: tempy.directory(),
+    uri_pattern: ''
   }
 
-  var wh = await indy.openBlobStorageWriter('default', config)
+  const wh = await indy.openBlobStorageWriter('default', config)
   t.is(typeof wh, 'number')
   t.truthy(wh >= 0)
 
-  var rh = await indy.openBlobStorageReader('default', config)
+  const rh = await indy.openBlobStorageReader('default', config)
   t.is(typeof rh, 'number')
   t.truthy(rh >= 0)
 
-  var error = await t.throwsAsync(indy.openBlobStorageWriter('foo', config))
+  let error = await t.throwsAsync(indy.openBlobStorageWriter('foo', config))
   t.is(error.indyName, 'CommonInvalidStructure')
 
   error = await t.throwsAsync(indy.openBlobStorageWriter('default', null))

@@ -1,7 +1,7 @@
-var IndyError = require('./IndyError')
+const IndyError = require('./IndyError')
 
 function wrapIndyCallback (cb, mapResponse) {
-  var promise
+  let promise
   if (!cb) {
     promise = new Promise(function (resolve, reject) {
       cb = function cb (err, data) {
