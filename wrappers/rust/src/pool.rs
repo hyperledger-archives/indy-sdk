@@ -1,9 +1,9 @@
-use {ErrorCode, IndyError};
+use {crate::ErrorCode, crate::IndyError};
 
 use std::ffi::CString;
 use std::ptr::null;
 
-use utils::callbacks::{ClosureHandler, ResultHandler};
+use crate::utils::callbacks::{ClosureHandler, ResultHandler};
 
 use ffi::pool;
 use ffi::{ResponseEmptyCB,
@@ -11,7 +11,7 @@ use ffi::{ResponseEmptyCB,
           ResponseI32CB};
 
 use futures::Future;
-use {CommandHandle, PoolHandle};
+use {crate::CommandHandle, crate::PoolHandle};
 
 /// Creates a new local pool ledger configuration that can be used later to connect pool nodes.
 ///

@@ -1,4 +1,6 @@
-use {ErrorCode, IndyError};
+use {crate::ErrorCode, crate::IndyError};
+
+use crate::futures::IntoFuture;
 
 use std::ffi::CString;
 use std::ptr::null;
@@ -15,8 +17,7 @@ use ffi::{ResponseStringCB,
           CommandHandle
 };
 
-use utils::callbacks::{ClosureHandler, ResultHandler};
-use futures::IntoFuture;
+use crate::utils::callbacks::{ClosureHandler, ResultHandler};
 
 /// Create the payment address for specified payment method
 ///
