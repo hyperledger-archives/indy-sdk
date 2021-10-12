@@ -1,4 +1,4 @@
-use {ErrorCode, IndyError};
+use {crate::ErrorCode, crate::IndyError};
 
 use std::ffi::CString;
 
@@ -8,7 +8,7 @@ use log::{Log, Record, Metadata, Level};
 
 use std::ptr::null;
 
-use utils::ctypes::c_str_to_string;
+use crate::utils::ctypes::c_str_to_string;
 
 static mut LOGGER: Option<Box<&'static dyn Log>> = None;
 

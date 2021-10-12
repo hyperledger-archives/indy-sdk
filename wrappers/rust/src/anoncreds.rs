@@ -1,11 +1,11 @@
-use {ErrorCode, IndyError};
+use {crate::ErrorCode, crate::IndyError};
 
 use std::ffi::CString;
 use std::ptr::null;
 
 use futures::Future;
 
-use utils::callbacks::{ClosureHandler, ResultHandler};
+use crate::utils::callbacks::{ClosureHandler, ResultHandler};
 
 use ffi::anoncreds;
 use ffi::{ResponseStringStringCB,
@@ -15,7 +15,7 @@ use ffi::{ResponseStringStringCB,
           ResponseI32CB,
           ResponseEmptyCB,
           ResponseBoolCB};
-use {CommandHandle, WalletHandle, SearchHandle, BlobStorageReaderHandle, TailsWriterHandle};
+use {crate::CommandHandle, crate::WalletHandle, crate::SearchHandle, crate::BlobStorageReaderHandle, crate::TailsWriterHandle};
 use ffi::BlobStorageReaderCfgHandle;
 
 /*
