@@ -362,4 +362,4 @@ If your application needs to use Libindy from multiple processes you should keep
     * Fork - duplicates only the main thread. So, child threads will not be duplicated.
       If any out-of-process requirements are possible, the caller must fork first **before any calls to Libindy**
       (otherwise the command from a child thread will hang). Fork is only available on Unix.
-    * Popen - spawns a new OS level process which will create its own child threads. Popen is cross-platform..
+    * Popen - spawns a new OS level process which will create its own child threads. Popen is cross-platform.
