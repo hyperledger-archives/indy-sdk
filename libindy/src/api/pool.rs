@@ -79,6 +79,7 @@ pub extern fn indy_create_pool_ledger_config(command_handle: CommandHandle,
 ///     "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
 ///         By default Libindy sends a read requests to 2 nodes in the pool.
 ///         If response isn't received or `state proof` is invalid Libindy sends the request again but to 2 (`number_read_nodes`) * 2 = 4 nodes and so far until completion.
+///     "socks_proxy": string (optional) - ZMQ socks proxy host name and port (example: proxy1.intranet.company.com:1080)
 /// }
 ///
 /// #Returns
