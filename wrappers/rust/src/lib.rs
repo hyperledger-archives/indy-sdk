@@ -1,22 +1,3 @@
-// ----- Start includes for uniffi. -----
-// include!("lib.uniffi.rs");
-// uniffi_macros::include_scaffolding!("lib");
-// include!("lib.uniffi.rs");
-
-// include!("anoncreds.uniffi.rs");
-// include!("crypto.uniffi.rs");
-// include!("pairwise.uniffi.rs");
-// include!("wallet.uniffi.rs");
-// include!("blob_storage.uniffi.rs");
-// include!("did.uniffi.rs");
-// include!("logger.uniffi.rs");
-// include!("payments.uniffi.rs");
-// include!("cache.uniffi.rs");
-// include!("ledger.uniffi.rs");
-// include!("metrics.uniffi.rs");
-// include!("pool.uniffi.rs");
-// ----- End includes for uniffi. -----
-
 extern crate futures;
 #[macro_use]
 extern crate lazy_static;
