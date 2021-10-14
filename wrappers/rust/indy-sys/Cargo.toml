@@ -3,6 +3,7 @@ name = "indy-sys"
 description = "FFI bindings to Libindy C API"
 version = "1.16.0"
 authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
+edition = "2018"
 build = "build.rs"
 links = "indy"
 license = "MIT/Apache-2.0"

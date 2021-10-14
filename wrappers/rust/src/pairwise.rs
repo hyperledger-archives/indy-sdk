@@ -1,17 +1,17 @@
-use {ErrorCode, IndyError};
+use {crate::ErrorCode, crate::IndyError};
 
 use futures::Future;
 
 use std::ffi::CString;
 use std::ptr::null;
 
-use utils::callbacks::{ClosureHandler, ResultHandler};
+use crate::utils::callbacks::{ClosureHandler, ResultHandler};
 
 use ffi::pairwise;
 use ffi::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseBoolCB};
-use {WalletHandle, CommandHandle};
+use {crate::WalletHandle, crate::CommandHandle};
 
 pub fn is_pairwise_exists(wallet_handle: WalletHandle, their_did: &str) -> Box<dyn Future<Item=bool, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();

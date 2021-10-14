@@ -3,6 +3,7 @@ name = "indy"
 version = "1.16.0"
 description = "A library for assisting developers using LibIndy API"
 authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
+edition = "2018"
 homepage = "https://github.com/hyperledger/indy-sdk"
 repository = "https://github.com/hyperledger/indy-sdk"
 categories = ["api-bindings", "development-tools"]

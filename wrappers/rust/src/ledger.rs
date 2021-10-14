@@ -1,5 +1,5 @@
 use serde_json::json;
-use {ErrorCode, IndyError};
+use {crate::ErrorCode, crate::IndyError};
 
 use std::ffi::CString;
 use std::ptr::null;
@@ -11,8 +11,8 @@ use ffi::{ResponseStringCB,
           ResponseStringStringCB,
           ResponseStringStringU64CB};
 
-use utils::callbacks::{ClosureHandler, ResultHandler};
-use {WalletHandle, CommandHandle, PoolHandle};
+use crate::utils::callbacks::{ClosureHandler, ResultHandler};
+use {crate::WalletHandle, crate::CommandHandle, crate::PoolHandle};
 
 /// Signs and submits request message to validator pool.
 ///
