@@ -1156,19 +1156,13 @@ impl WalletStrategy for MultiWalletMultiTableStrategy {
             Err(_) => return Err(WalletStorageError::NotFound)
         };
         // select metadata for this wallet to ensure it exists
-        let res: Result<Vec<u8>, WalletStorageError> = {
-            let select_value_from_metadata_sql = str::replace("SELECT value FROM metadata_$1", "$1", id);
+        let select_value_from_metadata_sql = str::replace("SELECT value FROM metadata_$1", "$1", id);
 
-            let mut rows = conn.query(&select_value_from_metadata_sql, &[]);
-            match rows.as_mut().unwrap().iter().next() {
-                Some(row) => Ok(row.get(0)),
-                None => Err(WalletStorageError::ItemNotFound)
-            }
-        };
-        match res {
-            Ok(_entity) => (),
+        match conn.query(&select_value_from_metadata_sql, &[]) {
+            Ok(io) => io,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
+
         // TODO close conn
         let manager = match PostgresConnectionManager::new(&url[..], config.r2d2_tls()) {
             Ok(manager) => manager,
@@ -2310,15 +2304,15 @@ mod tests {
         _storage();
     }
 
-    // #[test]
-    // fn postgres_storage_type_open_works_for_not_created() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_type_open_works_for_not_created() {
+        _cleanup();
 
-    //     let storage_type = PostgresStorageType::new();
+        let storage_type = PostgresStorageType::new();
 
-    //     let res = storage_type.open_storage("unknown", Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]));
-    //     assert_match!(Err(WalletStorageError::NotFound), res);
-    // }
+        let res = storage_type.open_storage("unknown", Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]));
+        assert_match!(Err(WalletStorageError::NotFound), res);
+    }
 
     // #[test]
     // fn postgres_storage_add_works_with_config() {
