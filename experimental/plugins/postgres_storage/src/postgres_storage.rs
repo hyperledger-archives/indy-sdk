@@ -1196,10 +1196,10 @@ impl WalletStrategy for MultiWalletMultiTableStrategy {
         };
     
         for sql in &_DELETE_WALLET_TABLES {
-            let create_db_sql = str::replace(sql, "$1", id);
-            if let Err(error) = conn.execute(&create_db_sql, &[]) {
+            let create_db_sql = str::replace(sql, "$1", id); 
+            if let Err(_) = conn.execute(&create_db_sql, &[]) {
                 conn.finish()?;
-                return Err(WalletStorageError::IOError(format!("Error occurred while dropping table: {}", error)));
+                return Err(WalletStorageError::NotFound)
             };
         }
         conn.finish()?;
@@ -2280,35 +2280,35 @@ mod tests {
         assert_eq!(metadata, _metadata());
     }
 
-    // #[test]
-    // fn postgres_storage_type_delete_works() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_type_delete_works() {
+        _cleanup();
 
-    //     let storage_type = PostgresStorageType::new();
-    //     storage_type.create_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]), &_metadata()).unwrap();
+        let storage_type = PostgresStorageType::new();
+        storage_type.create_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]), &_metadata()).unwrap();
 
-    //     storage_type.delete_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
-    // }
+        storage_type.delete_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
+    }
 
 
-    // #[test]
-    // fn postgres_storage_type_delete_works_for_non_existing() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_type_delete_works_for_non_existing() {
+        _cleanup();
 
-    //     let storage_type = PostgresStorageType::new();
-    //     storage_type.create_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]), &_metadata()).unwrap();
+        let storage_type = PostgresStorageType::new();
+        storage_type.create_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]), &_metadata()).unwrap();
 
-    //     let res = storage_type.delete_storage("unknown", Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]));
-    //     assert_match!(Err(WalletStorageError::NotFound), res);
+        let res = storage_type.delete_storage("unknown", Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]));
+        assert_match!(Err(WalletStorageError::NotFound), res);
 
-    //     storage_type.delete_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
-    // }
+        storage_type.delete_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
+    }
 
-    // #[test]
-    // fn postgres_storage_type_open_works() {
-    //     _cleanup();
-    //     _storage();
-    // }
+    #[test]
+    fn postgres_storage_type_open_works() {
+        _cleanup();
+        _storage();
+    }
 
     // #[test]
     // fn postgres_storage_type_open_works_for_not_created() {
