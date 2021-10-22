@@ -1543,7 +1543,7 @@ impl WalletStorage for PostgresStorage {
         let query_qualifier = get_wallet_strategy_qualifier();
         let res = match query_qualifier {
             Some(qualifier) => {
-                let sql_replaced = str::replace("UPDATE items_$6 SET value = $1, key = $2 WHERE type = $3 AND name = $4 AND wallet_id = $5", "$6", &self.wallet_id);
+                let sql_replaced = str::replace("UPDATE items_$5 SET value = $1, key = $2 WHERE type = $3 AND name = $4 AND wallet_id = $5", "$5", &self.wallet_id);
                 let tmp = match qualifier.as_str() {
                     "MultiWalletMultiTable" => conn.prepare_cached(&sql_replaced)?
                     .execute(&[&value.data, &value.key, &type_.to_vec(), &id.to_vec()]),
@@ -1691,7 +1691,7 @@ impl WalletStorage for PostgresStorage {
 
         let res = match &query_qualifier {
             Some(qualifier) => {
-                let sql_replaced = str::replace("SELECT id FROM items_$4 WHERE type = $1 AND name = $2 AND wallet_id = $1", "$4", &self.wallet_id);
+                let sql_replaced = str::replace("SELECT id FROM items_$3 WHERE type = $1 AND name = $2 AND wallet_id = $3", "$3", &self.wallet_id);
                 let tmp = match qualifier.as_str() {
                     "MultiWalletMultiTable" => {
                     let mut rows = tx.prepare_cached(&sql_replaced)?
@@ -1995,7 +1995,7 @@ impl WalletStorage for PostgresStorage {
         let query_qualifier = get_wallet_strategy_qualifier();
         let statement = match &query_qualifier {
             Some(qualifier) => {
-                let sql_replaced = str::replace("SELECT id, name, value, key, type FROM items_$2 WHERE wallet_id = $1", "$2", &self.wallet_id);
+                let sql_replaced = str::replace("SELECT id, name, value, key, type FROM items_$1", "$1", &self.wallet_id);
                 let tmp = match qualifier.as_str() {
                     "MultiWalletMultiTable" => self._prepare_statement(&sql_replaced)?,
                     _ => self._prepare_statement("SELECT id, name, value, key, type FROM items WHERE wallet_id = $1")?
@@ -2534,352 +2534,352 @@ mod tests {
         assert_match!(Err(WalletStorageError::ItemAlreadyExists), res);
     }
 
-    // #[test]
-    // fn postgres_storage_set_get_works_for_reopen() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_set_get_works_for_reopen() {
+        _cleanup();
 
-    //     {
-    //         _storage().add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-    //     }
+        {
+            _storage().add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        }
 
-    //     let storage_type = PostgresStorageType::new();
-    //     let storage = storage_type.open_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
-    //     let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        let storage_type = PostgresStorageType::new();
+        let storage = storage_type.open_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
+        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
 
-    //     assert_eq!(record.value.unwrap(), _value1());
-    //     assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
-    // }
+        assert_eq!(record.value.unwrap(), _value1());
+        assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
+    }
 
-    // #[test]
-    // fn postgres_storage_get_works_for_wrong_key() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_get_works_for_wrong_key() {
+        _cleanup();
 
-    //     let storage = _storage();
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let storage = _storage();
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-    //     let res = storage.get(&_type1(), &_id2(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
-    //     assert_match!(Err(WalletStorageError::ItemNotFound), res)
-    // }
+        let res = storage.get(&_type1(), &_id2(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
+        assert_match!(Err(WalletStorageError::ItemNotFound), res)
+    }
 
-    // #[test]
-    // fn postgres_storage_delete_works() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_delete_works() {
+        _cleanup();
 
-    //     let storage = _storage();
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let storage = _storage();
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-    //     let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-    //     assert_eq!(record.value.unwrap(), _value1());
-    //     assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
+        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        assert_eq!(record.value.unwrap(), _value1());
+        assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
 
-    //     storage.delete(&_type1(), &_id1()).unwrap();
-    //     let res = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
-    //     assert_match!(Err(WalletStorageError::ItemNotFound), res);
-    // }
+        storage.delete(&_type1(), &_id1()).unwrap();
+        let res = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
+        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+    }
 
-    // #[test]
-    // fn postgres_storage_delete_works_for_non_existing() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_delete_works_for_non_existing() {
+        _cleanup();
 
-    //     let storage = _storage();
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let storage = _storage();
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-    //     let res = storage.delete(&_type1(), &_id2());
-    //     assert_match!(Err(WalletStorageError::ItemNotFound), res);
-    // }
+        let res = storage.delete(&_type1(), &_id2());
+        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+    }
 
-    // #[test]
-    // fn postgres_storage_create_and_find_multiple_works() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_create_and_find_multiple_works() {
+        _cleanup();
 
-    //     let storage = _storage();
+        let storage = _storage();
 
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-    //     let record1 = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-    //     assert_eq!(record1.value.unwrap(), _value1());
-    //     assert_eq!(_sort(record1.tags.unwrap()), _sort(_tags()));
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let record1 = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        assert_eq!(record1.value.unwrap(), _value1());
+        assert_eq!(_sort(record1.tags.unwrap()), _sort(_tags()));
 
-    //     storage.add(&_type2(), &_id2(), &_value2(), &_tags()).unwrap();
-    //     let record2 = storage.get(&_type2(), &_id2(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-    //     assert_eq!(record2.value.unwrap(), _value2());
-    //     assert_eq!(_sort(record2.tags.unwrap()), _sort(_tags()));
-    // }
+        storage.add(&_type2(), &_id2(), &_value2(), &_tags()).unwrap();
+        let record2 = storage.get(&_type2(), &_id2(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        assert_eq!(record2.value.unwrap(), _value2());
+        assert_eq!(_sort(record2.tags.unwrap()), _sort(_tags()));
+    }
 
-    // #[test]
-    // fn postgres_storage_get_all_workss() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_get_all_workss() {
+        _cleanup();
 
-    //     let storage = _storage();
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-    //     storage.add(&_type2(), &_id2(), &_value2(), &_tags()).unwrap();
+        let storage = _storage();
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        storage.add(&_type2(), &_id2(), &_value2(), &_tags()).unwrap();
 
-    //     let mut storage_iterator = storage.get_all().unwrap();
+        let mut storage_iterator = storage.get_all().unwrap();
 
-    //     let record = storage_iterator.next().unwrap().unwrap();
-    //     assert_eq!(record.type_.unwrap(), _type1());
-    //     assert_eq!(record.value.unwrap(), _value1());
-    //     assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
+        let record = storage_iterator.next().unwrap().unwrap();
+        assert_eq!(record.type_.unwrap(), _type1());
+        assert_eq!(record.value.unwrap(), _value1());
+        assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
 
-    //     let record = storage_iterator.next().unwrap().unwrap();
-    //     assert_eq!(record.type_.unwrap(), _type2());
-    //     assert_eq!(record.value.unwrap(), _value2());
-    //     assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
+        let record = storage_iterator.next().unwrap().unwrap();
+        assert_eq!(record.type_.unwrap(), _type2());
+        assert_eq!(record.value.unwrap(), _value2());
+        assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
 
-    //     let record = storage_iterator.next().unwrap();
-    //     assert!(record.is_none());
-    // }
+        let record = storage_iterator.next().unwrap();
+        assert!(record.is_none());
+    }
 
-    // #[test]
-    // fn postgres_storage_get_all_works_for_empty() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_get_all_works_for_empty() {
+        _cleanup();
 
-    //     let storage = _storage();
-    //     let mut storage_iterator = storage.get_all().unwrap();
+        let storage = _storage();
+        let mut storage_iterator = storage.get_all().unwrap();
 
-    //     let record = storage_iterator.next().unwrap();
-    //     assert!(record.is_none());
-    // }
+        let record = storage_iterator.next().unwrap();
+        assert!(record.is_none());
+    }
 
-    // #[test]
-    // fn postgres_storage_update_works() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_update_works() {
+        _cleanup();
 
-    //     let storage = _storage();
+        let storage = _storage();
 
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-    //     let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-    //     assert_eq!(record.value.unwrap(), _value1());
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        assert_eq!(record.value.unwrap(), _value1());
 
-    //     storage.update(&_type1(), &_id1(), &_value2()).unwrap();
-    //     let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-    //     assert_eq!(record.value.unwrap(), _value2());
-    // }
+        storage.update(&_type1(), &_id1(), &_value2()).unwrap();
+        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        assert_eq!(record.value.unwrap(), _value2());
+    }
 
-    // #[test]
-    // fn postgres_storage_update_works_for_non_existing_id() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_update_works_for_non_existing_id() {
+        _cleanup();
 
-    //     let storage = _storage();
+        let storage = _storage();
 
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-    //     let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-    //     assert_eq!(record.value.unwrap(), _value1());
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        assert_eq!(record.value.unwrap(), _value1());
 
-    //     let res = storage.update(&_type1(), &_id2(), &_value2());
-    //     assert_match!(Err(WalletStorageError::ItemNotFound), res)
-    // }
+        let res = storage.update(&_type1(), &_id2(), &_value2());
+        assert_match!(Err(WalletStorageError::ItemNotFound), res)
+    }
 
-    // #[test]
-    // fn postgres_storage_update_works_for_non_existing_type() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_update_works_for_non_existing_type() {
+        _cleanup();
 
-    //     let storage = _storage();
+        let storage = _storage();
 
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-    //     let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-    //     assert_eq!(record.value.unwrap(), _value1());
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        assert_eq!(record.value.unwrap(), _value1());
 
-    //     let res = storage.update(&_type2(), &_id1(), &_value2());
-    //     assert_match!(Err(WalletStorageError::ItemNotFound), res)
-    // }
+        let res = storage.update(&_type2(), &_id1(), &_value2());
+        assert_match!(Err(WalletStorageError::ItemNotFound), res)
+    }
 
-    // #[test]
-    // fn postgres_storage_add_tags_works() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_add_tags_works() {
+        _cleanup();
 
-    //     let storage = _storage();
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let storage = _storage();
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-    //     storage.add_tags(&_type1(), &_id1(), &_new_tags()).unwrap();
+        storage.add_tags(&_type1(), &_id1(), &_new_tags()).unwrap();
 
-    //     let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-    //     assert_eq!(record.value.unwrap(), _value1());
+        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        assert_eq!(record.value.unwrap(), _value1());
 
-    //     let expected_tags = {
-    //         let mut tags = _tags();
-    //         tags.extend(_new_tags());
-    //         _sort(tags)
-    //     };
+        let expected_tags = {
+            let mut tags = _tags();
+            tags.extend(_new_tags());
+            _sort(tags)
+        };
 
-    //     assert_eq!(_sort(record.tags.unwrap()), expected_tags);
-    // }
+        assert_eq!(_sort(record.tags.unwrap()), expected_tags);
+    }
 
-    // #[test]
-    // fn postgres_storage_add_tags_works_for_non_existing_id() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_add_tags_works_for_non_existing_id() {
+        _cleanup();
 
-    //     let storage = _storage();
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let storage = _storage();
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-    //     let res = storage.add_tags(&_type1(), &_id2(), &_new_tags());
-    //     assert_match!(Err(WalletStorageError::ItemNotFound), res)
-    // }
+        let res = storage.add_tags(&_type1(), &_id2(), &_new_tags());
+        assert_match!(Err(WalletStorageError::ItemNotFound), res)
+    }
 
-    // #[test]
-    // fn postgres_storage_add_tags_works_for_non_existing_type() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_add_tags_works_for_non_existing_type() {
+        _cleanup();
 
-    //     let storage = _storage();
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let storage = _storage();
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-    //     let res = storage.add_tags(&_type2(), &_id1(), &_new_tags());
-    //     assert_match!(Err(WalletStorageError::ItemNotFound), res)
-    // }
+        let res = storage.add_tags(&_type2(), &_id1(), &_new_tags());
+        assert_match!(Err(WalletStorageError::ItemNotFound), res)
+    }
 
-    // #[test]
-    // fn postgres_storage_add_tags_works_for_already_existing() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_add_tags_works_for_already_existing() {
+        _cleanup();
 
-    //     let storage = _storage();
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let storage = _storage();
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-    //     let tags_with_existing = {
-    //         let mut tags = _tags();
-    //         tags.extend(_new_tags());
-    //         tags
-    //     };
+        let tags_with_existing = {
+            let mut tags = _tags();
+            tags.extend(_new_tags());
+            tags
+        };
 
-    //     storage.add_tags(&_type1(), &_id1(), &tags_with_existing).unwrap();
+        storage.add_tags(&_type1(), &_id1(), &tags_with_existing).unwrap();
 
-    //     let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-    //     assert_eq!(record.value.unwrap(), _value1());
+        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        assert_eq!(record.value.unwrap(), _value1());
 
-    //     let expected_tags = {
-    //         let mut tags = _tags();
-    //         tags.extend(_new_tags());
-    //         _sort(tags)
-    //     };
+        let expected_tags = {
+            let mut tags = _tags();
+            tags.extend(_new_tags());
+            _sort(tags)
+        };
 
-    //     assert_eq!(_sort(record.tags.unwrap()), expected_tags);
-    // }
+        assert_eq!(_sort(record.tags.unwrap()), expected_tags);
+    }
 
-    // #[test]
-    // fn postgres_storage_update_tags_works() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_update_tags_works() {
+        _cleanup();
 
-    //     let storage = _storage();
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let storage = _storage();
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-    //     storage.update_tags(&_type1(), &_id1(), &_new_tags()).unwrap();
+        storage.update_tags(&_type1(), &_id1(), &_new_tags()).unwrap();
 
-    //     let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-    //     assert_eq!(record.value.unwrap(), _value1());
-    //     assert_eq!(_sort(record.tags.unwrap()), _sort(_new_tags()));
-    // }
+        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        assert_eq!(record.value.unwrap(), _value1());
+        assert_eq!(_sort(record.tags.unwrap()), _sort(_new_tags()));
+    }
 
-    // #[test]
-    // fn postgres_storage_update_tags_works_for_non_existing_id() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_update_tags_works_for_non_existing_id() {
+        _cleanup();
 
-    //     let storage = _storage();
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let storage = _storage();
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-    //     let res = storage.update_tags(&_type1(), &_id2(), &_new_tags());
-    //     assert_match!(Err(WalletStorageError::ItemNotFound), res);
-    // }
+        let res = storage.update_tags(&_type1(), &_id2(), &_new_tags());
+        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+    }
 
-    // #[test]
-    // fn postgres_storage_update_tags_works_for_non_existing_type() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_update_tags_works_for_non_existing_type() {
+        _cleanup();
 
-    //     let storage = _storage();
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let storage = _storage();
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-    //     let res = storage.update_tags(&_type1(), &_id2(), &_new_tags());
-    //     assert_match!(Err(WalletStorageError::ItemNotFound), res);
-    // }
+        let res = storage.update_tags(&_type1(), &_id2(), &_new_tags());
+        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+    }
 
-    // #[test]
-    // fn postgres_storage_update_tags_works_for_already_existing() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_update_tags_works_for_already_existing() {
+        _cleanup();
 
-    //     let storage = _storage();
-    //     storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let storage = _storage();
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-    //     let tags_with_existing = {
-    //         let mut tags = _tags();
-    //         tags.extend(_new_tags());
-    //         tags
-    //     };
+        let tags_with_existing = {
+            let mut tags = _tags();
+            tags.extend(_new_tags());
+            tags
+        };
 
-    //     storage.update_tags(&_type1(), &_id1(), &tags_with_existing).unwrap();
+        storage.update_tags(&_type1(), &_id1(), &tags_with_existing).unwrap();
 
-    //     let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-    //     assert_eq!(record.value.unwrap(), _value1());
+        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        assert_eq!(record.value.unwrap(), _value1());
 
-    //     let expected_tags = {
-    //         let mut tags = _tags();
-    //         tags.extend(_new_tags());
-    //         _sort(tags)
-    //     };
+        let expected_tags = {
+            let mut tags = _tags();
+            tags.extend(_new_tags());
+            _sort(tags)
+        };
 
-    //     assert_eq!(_sort(record.tags.unwrap()), expected_tags);
-    // }
+        assert_eq!(_sort(record.tags.unwrap()), expected_tags);
+    }
 
-    // #[test]
-    // fn postgres_storage_delete_tags_works() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_delete_tags_works() {
+        _cleanup();
 
-    //     let storage = _storage();
+        let storage = _storage();
 
-    //     let tag_name1 = vec![0, 0, 0];
-    //     let tag_name2 = vec![1, 1, 1];
-    //     let tag_name3 = vec![2, 2, 2];
-    //     let tag1 = Tag::Encrypted(tag_name1.clone(), vec![0, 0, 0]);
-    //     let tag2 = Tag::PlainText(tag_name2.clone(), "tag_value_2".to_string());
-    //     let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
-    //     let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
+        let tag_name1 = vec![0, 0, 0];
+        let tag_name2 = vec![1, 1, 1];
+        let tag_name3 = vec![2, 2, 2];
+        let tag1 = Tag::Encrypted(tag_name1.clone(), vec![0, 0, 0]);
+        let tag2 = Tag::PlainText(tag_name2.clone(), "tag_value_2".to_string());
+        let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
+        let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
 
-    //     storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
+        storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
 
-    //     let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
-    //     storage.delete_tags(&_type1(), &_id1(), &tag_names).unwrap();
+        let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
+        storage.delete_tags(&_type1(), &_id1(), &tag_names).unwrap();
 
-    //     let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-    //     assert_eq!(record.tags.unwrap(), vec![tag3]);
-    // }
+        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        assert_eq!(record.tags.unwrap(), vec![tag3]);
+    }
 
-    // #[test]
-    // fn postgres_storage_delete_tags_works_for_non_existing_type() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_delete_tags_works_for_non_existing_type() {
+        _cleanup();
 
-    //     let storage = _storage();
+        let storage = _storage();
 
-    //     let tag_name1 = vec![0, 0, 0];
-    //     let tag_name2 = vec![1, 1, 1];
-    //     let tag_name3 = vec![2, 2, 2];
-    //     let tag1 = Tag::Encrypted(tag_name1.clone(), vec![0, 0, 0]);
-    //     let tag2 = Tag::PlainText(tag_name2.clone(), "tag_value_2".to_string());
-    //     let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
-    //     let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
+        let tag_name1 = vec![0, 0, 0];
+        let tag_name2 = vec![1, 1, 1];
+        let tag_name3 = vec![2, 2, 2];
+        let tag1 = Tag::Encrypted(tag_name1.clone(), vec![0, 0, 0]);
+        let tag2 = Tag::PlainText(tag_name2.clone(), "tag_value_2".to_string());
+        let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
+        let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
 
-    //     storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
+        storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
 
-    //     let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
-    //     let res = storage.delete_tags(&_type2(), &_id1(), &tag_names);
-    //     assert_match!(Err(WalletStorageError::ItemNotFound), res);
-    // }
+        let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
+        let res = storage.delete_tags(&_type2(), &_id1(), &tag_names);
+        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+    }
 
-    // #[test]
-    // fn postgres_storage_delete_tags_works_for_non_existing_id() {
-    //     _cleanup();
+    #[test]
+    fn postgres_storage_delete_tags_works_for_non_existing_id() {
+        _cleanup();
 
-    //     let storage = _storage();
+        let storage = _storage();
 
-    //     let tag_name1 = vec![0, 0, 0];
-    //     let tag_name2 = vec![1, 1, 1];
-    //     let tag_name3 = vec![2, 2, 2];
-    //     let tag1 = Tag::Encrypted(tag_name1.clone(), vec![0, 0, 0]);
-    //     let tag2 = Tag::PlainText(tag_name2.clone(), "tag_value_2".to_string());
-    //     let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
-    //     let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
+        let tag_name1 = vec![0, 0, 0];
+        let tag_name2 = vec![1, 1, 1];
+        let tag_name3 = vec![2, 2, 2];
+        let tag1 = Tag::Encrypted(tag_name1.clone(), vec![0, 0, 0]);
+        let tag2 = Tag::PlainText(tag_name2.clone(), "tag_value_2".to_string());
+        let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
+        let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
 
-    //     storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
+        storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
 
-    //     let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
-    //     let res = storage.delete_tags(&_type1(), &_id2(), &tag_names);
-    //     assert_match!(Err(WalletStorageError::ItemNotFound), res);
-    // }
+        let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
+        let res = storage.delete_tags(&_type1(), &_id2(), &tag_names);
+        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+    }
 
     fn _cleanup() {
         let storage_type = PostgresStorageType::new();
