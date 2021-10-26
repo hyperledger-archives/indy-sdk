@@ -232,8 +232,8 @@ const _CREATE_SCHEMA_MULTI_TABLE: [&str; 14] = [
         value BYTEA NOT NULL,
         PRIMARY KEY(wallet_id)
         )",
-    "CREATE UNIQUE INDEX ux_metadata_wallet_id_id ON metadata_$1(wallet_id)",
-    "CREATE UNIQUE INDEX ux_metadata_values ON metadata_$1(wallet_id, value)",
+    "CREATE UNIQUE INDEX ux_metadata_wallet_id_id_$1 ON metadata_$1(wallet_id)",
+    "CREATE UNIQUE INDEX ux_metadata_values_$1 ON metadata_$1(wallet_id, value)",
     "CREATE TABLE items_$1(
         wallet_id VARCHAR(64) NOT NULL,
         id BIGSERIAL NOT NULL,
@@ -243,8 +243,8 @@ const _CREATE_SCHEMA_MULTI_TABLE: [&str; 14] = [
         key BYTEA NOT NULL,
         PRIMARY KEY(wallet_id, id)
     )",
-    "CREATE UNIQUE INDEX ux_items_wallet_id_id ON items_$1(wallet_id, id)",
-    "CREATE UNIQUE INDEX ux_items_type_name ON items_$1(wallet_id, type, name)",
+    "CREATE UNIQUE INDEX ux_items_wallet_id_id_$1 ON items_$1(wallet_id, id)",
+    "CREATE UNIQUE INDEX ux_items_type_name_$1 ON items_$1(wallet_id, type, name)",
     "CREATE TABLE tags_encrypted_$1(
         wallet_id VARCHAR(64) NOT NULL,
         name BYTEA NOT NULL,
@@ -256,9 +256,9 @@ const _CREATE_SCHEMA_MULTI_TABLE: [&str; 14] = [
             ON DELETE CASCADE
             ON UPDATE CASCADE
     )",
-    "CREATE INDEX ix_tags_encrypted_name ON tags_encrypted_$1(wallet_id, name)",
-    "CREATE INDEX ix_tags_encrypted_value ON tags_encrypted_$1(wallet_id, md5(value))",
-    "CREATE INDEX ix_tags_encrypted_wallet_id_item_id ON tags_encrypted_$1(wallet_id, item_id)",
+    "CREATE INDEX ix_tags_encrypted_name_$1 ON tags_encrypted_$1(wallet_id, name)",
+    "CREATE INDEX ix_tags_encrypted_value_$1 ON tags_encrypted_$1(wallet_id, md5(value))",
+    "CREATE INDEX ix_tags_encrypted_wallet_id_item_id_$1 ON tags_encrypted_$1(wallet_id, item_id)",
     "CREATE TABLE tags_plaintext_$1(
         wallet_id VARCHAR(64) NOT NULL,
         name BYTEA NOT NULL,
@@ -270,9 +270,9 @@ const _CREATE_SCHEMA_MULTI_TABLE: [&str; 14] = [
             ON DELETE CASCADE
             ON UPDATE CASCADE
     )",
-    "CREATE INDEX ix_tags_plaintext_name ON tags_plaintext_$1(wallet_id, name)",
-    "CREATE INDEX ix_tags_plaintext_value ON tags_plaintext_$1(wallet_id, value)",
-    "CREATE INDEX ix_tags_plaintext_wallet_id_item_id ON tags_plaintext_$1(wallet_id, item_id)"
+    "CREATE INDEX ix_tags_plaintext_name_$1 ON tags_plaintext_$1(wallet_id, name)",
+    "CREATE INDEX ix_tags_plaintext_value_$1 ON tags_plaintext_$1(wallet_id, value)",
+    "CREATE INDEX ix_tags_plaintext_wallet_id_item_id_$1 ON tags_plaintext_$1(wallet_id, item_id)"
 ];
 const _DELETE_WALLET_TABLES: [&str; 4] = [
     "DROP TABLE metadata_$1 CASCADE",
@@ -2454,6 +2454,71 @@ mod tests {
         _cleanup();
         _storage();
     }
+
+    // use std::time::Instant;
+
+    // #[test]
+    // fn postgres_storage_multiple() {
+    //     _cleanup();
+       
+    //     let mut i = 0;
+
+    //     let mut sum_create = 0;
+    //     let mut sum_open = 0;
+    //     let mut sum_add = 0;
+    //     let mut sum_get = 0;
+
+    //     while i < 50000 {
+    //         let storage_type = PostgresStorageType::new();
+    //         let id = format!("Id{}", &i);
+
+    //         // create
+    //         let start_create = Instant::now();
+    //         storage_type.create_storage(&id, Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]), &_metadata()).unwrap();
+    //         let elapsed_create = start_create.elapsed();
+
+    //         // open
+    //         let start_open = Instant::now();
+    //         let res = storage_type.open_storage(&id, Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
+    //         let elapsed_open = start_open.elapsed();
+            
+    //         // add
+    //         let start_add = Instant::now();
+    //         res.add(&_type1(), &_id2(), &_value2(), &_tags()).unwrap();
+    //         let elapsed_add = start_add.elapsed();
+
+    //         // get
+    //         let start_get = Instant::now();
+    //         res.get(&_type1(), &_id2(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+    //         let elapsed_get = start_get.elapsed();     
+
+    //         sum_create = sum_create + elapsed_create.as_millis();
+    //         sum_add = sum_add + elapsed_add.as_millis();
+    //         sum_open = sum_open + elapsed_open.as_millis();
+    //         sum_get = sum_get + elapsed_get.as_millis();
+
+    //         i = i + 1;
+    //         if i % 100 == 0 {
+    //             let mut print_avg_create = sum_create / 100;
+    //             let mut print_avg_open = sum_open / 100;
+    //             let mut print_avg_add = sum_add / 100;
+    //             let mut print_avg_get = sum_get / 100;
+
+    //             let outline = format!("Wallets: {} - AVG: Create {:?} - Open {:?} - Add {:?} -  Get {:?}", &i, print_avg_create, print_avg_open, print_avg_add, print_avg_get);
+                
+    //             sum_create = 0;
+    //             sum_add = 0;
+    //             sum_open = 0;
+    //             sum_get = 0;
+
+    //             println!("{}", outline);
+    //         }
+            
+    //     }
+
+        
+    //     assert_eq!(1,1);
+    // }
 
     #[test]
     fn postgres_storage_type_open_works_for_not_created() {
