@@ -1163,6 +1163,15 @@ impl WalletStrategy for MultiWalletMultiTableStrategy {
                 return Ok(());
             }
         }
+
+        for sql in &_CREATE_SCHEMA_MULTI {
+            if let Err(error) = conn.execute(sql, &[]) {
+                debug!("error creating wallet schema, Error: {}", error);
+                conn.finish()?;
+                return Err(WalletStorageError::IOError(format!("Error occurred while creating wallet schema: {}", error)));
+            }
+        }
+
         conn.finish()?;
         Ok(())
     }
@@ -1178,7 +1187,7 @@ impl WalletStrategy for MultiWalletMultiTableStrategy {
             }
         };
 
-        let check_metdata_replaced = str::replace("SELECT * FROM metadata_$1", "$1", id);
+        let check_metdata_replaced = str::replace("SELECT * FROM metadata_$1 LIMIT 1", "$1", id);
 
         let res = match conn.execute(&check_metdata_replaced, &[]) {
             Ok(_) => Err(WalletStorageError::AlreadyExists),
