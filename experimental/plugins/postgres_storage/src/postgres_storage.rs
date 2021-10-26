@@ -1164,15 +1164,24 @@ impl WalletStrategy for MultiWalletMultiTableStrategy {
             }
         }
 
+        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
+
+        let conn2 = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+            Ok(conn2) => conn2,
+            Err(error) => {
+                return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
+            }
+        };
+        
         for sql in &_CREATE_SCHEMA_MULTI {
-            if let Err(error) = conn.execute(sql, &[]) {
+            if let Err(error) = conn2.execute(sql, &[]) {
                 debug!("error creating wallet schema, Error: {}", error);
-                conn.finish()?;
+                conn2.finish()?;
                 return Err(WalletStorageError::IOError(format!("Error occurred while creating wallet schema: {}", error)));
             }
         }
-
         conn.finish()?;
+        conn2.finish()?;
         Ok(())
     }
     // initialize a single wallet based on wallet storage strategy
