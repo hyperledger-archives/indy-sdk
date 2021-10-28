@@ -1,0 +1,33 @@
+name: 'Publish android image'
+
+inputs:
+  abis: 
+    description: 'A space separated list of ABIs to create an artifact for'
+    default: 'armv7 arm64 x86 x86_64'
+  docker-img-name: 
+    description: 'Name of the android image'
+    required: true
+  full-version-name: 
+    description: 'Name of the resulting artifact'
+    required: true
+
+env:
+  DOCKER_BUILDKIT: 1
+
+runs:
+  using: "composite"
+  steps:
+    - name: Build, run android wrapper tests, and publish artifacts
+      run: |
+        docker run --name publish-android-wrapper -v $PWD:/root/indy-sdk \
+            -e ABIS="${{ inputs.abis }}" \
+            -e FULL_VERSION_NAME="${{ inputs.full-version-name }}" \
+            ${{ inputs.docker-img-name }} \
+            bash -c '(cd $HOME/indy-sdk/libindy/ci/ && ./android.prepare.sh $ABIS && cd $HOME/indy-sdk/libindy && ./ga-android.build.sh $ABIS)'
+        docker_id=$(docker ps -a | grep android | grep Exited | tail -n 1 | cut -d ' ' -f 1)
+        docker_image_id=$(docker images | grep android | perl -pe 's/\s+/ /g' | cut -d ' ' -f 3)
+        mkdir -p /tmp/artifacts
+        docker cp ${docker_id}:/tmp/artifacts/libindy /tmp/artifacts
+        docker rm ${docker_id} > /dev/null
+        docker rmi ${docker_image_id} > /dev/null
+      shell: bash

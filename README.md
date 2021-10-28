@@ -345,6 +345,7 @@ The documents that provide necessary information for Libindy migrations.
 * [v1.12.0 → v1.13.x](docs/migration-guides/migration-guide-1.12.0-1.13.0.md)
 * [v1.13.0 → v1.14.x](docs/migration-guides/migration-guide-1.13.0-1.14.0.md)
 * [v1.14.0 → v1.15.x](docs/migration-guides/migration-guide-1.14.0-1.15.0.md)
+* [v1.15.0 → v1.16.x](docs/migration-guides/migration-guide-1.15.0-1.16.0.md)
 
 ## How to Contribute
 * We'd love your help; see these [HL Indy Wiki](https://wiki.hyperledger.org/display/indy/How+to+Contribute) and [slides on how to contribute](http://bit.ly/2ugd0bq).

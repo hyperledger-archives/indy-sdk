@@ -668,12 +668,9 @@ impl WalletStrategy for DatabasePerWalletStrategy {
 
         debug!("creating wallets DB");
         let create_db_sql = str::replace(_CREATE_WALLET_DATABASE, "$1", id);
-        let mut schema_result = match conn.execute(&create_db_sql, &[]) {
-            Ok(_) => Ok(()),
-            Err(_error) => {
-                Err(WalletStorageError::AlreadyExists)
-            }
-        };
+        // ignore errors at this step, in case the database has been pre-created by the DBA
+        // if the create db fails, the user login/table creation will fail
+        let _err = conn.execute(&create_db_sql, &[]);
         conn.finish()?;
 
         debug!("connecting to wallet as user");
@@ -681,6 +678,25 @@ impl WalletStrategy for DatabasePerWalletStrategy {
             Ok(conn) => conn,
             Err(error) => {
                 return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
+            }
+        };
+
+        // select metadata for this wallet to ensure it DOESN'T exist
+        let mut schema_result = {
+            let rows = conn.query(
+                "SELECT value FROM metadata",
+                &[]);
+            match rows {
+                Ok(rows_data) => {
+                    match rows_data.iter().next() {
+                        Some(_) => {
+                            error!("Metadata was found for wallet id '{}' which indicates this wallet already exists.", id);
+                            Err(WalletStorageError::AlreadyExists)
+                        },
+                        None => Ok(())
+                    }
+                },
+                Err(_) => Ok(())
             }
         };
 
@@ -1035,7 +1051,7 @@ impl PostgresStorageType {
         let mut url_base = "postgresql://".to_owned();
 
         match credentials.admin_account {
-            Some(ref account) => url_base.push_str(&account[..]),
+            Some(ref account) =>url_base.push_str(&utf8_percent_encode(&account[..], &NON_ALPHANUMERIC).to_string()),
             None => ()
         }
         url_base.push_str(":");
@@ -1052,7 +1068,7 @@ impl PostgresStorageType {
 
     fn _base_postgres_url(config: &PostgresConfig, credentials: &PostgresCredentials) -> String {
         let mut url_base = "postgresql://".to_owned();
-        url_base.push_str(&credentials.account[..]);
+        url_base.push_str(&utf8_percent_encode(&credentials.account[..], &NON_ALPHANUMERIC).to_string());
         url_base.push_str(":");
         url_base.push_str(&utf8_percent_encode(&credentials.password[..], &NON_ALPHANUMERIC).to_string());
         url_base.push_str("@");

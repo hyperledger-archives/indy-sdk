@@ -19,7 +19,6 @@ Ubuntu18 = "Ubuntu 18.04"
 Centos = "Centos"
 
 libindyBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (Centos): false]
-libvcxBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (Centos): false]
 ubuntuPakageTypes = [(Ubuntu16): "xenial", (Ubuntu18): "bionic"]
 
 gitHubUserCredId = env.GITHUB_BOT_USER ?: 'sovbot-github'
@@ -115,7 +114,6 @@ def staticValidation() {
     parallel([
             'libindy'   : { runValdiationRust('libindy') },
             'libnullpay': { runValdiationRust('libnullpay') },
-            'libvcx'    : { runValdiationRust('vcx/libvcx') },
             'cli'       : { runValdiationRust('cli') }
     ])
 }
@@ -125,12 +123,7 @@ def runValdiationRust(dir) {
         try {
             cleanWs()
             checkout scm
-            def testEnv
-            if (dir == 'vcx/libvcx') {
-                testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
-            } else {
-                testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
-            }
+            def testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
             testEnv.inside {
                 //FIXME waiting on IS-823
                 //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
@@ -238,9 +231,6 @@ def linuxTesting(file, env_name, network_name) {
                 def jobs = [
                         "${env_name}-cli-test": {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
-                        },
-                        "${env_name}-vcx-test": {
-                            vcxTesting(file, env_name, network_name, full_testing)
                         }
                 ]
                 if (full_testing) {
@@ -258,38 +248,6 @@ def linuxTesting(file, env_name, network_name) {
                     }
                 }
                 parallel(jobs)
-            },
-    ])
-}
-
-def vcxTesting(file, env_name, network_name, full_testing) {
-    parallel([
-            failFast                                     : true,
-            "${env_name} Test: build and test libvcx"    : {
-                node('ubuntu') {
-                    cleanWs()
-                    linuxVcxBuild(file, env_name, network_name)
-                }
-            },
-            "${env_name} Test: test other vcx components": {
-                if (full_testing) {
-                    waitUntil {
-                        libvcxBuildFinished[env_name]
-                    }
-
-                    def jobs = [
-                            "${env_name}-vcx-nodejs-test": {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting)
-                            },
-                            "${env_name}-vcx-java-test"  : {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting)
-                            },
-                            "${env_name}-vcx-python-test": {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting)
-                            }
-                    ]
-                    parallel(jobs)
-                }
             },
     ])
 }
@@ -320,11 +278,6 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
         sh "cp libindy/target/release/libindy.so wrappers/nodejs"
         sh "cp libindy/target/release/libindy.so cli"
         sh "cp libindy/target/release/libindy.so libnullpay"
-        sh "cp libindy/target/release/libindy.so vcx/libvcx"
-        sh "cp libindy/target/release/libindy.so vcx/wrappers/node"
-        sh "cp libindy/target/release/libindy.so vcx/wrappers/java"
-        sh "cp libindy/target/release/libindy.so vcx/wrappers/python3"
-        sh "cp libindy/target/release/libindy.so vcx/dummy-cloud-agent"
 
         testEnv.inside {
             echo "${env_name} Libnullpay Test: Build"
@@ -338,10 +291,6 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
         }
 
         sh "cp libnullpay/target/release/libnullpay.so cli"
-        sh "cp libnullpay/target/release/libnullpay.so vcx/libvcx"
-        sh "cp libnullpay/target/release/libnullpay.so vcx/wrappers/node"
-        sh "cp libnullpay/target/release/libnullpay.so vcx/wrappers/java"
-        sh "cp libnullpay/target/release/libnullpay.so vcx/wrappers/python3"
 
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
@@ -349,11 +298,6 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
         stash includes: 'wrappers/nodejs/libindy.so', name: "LibindyNodejsSO${env_name}"
         stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
-        stash includes: 'vcx/libvcx/libindy.so,vcx/libvcx/libnullpay.so', name: "VCXLibindyAndLibnullpaySO${env_name}"
-        stash includes: 'vcx/wrappers/node/libindy.so,vcx/wrappers/node/libnullpay.so', name: "VcxNodeLibindyAndLibnullpaySO${env_name}"
-        stash includes: 'vcx/wrappers/java/libindy.so,vcx/wrappers/java/libnullpay.so', name: "VcxJavaLibindyAndLibnullpaySO${env_name}"
-        stash includes: 'vcx/wrappers/python3/libindy.so,vcx/wrappers/python3/libnullpay.so', name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
-        stash includes: 'vcx/dummy-cloud-agent/libindy.so', name: "LibindyCloudAgentSO${env_name}"
 
         libindyBuildFinished[env_name] = true
 
@@ -396,76 +340,6 @@ def testLibindyComponent(directory) {
         RUST_BACKTRACE=1 cargo test --release --no-run
         RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release
     """
-}
-
-def linuxVcxBuild(file, env_name, network_name) {
-    def poolInst
-    try {
-        echo "${env_name} Test: Checkout csm"
-        checkout scm
-
-        poolInst = openPool(env_name, network_name)
-
-        def testEnv = buildTestEnv(file, env_name)
-
-        unstash name: "VCXLibindyAndLibnullpaySO${env_name}"
-
-        echo "${env_name} Libvcx Test: Build"
-        testEnv.inside {
-            sh '''
-                cd vcx/libvcx
-                LIBRARY_PATH=./ cargo build --release --features fatal_warnings
-            '''
-
-            stash includes: 'vcx/libvcx/target/release/libvcx.so', name: "LibvcxBuildResult${env_name}"
-
-        }
-
-        sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/node"
-        sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/java"
-        sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/python3"
-
-        stash includes: 'vcx/wrappers/node/libvcx.so', name: "VcxNodeLibvcxSO${env_name}"
-        stash includes: 'vcx/wrappers/java/libvcx.so', name: "VcxJavaLibvcxSO${env_name}"
-        stash includes: 'vcx/wrappers/python3/libvcx.so', name: "VcxPythonLibvcxSO${env_name}"
-
-        libvcxBuildFinished[env_name] = true
-
-        sh "cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent"
-
-        testEnv.inside("--network=${network_name}") {
-            sh '''
-                cd vcx/dummy-cloud-agent
-                sed -i 's/\\("protocol_type": "\\)2.0/\\11.0/' config/sample-config.json
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run config/sample-config.json &
-            '''
-
-            echo "${env_name} Libvcx Test: Run tests"
-            sh '''
-                cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests agency"
-            '''
-        }
-
-        testEnv.inside("--network=${network_name}") {
-            sh '''
-                cd vcx/dummy-cloud-agent
-                sed -i 's/\\("protocol_type": "\\)1.0/\\12.0/' config/sample-config.json
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run config/sample-config.json &
-            '''
-
-            echo "${env_name} Libvcx Test: Run vcx demo test for protocol version 2.0"
-            // TODO in Rust 1.39.0 there was a problem with test name before "--". Temporary put test name after it.
-            sh '''
-                cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests agency_v2" -- tests::test_real_proof_for_protocol_type_v2 --exact
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests aries" -- v3::test::aries_demo --exact
-            '''
-        }
-    }
-    finally {
-        closePool(env_name, network_name, poolInst)
-    }
 }
 
 def linuxJavaTesting(env_name, network_name, testEnv) {
@@ -536,50 +410,6 @@ def linuxNodejsTesting(env_name, network_name, testEnv) {
                 npm install
                 LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug TEST_POOL_IP=10.0.0.2 npm test
             '''
-    }
-}
-
-def linuxVcxNodejsTesting(env_name, network_name, testEnv) {
-    unstash name: "VcxNodeLibvcxSO${env_name}"
-    unstash name: "VcxNodeLibindyAndLibnullpaySO${env_name}"
-
-    testEnv.inside("--network=${network_name}") {
-        echo "${env_name} Vcx Test: Test nodejs wrapper"
-        sh '''
-            cd vcx/wrappers/node/
-            npm i
-            npm run compile
-            LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} LIBVCX_PATH=./ npm test
-        '''
-    }
-}
-
-def linuxVcxJavaTesting(env_name, network_name, testEnv) {
-    unstash name: "VcxJavaLibvcxSO${env_name}"
-    unstash name: "VcxJavaLibindyAndLibnullpaySO${env_name}"
-
-    dir('vcx/wrappers/java') {
-        echo "${env_name} Vcx Test: Test java wrapper"
-
-        testEnv.inside("--network=${network_name}") {
-            sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH}  ./gradlew --no-daemon test'
-        }
-    }
-}
-
-def linuxVcxPythonTesting(env_name, network_name, testEnv) {
-    unstash name: "VcxPythonLibvcxSO${env_name}"
-    unstash name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
-
-    dir('vcx/wrappers/python3') {
-        testEnv.inside {
-            echo "${env_name} Vcx Test: Test python wrapper"
-
-            sh '''
-                    python3 -m pip install --user pytest==3.6.4 pytest-asyncio==0.10.0
-                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3 -m pytest -s
-            '''
-        }
     }
 }
 
@@ -681,36 +511,6 @@ def windowsTesting() {
                         }
 
                         stash includes: 'target/release/indy-cli.exe,target/release/*.dll', name: 'IndyCliWindowsBuildResult'
-                    }
-
-                    bat "PowerShell.exe \"Copy-Item $WORKSPACE/libnullpay/target/release/nullpay.dll -Destination $WORKSPACE/vcx/libvcx\""
-
-                    dir('vcx/libvcx') {
-                        echo "Windows Libvcx Test: Build"
-
-                        // FIXME remove that once https://jira.hyperledger.org/browse/IS-1127 is resolved
-                        bat """
-                            PowerShell.exe "&{(Get-Content -Path src/settings.rs -Raw) -replace '/tmp/test_init.json','./test_init.json'} | Set-Content -Path src/settings.rs"
-                        """
-
-                        withEnv([
-                                "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
-                                "RUST_BACKTRACE=1"
-                        ]) {
-                            bat "cargo build --release --features fatal_warnings"
-                            bat "cargo test --release --no-run"
-
-                            echo "Windows Libvcx Test: Run tests"
-                            withEnv([
-                                    "RUST_TEST_THREADS=1",
-                                    "RUST_LOG=vcx=debug,indy::=debug",
-                                    "PATH=$WORKSPACE\\libindy\\target\\release;$PATH",
-                            ]) {
-                                bat "cargo test --release"
-                            }
-                        }
-
-                        stash includes: 'target/release/*.dll,target/release/*.dll.lib', name: 'LibvcxWindowsBuildResult'
                     }
                 } finally {
                     try {
@@ -898,18 +698,11 @@ def macosTesting() {
                 stash includes: 'libindy/target/release/libindy.dylib,libindy/target/release/libindy.a', name: 'LibindyMacosBuildResult'
 
                 sh "cp libindy/target/release/libindy.dylib libnullpay"
-                sh "cp libindy/target/release/libindy.dylib vcx/libvcx"
                 sh "cp libindy/target/release/libindy.dylib cli"
 
                 macosModuleBuildingAndTest('libnullpay')
 
                 stash includes: 'libnullpay/target/release/libnullpay.dylib,libnullpay/target/release/libnullpay.a', name: 'LibnullpayMacosBuildResult'
-
-                sh "cp libnullpay/target/release/libnullpay.dylib vcx/libvcx"
-
-                macosModuleBuildingAndTest('vcx/libvcx')
-
-                stash includes: 'vcx/libvcx/target/release/libvcx.dylib,vcx/libvcx/target/release/libvcx.a', name: 'LibvcxMacosBuildResult'
 
                 sh "sed -i'.original' -e 's/10.0.0.2/127.0.0.1/g' cli/docker_pool_transactions_genesis"
                 macosModuleBuildingAndTest('cli')
@@ -971,7 +764,6 @@ def centosPublishing() {
 
                 libindyRpmPublishing(testEnv, libindyVersion, env_name)
                 libnullpayRpmPublishing(testEnv, env_name)
-                libvcxRpmPublishing(testEnv, env_name)
                 indyCliRpmPublishing(testEnv, env_name)
             }
             finally {
@@ -994,13 +786,6 @@ def libnullpayRpmPublishing(testEnv, env_name) {
     def libnullpayVersion = getSrcVersion("libnullpay")
 
     rpmPublishing(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "LibnullpayBuildResult${env_name}")
-}
-
-def libvcxRpmPublishing(testEnv, env_name) {
-    echo 'Publish Libvcx rpm files'
-    def libvcxVersion = getSrcVersion("vcx/libvcx")
-
-    rpmPublishing(testEnv, "vcx/libvcx", "libvcx", libvcxVersion, "LibvcxBuildResult${env_name}")
 }
 
 def indyCliRpmPublishing(testEnv, env_name) {
@@ -1049,7 +834,6 @@ def linuxPublishing(file, env_name, build_wrappers) {
                 libindyDebPublishing(testEnv, libindyVersion, env_name)
                 libindyDevDebPublishing(testEnv, libindyVersion, env_name)
                 libnullpayDebPublishing(testEnv, env_name)
-                libvcxDebPublishing(testEnv, env_name)
                 libindyCliDebPublishing(testEnv, libindyVersion, env_name) // Note that last deb publishing should pass resetCache = true inside
 
                 if (build_wrappers) {
@@ -1057,9 +841,6 @@ def linuxPublishing(file, env_name, build_wrappers) {
                     nodejsWrapperPublishing(testEnv, false, 'libindy')
                     javaWrapperPublishing(testEnv, false)
                     rustWrapperPublishing(testEnv, false)
-                    vcxJavaWrapperPublishing(testEnv, false)
-                    pythonWrapperPublishing(testEnv, false, 'vcx/wrappers/python3', 'vcx/libvcx')
-                    nodejsWrapperPublishing(testEnv, false, 'vcx')
                 }
 
             }
@@ -1136,11 +917,6 @@ def windowsPublishing() {
                 echo 'Publish Libnullpay Windows files'
                 def libnullpayVersion = getSrcVersion("libnullpay")
                 windowsPublishArtifact(testEnv, "libnullpay", "libnullpay", "lib", libnullpayVersion, "LibnullpayWindowsBuildResult")
-
-                echo 'Publish Libvcx Windows files'
-                def libvcxVersion = getSrcVersion("vcx/libvcx")
-                windowsPublishArtifact(testEnv, "vcx/libvcx", "libvcx", "lib", libvcxVersion, "LibvcxWindowsBuildResult")
-
             }
             finally {
                 echo 'Publish Windows files: Cleanup'
@@ -1239,10 +1015,6 @@ def macOsPublishing() {
                 def libnullpayVersion = getSrcVersion("libnullpay")
                 publishMacOsArtifact(testEnv, "libnullpay", "libnullpay", "LibnullpayMacosBuildResult", libnullpayVersion, "lib")
 
-                echo 'Publish Libvcx MacOS Library'
-                def libvcxVersion = getSrcVersion("vcx/libvcx")
-                publishMacOsArtifact(testEnv, "libvcx", "vcx/libvcx", "LibvcxMacosBuildResult", libvcxVersion, "lib")
-
                 echo 'Publish Indy CLI MacOS Library'
                 def cliVersion = getSrcVersion("cli")
                 publishMacOsArtifact(testEnv, "indy-cli", "cli", "IndyCliMacosBuildResult", cliVersion, "executable")
@@ -1319,16 +1091,6 @@ def libnullpayDebPublishing(testEnv, env_name) {
     debPublishing(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "LibnullpayBuildResult${env_name}", "libnullpayDebs${env_name}", env_name)
 }
 
-def libvcxDebPublishing(testEnv, env_name) {
-    echo 'Publish Libvcx deb files to Apt'
-
-    def libvcxVersion = getSrcVersion("vcx/libvcx")
-
-    setLibindyDependencyVersion("vcx/libvcx/Cargo.toml")
-
-    debPublishing(testEnv, "vcx/libvcx", "libvcx", libvcxVersion, "LibvcxBuildResult${env_name}", "libvcxDebs${env_name}", env_name)
-}
-
 def setLibindyDependencyVersion(file) {
     def libindyVersion = getSrcVersion("libindy")
     def replaceVersion = "$libindyVersion~$env.BUILD_NUMBER"
@@ -1382,8 +1144,7 @@ def pythonWrapperPublishing(testEnv, isRelease, directory, base_library) {
 }
 
 def nodejsWrapperPublishing(testEnv, isRelease, library) {
-    def paths = ['libindy': ['dir': 'wrappers/nodejs', 'base_library': 'libindy'],
-                 'vcx'    : ['dir': 'vcx/wrappers/node', 'base_library': 'vcx/libvcx']]
+    def paths = ['libindy': ['dir': 'wrappers/nodejs', 'base_library': 'libindy']]
 
     def version = getSrcVersion(paths[library]['base_library'])
 
@@ -1392,10 +1153,6 @@ def nodejsWrapperPublishing(testEnv, isRelease, library) {
     def directory = paths[library]['dir']
 
     testEnv.inside {
-        if (library == 'vcx') { // need addition step for VCX to create .js files
-            sh "cd $directory && npm i && npm run compile"
-        }
-
         npmPublish(version, suffix, directory)
     }
 }
@@ -1432,31 +1189,6 @@ def javaWrapperPublishing(testEnv, isRelease) {
     }
 }
 
-def vcxJavaWrapperPublishing(testEnv, isRelease) {
-    dir('vcx/wrappers/java') {
-        echo "Publish To Maven Test: Build docker image"
-        def version = getSrcVersion("vcx/libvcx")
-        def suffix = getSuffix(isRelease, "Maven")
-
-        testEnv.inside {
-            echo "Publish To Maven Test: Test"
-            withCredentials([file(credentialsId: 'maven-settings', variable: 'settingsFile')]) {
-                sh 'cp $settingsFile .'
-
-                sh "ci/buildJar.sh ${version}${suffix}"
-
-                sh "chmod +x ci/publishJar.sh"
-
-                withEnv([
-                        "MAVEN_ADD_OPTIONS=$mavenDeployAddOptions",
-                ]) {
-                    sh 'ci/publishJar.sh'
-                }
-            }
-        }
-    }
-}
-
 def publishingRCtoStable() {
     node('ubuntu') {
         cleanWs()
@@ -1472,7 +1204,6 @@ def publishingRCtoStable() {
 
                 def libindyVersion = getSrcVersion("libindy")
                 def libnullpayVersion = getSrcVersion("libnullpay")
-                def libvcxVersion = getSrcVersion("vcx/libvcx")
 
                 def env_name = Ubuntu16
 
@@ -1510,29 +1241,11 @@ def publishingRCtoStable() {
                 echo "Moving ${env_name} RC artifacts to Stable: libnullpay"
                 publishLibnullpayDebRCtoStable(testEnv, env_name)
 
-                echo 'Moving Windows RC artifacts to Stable: libvcx'
-                publishLibVCXWindowsFilesRCtoStable(libvcxVersion)
-
-                echo "Moving ${env_name} RC artifacts to Stable: libvcx"
-                publishLibvcxDebRCtoStable(testEnv, env_name)  // Note that last deb publishing should pass resetCache = true inside
-
-                echo 'Moving Ubuntu RC artifacts to Stable: vcx java wrapper'
-                vcxJavaWrapperPublishing(testEnv, true)
-
-                echo 'Moving Ubuntu RC artifacts to Stable: vcx python wrapper'
-                pythonWrapperPublishing(testEnv, true, 'vcx/wrappers/python3', 'vcx/libvcx')
-
-                echo 'Moving Ubuntu RC artifacts to Stable: vcx nodejs wrapper'
-                nodejsWrapperPublishing(testEnv, true, 'vcx')
-
                 echo 'Moving Android RC artifacts to Stable: libindy'
                 publishLibindAndroidFilesRCtoStable(libindyVersion)
 
                 echo 'Moving Android RC artifacts to Stable: libnullpay'
                 publishLibnullpayAndroidFilesRCtoStable()
-
-                echo 'Moving Android RC artifacts to Stable: libvcx'
-                publishLibvcxAndroidFilesRCtoStable()
 
                 echo 'Moving iOS RC artifacts to Stable: libindy'
                 publishLibindyIOSFilesRCtoStable(libindyVersion)
@@ -1545,9 +1258,6 @@ def publishingRCtoStable() {
 
                 echo 'Moving MacOS RC artifacts to Stable: libnullpay'
                 publishLibnullpayMacOSFilesRCtoStable(libnullpayVersion)
-
-                echo 'Moving MacOS RC artifacts to Stable: libvcx'
-                publishLibvcxMacOSFilesRCtoStable(libvcxVersion)
 
                 echo 'Moving MacOS RC artifacts to Stable: indy cli'
                 publishIndyCliMacOSFilesRCtoStable(libindyVersion)
@@ -1566,9 +1276,6 @@ def publishingRCtoStable() {
                 echo "Moving ${env_name} RC artifacts to Stable: libnullpay"
                 publishLibnullpayDebRCtoStable(ubuntu18Env, env_name)
 
-                echo "Moving ${env_name} RC artifacts to Stable: libvcx"
-                publishLibvcxDebRCtoStable(ubuntu18Env, env_name)
-
                 env_name = Centos
 
                 echo "Moving ${env_name} RC artifacts to Stable: libindy"
@@ -1576,9 +1283,6 @@ def publishingRCtoStable() {
 
                 echo "Moving ${env_name} RC artifacts to Stable: libnullpay"
                 publishLibnullpayCentosFilesRCtoStable(libnullpayVersion)
-
-                echo "Moving ${env_name} RC artifacts to Stable: libvcx"
-                publishLibvcxCentosFilesRCtoStable(libvcxVersion)
 
                 echo "Moving ${env_name} RC artifacts to Stable: indy-cli"
                 publishIndyCliCentosFilesRCtoStable(libindyVersion)
@@ -1597,10 +1301,6 @@ def publishLibindyCentosFilesRCtoStable(version) {
 
 def publishLibnullpayCentosFilesRCtoStable(version) {
     publishCentosFilesRCtoStable("libnullpay", version)
-}
-
-def publishLibvcxCentosFilesRCtoStable(version) {
-    publishCentosFilesRCtoStable("libvcx", version)
 }
 
 def publishIndyCliCentosFilesRCtoStable(version) {
@@ -1623,10 +1323,6 @@ def publishLibnullpayWindowsFilesRCtoStable(libnullpayVersion) {
     publishWindowsFilesRCtoStable("libnullpay", libnullpayVersion)
 }
 
-def publishLibVCXWindowsFilesRCtoStable(libvcxVersion) {
-    publishWindowsFilesRCtoStable("libvcx", libvcxVersion)
-}
-
 def publishLibindAndroidFilesRCtoStable(version) {
     publishAndroidFilesRCtoStable("libindy", version)
 }
@@ -1634,11 +1330,6 @@ def publishLibindAndroidFilesRCtoStable(version) {
 def publishLibnullpayAndroidFilesRCtoStable() {
     def libnullpayVersion = getSrcVersion("libnullpay")
     publishAndroidFilesRCtoStable("libnullpay", libnullpayVersion)
-}
-
-def publishLibvcxAndroidFilesRCtoStable() {
-    def libvcxVersion = getSrcVersion("vcx/libvcx")
-    publishAndroidFilesRCtoStable("libvcx", libvcxVersion)
 }
 
 def publishAndroidFilesRCtoStable(packageName, version) {
@@ -1688,10 +1379,6 @@ def publishLibnullpayMacOSFilesRCtoStable(version) {
     publishMacosFilesRCtoStable("libnullpay", version)
 }
 
-def publishLibvcxMacOSFilesRCtoStable(version) {
-    publishMacosFilesRCtoStable("libvcx", version)
-}
-
 def publishIndyCliMacOSFilesRCtoStable(version) {
     publishMacosFilesRCtoStable("indy-cli", version)
 }
@@ -1722,11 +1409,6 @@ def publishLibindyCliDebRCtoStable(testEnv, version, env_name) {
 def publishLibnullpayDebRCtoStable(testEnv, env_name) {
     def libnullpayVersion = getSrcVersion("libnullpay")
     publishDebRCtoStable(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "libnullpayDebs", env_name)
-}
-
-def publishLibvcxDebRCtoStable(testEnv, env_name) {
-    def libvcxVersion = getSrcVersion("vcx/libvcx")
-    publishDebRCtoStable(testEnv, "libvcx", "vcx/libvcx", libvcxVersion, "libvcxDebs", env_name, true)
 }
 
 def publishDebRCtoStable(testEnv, packageName, directory, version, stashName, env_name, resetCache = false) {
@@ -1790,7 +1472,6 @@ def androidPublishing() {
 
                 libindyVersion = getSrcVersion("libindy")
                 libnullpayVersion = getSrcVersion("libnullpay")
-                libvcxVersion = getSrcVersion("vcx/libvcx")
 
                 echo 'Publish Android binaries: Building docker image'
 
@@ -1798,7 +1479,6 @@ def androidPublishing() {
 
                 publishAndroid(buildEnv, libindyVersion, 'libindy')
                 publishAndroid(buildEnv, libnullpayVersion, 'libnullpay')
-                publishAndroid(buildEnv, libvcxVersion, 'libvcx')
 
             }
             finally {
@@ -1845,16 +1525,6 @@ def androidBuildArtifact(buildEnv, arch, libVersion, artifact, libIndyVersion) {
             def libnullpay_zip_name = "libnullpay_android_${arch}_${libVersion}.zip"
             sh "cp libnullpay/${libnullpay_zip_name} ./"
             stash includes: "${libnullpay_zip_name}", name: "libnullpay_${arch}_zip"
-        }
-    } else if (artifactName == "LIBVCX") {
-        buildEnv.inside {
-            unstash name: "libindy_${arch}_zip"
-            sh "cp libindy_android_${arch}_${libIndyVersion}.zip vcx/libvcx && unzip -o vcx/libvcx/libindy_android_${arch}_${libIndyVersion}.zip "
-            stash includes: "libindy_android_${arch}_${libIndyVersion}.zip", name: "libindy_${arch}_zip"
-            sh "cd vcx/libvcx && ${artifactName}_VERSION=${libVersion} LIBINDY_DIR=../../libindy_${arch}/lib INDY_DIR=../../libindy_${arch}/lib ./${ANDROID_SCRIPT_PATH} -d $arch"
-            def libvcx_zip_name = "libvcx_android_${arch}_${libVersion}.zip"
-            sh "cp vcx/libvcx/${libvcx_zip_name} ./"
-            stash includes: "${libvcx_zip_name}", name: "libvcx_${arch}_zip"
         }
     }
 }
@@ -1920,18 +1590,15 @@ def androidBuildAsTesting() {
 
                 def libindyVersion = getSrcVersion("libindy")
                 def libnullpayVersion = getSrcVersion("libnullpay")
-                def libvcxVersion = getSrcVersion("vcx/libvcx")
 
                 echo 'Building android binaries: Building docker image'
                 dockerBuild('libindy', 'libindy/ci/ubuntu.dockerfile libindy/ci')
                 def buildEnv = dockerBuild('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
-                def vcxBuildEnv = dockerBuild('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
                 sh 'chmod -R 777 libindy/'
                 sh 'chmod -R 777 libindy/ci/'
 
                 buildAndroid(buildEnv, libindyVersion, 'libindy')
                 buildAndroid(buildEnv, libnullpayVersion, 'libnullpay')
-                buildAndroid(vcxBuildEnv, libvcxVersion, 'libvcx', libindyVersion)
             }
             finally {
                 echo 'Building Android binaries: Cleanup'
