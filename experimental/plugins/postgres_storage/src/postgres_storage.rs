@@ -2082,8 +2082,12 @@ impl WalletStorage for PostgresStorage {
                 retrieve_type: search_options.retrieve_type,
             };
 
-            let (query_string, query_arguments) = match query_qualifier {
-                Some(_) => {
+            let strategy = get_wallet_strategy();
+            let (query_string, query_arguments) = match &strategy {
+                WalletScheme::MultiWalletMultiTable => {
+                    query::wql_to_sql(&type_, query, options, get_wallet_strategy(), &wallet_id_arg)?
+                }
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => { 
                     let (mut query_string, mut query_arguments) = query::wql_to_sql(&type_, query, options, get_wallet_strategy(), &wallet_id_arg)?;
                     query_arguments.push(&wallet_id_arg);
                     let arg_str = format!(" AND i.wallet_id = ${}", query_arguments.len());
@@ -2107,7 +2111,9 @@ impl WalletStorage for PostgresStorage {
                     }
                     (query_string, query_arguments)
                 }
-                None => query::wql_to_sql(&type_, query, options, get_wallet_strategy(), &wallet_id_arg)?
+                WalletScheme::DatabasePerWallet => {
+                    query::wql_to_sql(&type_, query, options, get_wallet_strategy(), &wallet_id_arg)?
+                }
             };
 
             let statement = self._prepare_statement(&query_string)?;
