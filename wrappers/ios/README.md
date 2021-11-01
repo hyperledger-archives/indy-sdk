@@ -2,6 +2,7 @@
 A wrapper is a private pod, so private podspec must be set. Put at the top of the Podfile: 
     
     source 'https://github.com/hyperledger/indy-sdk.git'
+    source 'https://github.com/CocoaPods/Specs.git'
     
 Cocoapod will search for spec files in the root Specs folder.
            
@@ -17,14 +18,22 @@ Cocoapod will search for spec files in the root Specs folder.
        
     These archives are located at `https://repo.sovrin.org/ios/libindy/{release-channel}/libindy-core/`.
     
-* There is manually built and published archive containing libindy objective C wrapper.
-   This archive is located at `https://repo.sovrin.org/ios/libindy/{release-channel}/indy-objc/`.
+* There are manually built and published archives containing libindy objective C wrapper until v1.8.2.
+   These archives are located at `https://repo.sovrin.org/ios/libindy/{release-channel}/indy-objc/`.
 
     Add pod to target:
         
-        pod 'libindy-objc'    
+        pod 'libindy-objc', '1.8.2'
   
 {release channel} must be replaced with master, rc or stable to define corresponded release channel.
+
+# Non-binary objective C wrapper podspec
+
+There are podspec files consisting of libindy objective C wrapper source files from v1.15.0.
+
+Add pod to target:
+
+    pod 'Indy', '1.15.0'
 
 # How to manually build
 
@@ -98,6 +107,8 @@ Run Archive process for `Indy` target. Custom post-action shell script `universa
 
 # Wrapper usage 
 
+## Objective-C
+
 Import header starting from 0.1.3:
 
 ```
@@ -110,6 +121,25 @@ For 0.1.1 and 0.1.2 versions:
 ```
 
 All wrapper types and classes have prefix `Indy`.
+
+## Swift
+
+```Swift
+import Indy
+
+// Creating a wallet
+let walletConfig = ["id": "demoWallet"].toString()
+let walletCredentials = ["key": "1234"].toString()
+let wallet = IndyWallet.sharedInstance()!
+wallet.createWallet(withConfig: walletConfig, credentials: walletCredentials) { err in
+   if let error = err as NSError? {
+       if (error.code != IndyErrorCode.WalletAlreadyExistsError.rawValue) {
+           print("Wallet creation failed: \(error.userInfo["message"] ?? "Unknown error")")
+           return
+       }
+   }
+}
+```
 
 ## Troubleshooting
 * Enable Logging - Use `setLogger` to pass a callback that will be used by Libindy to log a record.
