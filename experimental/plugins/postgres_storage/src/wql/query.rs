@@ -12,7 +12,16 @@ pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, _options: Option<&st
     let mut arguments: Vec<&dyn ToSql> = Vec::new();
     arguments.push(class);
     let clause_string = operator_to_sql(op, &mut arguments, strategy, wallet_id)?;
-    let mut query_string = "SELECT i.id, i.name, i.value, i.key, i.type FROM items as i WHERE i.type = $$".to_string();
+    
+    let mut query_string = match strategy {
+        WalletScheme::MultiWalletMultiTable => {
+            str::replace("SELECT i.id, i.name, i.value, i.key, i.type FROM items_$1 as i WHERE i.type = $$", "$1" , &wallet_id).to_string()
+        }
+        _ => {
+            "SELECT i.id, i.name, i.value, i.key, i.type FROM items as i WHERE i.type = $$".to_string()
+        }
+    };
+    
     if !clause_string.is_empty() {
         query_string.push_str(" AND ");
         query_string.push_str(&clause_string);
