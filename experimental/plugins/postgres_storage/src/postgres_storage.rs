@@ -2119,13 +2119,17 @@ impl WalletStorage for PostgresStorage {
             let statement = self._prepare_statement(&query_string)?;
             let tag_retriever = if fetch_options.retrieve_tags {
                 let pool = self.pool.clone();
-                match query_qualifier {
-                    Some(_) => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), Some(self.wallet_id.clone()))?),
-                    None => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), None)?)
+                match &strategy {
+                    WalletScheme::MultiWalletMultiTable => 
+                        Some(TagRetrieverMultiTableMultiWallet::new_owned(Rc::new(pool.get().unwrap()).clone(), Some(self.wallet_id.clone()))?),
+                    WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => 
+                        Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), Some(self.wallet_id.clone()))?),
+                    WalletScheme::DatabasePerWallet => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), None)?)
                 }
             } else {
                 None
             };
+
             let storage_iterator = PostgresStorageIterator::new(Some(statement), &query_arguments[..], fetch_options, tag_retriever, total_count)?;
             Ok(Box::new(storage_iterator))
         } else {
