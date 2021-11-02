@@ -1096,9 +1096,20 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
     }
 }
 
+fn get_multiwalletsplitdatabases_name(id: &str) -> String {
+    // Take first to chars for DB name
+    return String::from(&id[4..6]);
+}
+
 impl WalletStrategy for MultiWalletMultiTableStrategy {
     // initialize storage based on wallet storage strategy
     fn init_storage(&self, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
+        // no-op
+        debug!("Initializing storage strategy DatabasePerWalletStrategy.");
+        Ok(())
+    }
+    // initialize a single wallet based on wallet storage strategy
+    fn create_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials, metadata: &[u8]) -> Result<(), WalletStorageError> {
         debug!("Entering init_storage");
         // create database and tables for storage
         // if admin user and password aren't provided then bail
@@ -1109,7 +1120,7 @@ impl WalletStrategy for MultiWalletMultiTableStrategy {
 
         debug!("setting up the admin_postgres_url");
         // look to see if there is a specified db to use.  If not, use the default name
-        let wallet_db_name: &str = get_multi_database_name(config);
+        let wallet_db_name: &str = &get_multiwalletsplitdatabases_name(id)[..];
         debug!("wallet_db_name: {:?}", wallet_db_name);
         let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
         let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
@@ -1118,45 +1129,26 @@ impl WalletStrategy for MultiWalletMultiTableStrategy {
         let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
 
         debug!("creating wallets DB");
+        // 
+
         let create_db_sql: String = str::replace(_CREATE_WALLET_DATABASE, "$1", wallet_db_name);
+
         debug!("create_db_sql: {:?}", create_db_sql);
         if let Err(error) = conn.execute(&create_db_sql, &[]) {
             if error.code() != Some(&postgres::error::DUPLICATE_DATABASE) {
                 debug!("error creating database, Error: {}", error);
                 conn.finish()?;
-                return Err(WalletStorageError::IOError(format!("Error occurred while creating the database: {}", error)));
             } else {
                 // if database already exists, assume tables are created already and return
                 debug!("database already exists");
                 conn.finish()?;
-                return Ok(());
             }
         }
-
-        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
-
-        let conn2 = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
-            Ok(conn2) => conn2,
-            Err(error) => {
-                return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
-            }
-        };
-        
-        for sql in &_CREATE_SCHEMA_MULTI {
-            if let Err(error) = conn2.execute(sql, &[]) {
-                debug!("error creating wallet schema, Error: {}", error);
-                conn2.finish()?;
-                return Err(WalletStorageError::IOError(format!("Error occurred while creating wallet schema: {}", error)));
-            }
-        }
-        conn.finish()?;
-        conn2.finish()?;
-        Ok(())
-    }
-    // initialize a single wallet based on wallet storage strategy
-    fn create_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials, metadata: &[u8]) -> Result<(), WalletStorageError> {
+              
+        let wallet_db_name: &str = &get_multiwalletsplitdatabases_name(id)[..]; // Convert Strng to &str
+        debug!("wallet_db_name: {:?}", wallet_db_name);
         // create tables for wallet storage
-        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
 
         let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
             Ok(conn) => conn,
@@ -1197,14 +1189,14 @@ impl WalletStrategy for MultiWalletMultiTableStrategy {
                 }
             }
         };
-
+        
         conn.finish()?;
         Ok(())
     }
     // open a wallet based on wallet storage strategy
     fn open_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials,) -> Result<Box<PostgresStorage>, WalletStorageError> {
         // look to see if there is a specified db to use.  If not, use the default name
-        let wallet_db_name: &str = get_multi_database_name(config);
+        let wallet_db_name: &str = &get_multiwalletsplitdatabases_name(id)[..]; // Convert Strng to &str
         debug!("wallet_db_name: {:?}", wallet_db_name);
         let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
         // don't need a connection, but connect just to verify we can
@@ -1225,6 +1217,7 @@ impl WalletStrategy for MultiWalletMultiTableStrategy {
             Ok(manager) => manager,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
+
         let pool = match r2d2::Pool::builder()
             .min_idle(Some(config.min_idle_count()))
             .max_size(config.max_connections())
@@ -1237,15 +1230,17 @@ impl WalletStrategy for MultiWalletMultiTableStrategy {
     }
     // delete a single wallet based on wallet storage strategy
     fn delete_wallet( &self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials, ) -> Result<(), WalletStorageError> {
-        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
+        let wallet_db_name: &str = &get_multiwalletsplitdatabases_name(id)[..]; // Convert Strng to &str
+        debug!("wallet_db_name: {:?}", wallet_db_name);
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
     
         let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
             Ok(conn) => conn,
-            Err(error) => {
-                return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
+            Err(_) => {
+                return Err(WalletStorageError::NotFound);
             }
         };
-    
+
         for sql in &_DELETE_WALLET_TABLES {
             let create_db_sql = str::replace(sql, "$1", id); 
             if let Err(_) = conn.execute(&create_db_sql, &[]) {
@@ -2439,7 +2434,7 @@ mod tests {
 
         let storage_type = PostgresStorageType::new();
         storage_type.create_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]), &_metadata()).unwrap();
-
+        
         let res = storage_type.delete_storage("unknown", Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]));
         assert_match!(Err(WalletStorageError::NotFound), res);
 
@@ -2453,68 +2448,79 @@ mod tests {
     }
 
     // use std::time::Instant;
+    // use rand::{Rng}; // 0.8
 
     // #[test]
     // fn postgres_storage_multiple() {
-    //     _cleanup();
-       
-    //     let mut i = 0;
+    //     let s = get_multiwalletsplitdatabases_name("abcdefgh");
 
-    //     let mut sum_create = 0;
-    //     let mut sum_open = 0;
-    //     let mut sum_add = 0;
-    //     let mut sum_get = 0;
-
-    //     while i < 50000 {
-    //         let storage_type = PostgresStorageType::new();
-    //         let id = format!("Id{}", &i);
-
-    //         // create
-    //         let start_create = Instant::now();
-    //         storage_type.create_storage(&id, Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]), &_metadata()).unwrap();
-    //         let elapsed_create = start_create.elapsed();
-
-    //         // open
-    //         let start_open = Instant::now();
-    //         let res = storage_type.open_storage(&id, Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
-    //         let elapsed_open = start_open.elapsed();
-            
-    //         // add
-    //         let start_add = Instant::now();
-    //         res.add(&_type1(), &_id2(), &_value2(), &_tags()).unwrap();
-    //         let elapsed_add = start_add.elapsed();
-
-    //         // get
-    //         let start_get = Instant::now();
-    //         res.get(&_type1(), &_id2(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-    //         let elapsed_get = start_get.elapsed();     
-
-    //         sum_create = sum_create + elapsed_create.as_millis();
-    //         sum_add = sum_add + elapsed_add.as_millis();
-    //         sum_open = sum_open + elapsed_open.as_millis();
-    //         sum_get = sum_get + elapsed_get.as_millis();
-
-    //         i = i + 1;
-    //         if i % 100 == 0 {
-    //             let mut print_avg_create = sum_create / 100;
-    //             let mut print_avg_open = sum_open / 100;
-    //             let mut print_avg_add = sum_add / 100;
-    //             let mut print_avg_get = sum_get / 100;
-
-    //             let outline = format!("Wallets: {} - AVG: Create {:?} - Open {:?} - Add {:?} -  Get {:?}", &i, print_avg_create, print_avg_open, print_avg_add, print_avg_get);
-                
-    //             sum_create = 0;
-    //             sum_add = 0;
-    //             sum_open = 0;
-    //             sum_get = 0;
-
-    //             println!("{}", outline);
-    //         }
-            
-    //     }
-
-        
+    //     println!("{}", s);
     //     assert_eq!(1,1);
+        // _cleanup();
+       
+        // let mut i = 0;
+
+        // let mut sum_create = 0;
+        // let mut sum_open = 0;
+        // let mut sum_add = 0;
+        // let mut sum_get = 0;
+
+        // while i < 500 {
+        //     let storage_type = PostgresStorageType::new();
+            
+        //     let s: String = rand::thread_rng()
+        //         .gen_ascii_chars()
+        //         .take(7)
+        //         .map(char::from)
+        //         .collect();
+
+        //     let id = &s[..];
+
+        //     // create
+        //     let start_create = Instant::now();
+        //     storage_type.create_storage(&id, Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]), &_metadata()).unwrap();
+        //     let elapsed_create = start_create.elapsed();
+
+        //     // open
+        //     let start_open = Instant::now();
+        //     let res = storage_type.open_storage(&id, Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
+        //     let elapsed_open = start_open.elapsed();
+            
+        //     // add
+        //     let start_add = Instant::now();
+        //     res.add(&_type1(), &_id2(), &_value2(), &_tags()).unwrap();
+        //     let elapsed_add = start_add.elapsed();
+
+        //     // get
+        //     let start_get = Instant::now();
+        //     res.get(&_type1(), &_id2(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        //     let elapsed_get = start_get.elapsed();     
+
+        //     sum_create = sum_create + elapsed_create.as_millis();
+        //     sum_add = sum_add + elapsed_add.as_millis();
+        //     sum_open = sum_open + elapsed_open.as_millis();
+        //     sum_get = sum_get + elapsed_get.as_millis();
+
+        //     i = i + 1;
+        //     if i % 100 == 0 {
+        //         let mut print_avg_create = sum_create / 100;
+        //         let mut print_avg_open = sum_open / 100;
+        //         let mut print_avg_add = sum_add / 100;
+        //         let mut print_avg_get = sum_get / 100;
+
+        //         let outline = format!("Wallets: {} - AVG: Create {:?} - Open {:?} - Add {:?} -  Get {:?}", &i, print_avg_create, print_avg_open, print_avg_add, print_avg_get);
+                
+        //         sum_create = 0;
+        //         sum_add = 0;
+        //         sum_open = 0;
+        //         sum_get = 0;
+
+        //         println!("{}", outline);
+        //     }
+            
+        // }
+    
+        // assert_eq!(1,1);
     // }
 
     #[test]
