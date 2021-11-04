@@ -12,11 +12,14 @@ static NSString *const IndyErrorDomain = @"IndyErrorDomain";
 
 + (NSError *)errorFromIndyError:(indy_error_t)error {
 
+    if (error == Success)
+        return nil;
+
     NSMutableDictionary *userInfo = [NSMutableDictionary new];
 
-    if (error != Success) {
-        const char * error_json_p;
-        indy_get_current_error(&error_json_p);
+    const char * error_json_p;
+    indy_get_current_error(&error_json_p);
+    if (error_json_p) {
         NSString *errorDetailsJson = [NSString stringWithUTF8String:error_json_p];
 
         NSDictionary *errorDetails = [NSDictionary fromString:errorDetailsJson];
