@@ -23,7 +23,7 @@
     "include"
   ],
   "scripts": {
-    "prepare": "cp -r ../../libindy/include .",
+    "preinstall": "cp -r ../../libindy/include .",
     "test": "standard && ava --fail-fast",
     "rebuild": "node-gyp rebuild"
   },

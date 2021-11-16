@@ -1,3 +1,9 @@
+# Location
+# macOS Intel: /usr/local/lib/libindy.dylib
+# macOS Apple: /opt/homebrew/lib/libindy.dylib
+# Linux      : /usr/lib/libindy.dylib OR /usr/local/lib/libindy.dylib
+# Windows    : anywhere & set LD_LIBRARY_PATH in your environment variables to the /lib folder
+
 {
   "targets": [
     {
@@ -17,19 +23,13 @@
         [
           "OS=='win'",
           {
-            "library_dirs": ["<(module_root_dir)"],
+            "library_dirs": [
+              "<(module_root_dir)",
+              "<!(node -e \"console.log(process.env.LD_LIBRARY_PATH || '')\")"
+            ],
             "libraries": ["indy.dll.lib"]
           }
         ],
-        [
-          "OS=='linux'",
-          {
-            "library_dirs": ["/usr/local/lib/", "/usr/lib/"],
-            "link_settings": {
-              "libraries": ["libindy.so"]
-            }
-          }
-        ]
       ]
     }
   ]
