@@ -5,7 +5,7 @@ RUN useradd -ms /bin/bash indy
 # Install environment
 RUN apt-get update -y && apt-get install -y \
     wget \
-    python3.5 \
+    python3.7 \
     python3-pip \
     python-setuptools \
     apt-transport-https \
