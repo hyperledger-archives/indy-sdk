@@ -180,12 +180,18 @@
     uint32_t messageLen = (uint32_t) [message length];
     uint8_t *messageRaw = (uint8_t *) [message bytes];
 
+    const char* senderUTF8Str;
+    if ([sender length] > 0) {
+        senderUTF8Str = [sender UTF8String];
+    } else {
+        senderUTF8Str = nil;
+    }
     indy_error_t ret = indy_pack_message(handle,
             walletHandle,
             messageRaw,
             messageLen,
             [receivers UTF8String],
-            [sender UTF8String],
+            senderUTF8Str,
             IndyWrapperCommonDataCallback);
 
     [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
