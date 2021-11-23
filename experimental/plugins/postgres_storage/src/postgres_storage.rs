@@ -269,6 +269,50 @@ const _CREATE_SCHEMA_MULTI_TABLE: [&str; 12] = [
     "CREATE INDEX \"ix_tags_plaintext_value_$1\" ON \"tags_plaintext_$1\"(value)",
     "CREATE INDEX \"ix_tags_plaintext_wallet_id_item_id_$1\" ON \"tags_plaintext_$1\"(item_id)"
 ];
+const _CREATE_SCHEMA_MULTI_TABLE_MWMT: [&str; 14] = [
+    "CREATE TABLE \"metadata_$1\" (
+        id BIGSERIAL PRIMARY KEY,
+        value BYTEA NOT NULL
+    )",
+    "CREATE UNIQUE INDEX IF NOT EXISTS \"ux_metadata_values_$1\" ON \"metadata_$1\"(value)",
+    "CREATE TABLE \"items_$1\"(
+        id BIGSERIAL PRIMARY KEY,
+        type BYTEA NOT NULL,
+        name BYTEA NOT NULL,
+        value BYTEA NOT NULL,
+        key BYTEA NOT NULL
+    )",
+    "CREATE UNIQUE INDEX \"ux_items_type_name_$1\" ON \"items_$1\"(type, name)",
+    "CREATE TABLE \"tags_encrypted_$1\"(
+        name BYTEA NOT NULL,
+        value BYTEA NOT NULL,
+        item_id BIGINT NOT NULL,
+        PRIMARY KEY(name, item_id),
+        FOREIGN KEY(item_id)
+            REFERENCES \"items_$1\"(id)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE
+    )",
+    "CREATE INDEX \"ix_tags_encrypted_name_$1\" ON \"tags_encrypted_$1\"(name)",
+    "CREATE INDEX \"ix_tags_encrypted_value_$1\" ON \"tags_encrypted_$1\"(md5(value))",
+    "CREATE INDEX \"ix_tags_encrypted_wallet_id_item_id_$1\" ON \"tags_encrypted_$1\"(item_id)",
+    "CREATE TABLE \"tags_plaintext_$1\"(
+        name BYTEA NOT NULL,
+        value TEXT NOT NULL,
+        item_id BIGINT NOT NULL,
+        PRIMARY KEY(name, item_id),
+        FOREIGN KEY(item_id)
+            REFERENCES \"items_$1\"(id)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE
+    )",
+    "CREATE INDEX \"ix_tags_plaintext_name_$1\" ON \"tags_plaintext_$1\"(name)",
+    "CREATE INDEX \"ix_tags_plaintext_value_$1\" ON \"tags_plaintext_$1\"(value)",
+    "CREATE INDEX \"ix_tags_plaintext_wallet_id_item_id_$1\" ON \"tags_plaintext_$1\"(item_id)",
+
+    "CREATE INDEX \"items_idxonly_$1\" ON \"items_$1\" USING btree (id, type, name, value, key)",
+    "CREATE INDEX \"tags_encrypted_idxonly_$1\" ON \"tags_encrypted_$1\" USING btree (name, value, item_id)"
+];
 const _DELETE_WALLET_TABLES: [&str; 4] = [
     "DROP TABLE \"metadata_$1\" CASCADE",
     "DROP TABLE \"items_$1\" CASCADE",
@@ -1371,7 +1415,7 @@ impl WalletStrategy for MultiWalletSplitDatabaseMultiTableStrategy {
             return Err(WalletStorageError::AlreadyExists);
         }
 
-        for sql in &_CREATE_SCHEMA_MULTI_TABLE {
+        for sql in &_CREATE_SCHEMA_MULTI_TABLE_MWMT {
             let create_db_sql = str::replace(sql, "$1", id);
 
             if let Err(error) = conn.execute(&create_db_sql, &[]) {
