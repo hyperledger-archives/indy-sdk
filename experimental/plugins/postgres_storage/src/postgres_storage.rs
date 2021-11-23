@@ -1274,9 +1274,9 @@ impl WalletStrategy for MultiWalletMultiTableStrategy {
     }
 }
 
-fn get_multiwalletsplitdatabases_name(id: &str) -> String {
-    // Take first to chars for DB name
-    return String::from(&id[4..6]);
+fn get_multiwalletsplitdatabases_name(id: &str) -> &str {
+    // Skip the first 4 characters ("Edge") and take the first two characters for DB name
+    return &id[4..6];
 }
 
 impl WalletStrategy for MultiWalletSplitDatabaseMultiTableStrategy {
@@ -1298,7 +1298,7 @@ impl WalletStrategy for MultiWalletSplitDatabaseMultiTableStrategy {
 
         debug!("setting up the admin_postgres_url");
         // look to see if there is a specified db to use.  If not, use the default name
-        let wallet_db_name: &str = &get_multiwalletsplitdatabases_name(id)[..];
+        let wallet_db_name: &str = get_multiwalletsplitdatabases_name(id);
         debug!("wallet_db_name: {:?}", wallet_db_name);
         let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
         let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
@@ -1323,7 +1323,7 @@ impl WalletStrategy for MultiWalletSplitDatabaseMultiTableStrategy {
             }
         }
               
-        let wallet_db_name: &str = &get_multiwalletsplitdatabases_name(id)[..]; // Convert Strng to &str
+        let wallet_db_name: &str = get_multiwalletsplitdatabases_name(id); // Convert Strng to &str
         debug!("wallet_db_name: {:?}", wallet_db_name);
         // create tables for wallet storage
         let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
@@ -1375,7 +1375,7 @@ impl WalletStrategy for MultiWalletSplitDatabaseMultiTableStrategy {
     // open a wallet based on wallet storage strategy
     fn open_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials,) -> Result<Box<PostgresStorage>, WalletStorageError> {
         // look to see if there is a specified db to use.  If not, use the default name
-        let wallet_db_name: &str = &get_multiwalletsplitdatabases_name(id)[..]; // Convert Strng to &str
+        let wallet_db_name: &str = get_multiwalletsplitdatabases_name(id);
         debug!("wallet_db_name: {:?}", wallet_db_name);
         let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
         // don't need a connection, but connect just to verify we can
@@ -1410,7 +1410,7 @@ impl WalletStrategy for MultiWalletSplitDatabaseMultiTableStrategy {
 
     // delete a single wallet based on wallet storage strategy
     fn delete_wallet( &self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials, ) -> Result<(), WalletStorageError> {
-        let wallet_db_name: &str = &get_multiwalletsplitdatabases_name(id)[..]; // Convert Strng to &str
+        let wallet_db_name: &str = get_multiwalletsplitdatabases_name(id);
         debug!("wallet_db_name: {:?}", wallet_db_name);
         let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
     
