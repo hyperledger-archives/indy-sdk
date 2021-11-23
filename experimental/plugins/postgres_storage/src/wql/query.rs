@@ -14,7 +14,7 @@ pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, _options: Option<&st
     let clause_string = operator_to_sql(op, &mut arguments, strategy, wallet_id)?;
     
     let mut query_string = match strategy {
-        WalletScheme::MultiWalletMultiTable => {
+        WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
             str::replace("SELECT i.id, i.name, i.value, i.key, i.type FROM \"items_$1\" as i WHERE i.type = $$", "$1" , &wallet_id).to_string()
         }
         _ => {
@@ -35,7 +35,7 @@ pub fn wql_to_sql_count<'a>(class: &'a Vec<u8>, op: &'a Operator, strategy: Wall
     arguments.push(class);
     let clause_string = operator_to_sql(op, &mut arguments, strategy, wallet_id)?;
     let mut query_string = match strategy {
-        WalletScheme::MultiWalletMultiTable => {
+        WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
             str::replace("SELECT count(*) FROM \"items_$1\" as i WHERE i.type = $$", "$1" , &wallet_id).to_string()
         }
         _ => {
@@ -84,7 +84,7 @@ fn eq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<
             arguments.push(queried_name);
             arguments.push(queried_value);
             let res = match strategy {
-                WalletScheme::MultiWalletMultiTable => {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
                     str::replace("(i.id in (SELECT item_id FROM \"tags_plaintext_$1\" WHERE name = $$ AND value = $$))", "$1" , &wallet_id).to_string()
                 }
                 _ => {
@@ -97,7 +97,7 @@ fn eq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<
             arguments.push(queried_name);
             arguments.push(queried_value);
             let res = match strategy {
-                WalletScheme::MultiWalletMultiTable => {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
                     str::replace("(i.id in (SELECT item_id FROM \"tags_encrypted_$1\" WHERE name = $$ AND value = $$))", "$1" , &wallet_id).to_string()
                 }
                 _ => {
@@ -117,7 +117,7 @@ fn neq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec
             arguments.push(queried_name);
             arguments.push(queried_value);
             let res = match strategy {
-                WalletScheme::MultiWalletMultiTable => {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
                     str::replace("(i.id in (SELECT item_id FROM \"tags_plaintext_$1\" WHERE name = $$ AND value != $$))", "$1" , &wallet_id).to_string()
                 }
                 _ => {
@@ -130,7 +130,7 @@ fn neq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec
             arguments.push(queried_name);
             arguments.push(queried_value);
             let res = match strategy {
-                WalletScheme::MultiWalletMultiTable => {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
                     str::replace("(i.id in (SELECT item_id FROM \"tags_encrypted_$1\" WHERE name = $$ AND value != $$))", "$1" , &wallet_id).to_string()
                 }
                 _ => {
@@ -150,7 +150,7 @@ fn gt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<
             arguments.push(queried_name);
             arguments.push(queried_value);
             let res = match strategy {
-                WalletScheme::MultiWalletMultiTable => {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
                     str::replace("(i.id in (SELECT item_id FROM \"tags_plaintext_$1\" WHERE name = $$ AND value > $$))", "$1" , &wallet_id).to_string()
                 }
                 _ => {
@@ -170,7 +170,7 @@ fn gte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec
             arguments.push(queried_name);
             arguments.push(queried_value);
             let res = match strategy {
-                WalletScheme::MultiWalletMultiTable => {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
                     str::replace("(i.id in (SELECT item_id FROM \"tags_plaintext_$1\" WHERE name = $$ AND value >= $$))", "$1" , &wallet_id).to_string()
                 }
                 _ => {
@@ -190,7 +190,7 @@ fn lt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<
             arguments.push(queried_name);
             arguments.push(queried_value);
             let res = match strategy {
-                WalletScheme::MultiWalletMultiTable => {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
                     str::replace("(i.id in (SELECT item_id FROM \"tags_plaintext_$1\" WHERE name = $$ AND value < $$)))", "$1" , &wallet_id).to_string()
                 }
                 _ => {
@@ -210,7 +210,7 @@ fn lte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec
             arguments.push(queried_name);
             arguments.push(queried_value);
             let res = match strategy {
-                WalletScheme::MultiWalletMultiTable => {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
                     str::replace("(i.id in (SELECT item_id FROM \"tags_plaintext_$1\" WHERE name = $$ AND value <= $$))", "$1" , &wallet_id).to_string()
                 }
                 _ => {
@@ -230,7 +230,7 @@ fn like_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Ve
             arguments.push(queried_name);
             arguments.push(queried_value);
             let res = match strategy {
-                WalletScheme::MultiWalletMultiTable => {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
                     str::replace("(i.id in (SELECT item_id FROM \"tags_plaintext_$1\" WHERE name = $$ AND value LIKE $$))", "$1" , &wallet_id).to_string()
                 }
                 _ => {
@@ -249,7 +249,7 @@ fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mu
     match name {
         &TagName::PlainTagName(ref queried_name) => {
             let res = match strategy {
-                WalletScheme::MultiWalletMultiTable => {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
                     str::replace("(i.id in (SELECT item_id FROM \"tags_plaintext_&1\" WHERE name = $$ AND value IN (", "$1" , &wallet_id).to_string()
                 }
                 _ => {
@@ -275,7 +275,7 @@ fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mu
         },
         &TagName::EncryptedTagName(ref queried_name) => {
             let res = match strategy {
-                WalletScheme::MultiWalletMultiTable => {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
                     str::replace("(i.id in (SELECT item_id FROM \"tags_encrypted_&1\" WHERE name = $$ AND value IN (", "$1" , &wallet_id).to_string()
                 }
                 _ => {
