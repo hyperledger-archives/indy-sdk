@@ -935,6 +935,7 @@ pub extern fn indy_prover_create_credential_req(command_handle: CommandHandle,
                                                 cred_offer_json: *const c_char,
                                                 cred_def_json: *const c_char,
                                                 master_secret_id: *const c_char,
+                                                device_key: *const c_char,
                                                 cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                      cred_req_json: *const c_char,
                                                                      cred_req_metadata_json: *const c_char)>) -> ErrorCode {
@@ -945,10 +946,11 @@ pub extern fn indy_prover_create_credential_req(command_handle: CommandHandle,
     check_useful_validatable_json!(cred_offer_json, ErrorCode::CommonInvalidParam4, CredentialOffer);
     check_useful_validatable_json!(cred_def_json, ErrorCode::CommonInvalidParam5, CredentialDefinition);
     check_useful_c_str!(master_secret_id, ErrorCode::CommonInvalidParam6);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+    check_useful_c_str_empty_accepted!(device_key, ErrorCode::CommonInvalidParam7);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!("indy_prover_create_credential_req: entities >>> wallet_handle: {:?}, prover_did: {:?}, cred_offer_json: {:?}, cred_def_json: {:?}, master_secret_id: {:?}",
-           wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id);
+    trace!("indy_prover_create_credential_req: entities >>> wallet_handle: {:?}, prover_did: {:?}, cred_offer_json: {:?}, cred_def_json: {:?}, master_secret_id: {:?}, device_key:{:?}",
+           wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id, device_key);                                                            
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
@@ -959,6 +961,7 @@ pub extern fn indy_prover_create_credential_req(command_handle: CommandHandle,
                     cred_offer_json,
                     cred_def_json,
                     master_secret_id,
+                    device_key,
                     Box::new(move |result| {
                         let (err, cred_req_json, cred_req_metadata_json) = prepare_result_2!(result, String::new(), String::new());
                         trace!("indy_prover_create_credential_req: cred_req_json: {:?}, cred_req_metadata_json: {:?}", cred_req_json, cred_req_metadata_json);

@@ -81,19 +81,42 @@
   
   <h1 id="Hyperledger_Indy_AnonCredsApi_AnonCreds" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds" class="text-break">Class AnonCreds
   </h1>
-  <div class="markdown level0 summary"><p>Provides methods for managing anonymous credentials.</p>
-</div>
+  <div class="markdown level0 summary"></div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><span class="xref">System.Object</span></div>
     <div class="level1"><span class="xref">AnonCreds</span></div>
   </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <span class="xref">System.Object.ToString()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetHashCode()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetType()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.MemberwiseClone()</span>
+    </div>
+  </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.AnonCredsApi.html">Hyperledger.Indy.AnonCredsApi</a></h6>
   <h6><strong>Assembly</strong>: Hyperledger.Indy.Sdk.dll</h6>
   <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static class AnonCreds : Object</code></pre>
+    <pre><code class="lang-csharp hljs">public static class AnonCreds</code></pre>
   </div>
   <h3 id="methods">Methods
   </h3>
@@ -142,6 +165,29 @@
       </tr>
     </tbody>
   </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_GenerateNonceAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.GenerateNonceAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_GenerateNonceAsync" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.GenerateNonceAsync">GenerateNonceAsync()</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; GenerateNonceAsync()</code></pre>
+  </div>
   <h5 class="returns">Returns</h5>
   <table class="table table-bordered table-striped table-condensed">
     <thead>
@@ -557,13 +603,188 @@
       </tr>
     </tbody>
   </table>
-  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateCredentialReqAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateCredentialReqAsync*"></a>
-  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateCredentialReqAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateCredentialReqAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String)">ProverCreateCredentialReqAsync(Wallet, String, String, String, String)</h4>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerRotateCredentialDefApplyAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerRotateCredentialDefApplyAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerRotateCredentialDefApplyAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerRotateCredentialDefApplyAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">IssuerRotateCredentialDefApplyAsync(Wallet, String)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;ProverCreateCredentialRequestResult&gt; ProverCreateCredentialReqAsync(Wallet wallet, string proverDid, string credOfferJson, string credDefJson, string masterSecretId)</code></pre>
+    <pre><code class="lang-csharp hljs">public static Task IssuerRotateCredentialDefApplyAsync(Wallet wallet, string credDefId)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">credDefId</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerRotateCredentialDefStartAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerRotateCredentialDefStartAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerRotateCredentialDefStartAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerRotateCredentialDefStartAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">IssuerRotateCredentialDefStartAsync(Wallet, String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; IssuerRotateCredentialDefStartAsync(Wallet wallet, string credDefId, string configJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">credDefId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">configJson</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCloseCredentialsSearchAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCloseCredentialsSearchAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCloseCredentialsSearchAsync_Hyperledger_Indy_AnonCredsApi_CredentialSearch_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCloseCredentialsSearchAsync(Hyperledger.Indy.AnonCredsApi.CredentialSearch)">ProverCloseCredentialsSearchAsync(CredentialSearch)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task ProverCloseCredentialsSearchAsync(CredentialSearch search)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.AnonCredsApi.CredentialSearch.html">CredentialSearch</a></td>
+        <td><span class="parametername">search</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCloseCredentialsSearchForProofRequestAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCloseCredentialsSearchForProofRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCloseCredentialsSearchForProofRequestAsync_Hyperledger_Indy_AnonCredsApi_CredentialSearchForProofRequest_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCloseCredentialsSearchForProofRequestAsync(Hyperledger.Indy.AnonCredsApi.CredentialSearchForProofRequest)">ProverCloseCredentialsSearchForProofRequestAsync(CredentialSearchForProofRequest)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task ProverCloseCredentialsSearchForProofRequestAsync(CredentialSearchForProofRequest search)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.AnonCredsApi.CredentialSearchForProofRequest.html">CredentialSearchForProofRequest</a></td>
+        <td><span class="parametername">search</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateCredentialReqAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateCredentialReqAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateCredentialReqAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateCredentialReqAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String,System.String)">ProverCreateCredentialReqAsync(Wallet, String, String, String, String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;ProverCreateCredentialRequestResult&gt; ProverCreateCredentialReqAsync(Wallet wallet, string proverDid, string credOfferJson, string credDefJson, string masterSecretId, string hardwareKey = &quot;a&quot;)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -600,6 +821,11 @@
         <td><span class="parametername">masterSecretId</span></td>
         <td></td>
       </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">hardwareKey</span></td>
+        <td></td>
+      </tr>
     </tbody>
   </table>
   <h5 class="returns">Returns</h5>
@@ -619,8 +845,7 @@
   </table>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateMasterSecretAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateMasterSecretAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateMasterSecretAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateMasterSecretAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">ProverCreateMasterSecretAsync(Wallet, String)</h4>
-  <div class="markdown level1 summary"><p>Creates a master secret with the specified name and stores it in the provided wallet.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -639,8 +864,7 @@
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>The target wallet.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
@@ -660,18 +884,13 @@
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task</span> that completes when the operation has completed.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateMasterSecretAsync_Hyperledger_Indy_WalletApi_Wallet_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>The name of the master secret must be unique within the wallet.</p>
-</div>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateProofAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateProofAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateProofAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateProofAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String,System.String,System.String)">ProverCreateProofAsync(Wallet, String, String, String, String, String, String)</h4>
-  <div class="markdown level1 summary"><p>Creates a proof for the provided proof request.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -690,8 +909,7 @@
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>The target wallet.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
@@ -736,106 +954,203 @@
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that, when the operation completes, resolves 
-to a JSON string containing the proof.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateProofAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p><p>
-Either a corresponding claim with optionally revealed attributes or self-attested attribute 
-must be provided for each requested attribute - see the 
-<span class="xref">Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetClaimsForProofReqAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)</span> method.
-A proof request may request multiple claims from different schema and different issuers.
-All required schema, public keys and revocation registries must be provided.
-The proof request also contains a nonce.
-The proof contains either proof or self-attested attribute value for each requested attribute.
-</p>
-<p>
-The <code data-dev-comment-type="paramref" class="paramref">proofReqJson</code> parameter expects a JSON string containing a proof request
-from the party that will verify the proof.  E.g.:</p>
-<pre><code> {
-    &quot;nonce&quot;: string,
-    &quot;requested_attr1_referent&quot;: &lt;attr_info>,
-    &quot;requested_attr2_referent&quot;: &lt;attr_info>,
-    &quot;requested_attr3_referent&quot;: &lt;attr_info>,
-    &quot;requested_predicate_1_referent&quot;: &lt;predicate_info>,
-    &quot;requested_predicate_2_referent&quot;: &lt;predicate_info>,
-}</code></pre>
-<p>
-<p>
-The <code data-dev-comment-type="paramref" class="paramref">requestedClaimsJson</code> parameter should contain either a claim or a 
-self-attested attribute for each attribute requested in the proof request.  E.g.:</p>
-<pre><code>{
-    &quot;requested_attr1_referent&quot;: [claim1_referent_in_wallet, true &lt;reveal_attr>],
-    &quot;requested_attr2_referent&quot;: [self_attested_attribute],
-    &quot;requested_attr3_referent&quot;: [claim2_seq_no_in_wallet, false]
-    &quot;requested_attr4_referent&quot;: [claim2_seq_no_in_wallet, true]
-    &quot;requested_predicate_1_referent&quot;: [claim2_seq_no_in_wallet],
-    &quot;requested_predicate_2_referent&quot;: [claim3_seq_no_in_wallet],
-}</code></pre>
-<p>
-<p>
-The <code data-dev-comment-type="paramref" class="paramref">schemasJson</code> parameter expects the JSON for each schema that participates
-in the proof request.  E.g.:</p>
-<pre><code>{
-    &quot;claim1_referent_in_wallet&quot;: &lt;schema1>,
-    &quot;claim2_referent_in_wallet&quot;: &lt;schema2>,
-    &quot;claim3_referent_in_wallet&quot;: &lt;schema3>,
-}</code></pre>
-<p>
-<p>
-The <code data-dev-comment-type="paramref" class="paramref">masterSecretName</code> specifies the name of the master secret stored in 
-the wallet.
-</p>
-<p>
-The <code data-dev-comment-type="paramref" class="paramref">claimDefsJson</code> parameter expects the JSON for each claim definition 
-participating in the proof request. E.g.:</p>
-<pre><code>{
-    &quot;claim1_referent_in_wallet&quot;: &lt;claim_def1>,
-    &quot;claim2_referent_in_wallet&quot;: &lt;claim_def2>,
-    &quot;claim3_referent_in_wallet&quot;: &lt;claim_def3>,
-}</code></pre>
-<p>
-<p>
-The <code data-dev-comment-type="paramref" class="paramref">revocRegsJson</code> parameter expects the JSON for each revocation registry
-participating in the proof request.  E.g.:</p>
-<pre><code>{
-    &quot;claim1_referent_in_wallet&quot;: &lt;revoc_reg1>,
-    &quot;claim2_referent_in_wallet&quot;: &lt;revoc_reg2>,
-    &quot;claim3_referent_in_wallet&quot;: &lt;revoc_reg3>,
-}</code></pre>
-<p>
-Upon successful completion the operation will return a JSON string.
-For each requested attribute either a proof (with optionally revealed attribute value) or
-self-attested attribute value is provided.
-Each proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
-There is also aggregated proof part common for all claim proofs.</p>
-<pre><code>{
-    &quot;requested&quot;: {
-        &quot;requested_attr1_id&quot;: [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
-        &quot;requested_attr2_id&quot;: [self_attested_attribute],
-        &quot;requested_attr3_id&quot;: [claim_proof2_referent]
-        &quot;requested_attr4_id&quot;: [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
-        &quot;requested_predicate_1_referent&quot;: [claim_proof2_referent],
-        &quot;requested_predicate_2_referent&quot;: [claim_proof3_referent],
-        }
-    &quot;claim_proofs&quot;: {
-        &quot;claim_proof1_referent&quot;: [&lt;claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-        &quot;claim_proof2_referent&quot;: [&lt;claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-        &quot;claim_proof3_referent&quot;: [&lt;claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
-    },
-    &quot;aggregated_proof&quot;: &lt;aggregated_proof>
-}</code></pre>
-</div>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverDeleteCredentialAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverDeleteCredentialAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverDeleteCredentialAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverDeleteCredentialAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">ProverDeleteCredentialAsync(Wallet, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task ProverDeleteCredentialAsync(Wallet wallet, string credentialId)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">credentialId</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverFetchCredentialsAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverFetchCredentialsAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverFetchCredentialsAsync_Hyperledger_Indy_AnonCredsApi_CredentialSearch_System_Int32_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverFetchCredentialsAsync(Hyperledger.Indy.AnonCredsApi.CredentialSearch,System.Int32)">ProverFetchCredentialsAsync(CredentialSearch, Int32)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ProverFetchCredentialsAsync(CredentialSearch search, int count)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.AnonCredsApi.CredentialSearch.html">CredentialSearch</a></td>
+        <td><span class="parametername">search</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Int32</span></td>
+        <td><span class="parametername">count</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverFetchCredentialsForProofRequestAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverFetchCredentialsForProofRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverFetchCredentialsForProofRequestAsync_Hyperledger_Indy_AnonCredsApi_CredentialSearchForProofRequest_System_String_System_Int32_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverFetchCredentialsForProofRequestAsync(Hyperledger.Indy.AnonCredsApi.CredentialSearchForProofRequest,System.String,System.Int32)">ProverFetchCredentialsForProofRequestAsync(CredentialSearchForProofRequest, String, Int32)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ProverFetchCredentialsForProofRequestAsync(CredentialSearchForProofRequest search, string itemReferent, int count)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.AnonCredsApi.CredentialSearchForProofRequest.html">CredentialSearchForProofRequest</a></td>
+        <td><span class="parametername">search</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">itemReferent</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Int32</span></td>
+        <td><span class="parametername">count</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetCredentialAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetCredentialAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetCredentialAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetCredentialAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">ProverGetCredentialAsync(Wallet, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ProverGetCredentialAsync(Wallet wallet, string credentialId)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">credentialId</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetCredentialsAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetCredentialsAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetCredentialsAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetCredentialsAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">ProverGetCredentialsAsync(Wallet, String)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ProverGetCredentialsAsync(Wallet wallet, string filterJson)</code></pre>
+    <pre><code class="lang-csharp hljs">[Obsolete(&quot;This method is obsolete since 1.6.1. Please use ProverSearchCredentialsAsync&quot;)]
+public static Task&lt;string&gt; ProverGetCredentialsAsync(Wallet wallet, string filterJson)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -880,7 +1195,8 @@ There is also aggregated proof part common for all claim proofs.</p>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ProverGetCredentialsForProofReqAsync(Wallet wallet, string proofRequestJson)</code></pre>
+    <pre><code class="lang-csharp hljs">[Obsolete(&quot;This methos is obsolete since 1.6.1. Please use ProverSearchCredentialsForProofRequestAsync.&quot;)]
+public static Task&lt;string&gt; ProverGetCredentialsForProofReqAsync(Wallet wallet, string proofRequestJson)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -915,6 +1231,101 @@ There is also aggregated proof part common for all claim proofs.</p>
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverSearchCredentialsAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverSearchCredentialsAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverSearchCredentialsAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverSearchCredentialsAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">ProverSearchCredentialsAsync(Wallet, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;CredentialSearch&gt; ProverSearchCredentialsAsync(Wallet wallet, string queryJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">queryJson</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Hyperledger.Indy.AnonCredsApi.CredentialSearch.html">CredentialSearch</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverSearchCredentialsForProofRequestAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverSearchCredentialsForProofRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverSearchCredentialsForProofRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverSearchCredentialsForProofRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">ProverSearchCredentialsForProofRequestAsync(Wallet, String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;CredentialSearchForProofRequest&gt; ProverSearchCredentialsForProofRequestAsync(Wallet wallet, string proofRequestJson, string extraQueryJson = &quot;{}&quot;)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">proofRequestJson</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">extraQueryJson</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Hyperledger.Indy.AnonCredsApi.CredentialSearchForProofRequest.html">CredentialSearchForProofRequest</a>&gt;</td>
         <td></td>
       </tr>
     </tbody>
@@ -965,6 +1376,46 @@ There is also aggregated proof part common for all claim proofs.</p>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">revRegDefJson</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ToUnqualifiedAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ToUnqualifiedAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ToUnqualifiedAsync_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ToUnqualifiedAsync(System.String)">ToUnqualifiedAsync(String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ToUnqualifiedAsync(string entity)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">entity</span></td>
         <td></td>
       </tr>
     </tbody>

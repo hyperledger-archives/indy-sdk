@@ -81,31 +81,48 @@
   
   <h1 id="Hyperledger_Indy_PairwiseApi_Pairwise" data-uid="Hyperledger.Indy.PairwiseApi.Pairwise" class="text-break">Class Pairwise
   </h1>
-  <div class="markdown level0 summary"><p>Provides methods for managing pairwise identifiers.</p>
-</div>
+  <div class="markdown level0 summary"></div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><span class="xref">System.Object</span></div>
     <div class="level1"><span class="xref">Pairwise</span></div>
   </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <span class="xref">System.Object.ToString()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetHashCode()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetType()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.MemberwiseClone()</span>
+    </div>
+  </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.PairwiseApi.html">Hyperledger.Indy.PairwiseApi</a></h6>
   <h6><strong>Assembly</strong>: Hyperledger.Indy.Sdk.dll</h6>
   <h5 id="Hyperledger_Indy_PairwiseApi_Pairwise_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static class Pairwise : Object</code></pre>
+    <pre><code class="lang-csharp hljs">public static class Pairwise</code></pre>
   </div>
-  <h5 id="Hyperledger_Indy_PairwiseApi_Pairwise_remarks"><strong>Remarks</strong></h5>
-  <div class="markdown level0 remarks"><p>A Pairwise is a record of the relationship between a DID owned by the caller of the API and
-one belonging to another party, referred to respectively in this API  as <code>myDID</code>and <code>theirDID</code>.
-Pairwise records can also hold additional optional metadata.</p>
-</div>
   <h3 id="methods">Methods
   </h3>
   <a id="Hyperledger_Indy_PairwiseApi_Pairwise_CreateAsync_" data-uid="Hyperledger.Indy.PairwiseApi.Pairwise.CreateAsync*"></a>
   <h4 id="Hyperledger_Indy_PairwiseApi_Pairwise_CreateAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.PairwiseApi.Pairwise.CreateAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)">CreateAsync(Wallet, String, String, String)</h4>
-  <div class="markdown level1 summary"><p>Creates a new pairwise record between two specified DIDs in the provided wallet.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -124,26 +141,22 @@ Pairwise records can also hold additional optional metadata.</p>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>The wallet to store create the pairwise record in.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">theirDid</span></td>
-        <td><p>The DID of the remote party.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">myDid</span></td>
-        <td><p>The DID belonging to the owner of the wallet.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">metadata</span></td>
-        <td><p>Optional metadata to store with the record.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -158,15 +171,13 @@ Pairwise records can also hold additional optional metadata.</p>
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span></td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task</span> completes once the operation completes.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_PairwiseApi_Pairwise_GetAsync_" data-uid="Hyperledger.Indy.PairwiseApi.Pairwise.GetAsync*"></a>
   <h4 id="Hyperledger_Indy_PairwiseApi_Pairwise_GetAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.PairwiseApi.Pairwise.GetAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">GetAsync(Wallet, String)</h4>
-  <div class="markdown level1 summary"><p>Gets the pairwise record associated with the specified DID from the provided wallet.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -185,14 +196,12 @@ Pairwise records can also hold additional optional metadata.</p>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>The wallet to get the pairwise record from.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">theirDid</span></td>
-        <td><p>The DID belonging to another party to get the pairwise record for.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -207,28 +216,13 @@ Pairwise records can also hold additional optional metadata.</p>
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a JSON string containing
-a pairwise record.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_PairwiseApi_Pairwise_GetAsync_Hyperledger_Indy_WalletApi_Wallet_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>The JSON string that this method resolves to will contain a single pairwise record for two DIDs, 
-the DID belonging to the record owner (my_did), the associated DID belonging to the other party 
-(their_did) and any metadata associated with the record (metadata).</p>
-<pre><code>[
-    {&quot;my_did&quot;:&quot;my_did_for_A&quot;,&quot;their_did&quot;:&quot;A&apos;s_did_for_me&quot;,&quot;metadata&quot;:&quot;some metadata&quot;},
-    {&quot;my_did&quot;:&quot;my_did_for_B&quot;,&quot;their_did&quot;:&quot;B&apos;s_did_for_me&quot;}
-    ...
-]</code></pre>
-
-<p>Note that if no metadata is present in a record the JSON will omit the <code>metadata</code>key.</p>
-</div>
   <a id="Hyperledger_Indy_PairwiseApi_Pairwise_IsExistsAsync_" data-uid="Hyperledger.Indy.PairwiseApi.Pairwise.IsExistsAsync*"></a>
   <h4 id="Hyperledger_Indy_PairwiseApi_Pairwise_IsExistsAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.PairwiseApi.Pairwise.IsExistsAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">IsExistsAsync(Wallet, String)</h4>
-  <div class="markdown level1 summary"><p>Gets whether or not a pairwise record exists in the provided wallet for the specified DID .</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -247,14 +241,12 @@ the DID belonging to the record owner (my_did), the associated DID belonging to 
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>The wallet to check for a pairwise record.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">theirDid</span></td>
-        <td><p>The DID to check.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -269,16 +261,13 @@ the DID belonging to the record owner (my_did), the associated DID belonging to 
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.Boolean</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to true if a pairwise exists for the 
-DID, otherwise false.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_PairwiseApi_Pairwise_ListAsync_" data-uid="Hyperledger.Indy.PairwiseApi.Pairwise.ListAsync*"></a>
   <h4 id="Hyperledger_Indy_PairwiseApi_Pairwise_ListAsync_Hyperledger_Indy_WalletApi_Wallet_" data-uid="Hyperledger.Indy.PairwiseApi.Pairwise.ListAsync(Hyperledger.Indy.WalletApi.Wallet)">ListAsync(Wallet)</h4>
-  <div class="markdown level1 summary"><p>Lists all pairwise relationships stored in the specified wallet.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -297,8 +286,7 @@ DID, otherwise false.</p>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>The wallet to get the pairwise records from.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -313,29 +301,13 @@ DID, otherwise false.</p>
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a JSON string containing
-an array of all pairwise relationships stored in the wallet.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_PairwiseApi_Pairwise_ListAsync_Hyperledger_Indy_WalletApi_Wallet__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>The JSON string that this method resolves to will contain a array of objects each of which
-describes a pairwise record for two DIDs, a DID belonging to the record owner (my_did) and the 
-associated DID belonging to the other party (their_did).</p>
-<pre><code>[
-    {&quot;my_did&quot;:&quot;my_did_for_A&quot;,&quot;their_did&quot;:&quot;A&apos;s_did_for_me&quot;},
-    {&quot;my_did&quot;:&quot;my_did_for_B&quot;,&quot;their_did&quot;:&quot;B&apos;s_did_for_me&quot;}
-    ...
-]</code></pre>
-
-<p>Note that this call does not return any metadata associated with the pairwise records; to get the
-metadata use the <a class="xref" href="Hyperledger.Indy.PairwiseApi.Pairwise.html#Hyperledger_Indy_PairwiseApi_Pairwise_GetAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">GetAsync(Wallet, String)</a> method.</p>
-</div>
   <a id="Hyperledger_Indy_PairwiseApi_Pairwise_SetMetadataAsync_" data-uid="Hyperledger.Indy.PairwiseApi.Pairwise.SetMetadataAsync*"></a>
   <h4 id="Hyperledger_Indy_PairwiseApi_Pairwise_SetMetadataAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.PairwiseApi.Pairwise.SetMetadataAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">SetMetadataAsync(Wallet, String, String)</h4>
-  <div class="markdown level1 summary"><p>Sets the metadata on the existing pairwise record for the specified DID in the provided wallet.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -354,20 +326,17 @@ metadata use the <a class="xref" href="Hyperledger.Indy.PairwiseApi.Pairwise.htm
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>The wallet containing the pairwise record.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">theirDid</span></td>
-        <td><p>The DID belonging to another party the pairwise record exists for.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">metadata</span></td>
-        <td><p>The metadata to set on the pairwise record.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -382,16 +351,10 @@ metadata use the <a class="xref" href="Hyperledger.Indy.PairwiseApi.Pairwise.htm
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span></td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task</span> completes once the operation completes.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_PairwiseApi_Pairwise_SetMetadataAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>If the pairwise record already contains any existing metadata it will be replaced with the value provided 
-in the <code data-dev-comment-type="paramref" class="paramref">metadata</code> parameter.  To remove all metadata for a record provide <code>null</code> in the
-<code data-dev-comment-type="paramref" class="paramref">metadata</code> parameter.</p>
-</div>
 </article>
           </div>
           

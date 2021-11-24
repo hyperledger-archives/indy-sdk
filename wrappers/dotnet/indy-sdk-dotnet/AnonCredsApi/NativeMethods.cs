@@ -46,7 +46,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         internal delegate void ProverCreateMasterSecretCompletedDelegate(int xcommand_handle, int err, string out_master_secret_id);
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_prover_create_credential_req(int command_handle, int wallet_handle, string prover_did, string cred_offer_json, string cred_def_json, string master_secret_id, ProverCreateCredentialReqCompletedDelegate cb);
+        internal static extern int indy_prover_create_credential_req(int command_handle, int wallet_handle, string prover_did, string cred_offer_json, string cred_def_json, string master_secret_id, string device_Key, ProverCreateCredentialReqCompletedDelegate cb);
         internal delegate void ProverCreateCredentialReqCompletedDelegate(int xcommand_handle, int err, string cred_req_json, string cred_req_metadata);
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]

@@ -81,36 +81,47 @@
   
   <h1 id="Hyperledger_Indy_LedgerApi_Ledger" data-uid="Hyperledger.Indy.LedgerApi.Ledger" class="text-break">Class Ledger
   </h1>
-  <div class="markdown level0 summary"><p>Provides methods for building messages suitable for submission to the ledger and
-methods for signing and submitting messages to the ledger.</p>
-</div>
+  <div class="markdown level0 summary"></div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><span class="xref">System.Object</span></div>
     <div class="level1"><span class="xref">Ledger</span></div>
   </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <span class="xref">System.Object.ToString()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetHashCode()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetType()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.MemberwiseClone()</span>
+    </div>
+  </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.LedgerApi.html">Hyperledger.Indy.LedgerApi</a></h6>
   <h6><strong>Assembly</strong>: Hyperledger.Indy.Sdk.dll</h6>
   <h5 id="Hyperledger_Indy_LedgerApi_Ledger_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static class Ledger : Object</code></pre>
+    <pre><code class="lang-csharp hljs">public static class Ledger</code></pre>
   </div>
-  <h5 id="Hyperledger_Indy_LedgerApi_Ledger_remarks"><strong>Remarks</strong></h5>
-  <div class="markdown level0 remarks"><p>
-This class provides methods for generating messages for submission to the ledger; each 
-of these methods is prefixed with the word &apos;Build&apos; and returns a JSON message which must be 
-signed and submitted to a node pool. These messages can be submitted to the ledger using the 
-<a class="xref" href="Hyperledger.Indy.LedgerApi.Ledger.html#Hyperledger_Indy_LedgerApi_Ledger_SignAndSubmitRequestAsync_Hyperledger_Indy_PoolApi_Pool_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_">SignAndSubmitRequestAsync(Pool, Wallet, String, String)</a> or can be signed first 
-using the <a class="xref" href="Hyperledger.Indy.LedgerApi.Ledger.html#Hyperledger_Indy_LedgerApi_Ledger_SignRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_">SignRequestAsync(Wallet, String, String)</a> method then submitted later 
-using the <a class="xref" href="Hyperledger.Indy.LedgerApi.Ledger.html#Hyperledger_Indy_LedgerApi_Ledger_SubmitRequestAsync_Hyperledger_Indy_PoolApi_Pool_System_String_">SubmitRequestAsync(Pool, String)</a> method.
-</p>
-</div>
   <h3 id="fields">Fields
   </h3>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_NYM_ROLE_STEWARD" data-uid="Hyperledger.Indy.LedgerApi.Ledger.NYM_ROLE_STEWARD">NYM_ROLE_STEWARD</h4>
-  <div class="markdown level1 summary"><p>The &apos;Steward&apos; NYM role.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -132,8 +143,7 @@ using the <a class="xref" href="Hyperledger.Indy.LedgerApi.Ledger.html#Hyperledg
     </tbody>
   </table>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_NYM_ROLE_TRUST_ANCHOR" data-uid="Hyperledger.Indy.LedgerApi.Ledger.NYM_ROLE_TRUST_ANCHOR">NYM_ROLE_TRUST_ANCHOR</h4>
-  <div class="markdown level1 summary"><p>The &apos;Trust Anchor&apos; NYM role.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -155,8 +165,7 @@ using the <a class="xref" href="Hyperledger.Indy.LedgerApi.Ledger.html#Hyperledg
     </tbody>
   </table>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_NYM_ROLE_TRUSTEE" data-uid="Hyperledger.Indy.LedgerApi.Ledger.NYM_ROLE_TRUSTEE">NYM_ROLE_TRUSTEE</h4>
-  <div class="markdown level1 summary"><p>The &apos;Trustee&apos; NYM role.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -179,10 +188,174 @@ using the <a class="xref" href="Hyperledger.Indy.LedgerApi.Ledger.html#Hyperledg
   </table>
   <h3 id="methods">Methods
   </h3>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_AppendRequestEndorserAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.AppendRequestEndorserAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_AppendRequestEndorserAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.AppendRequestEndorserAsync(System.String,System.String)">AppendRequestEndorserAsync(String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; AppendRequestEndorserAsync(string requestJson, string endorserDid)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">requestJson</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">endorserDid</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_AppendTxnAuthorAgreementAcceptanceToRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.AppendTxnAuthorAgreementAcceptanceToRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_AppendTxnAuthorAgreementAcceptanceToRequestAsync_System_String_System_String_System_String_System_String_System_String_System_UInt64_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.AppendTxnAuthorAgreementAcceptanceToRequestAsync(System.String,System.String,System.String,System.String,System.String,System.UInt64)">AppendTxnAuthorAgreementAcceptanceToRequestAsync(String, String, String, String, String, UInt64)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; AppendTxnAuthorAgreementAcceptanceToRequestAsync(string request_json, string text, string version, string taa_digest, string mechanism, ulong time)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">request_json</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">text</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">version</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">taa_digest</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">mechanism</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.UInt64</span></td>
+        <td><span class="parametername">time</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildAcceptanceMechanismsRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildAcceptanceMechanismsRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildAcceptanceMechanismsRequestAsync_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildAcceptanceMechanismsRequestAsync(System.String,System.String,System.String,System.String)">BuildAcceptanceMechanismsRequestAsync(String, String, String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildAcceptanceMechanismsRequestAsync(string submitter_did, string aml, string version, string aml_context)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">submitter_did</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">aml</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">version</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">aml_context</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildAttribRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildAttribRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildAttribRequestAsync_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildAttribRequestAsync(System.String,System.String,System.String,System.String,System.String)">BuildAttribRequestAsync(String, String, String, String, String)</h4>
-  <div class="markdown level1 summary"><p>Builds a ledger request for storing an ATTRIB.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -201,32 +374,27 @@ using the <a class="xref" href="Hyperledger.Indy.LedgerApi.Ledger.html#Hyperledg
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">submitterDid</span></td>
-        <td><p>The DID of the party that will submit the request to the ledger.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">targetDid</span></td>
-        <td><p>The DID the ATTRIB will belong to.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">hash</span></td>
-        <td><p>The hash of the ATTRIB data.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">raw</span></td>
-        <td><p>The raw JSON attribute data.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">enc</span></td>
-        <td><p>The encrypted attribute data.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -241,22 +409,125 @@ using the <a class="xref" href="Hyperledger.Indy.LedgerApi.Ledger.html#Hyperledg
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a <span class="xref">System.String</span> 
-containing the request JSON. </p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_LedgerApi_Ledger_BuildAttribRequestAsync_System_String_System_String_System_String_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>
-Builds a request message that is suitable for setting an attribute on the ledger.
-</p>
-<p>
-The <code data-dev-comment-type="paramref" class="paramref">submitterDid</code>, <code data-dev-comment-type="paramref" class="paramref">targetDid</code> are mandatory and
-any one of the <code data-dev-comment-type="paramref" class="paramref">hash</code>, <code data-dev-comment-type="paramref" class="paramref">raw</code> or <code data-dev-comment-type="paramref" class="paramref">enc</code> 
-parameters must also be provided, depending on what type of data should be stored.
-</p>
-</div>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildAuthRuleRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildAuthRuleRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildAuthRuleRequestAsync_System_String_System_String_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildAuthRuleRequestAsync(System.String,System.String,System.String,System.String,System.String,System.String,System.String)">BuildAuthRuleRequestAsync(String, String, String, String, String, String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildAuthRuleRequestAsync(string submitter_did, string txn_type, string action, string field, string old_value, string new_value, string constraint)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">submitter_did</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">txn_type</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">action</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">field</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">old_value</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">new_value</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">constraint</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildAuthRulesRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildAuthRulesRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildAuthRulesRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildAuthRulesRequestAsync(System.String,System.String)">BuildAuthRulesRequestAsync(String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildAuthRulesRequestAsync(string submitter_did, string rules)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">submitter_did</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">rules</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildCredDefRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildCredDefRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildCredDefRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildCredDefRequestAsync(System.String,System.String)">BuildCredDefRequestAsync(String, String)</h4>
   <div class="markdown level1 summary"></div>
@@ -283,6 +554,96 @@ parameters must also be provided, depending on what type of data should be store
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">data</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildDisableAllTxnAuthorAgreementsRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildDisableAllTxnAuthorAgreementsRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildDisableAllTxnAuthorAgreementsRequestAsync_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildDisableAllTxnAuthorAgreementsRequestAsync(System.String)">BuildDisableAllTxnAuthorAgreementsRequestAsync(String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildDisableAllTxnAuthorAgreementsRequestAsync(string submitter_did)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">submitter_did</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetAcceptanceMechanismsRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetAcceptanceMechanismsRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetAcceptanceMechanismsRequestAsync_System_String_System_Int64_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetAcceptanceMechanismsRequestAsync(System.String,System.Int64,System.String)">BuildGetAcceptanceMechanismsRequestAsync(String, Int64, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetAcceptanceMechanismsRequestAsync(string submitter_did, long timestamp, string version)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">submitter_did</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Int64</span></td>
+        <td><span class="parametername">timestamp</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">version</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -362,6 +723,71 @@ parameters must also be provided, depending on what type of data should be store
       </tr>
     </tbody>
   </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetAuthRuleRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetAuthRuleRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetAuthRuleRequestAsync_System_String_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetAuthRuleRequestAsync(System.String,System.String,System.String,System.String,System.String,System.String)">BuildGetAuthRuleRequestAsync(String, String, String, String, String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetAuthRuleRequestAsync(string submitter_did, string txn_type, string action, string field, string old_value, string new_value)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">submitter_did</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">txn_type</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">action</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">field</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">old_value</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">new_value</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetCredDefRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetCredDefRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetCredDefRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetCredDefRequestAsync(System.String,System.String)">BuildGetCredDefRequestAsync(String, String)</h4>
   <div class="markdown level1 summary"></div>
@@ -409,8 +835,7 @@ parameters must also be provided, depending on what type of data should be store
   </table>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetDdoRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetDdoRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetDdoRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetDdoRequestAsync(System.String,System.String)">BuildGetDdoRequestAsync(String, String)</h4>
-  <div class="markdown level1 summary"><p>Builds a ledger request to get a DDO.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -429,14 +854,12 @@ parameters must also be provided, depending on what type of data should be store
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">submitterDid</span></td>
-        <td><p>The DID of the party who will submit the request to the ledger.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">targetDid</span></td>
-        <td><p>The DID of the DDO to get from the ledger.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -451,26 +874,13 @@ parameters must also be provided, depending on what type of data should be store
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a <span class="xref">System.String</span> 
-containing the request JSON.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetDdoRequestAsync_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>
-This message builds a request message that is suitable for requesting a DDO from the ledger.
-</p>
-<p>
-The resulting message can be submitted to the ledger using the <a class="xref" href="Hyperledger.Indy.LedgerApi.Ledger.html#Hyperledger_Indy_LedgerApi_Ledger_SignAndSubmitRequestAsync_Hyperledger_Indy_PoolApi_Pool_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_">SignAndSubmitRequestAsync(Pool, Wallet, String, String)</a>
-method or can be signed first using the <a class="xref" href="Hyperledger.Indy.LedgerApi.Ledger.html#Hyperledger_Indy_LedgerApi_Ledger_SignRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_">SignRequestAsync(Wallet, String, String)</a> 
-method then submitted later using the <a class="xref" href="Hyperledger.Indy.LedgerApi.Ledger.html#Hyperledger_Indy_LedgerApi_Ledger_SubmitRequestAsync_Hyperledger_Indy_PoolApi_Pool_System_String_">SubmitRequestAsync(Pool, String)</a> method.
-</p>        
-</div>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetNymRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetNymRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetNymRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetNymRequestAsync(System.String,System.String)">BuildGetNymRequestAsync(String, String)</h4>
-  <div class="markdown level1 summary"><p>Builds a GET_NYM ledger request.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -489,14 +899,12 @@ method then submitted later using the <a class="xref" href="Hyperledger.Indy.Led
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">submitterDid</span></td>
-        <td><p>The DID of the party submitting the request.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">targetDid</span></td>
-        <td><p>The target DID.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -511,18 +919,10 @@ method then submitted later using the <a class="xref" href="Hyperledger.Indy.Led
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a <span class="xref">System.String</span> 
-containing the request JSON. </p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetNymRequestAsync_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>
-Builds a request message that is suitable for requesting a NYM from the 
-ledger.
-</p>
-</div>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetRevocRegDefRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetRevocRegDefRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetRevocRegDefRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetRevocRegDefRequestAsync(System.String,System.String)">BuildGetRevocRegDefRequestAsync(String, String)</h4>
   <div class="markdown level1 summary"></div>
@@ -718,14 +1118,13 @@ ledger.
       </tr>
     </tbody>
   </table>
-  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetTxnRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetTxnRequestAsync*"></a>
-  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetTxnRequestAsync_System_String_System_Int32_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetTxnRequestAsync(System.String,System.Int32)">BuildGetTxnRequestAsync(String, Int32)</h4>
-  <div class="markdown level1 summary"><p>Builds a GET_TXN request</p>
-</div>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetTxnAuthorAgreementRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetTxnAuthorAgreementRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetTxnAuthorAgreementRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetTxnAuthorAgreementRequestAsync(System.String,System.String)">BuildGetTxnAuthorAgreementRequestAsync(String, String)</h4>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetTxnRequestAsync(string submitterDid, int data)</code></pre>
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetTxnAuthorAgreementRequestAsync(string submitter_did, string data)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -739,15 +1138,13 @@ ledger.
     <tbody>
       <tr>
         <td><span class="xref">System.String</span></td>
-        <td><span class="parametername">submitterDid</span></td>
-        <td><p>The DID of the submitter.</p>
-</td>
+        <td><span class="parametername">submitter_did</span></td>
+        <td></td>
       </tr>
       <tr>
-        <td><span class="xref">System.Int32</span></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">data</span></td>
-        <td><p>seq_no of transaction in ledger</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -762,16 +1159,103 @@ ledger.
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a <span class="xref">System.String</span> 
-containing the request JSON. </p>
-</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetTxnRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetTxnRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetTxnRequestAsync_System_String_System_String_System_Int32_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetTxnRequestAsync(System.String,System.String,System.Int32)">BuildGetTxnRequestAsync(String, String, Int32)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetTxnRequestAsync(string submitterDid, string ledgerType, int seqNo)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">submitterDid</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">ledgerType</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Int32</span></td>
+        <td><span class="parametername">seqNo</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetValidatorInfoRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetValidatorInfoRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetValidatorInfoRequestAsync_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetValidatorInfoRequestAsync(System.String)">BuildGetValidatorInfoRequestAsync(String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetValidatorInfoRequestAsync(string submitterDid)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">submitterDid</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildNodeRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildNodeRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildNodeRequestAsync_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildNodeRequestAsync(System.String,System.String,System.String)">BuildNodeRequestAsync(String, String, String)</h4>
-  <div class="markdown level1 summary"><p>Builds a NODE ledger request.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -790,20 +1274,17 @@ containing the request JSON. </p>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">submitterDid</span></td>
-        <td><p>The DID of the submitter.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">targetDid</span></td>
-        <td><p>The target DID.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">data</span></td>
-        <td><p>id of a target NYM record</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -818,16 +1299,13 @@ containing the request JSON. </p>
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a <span class="xref">System.String</span> 
-containing the request JSON. </p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildNymRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildNymRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildNymRequestAsync_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildNymRequestAsync(System.String,System.String,System.String,System.String,System.String)">BuildNymRequestAsync(String, String, String, String, String)</h4>
-  <div class="markdown level1 summary"><p>Builds a ledger request to store a NYM.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -846,32 +1324,27 @@ containing the request JSON. </p>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">submitterDid</span></td>
-        <td><p>The DID of the party who will submit the request to the ledger.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">targetDid</span></td>
-        <td><p>The DID the NYM belongs to.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">verKey</span></td>
-        <td><p>The verification key for the NYM.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">alias</span></td>
-        <td><p>The alias for the NYM.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">role</span></td>
-        <td><p>The role of the NYM.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -886,28 +1359,10 @@ containing the request JSON. </p>
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a <span class="xref">System.String</span> 
-containing the request JSON. </p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_LedgerApi_Ledger_BuildNymRequestAsync_System_String_System_String_System_String_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>
-Builds a request message that is suitable for storing a NYM for the <code data-dev-comment-type="paramref" class="paramref">targetDid</code>
-on the ledger.
-</p>
-<p>
-Only the <code data-dev-comment-type="paramref" class="paramref">submitterDid</code> and <code data-dev-comment-type="paramref" class="paramref">targetDid</code> parameters
-are required, however the other parameters provide greater control over the process.  Normally
-the <code data-dev-comment-type="paramref" class="paramref">targetDid</code> and <code data-dev-comment-type="paramref" class="paramref">verKey</code> parameters would be from values
-generated by a prior call to <span class="xref">Hyperledger.Indy.SignusApi.Signus.CreateAndStoreMyDidAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)</span>.
-</p>
-<p>
-The <code data-dev-comment-type="paramref" class="paramref">role</code> parameter dictates what permissions the NYM will have - valid values
-are &apos;STEWARD&apos; and &apos;TRUSTEE&apos; and &apos;TRUST_ANCHOR&apos;.
-</p>
-</div>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildPoolConfigRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildPoolConfigRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildPoolConfigRequestAsync_System_String_System_Boolean_System_Boolean_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildPoolConfigRequestAsync(System.String,System.Boolean,System.Boolean)">BuildPoolConfigRequestAsync(String, Boolean, Boolean)</h4>
   <div class="markdown level1 summary"></div>
@@ -958,13 +1413,63 @@ are &apos;STEWARD&apos; and &apos;TRUSTEE&apos; and &apos;TRUST_ANCHOR&apos;.
       </tr>
     </tbody>
   </table>
-  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildPoolUpgradeRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildPoolUpgradeRequestAsync*"></a>
-  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildPoolUpgradeRequestAsync_System_String_System_String_System_String_System_String_System_String_System_Int32_System_String_System_String_System_Boolean_System_Boolean_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildPoolUpgradeRequestAsync(System.String,System.String,System.String,System.String,System.String,System.Int32,System.String,System.String,System.Boolean,System.Boolean)">BuildPoolUpgradeRequestAsync(String, String, String, String, String, Int32, String, String, Boolean, Boolean)</h4>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildPoolRestartRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildPoolRestartRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildPoolRestartRequestAsync_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildPoolRestartRequestAsync(System.String,System.String,System.String)">BuildPoolRestartRequestAsync(String, String, String)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildPoolUpgradeRequestAsync(string submitterDid, string name, string version, string action, string sha256, int timeout, string schedule, string justification, bool reinstall, bool force)</code></pre>
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildPoolRestartRequestAsync(string submitterDid, string action, string dateTime)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">submitterDid</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">action</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">dateTime</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildPoolUpgradeRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildPoolUpgradeRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildPoolUpgradeRequestAsync_System_String_System_String_System_String_System_String_System_String_System_Int32_System_String_System_String_System_Boolean_System_Boolean_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildPoolUpgradeRequestAsync(System.String,System.String,System.String,System.String,System.String,System.Int32,System.String,System.String,System.Boolean,System.Boolean,System.String)">BuildPoolUpgradeRequestAsync(String, String, String, String, String, Int32, String, String, Boolean, Boolean, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildPoolUpgradeRequestAsync(string submitterDid, string name, string version, string action, string sha256, int timeout, string schedule, string justification, bool reinstall, bool force, string package)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -1024,6 +1529,11 @@ are &apos;STEWARD&apos; and &apos;TRUSTEE&apos; and &apos;TRUST_ANCHOR&apos;.
       <tr>
         <td><span class="xref">System.Boolean</span></td>
         <td><span class="parametername">force</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">package</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -1145,8 +1655,7 @@ are &apos;STEWARD&apos; and &apos;TRUSTEE&apos; and &apos;TRUST_ANCHOR&apos;.
   </table>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildSchemaRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildSchemaRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildSchemaRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildSchemaRequestAsync(System.String,System.String)">BuildSchemaRequestAsync(String, String)</h4>
-  <div class="markdown level1 summary"><p>Builds a SCHEMA ledger request to store a schema.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -1165,14 +1674,12 @@ are &apos;STEWARD&apos; and &apos;TRUSTEE&apos; and &apos;TRUST_ANCHOR&apos;.
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">submitterDid</span></td>
-        <td><p>The DID of the submitter.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">data</span></td>
-        <td><p>The JSON schema.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -1187,29 +1694,160 @@ are &apos;STEWARD&apos; and &apos;TRUSTEE&apos; and &apos;TRUST_ANCHOR&apos;.
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a <span class="xref">System.String</span> 
-containing the request JSON. </p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_LedgerApi_Ledger_BuildSchemaRequestAsync_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>
-Builds a request message that is suitable for storing a schema on a 
-ledger.  Schema specify the data types and formats which are used to make up claims.
-</p>
-<p>
-The <code data-dev-comment-type="paramref" class="paramref">data</code> parameter must contain a JSON string with the members &quot;name&quot;,
-&quot;version&quot; and &quot;attr_names&quot; that define the schema.  For example the following JSON describes
-a schema with the name &quot;access&quot; that is version 1.0 of the schema and specifies the attributes
-&quot;ip&quot;, &quot;port&quot;, and &quot;keys&quot;:
-<pre><code>{
-    &quot;name&quot;:&quot;access&quot;,
-    &quot;version&quot;:&quot;1.0&quot;,
-    &quot;attr_names&quot;:[&quot;ip&quot;,&quot;port&quot;,&quot;keys&quot;]
-}</code></pre>
-</p>
-</div>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildTxnAuthorAgreementRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildTxnAuthorAgreementRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildTxnAuthorAgreementRequestAsync_System_String_System_String_System_String_System_Int64_System_Int64_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildTxnAuthorAgreementRequestAsync(System.String,System.String,System.String,System.Int64,System.Int64)">BuildTxnAuthorAgreementRequestAsync(String, String, String, Int64, Int64)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildTxnAuthorAgreementRequestAsync(string submitter_did, string text, string version, long ratification_ts, long retirement_ts)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">submitter_did</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">text</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">version</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Int64</span></td>
+        <td><span class="parametername">ratification_ts</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Int64</span></td>
+        <td><span class="parametername">retirement_ts</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_GetResponseMetadataAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.GetResponseMetadataAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_GetResponseMetadataAsync_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.GetResponseMetadataAsync(System.String)">GetResponseMetadataAsync(String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; GetResponseMetadataAsync(string response)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">response</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_MultiSignRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.MultiSignRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_MultiSignRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.MultiSignRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">MultiSignRequestAsync(Wallet, String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; MultiSignRequestAsync(Wallet wallet, string submitterDid, string requestJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">submitterDid</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">requestJson</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_ParseGetCredDefResponseAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.ParseGetCredDefResponseAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_ParseGetCredDefResponseAsync_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.ParseGetCredDefResponseAsync(System.String)">ParseGetCredDefResponseAsync(String)</h4>
   <div class="markdown level1 summary"></div>
@@ -1412,8 +2050,7 @@ a schema with the name &quot;access&quot; that is version 1.0 of the schema and 
   </table>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_SignAndSubmitRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.SignAndSubmitRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_SignAndSubmitRequestAsync_Hyperledger_Indy_PoolApi_Pool_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.SignAndSubmitRequestAsync(Hyperledger.Indy.PoolApi.Pool,Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">SignAndSubmitRequestAsync(Pool, Wallet, String, String)</h4>
-  <div class="markdown level1 summary"><p>Signs and submits a request to the validator pool.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -1432,26 +2069,22 @@ a schema with the name &quot;access&quot; that is version 1.0 of the schema and 
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html">Pool</a></td>
         <td><span class="parametername">pool</span></td>
-        <td><p>The validator pool to submit the request to.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>The wallet containing the submitter keys to sign the request with.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">submitterDid</span></td>
-        <td><p>The DID of the submitter identity.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">requestJson</span></td>
-        <td><p>The request JSON to sign and submit.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -1466,22 +2099,13 @@ a schema with the name &quot;access&quot; that is version 1.0 of the schema and 
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a JSON <span class="xref">System.String</span> 
-containing the result of submission when the operation completes.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_LedgerApi_Ledger_SignAndSubmitRequestAsync_Hyperledger_Indy_PoolApi_Pool_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>This method adds information associated with the submitter specified by the
-<code data-dev-comment-type="paramref" class="paramref">submitterDid</code> to the JSON provided in the <code data-dev-comment-type="paramref" class="paramref">requestJson</code> parameter
-then signs it with the submitter&apos;s signing key from the provided <code data-dev-comment-type="paramref" class="paramref">wallet</code> and sends the signed 
-request message to the specified validator <code data-dev-comment-type="paramref" class="paramref">pool</code>.   </p>
-</div>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_SignRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.SignRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_SignRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.SignRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">SignRequestAsync(Wallet, String, String)</h4>
-  <div class="markdown level1 summary"><p>Signs a request message.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -1500,20 +2124,17 @@ request message to the specified validator <code data-dev-comment-type="paramref
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>The wallet to use for signing.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">submitterDid</span></td>
-        <td><p>The DID of the submitter identity in the provided wallet.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">requestJson</span></td>
-        <td><p>The request JSON to sign.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -1528,21 +2149,68 @@ request message to the specified validator <code data-dev-comment-type="paramref
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous task that resolves to a <span class="xref">System.String</span> containing the signed 
-message.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_LedgerApi_Ledger_SignRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>This method adds information associated with the submitter specified by the
-<code data-dev-comment-type="paramref" class="paramref">submitterDid</code> to the JSON provided in the <code data-dev-comment-type="paramref" class="paramref">requestJson</code> parameter
-then signs it with the submitter&apos;s signing key from the provided wallet.</p>
-</div>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_SubmitActionAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.SubmitActionAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_SubmitActionAsync_Hyperledger_Indy_PoolApi_Pool_System_String_System_String_System_Int32_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.SubmitActionAsync(Hyperledger.Indy.PoolApi.Pool,System.String,System.String,System.Int32)">SubmitActionAsync(Pool, String, String, Int32)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; SubmitActionAsync(Pool pool, string requestJson, string nodes, int timeout)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html">Pool</a></td>
+        <td><span class="parametername">pool</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">requestJson</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">nodes</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Int32</span></td>
+        <td><span class="parametername">timeout</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_SubmitRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.SubmitRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_SubmitRequestAsync_Hyperledger_Indy_PoolApi_Pool_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.SubmitRequestAsync(Hyperledger.Indy.PoolApi.Pool,System.String)">SubmitRequestAsync(Pool, String)</h4>
-  <div class="markdown level1 summary"><p>Submits a request to the ledger.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -1561,14 +2229,12 @@ then signs it with the submitter&apos;s signing key from the provided wallet.</p
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html">Pool</a></td>
         <td><span class="parametername">pool</span></td>
-        <td><p>The validator pool to submit the request to.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">requestJson</span></td>
-        <td><p>The request to submit.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -1583,19 +2249,10 @@ then signs it with the submitter&apos;s signing key from the provided wallet.</p
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a JSON <span class="xref">System.String</span> 
-containing the results when the operation completes.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_LedgerApi_Ledger_SubmitRequestAsync_Hyperledger_Indy_PoolApi_Pool_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>This method publishes a message to the validator pool specified in the <code data-dev-comment-type="paramref" class="paramref">pool</code> parameter as-is 
-and assumes that the message was previously prepared for submission.  Requests can be signed prior to using this 
-call to the <a class="xref" href="Hyperledger.Indy.LedgerApi.Ledger.html#Hyperledger_Indy_LedgerApi_Ledger_SignRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_">SignRequestAsync(Wallet, String, String)</a> method, or messages can be 
-both signed and submitted using the <a class="xref" href="Hyperledger.Indy.LedgerApi.Ledger.html#Hyperledger_Indy_LedgerApi_Ledger_SignAndSubmitRequestAsync_Hyperledger_Indy_PoolApi_Pool_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_">SignAndSubmitRequestAsync(Pool, Wallet, String, String)</a>
-method.</p>
-</div>
 </article>
           </div>
           
