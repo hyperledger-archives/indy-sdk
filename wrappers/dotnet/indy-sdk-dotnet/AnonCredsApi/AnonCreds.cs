@@ -1,7 +1,10 @@
 ﻿using Hyperledger.Indy.BlobStorageApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.AnonCredsApi.NativeMethods;
 #if __IOS__
@@ -730,16 +733,39 @@ namespace Hyperledger.Indy.AnonCredsApi
             ParamGuard.NotNullOrWhiteSpace(credReqJson, "credReqJson");
             ParamGuard.NotNullOrWhiteSpace(credValuesJson, "credValuesJson");
 
-
             var taskCompletionSource = new TaskCompletionSource<IssuerCreateCredentialResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            JObject credOfferObject = JObject.Parse(credValuesJson);
+            string paramOfferJson = credValuesJson;
+
+            if (credOfferObject["device_key"] != null)
+            {
+                string deviceKey = JObject.Parse(credReqJson)["device_key"].ToString();
+
+                //ToDo: Check if device key is valid -> credReqJson
+
+
+                string deviceKeyEncoded = "";
+                using (SHA256 mySHA256 = SHA256.Create())
+                {
+                    Byte[] bytes = mySHA256.ComputeHash(Encoding.UTF8.GetBytes(deviceKey));
+                    int i = BitConverter.ToInt32(bytes, 0);
+                    deviceKeyEncoded = i.ToString();
+                }
+
+                credOfferObject["device_key"]["raw"] = deviceKey; 
+                credOfferObject["device_key"]["encoded"] = deviceKeyEncoded;
+
+                paramOfferJson = credOfferObject.ToString();
+            }
 
             var commandResult = NativeMethods.indy_issuer_create_credential(
                 commandHandle,
                 wallet.Handle,
                 credOfferJson,
                 credReqJson,
-                credValuesJson,
+                paramOfferJson, //credValuesJson,
                 revRegId,
                 blobStorageReader?.Handle ?? -1,
                 IssuerCreateCredentialCallback
@@ -749,6 +775,8 @@ namespace Hyperledger.Indy.AnonCredsApi
 
             return taskCompletionSource.Task;
         }
+
+
 
         /// <summary>
         /// 
@@ -868,7 +896,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="credOfferJson">credential offer as a json containing information about the issuer and a credential.</param>
         /// <param name="credDefJson">credential definition json.</param>
         /// <param name="masterSecretId">the id of the master secret stored in the wallet.</param>
-        public static Task<ProverCreateCredentialRequestResult> ProverCreateCredentialReqAsync(Wallet wallet, string proverDid, string credOfferJson, string credDefJson, string masterSecretId)
+        public static Task<ProverCreateCredentialRequestResult> ProverCreateCredentialReqAsync(Wallet wallet, string proverDid, string credOfferJson, string credDefJson, string masterSecretId, string hardwareKey = "")
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(proverDid, "proverDid");
@@ -886,6 +914,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 credOfferJson,
                 credDefJson,
                 masterSecretId,
+                hardwareKey,
                 ProverCreateCredentialReqCallback
                 );
 
@@ -1617,6 +1646,8 @@ namespace Hyperledger.Indy.AnonCredsApi
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            //ToDo: Check if device key is valid -> proofRequest
 
             var commandResult = NativeMethods.indy_verifier_verify_proof(
                 commandHandle,

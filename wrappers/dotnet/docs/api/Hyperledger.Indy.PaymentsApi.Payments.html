@@ -88,11 +88,35 @@
     <div class="level0"><span class="xref">System.Object</span></div>
     <div class="level1"><span class="xref">Payments</span></div>
   </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <span class="xref">System.Object.ToString()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetHashCode()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetType()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.MemberwiseClone()</span>
+    </div>
+  </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.PaymentsApi.html">Hyperledger.Indy.PaymentsApi</a></h6>
   <h6><strong>Assembly</strong>: Hyperledger.Indy.Sdk.dll</h6>
   <h5 id="Hyperledger_Indy_PaymentsApi_Payments_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public class Payments : Object</code></pre>
+    <pre><code class="lang-csharp hljs">public class Payments</code></pre>
   </div>
   <h3 id="constructors">Constructors
   </h3>
@@ -107,12 +131,12 @@
   <h3 id="methods">Methods
   </h3>
   <a id="Hyperledger_Indy_PaymentsApi_Payments_AddRequestFeesAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.AddRequestFeesAsync*"></a>
-  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_AddRequestFeesAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.AddRequestFeesAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String)">AddRequestFeesAsync(Wallet, String, String, String, String)</h4>
+  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_AddRequestFeesAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.AddRequestFeesAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String,System.String)">AddRequestFeesAsync(Wallet, String, String, String, String, String)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;PaymentResult&gt; AddRequestFeesAsync(Wallet wallet, string submitterDid, string reqJson, string inputsJson, string outputsJson)</code></pre>
+    <pre><code class="lang-csharp hljs">public static Task&lt;PaymentResult&gt; AddRequestFeesAsync(Wallet wallet, string submitterDid, string reqJson, string inputsJson, string outputsJson, string extra)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -147,6 +171,61 @@
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">outputsJson</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">extra</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Hyperledger.Indy.PaymentsApi.PaymentResult.html">PaymentResult</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_PaymentsApi_Payments_BuildGetPaymentSourcesAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.BuildGetPaymentSourcesAsync*"></a>
+  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_BuildGetPaymentSourcesAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.BuildGetPaymentSourcesAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">BuildGetPaymentSourcesAsync(Wallet, String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;PaymentResult&gt; BuildGetPaymentSourcesAsync(Wallet wallet, string submittedDid, string paymentAddress)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">submittedDid</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">paymentAddress</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -216,63 +295,13 @@
       </tr>
     </tbody>
   </table>
-  <a id="Hyperledger_Indy_PaymentsApi_Payments_BuildGetUtxoRequestAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.BuildGetUtxoRequestAsync*"></a>
-  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_BuildGetUtxoRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.BuildGetUtxoRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">BuildGetUtxoRequestAsync(Wallet, String, String)</h4>
-  <div class="markdown level1 summary"></div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="decalaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;PaymentResult&gt; BuildGetUtxoRequestAsync(Wallet wallet, string submittedDid, string paymentAddress)</code></pre>
-  </div>
-  <h5 class="parameters">Parameters</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Name</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
-        <td><span class="parametername">wallet</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><span class="xref">System.String</span></td>
-        <td><span class="parametername">submittedDid</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><span class="xref">System.String</span></td>
-        <td><span class="parametername">paymentAddress</span></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <h5 class="returns">Returns</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Hyperledger.Indy.PaymentsApi.PaymentResult.html">PaymentResult</a>&gt;</td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
   <a id="Hyperledger_Indy_PaymentsApi_Payments_BuildMintRequestAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.BuildMintRequestAsync*"></a>
-  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_BuildMintRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.BuildMintRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">BuildMintRequestAsync(Wallet, String, String)</h4>
+  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_BuildMintRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.BuildMintRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)">BuildMintRequestAsync(Wallet, String, String, String)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;PaymentResult&gt; BuildMintRequestAsync(Wallet wallet, string submitterDid, string outputsJson)</code></pre>
+    <pre><code class="lang-csharp hljs">public static Task&lt;PaymentResult&gt; BuildMintRequestAsync(Wallet wallet, string submitterDid, string outputsJson, string extra)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -299,6 +328,11 @@
         <td><span class="parametername">outputsJson</span></td>
         <td></td>
       </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">extra</span></td>
+        <td></td>
+      </tr>
     </tbody>
   </table>
   <h5 class="returns">Returns</h5>
@@ -317,12 +351,12 @@
     </tbody>
   </table>
   <a id="Hyperledger_Indy_PaymentsApi_Payments_BuildPaymentRequestAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.BuildPaymentRequestAsync*"></a>
-  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_BuildPaymentRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.BuildPaymentRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)">BuildPaymentRequestAsync(Wallet, String, String, String)</h4>
+  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_BuildPaymentRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.BuildPaymentRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String)">BuildPaymentRequestAsync(Wallet, String, String, String, String)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;PaymentResult&gt; BuildPaymentRequestAsync(Wallet wallet, string submitterDid, string inputsJson, string outputsJson)</code></pre>
+    <pre><code class="lang-csharp hljs">public static Task&lt;PaymentResult&gt; BuildPaymentRequestAsync(Wallet wallet, string submitterDid, string inputsJson, string outputsJson, string extra)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -352,6 +386,11 @@
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">outputsJson</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">extra</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -426,6 +465,56 @@
       </tr>
     </tbody>
   </table>
+  <a id="Hyperledger_Indy_PaymentsApi_Payments_BuildVerifyPaymentRequestAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.BuildVerifyPaymentRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_BuildVerifyPaymentRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.BuildVerifyPaymentRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">BuildVerifyPaymentRequestAsync(Wallet, String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;PaymentResult&gt; BuildVerifyPaymentRequestAsync(Wallet wallet, string submitterDid, string receipt)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">submitterDid</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">receipt</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Hyperledger.Indy.PaymentsApi.PaymentResult.html">PaymentResult</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   <a id="Hyperledger_Indy_PaymentsApi_Payments_CreatePaymentAddressAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.CreatePaymentAddressAsync*"></a>
   <h4 id="Hyperledger_Indy_PaymentsApi_Payments_CreatePaymentAddressAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.CreatePaymentAddressAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">CreatePaymentAddressAsync(Wallet, String, String)</h4>
   <div class="markdown level1 summary"></div>
@@ -457,6 +546,56 @@
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">config</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_PaymentsApi_Payments_GetRequestInfoAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.GetRequestInfoAsync*"></a>
+  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_GetRequestInfoAsync_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.GetRequestInfoAsync(System.String,System.String,System.String)">GetRequestInfoAsync(String, String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; GetRequestInfoAsync(string getAuthRuleResponseJson, string requesterInfoJson, string feesJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">getAuthRuleResponseJson</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">requesterInfoJson</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">feesJson</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -516,13 +655,13 @@
       </tr>
     </tbody>
   </table>
-  <a id="Hyperledger_Indy_PaymentsApi_Payments_ParseGetTxnFeesResponseAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.ParseGetTxnFeesResponseAsync*"></a>
-  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_ParseGetTxnFeesResponseAsync_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.ParseGetTxnFeesResponseAsync(System.String,System.String)">ParseGetTxnFeesResponseAsync(String, String)</h4>
+  <a id="Hyperledger_Indy_PaymentsApi_Payments_ParseGetPaymentSourcesAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.ParseGetPaymentSourcesAsync*"></a>
+  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_ParseGetPaymentSourcesAsync_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.ParseGetPaymentSourcesAsync(System.String,System.String)">ParseGetPaymentSourcesAsync(String, String)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ParseGetTxnFeesResponseAsync(string paymentMethod, string responseJson)</code></pre>
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ParseGetPaymentSourcesAsync(string paymentMethod, string responseJson)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -561,13 +700,13 @@
       </tr>
     </tbody>
   </table>
-  <a id="Hyperledger_Indy_PaymentsApi_Payments_ParseGetUtxoResponseAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.ParseGetUtxoResponseAsync*"></a>
-  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_ParseGetUtxoResponseAsync_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.ParseGetUtxoResponseAsync(System.String,System.String)">ParseGetUtxoResponseAsync(String, String)</h4>
+  <a id="Hyperledger_Indy_PaymentsApi_Payments_ParseGetTxnFeesResponseAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.ParseGetTxnFeesResponseAsync*"></a>
+  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_ParseGetTxnFeesResponseAsync_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.ParseGetTxnFeesResponseAsync(System.String,System.String)">ParseGetTxnFeesResponseAsync(String, String)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ParseGetUtxoResponseAsync(string paymentMethod, string responseJson)</code></pre>
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ParseGetTxnFeesResponseAsync(string paymentMethod, string responseJson)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -696,6 +835,116 @@
       </tr>
     </tbody>
   </table>
+  <a id="Hyperledger_Indy_PaymentsApi_Payments_ParseVerifyPaymentResponseAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.ParseVerifyPaymentResponseAsync*"></a>
+  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_ParseVerifyPaymentResponseAsync_System_String_System_String_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.ParseVerifyPaymentResponseAsync(System.String,System.String)">ParseVerifyPaymentResponseAsync(String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ParseVerifyPaymentResponseAsync(string paymentMethod, string responseJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">paymentMethod</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">responseJson</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_PaymentsApi_Payments_PreparePaymentExtraWithAcceptanceDataAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.PreparePaymentExtraWithAcceptanceDataAsync*"></a>
+  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_PreparePaymentExtraWithAcceptanceDataAsync_System_String_System_String_System_String_System_String_System_String_System_UInt64_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.PreparePaymentExtraWithAcceptanceDataAsync(System.String,System.String,System.String,System.String,System.String,System.UInt64)">PreparePaymentExtraWithAcceptanceDataAsync(String, String, String, String, String, UInt64)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; PreparePaymentExtraWithAcceptanceDataAsync(string extra_json, string text, string version, string taa_digest, string mechanism, ulong time)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">extra_json</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">text</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">version</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">taa_digest</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">mechanism</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.UInt64</span></td>
+        <td><span class="parametername">time</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   <a id="Hyperledger_Indy_PaymentsApi_Payments_RegisterPaymentMethodAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.RegisterPaymentMethodAsync*"></a>
   <h4 id="Hyperledger_Indy_PaymentsApi_Payments_RegisterPaymentMethodAsync_System_String_Hyperledger_Indy_PaymentsApi_PaymentMethod_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.RegisterPaymentMethodAsync(System.String,Hyperledger.Indy.PaymentsApi.PaymentMethod)">RegisterPaymentMethodAsync(String, PaymentMethod)</h4>
   <div class="markdown level1 summary"></div>
@@ -737,6 +986,106 @@
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_PaymentsApi_Payments_SignWithAddressAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.SignWithAddressAsync*"></a>
+  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_SignWithAddressAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_Byte___" data-uid="Hyperledger.Indy.PaymentsApi.Payments.SignWithAddressAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.Byte[])">SignWithAddressAsync(Wallet, String, Byte[])</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;byte[]&gt; SignWithAddressAsync(Wallet wallet, string address, byte[] message)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">address</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Byte</span>[]</td>
+        <td><span class="parametername">message</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.Byte</span>[]&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_PaymentsApi_Payments_VerifyWithAddressAsync_" data-uid="Hyperledger.Indy.PaymentsApi.Payments.VerifyWithAddressAsync*"></a>
+  <h4 id="Hyperledger_Indy_PaymentsApi_Payments_VerifyWithAddressAsync_System_String_System_Byte___System_Byte___" data-uid="Hyperledger.Indy.PaymentsApi.Payments.VerifyWithAddressAsync(System.String,System.Byte[],System.Byte[])">VerifyWithAddressAsync(String, Byte[], Byte[])</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;bool&gt; VerifyWithAddressAsync(string address, byte[] message, byte[] signature)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">address</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Byte</span>[]</td>
+        <td><span class="parametername">message</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Byte</span>[]</td>
+        <td><span class="parametername">signature</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.Boolean</span>&gt;</td>
         <td></td>
       </tr>
     </tbody>

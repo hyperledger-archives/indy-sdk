@@ -44,6 +44,7 @@ pub enum ProverCommand {
         CredentialOffer, // credential offer
         CredentialDefinition, // credential def
         String, // master secret name
+        String, // device_key
         BoxedCallbackStringStringSend),
     SetCredentialAttrTagPolicy(
         WalletHandle,
@@ -178,10 +179,10 @@ impl ProverCommandExecutor {
                 cb(self.create_master_secret(wallet_handle, master_secret_id.as_ref().map(String::as_str)));
             }
             ProverCommand::CreateCredentialRequest(wallet_handle, prover_did, credential_offer,
-                                                   credential_def, master_secret_name, cb) => {
+                                                   credential_def, master_secret_name, device_key, cb) => {
                 debug!(target: "prover_command_executor", "CreateCredentialRequest command received");
                 cb(self.create_credential_request(wallet_handle, &prover_did, &credential_offer,
-                                                  &CredentialDefinitionV1::from(credential_def), &master_secret_name));
+                                                  &CredentialDefinitionV1::from(credential_def), &master_secret_name, &device_key));
             }
             ProverCommand::SetCredentialAttrTagPolicy(wallet_handle, cred_def_id, catpol, retroactive, cb) => {
                 debug!(target: "prover_command_executor", "SetCredentialAttrTagPolicy command received");
@@ -286,7 +287,8 @@ impl ProverCommandExecutor {
                                  prover_did: &DidValue,
                                  cred_offer: &CredentialOffer,
                                  cred_def: &CredentialDefinitionV1,
-                                 master_secret_id: &str) -> IndyResult<(String, String)> {
+                                 master_secret_id: &str,
+                                 device_key: &str) -> IndyResult<(String, String)> {
         debug!("create_credential_request >>> wallet_handle: {:?}, prover_did: {:?}, cred_offer: {:?}, cred_def: {:?}, master_secret_id: {:?}",
                wallet_handle, prover_did, cred_offer, cred_def, master_secret_id);
 
@@ -306,6 +308,7 @@ impl ProverCommandExecutor {
             cred_def_id: cred_offer.cred_def_id.clone(),
             blinded_ms,
             blinded_ms_correctness_proof,
+            device_key: device_key.to_string(),
             nonce
         };
 

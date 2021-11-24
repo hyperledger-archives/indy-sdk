@@ -8,7 +8,7 @@
 #if __IOS__
         public const string NATIVE_LIB_NAME = "__Internal";
 #else
-        public const string NATIVE_LIB_NAME = "indy";
+        public const string NATIVE_LIB_NAME = @"C:\Repos\SSI\LibIndy\indy-sdk\libindy\target\release\indy.dll";
 #endif
     }
 }

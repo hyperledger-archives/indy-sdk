@@ -353,7 +353,7 @@ The documents that provide necessary information for Libindy migrations.
 * You may also want to read this info about [maintainers](MAINTAINERS.md) and our process.
 * We use developer certificate of origin (DCO) in all hyperledger repositories,
   so to get your pull requests accepted, you must certify your commits by signing off on each commit.
-  More information can be found in [Signing Commits](docs/contributors/signing-commits.md) article.
+  More information can be found in [Signing Commits](docs/contributors/signing-commits.md) article
 
 
 #### Notes
