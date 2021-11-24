@@ -16,6 +16,7 @@ pub struct CredentialRequest {
     pub cred_def_id: CredentialDefinitionId,
     pub blinded_ms: BlindedCredentialSecrets,
     pub blinded_ms_correctness_proof: BlindedCredentialSecretsCorrectnessProof,
+    pub device_key: String,
     pub nonce: Nonce,
 }
 
@@ -33,6 +34,7 @@ impl CredentialRequest {
             cred_def_id: self.cred_def_id.to_unqualified(),
             blinded_ms: self.blinded_ms,
             blinded_ms_correctness_proof: self.blinded_ms_correctness_proof,
+            device_key: self.device_key,
             nonce: self.nonce
         }
     }

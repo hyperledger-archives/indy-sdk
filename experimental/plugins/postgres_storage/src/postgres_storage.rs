@@ -22,6 +22,8 @@ use wql::language;
 use wql::query;
 use wql::transaction;
 
+use std::convert::TryFrom;
+
 use wql::storage::{StorageIterator, WalletStorage, StorageRecord, EncryptedValue, Tag, TagName};
 use self::r2d2_postgres::r2d2::Pool;
 use errors::wallet::WalletStorageError::{ConfigError};
@@ -119,8 +121,8 @@ const _POSTGRES_DB: &str = "postgres";
 const _WALLETS_DB: &str = "wallets";
 const _PLAIN_TAGS_QUERY: &str = "SELECT name, value from tags_plaintext where item_id = $1";
 const _ENCRYPTED_TAGS_QUERY: &str = "SELECT name, value from tags_encrypted where item_id = $1";
-const _PLAIN_TAGS_QUERY_MULTI: &str = "SELECT name, value from tags_plaintext where item_id = $1 and wallet_id = $2";
-const _ENCRYPTED_TAGS_QUERY_MULTI: &str = "SELECT name, value from tags_encrypted where item_id = $1 and wallet_id = $2";
+const _PLAIN_TAGS_QUERY_MULTI: &str = "SELECT name, value from tags_plaintext where item_id = $1";
+const _ENCRYPTED_TAGS_QUERY_MULTI: &str = "SELECT name, value from tags_encrypted where item_id = $1";
 const _CREATE_WALLET_DATABASE: &str = "CREATE DATABASE \"$1\"";
 const _CREATE_WALLETS_DATABASE: &str = "CREATE DATABASE wallets";
 // Note: wallet id length was constrained before by postgres database name length to 64 characters, keeping the same restrictions
@@ -226,10 +228,106 @@ const _DELETE_WALLET_MULTI: [&str; 4] = [
     "DELETE FROM items WHERE wallet_id = $1",
     "DELETE FROM metadata WHERE wallet_id = $1"
 ];
+const _CREATE_SCHEMA_MULTI_TABLE: [&str; 12] = [
+    "CREATE TABLE \"metadata_$1\" (
+        id BIGSERIAL PRIMARY KEY,
+        value BYTEA NOT NULL
+    )",
+    "CREATE UNIQUE INDEX IF NOT EXISTS \"ux_metadata_values_$1\" ON \"metadata_$1\"(value)",
+    "CREATE TABLE \"items_$1\"(
+        id BIGSERIAL PRIMARY KEY,
+        type BYTEA NOT NULL,
+        name BYTEA NOT NULL,
+        value BYTEA NOT NULL,
+        key BYTEA NOT NULL
+    )",
+    "CREATE UNIQUE INDEX \"ux_items_type_name_$1\" ON \"items_$1\"(type, name)",
+    "CREATE TABLE \"tags_encrypted_$1\"(
+        name BYTEA NOT NULL,
+        value BYTEA NOT NULL,
+        item_id BIGINT NOT NULL,
+        PRIMARY KEY(name, item_id),
+        FOREIGN KEY(item_id)
+            REFERENCES \"items_$1\"(id)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE
+    )",
+    "CREATE INDEX \"ix_tags_encrypted_name_$1\" ON \"tags_encrypted_$1\"(name)",
+    "CREATE INDEX \"ix_tags_encrypted_value_$1\" ON \"tags_encrypted_$1\"(md5(value))",
+    "CREATE INDEX \"ix_tags_encrypted_wallet_id_item_id_$1\" ON \"tags_encrypted_$1\"(item_id)",
+    "CREATE TABLE \"tags_plaintext_$1\"(
+        name BYTEA NOT NULL,
+        value TEXT NOT NULL,
+        item_id BIGINT NOT NULL,
+        PRIMARY KEY(name, item_id),
+        FOREIGN KEY(item_id)
+            REFERENCES \"items_$1\"(id)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE
+    )",
+    "CREATE INDEX \"ix_tags_plaintext_name_$1\" ON \"tags_plaintext_$1\"(name)",
+    "CREATE INDEX \"ix_tags_plaintext_value_$1\" ON \"tags_plaintext_$1\"(value)",
+    "CREATE INDEX \"ix_tags_plaintext_wallet_id_item_id_$1\" ON \"tags_plaintext_$1\"(item_id)"
+];
+const _CREATE_SCHEMA_MULTI_TABLE_MWMT: [&str; 14] = [
+    "CREATE TABLE \"metadata_$1\" (
+        id BIGSERIAL PRIMARY KEY,
+        value BYTEA NOT NULL
+    )",
+    "CREATE UNIQUE INDEX IF NOT EXISTS \"ux_metadata_values_$1\" ON \"metadata_$1\"(value)",
+    "CREATE TABLE \"items_$1\"(
+        id BIGSERIAL PRIMARY KEY,
+        type BYTEA NOT NULL,
+        name BYTEA NOT NULL,
+        value BYTEA NOT NULL,
+        key BYTEA NOT NULL
+    )",
+    "CREATE UNIQUE INDEX \"ux_items_type_name_$1\" ON \"items_$1\"(type, name)",
+    "CREATE TABLE \"tags_encrypted_$1\"(
+        name BYTEA NOT NULL,
+        value BYTEA NOT NULL,
+        item_id BIGINT NOT NULL,
+        PRIMARY KEY(name, item_id),
+        FOREIGN KEY(item_id)
+            REFERENCES \"items_$1\"(id)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE
+    )",
+    "CREATE INDEX \"ix_tags_encrypted_name_$1\" ON \"tags_encrypted_$1\"(name)",
+    "CREATE INDEX \"ix_tags_encrypted_value_$1\" ON \"tags_encrypted_$1\"(md5(value))",
+    "CREATE INDEX \"ix_tags_encrypted_wallet_id_item_id_$1\" ON \"tags_encrypted_$1\"(item_id)",
+    "CREATE TABLE \"tags_plaintext_$1\"(
+        name BYTEA NOT NULL,
+        value TEXT NOT NULL,
+        item_id BIGINT NOT NULL,
+        PRIMARY KEY(name, item_id),
+        FOREIGN KEY(item_id)
+            REFERENCES \"items_$1\"(id)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE
+    )",
+    "CREATE INDEX \"ix_tags_plaintext_name_$1\" ON \"tags_plaintext_$1\"(name)",
+    "CREATE INDEX \"ix_tags_plaintext_value_$1\" ON \"tags_plaintext_$1\"(value)",
+    "CREATE INDEX \"ix_tags_plaintext_wallet_id_item_id_$1\" ON \"tags_plaintext_$1\"(item_id)",
+
+    "CREATE INDEX \"items_idxonly_$1\" ON \"items_$1\" USING btree (id, type, name, value, key)",
+    "CREATE INDEX \"tags_encrypted_idxonly_$1\" ON \"tags_encrypted_$1\" USING btree (name, value, item_id)"
+];
+const _DELETE_WALLET_TABLES: [&str; 4] = [
+    "DROP TABLE \"metadata_$1\" CASCADE",
+    "DROP TABLE \"items_$1\" CASCADE",
+    "DROP TABLE \"tags_encrypted_$1\" CASCADE",
+    "DROP TABLE \"tags_plaintext_$1\" CASCADE"
+];
 
 
-#[derive(Debug)]
+ #[derive(Debug)]
 struct TagRetriever<'a> {
+    plain_tags_stmt: postgres::stmt::Statement<'a>,
+    encrypted_tags_stmt: postgres::stmt::Statement<'a>,
+    wallet_id: Option<String>,
+}
+struct TagRetrieverMultiTableMultiWallet<'a> {
     plain_tags_stmt: postgres::stmt::Statement<'a>,
     encrypted_tags_stmt: postgres::stmt::Statement<'a>,
     wallet_id: Option<String>,
@@ -281,6 +379,33 @@ impl<'a> TagRetriever<'a> {
         }
 
         Ok(tags)
+    }
+}
+impl<'a> TagRetrieverMultiTableMultiWallet<'a> {
+    fn new_owned(conn: Rc<r2d2::PooledConnection<PostgresConnectionManager>>, _wallet_id: Option<String>) -> Result<TagRetrieverOwned, WalletStorageError> {
+        OwningHandle::try_new(conn.clone(), |conn| -> Result<_, postgres::Error> {
+           
+            let (plain_tags_stmt, encrypted_tags_stmt) = unsafe {
+                match &_wallet_id {
+                    Some(id) => {
+                        let sql_plain_tags = str::replace("SELECT name, value from \"tags_plaintext_$2\" WHERE item_id = $1", "$2", &id);
+                        let sql_encrypted_tags = str::replace("SELECT name, value from \"tags_encrypted_$3\" WHERE item_id = $1", "$3", &id);
+                        ((*conn).prepare(&sql_plain_tags)?,
+                        (*conn).prepare(&sql_encrypted_tags)?)
+                        },
+                    None => ((*conn).prepare(_PLAIN_TAGS_QUERY)?,
+                             (*conn).prepare(_ENCRYPTED_TAGS_QUERY)?)
+                }
+            };
+
+            let wallet_id:Option<String> = None;
+            let tr = TagRetriever {
+                plain_tags_stmt,
+                encrypted_tags_stmt,
+                wallet_id,
+            };
+            Ok(Box::new(tr))
+        }).map_err(WalletStorageError::from)
     }
 }
 
@@ -384,6 +509,10 @@ pub struct PostgresConfig {
     // default 5
     wallet_scheme: Option<WalletScheme>,   // default DatabasePerWallet
     database_name: Option<String>,   // default _WALLET_DB
+    // default 4
+    db_name_from_index: Option<u32>, // Only for MultiWalletSplitDatabaseMultiTable Strategy
+    // default 6
+    db_name_to_index: Option<u32> // Only for MultiWalletSplitDatabaseMultiTable Strategy
 }
 
 impl PostgresConfig {
@@ -438,6 +567,21 @@ impl PostgresConfig {
             None => 5
         }
     }
+
+    fn db_name_from_index(&self) -> u32 {
+        match &self.db_name_from_index {
+            Some(index) => *index,
+            None => 4
+        }
+    }
+    
+    /// Sets the to index db name
+    fn db_name_to_index(&self) -> u32 {
+        match &self.db_name_to_index {
+            Some(index) => *index,
+            None => 6
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -463,11 +607,12 @@ pub trait WalletStorageType {
 
 #[derive(Deserialize, Debug)]
 #[derive(Copy, Clone)]
-enum WalletScheme {
+pub enum WalletScheme {
     DatabasePerWallet,
     MultiWalletSingleTable,
     MultiWalletSingleTableSharedPool,
     MultiWalletMultiTable,
+    MultiWalletSplitDatabaseMultiTable,
 }
 
 trait WalletStrategy {
@@ -483,6 +628,8 @@ trait WalletStrategy {
     fn table_name(&self, id: &str, base_name: &str) -> String;
     // determine additional query parameters based on wallet strategy
     fn query_qualifier(&self) -> Option<String>;
+    // determine additional query parameters based on wallet strategy
+    fn strategy(&self) -> WalletScheme;
 }
 
 
@@ -493,6 +640,8 @@ struct DatabasePerWalletStrategy {}
 struct MultiWalletSingleTableStrategy {}
 
 struct MultiWalletMultiTableStrategy {}
+
+struct MultiWalletSplitDatabaseMultiTableStrategy {}
 
 struct MultiWalletSingleTableStrategySharedPool {
     pool: r2d2::Pool<PostgresConnectionManager>
@@ -640,6 +789,10 @@ impl WalletStrategy for MultiWalletSingleTableStrategySharedPool {
     fn query_qualifier(&self) -> Option<String> {
         // TODO
         Some("AND wallet_id = $$".to_owned())
+    }
+    // Returns the strategy enum
+    fn strategy(&self) -> WalletScheme {
+        WalletScheme::MultiWalletSingleTableSharedPool
     }
 }
 
@@ -800,6 +953,10 @@ impl WalletStrategy for DatabasePerWalletStrategy {
     fn query_qualifier(&self) -> Option<String> {
         // TODO
         None
+    }
+    // Returns the strategy enum
+    fn strategy(&self) -> WalletScheme {
+        WalletScheme::DatabasePerWallet
     }
 }
 
@@ -1001,29 +1158,170 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         // TODO
         Some("AND wallet_id = $$".to_owned())
     }
+    // Returns the strategy enum
+    fn strategy(&self) -> WalletScheme {
+        WalletScheme::MultiWalletSingleTable
+    }
 }
 
 impl WalletStrategy for MultiWalletMultiTableStrategy {
     // initialize storage based on wallet storage strategy
-    fn init_storage(&self, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
-        // create database for storage
-        // TODO
+    fn init_storage(&self, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
+        debug!("Entering init_storage");
+        // create database and tables for storage
+        // if admin user and password aren't provided then bail
+        debug!("Initializing storage strategy MultiWalletSingleTableStrategy.");
+        if credentials.admin_account == None || credentials.admin_password == None {
+            return Ok(());
+        }
+
+        debug!("setting up the admin_postgres_url");
+        // look to see if there is a specified db to use.  If not, use the default name
+        let wallet_db_name: &str = get_multi_database_name(config);
+        debug!("wallet_db_name: {:?}", wallet_db_name);
+        let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
+        debug!("postgres_url: {:?}", url);
+        debug!("connecting to postgres, url_base: {:?}", url_base);
+        let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
+
+        debug!("creating wallets DB");
+        let create_db_sql: String = str::replace(_CREATE_WALLET_DATABASE, "$1", wallet_db_name);
+        debug!("create_db_sql: {:?}", create_db_sql);
+        if let Err(error) = conn.execute(&create_db_sql, &[]) {
+            if error.code() != Some(&postgres::error::DUPLICATE_DATABASE) {
+                debug!("error creating database, Error: {}", error);
+                conn.finish()?;
+                return Err(WalletStorageError::IOError(format!("Error occurred while creating the database: {}", error)));
+            } else {
+                // if database already exists, assume tables are created already and return
+                debug!("database already exists");
+                conn.finish()?;
+                return Ok(());
+            }
+        }
+
+        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
+
+        let conn2 = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+            Ok(conn2) => conn2,
+            Err(error) => {
+                return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
+            }
+        };
+        
+        for sql in &_CREATE_SCHEMA_MULTI {
+            if let Err(error) = conn2.execute(sql, &[]) {
+                debug!("error creating wallet schema, Error: {}", error);
+                conn2.finish()?;
+                return Err(WalletStorageError::IOError(format!("Error occurred while creating wallet schema: {}", error)));
+            }
+        }
+        conn.finish()?;
+        conn2.finish()?;
         Ok(())
     }
     // initialize a single wallet based on wallet storage strategy
-    fn create_wallet(&self, _id: &str, _config: &PostgresConfig, _credentials: &PostgresCredentials, _metadata: &[u8]) -> Result<(), WalletStorageError> {
+    fn create_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials, metadata: &[u8]) -> Result<(), WalletStorageError> {
         // create tables for wallet storage
-        // TODO
+        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
+
+        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+            Ok(conn) => conn,
+            Err(error) => {
+                return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
+            }
+        };
+
+        let check_metdata_replaced = str::replace("SELECT * FROM \"metadata_$1\" LIMIT 1", "$1", id);
+
+        let res = match conn.execute(&check_metdata_replaced, &[]) {
+            Ok(_) => Err(WalletStorageError::AlreadyExists),
+            Err(_) => Ok(()),
+        };
+
+        if res.is_err() {
+            return Err(WalletStorageError::AlreadyExists);
+        }
+
+        for sql in &_CREATE_SCHEMA_MULTI_TABLE {
+            let create_db_sql = str::replace(sql, "$1", id);
+
+            if let Err(error) = conn.execute(&create_db_sql, &[]) {
+                conn.finish()?;
+                return Err(WalletStorageError::IOError(format!("Error while creating tables {}", error)));
+            };
+        }
+
+        let insert_db_sql = str::replace(r#"INSERT INTO "metadata_$2"(value) VALUES($1)"#, "$2", id);
+
+        let ret = match conn.execute(&insert_db_sql, &[&metadata]) {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                if error.code() == Some(&postgres::error::UNIQUE_VIOLATION) {
+                    Err(WalletStorageError::AlreadyExists)
+                } else {
+                    Err(WalletStorageError::IOError(format!("Error occurred while inserting into metadata: {}", error)))
+                }
+            }
+        };
+
+        conn.finish()?;
         Ok(())
     }
     // open a wallet based on wallet storage strategy
-    fn open_wallet(&self, _id: &str, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<Box<PostgresStorage>, WalletStorageError> {
-        // TODO
-        Err(WalletStorageError::NotFound)
+    fn open_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials,) -> Result<Box<PostgresStorage>, WalletStorageError> {
+        // look to see if there is a specified db to use.  If not, use the default name
+        let wallet_db_name: &str = get_multi_database_name(config);
+        debug!("wallet_db_name: {:?}", wallet_db_name);
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
+        // don't need a connection, but connect just to verify we can
+        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
+            Ok(conn) => conn,
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+        // select metadata for this wallet to ensure it exists
+        let select_value_from_metadata_sql = str::replace("SELECT value FROM \"metadata_$1\"", "$1", id);
+
+        match conn.query(&select_value_from_metadata_sql, &[]) {
+            Ok(io) => io,
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+
+        // TODO close conn
+        let manager = match PostgresConnectionManager::new(&url[..], config.r2d2_tls()) {
+            Ok(manager) => manager,
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+        let pool = match r2d2::Pool::builder()
+            .min_idle(Some(config.min_idle_count()))
+            .max_size(config.max_connections())
+            .idle_timeout(Some(Duration::new(config.connection_timeout(), 0)))
+            .build(manager) {
+            Ok(pool) => pool,
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+        Ok(Box::new(PostgresStorage {pool: pool, wallet_id: id.to_string()}))
     }
     // delete a single wallet based on wallet storage strategy
-    fn delete_wallet(&self, _id: &str, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
-        // TODO
+    fn delete_wallet( &self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials, ) -> Result<(), WalletStorageError> {
+        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
+    
+        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+            Ok(conn) => conn,
+            Err(error) => {
+                return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
+            }
+        };
+    
+        for sql in &_DELETE_WALLET_TABLES {
+            let create_db_sql = str::replace(sql, "$1", id); 
+            if let Err(_) = conn.execute(&create_db_sql, &[]) {
+                conn.finish()?;
+                return Err(WalletStorageError::NotFound)
+            };
+        }
+        conn.finish()?;
         Ok(())
     }
     // determine phyisical table name based on wallet strategy
@@ -1033,10 +1331,193 @@ impl WalletStrategy for MultiWalletMultiTableStrategy {
     }
     // determine additional query parameters based on wallet strategy
     fn query_qualifier(&self) -> Option<String> {
-        // TODO
-        None
+        Some("MultiWalletMultiTable".to_owned())
+    }
+    // Returns the strategy enum
+    fn strategy(&self) -> WalletScheme {
+        WalletScheme::MultiWalletMultiTable
     }
 }
+
+fn get_multiwalletsplitdatabases_name<'a>(id: &'a str, config: &PostgresConfig) -> &'a str {
+
+    let from_index: usize = usize::try_from(config.db_name_from_index()).unwrap();
+    let to_index: usize = usize::try_from(config.db_name_to_index()).unwrap();
+
+    // Skip the first 4 characters ("Edge") and take the first two characters for DB name
+    return &id[from_index..to_index];
+}
+
+impl WalletStrategy for MultiWalletSplitDatabaseMultiTableStrategy {
+    // initialize storage based on wallet storage strategy
+    fn init_storage(&self, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
+        // no-op
+        debug!("Initializing storage strategy DatabasePerWalletStrategy.");
+        Ok(())
+    }
+    // initialize a single wallet based on wallet storage strategy
+    fn create_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials, metadata: &[u8]) -> Result<(), WalletStorageError> {
+        debug!("Entering init_storage");
+        // create database and tables for storage
+        // if admin user and password aren't provided then bail
+        debug!("Initializing storage strategy MultiWalletSingleTableStrategy.");
+        if credentials.admin_account == None || credentials.admin_password == None {
+            return Ok(());
+        }
+
+        debug!("setting up the admin_postgres_url");
+        // look to see if there is a specified db to use.  If not, use the default name
+        let wallet_db_name: &str = get_multiwalletsplitdatabases_name(id, config);
+        debug!("wallet_db_name: {:?}", wallet_db_name);
+        let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
+        debug!("postgres_url: {:?}", url);
+        debug!("connecting to postgres, url_base: {:?}", url_base);
+        let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
+
+        debug!("creating wallets DB");
+        // 
+
+        let create_db_sql: String = str::replace(_CREATE_WALLET_DATABASE, "$1", wallet_db_name);
+
+        debug!("create_db_sql: {:?}", create_db_sql);
+        if let Err(error) = conn.execute(&create_db_sql, &[]) {
+            if error.code() != Some(&postgres::error::DUPLICATE_DATABASE) {
+                debug!("error creating database, Error: {}", error);
+                conn.finish()?;
+            } else {
+                // if database already exists, assume tables are created already and return
+                debug!("database already exists");
+                conn.finish()?;
+            }
+        }
+              
+        let wallet_db_name: &str = get_multiwalletsplitdatabases_name(id, config); // Convert Strng to &str
+        debug!("wallet_db_name: {:?}", wallet_db_name);
+        // create tables for wallet storage
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
+
+        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+            Ok(conn) => conn,
+            Err(error) => {
+                return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
+            }
+        };
+
+        let check_metdata_replaced = str::replace("SELECT * FROM \"metadata_$1\" LIMIT 1", "$1", id);
+
+        let res = match conn.execute(&check_metdata_replaced, &[]) {
+            Ok(_) => Err(WalletStorageError::AlreadyExists),
+            Err(_) => Ok(()),
+        };
+
+        if res.is_err() {
+            return Err(WalletStorageError::AlreadyExists);
+        }
+
+        for sql in &_CREATE_SCHEMA_MULTI_TABLE_MWMT {
+            let create_db_sql = str::replace(sql, "$1", id);
+
+            if let Err(error) = conn.execute(&create_db_sql, &[]) {
+                conn.finish()?;
+                return Err(WalletStorageError::IOError(format!("Error while creating tables {}", error)));
+            };
+        }
+
+        let insert_db_sql = str::replace(r#"INSERT INTO "metadata_$2"(value) VALUES($1)"#, "$2", id);
+
+        let ret = match conn.execute(&insert_db_sql, &[&metadata]) {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                if error.code() == Some(&postgres::error::UNIQUE_VIOLATION) {
+                    Err(WalletStorageError::AlreadyExists)
+                } else {
+                    Err(WalletStorageError::IOError(format!("Error occurred while inserting into metadata: {}", error)))
+                }
+            }
+        };
+        
+        conn.finish()?;
+        Ok(())
+    }
+
+    // open a wallet based on wallet storage strategy
+    fn open_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials,) -> Result<Box<PostgresStorage>, WalletStorageError> {
+        // look to see if there is a specified db to use.  If not, use the default name
+        let wallet_db_name: &str = get_multiwalletsplitdatabases_name(id, config);
+        debug!("wallet_db_name: {:?}", wallet_db_name);
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
+        // don't need a connection, but connect just to verify we can
+        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
+            Ok(conn) => conn,
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+        // select metadata for this wallet to ensure it exists
+        let select_value_from_metadata_sql = str::replace("SELECT value FROM \"metadata_$1\"", "$1", id);
+
+        match conn.query(&select_value_from_metadata_sql, &[]) {
+            Ok(io) => io,
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+
+        // TODO close conn
+        let manager = match PostgresConnectionManager::new(&url[..], config.r2d2_tls()) {
+            Ok(manager) => manager,
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+
+        let pool = match r2d2::Pool::builder()
+            .min_idle(Some(config.min_idle_count()))
+            .max_size(config.max_connections())
+            .idle_timeout(Some(Duration::new(config.connection_timeout(), 0)))
+            .build(manager) {
+            Ok(pool) => pool,
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+        Ok(Box::new(PostgresStorage {pool: pool, wallet_id: id.to_string()}))
+    }
+
+    // delete a single wallet based on wallet storage strategy
+    fn delete_wallet( &self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials, ) -> Result<(), WalletStorageError> {
+        let wallet_db_name: &str = get_multiwalletsplitdatabases_name(id, config);
+        debug!("wallet_db_name: {:?}", wallet_db_name);
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
+    
+        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+            Ok(conn) => conn,
+            Err(_) => {
+                return Err(WalletStorageError::NotFound);
+            }
+        };
+
+        for sql in &_DELETE_WALLET_TABLES {
+            let create_db_sql = str::replace(sql, "$1", id); 
+            if let Err(_) = conn.execute(&create_db_sql, &[]) {
+                conn.finish()?;
+                return Err(WalletStorageError::NotFound)
+            };
+        }
+        conn.finish()?;
+        Ok(())
+    }
+
+    // determine phyisical table name based on wallet strategy
+    fn table_name(&self, _id: &str, base_name: &str) -> String {
+        // TODO
+        base_name.to_owned()
+    }
+
+    // determine additional query parameters based on wallet strategy
+    fn query_qualifier(&self) -> Option<String> {
+        Some("MultiWalletSplitDatabaseMultiTable".to_owned())
+    }
+
+    // Returns the strategy enum
+    fn strategy(&self) -> WalletScheme {
+        WalletScheme::MultiWalletSplitDatabaseMultiTable
+    }
+}
+
 
 lazy_static! {
     static ref SELECTED_STRATEGY: RwLock<Box<dyn WalletStrategy + Send + Sync>> = RwLock::new(Box::new(DatabasePerWalletStrategy{}));
@@ -1084,7 +1565,6 @@ impl PostgresStorageType {
     }
 }
 
-
 impl WalletStorage for PostgresStorage {
     ///
     /// Tries to fetch values and/or tags from the storage.
@@ -1122,15 +1602,15 @@ impl WalletStorage for PostgresStorage {
         };
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        let query_qualifier = get_wallet_strategy_qualifier();
+		let strategy = get_wallet_strategy();
         let res: Result<(i64, Vec<u8>, Vec<u8>), WalletStorageError> = {
-            let mut rows = match query_qualifier {
-                Some(_) => conn.query(
-                    "SELECT id, value, key FROM items where type = $1 AND name = $2 AND wallet_id = $3",
-                    &[&type_.to_vec(), &id.to_vec(), &self.wallet_id]),
-                None => conn.query(
-                    "SELECT id, value, key FROM items where type = $1 AND name = $2",
-                    &[&type_.to_vec(), &id.to_vec()])
+            let mut rows = match &strategy {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                    let sql_replaced = str::replace("SELECT id, value, key FROM \"items_$3\" where type = $1 AND name = $2", "$3", &self.wallet_id);
+                    conn.query(&sql_replaced, &[&type_.to_vec(), &id.to_vec()])
+                },
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => conn.query("SELECT id, value, key FROM items where type = $1 AND name = $2 AND wallet_id = $3", &[&type_.to_vec(), &id.to_vec(), &self.wallet_id]),
+                WalletScheme::DatabasePerWallet => conn.query("SELECT id, value, key FROM items where type = $1 AND name = $2", &[&type_.to_vec(), &id.to_vec()])
             };
             match rows.as_mut().unwrap().iter().next() {
                 Some(row) => Ok((row.get(0), row.get(1), row.get(2))),
@@ -1149,15 +1629,13 @@ impl WalletStorage for PostgresStorage {
             let mut tags = Vec::new();
 
             // get all encrypted.
-            let rows = match query_qualifier {
-                Some(_) => {
-                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = $1 AND wallet_id = $2")?;
-                    stmt.query(&[&item.0, &self.wallet_id])?
-                }
-                None => {
-                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = $1")?;
-                    stmt.query(&[&item.0])?
-                }
+            let rows = match &strategy {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                    let sql_replaced = str::replace("SELECT name, value FROM \"tags_encrypted_$2\" WHERE item_id = $1", "$2", &self.wallet_id);
+                    conn.query(&sql_replaced, &[&item.0])?
+                },
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => conn.query("SELECT name, value FROM \"tags_encrypted WHERE item_id = $1 AND wallet_id = $2", &[&item.0, &self.wallet_id])?,
+                WalletScheme::DatabasePerWallet => conn.query("SELECT name, value FROM \"tags_encrypted\" WHERE item_id = $1", &[&item.0])?
             };
 
             let mut iter = rows.iter();
@@ -1169,15 +1647,13 @@ impl WalletStorage for PostgresStorage {
             }
 
             // get all plain
-            let rows = match query_qualifier {
-                Some(_) => {
-                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = $1 AND wallet_id = $2")?;
-                    stmt.query(&[&item.0, &self.wallet_id])?
-                }
-                None => {
-                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = $1")?;
-                    stmt.query(&[&item.0])?
-                }
+            let rows = match &strategy {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                    let sql_replaced = str::replace("SELECT name, value FROM \"tags_plaintext_$2\" WHERE item_id = $1", "$2", &self.wallet_id);
+                    conn.query(&sql_replaced, &[&item.0])?
+                },
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => conn.query("SELECT name, value FROM tags_plaintext WHERE item_id = $1 AND wallet_id = $2", &[&item.0, &self.wallet_id])?,
+                WalletScheme::DatabasePerWallet => conn.query("SELECT name, value FROM tags_plaintext WHERE item_id = $1", &[&item.0])?
             };
 
             let mut iter = rows.iter();
@@ -1224,12 +1700,17 @@ impl WalletStorage for PostgresStorage {
     fn add(&self, type_: &[u8], id: &[u8], value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        let query_qualifier = get_wallet_strategy_qualifier();
         let tx: transaction::Transaction = transaction::Transaction::new(&conn)?;
-        let res = match query_qualifier {
-            Some(_) => tx.prepare_cached("INSERT INTO items (type, name, value, key, wallet_id) VALUES ($1, $2, $3, $4, $5) RETURNING id")?
-                .query(&[&type_.to_vec(), &id.to_vec(), &value.data, &value.key, &self.wallet_id]),
-            None => tx.prepare_cached("INSERT INTO items (type, name, value, key) VALUES ($1, $2, $3, $4) RETURNING id")?
+        let strategy = get_wallet_strategy();
+        let res = match &strategy {
+            WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                let sql_replaced = str::replace("INSERT INTO \"items_$5\" (type, name, value, key) VALUES ($1, $2, $3, $4) RETURNING id", "$5", &self.wallet_id);
+                tx.prepare_cached(&sql_replaced)?
+                .query(&[&type_.to_vec(), &id.to_vec(), &value.data, &value.key])
+            },
+            WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool =>tx.prepare_cached("INSERT INTO items (type, name, value, key, wallet_id) VALUES ($1, $2, $3, $4, $5) RETURNING id")?
+                    .query(&[&type_.to_vec(), &id.to_vec(), &value.data, &value.key, &self.wallet_id]),
+            WalletScheme::DatabasePerWallet => tx.prepare_cached("INSERT INTO items (type, name, value, key) VALUES ($1, $2, $3, $4) RETURNING id")?
                 .query(&[&type_.to_vec(), &id.to_vec(), &value.data, &value.key])
         };
 
@@ -1259,21 +1740,29 @@ impl WalletStorage for PostgresStorage {
         let item_id = item_id as i64;
 
         if !tags.is_empty() {
-            let stmt_e = match query_qualifier {
-                Some(_) => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)")?,
-                None => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES ($1, $2, $3)")?
+            let stmt_e = match &strategy {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable =>{
+                    let sql_replaced = str::replace("INSERT INTO \"tags_encrypted_$4\" (item_id, name, value) VALUES ($1, $2, $3)", "$4", &self.wallet_id);
+                    tx.prepare_cached(&sql_replaced)?
+                },
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)")?,
+                WalletScheme::DatabasePerWallet => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES ($1, $2, $3)")?
             };
-            let stmt_p = match query_qualifier {
-                Some(_) => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)")?,
-                None => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES ($1, $2, $3)")?
+            let stmt_p = match &strategy {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable =>{
+                    let sql_replaced = str::replace("INSERT INTO \"tags_plaintext_$4\" (item_id, name, value) VALUES ($1, $2, $3)", "$4", &self.wallet_id);
+                    tx.prepare_cached(&sql_replaced)?
+                },
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)")?,
+                WalletScheme::DatabasePerWallet => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES ($1, $2, $3)")?
             };
 
             for tag in tags {
                 match tag {
                     &Tag::Encrypted(ref tag_name, ref tag_data) => {
-                        let res = match query_qualifier {
-                            Some(_) => stmt_e.execute(&[&item_id, tag_name, tag_data, &self.wallet_id]),
-                            None => stmt_e.execute(&[&item_id, tag_name, tag_data])
+                        let res = match &strategy {
+                            WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => stmt_e.execute(&[&item_id, tag_name, tag_data, &self.wallet_id]),
+                            WalletScheme::MultiWalletMultiTable | WalletScheme::DatabasePerWallet | WalletScheme::MultiWalletSplitDatabaseMultiTable => stmt_e.execute(&[&item_id, tag_name, tag_data])
                         };
                         match res {
                             Ok(_) => (),
@@ -1288,9 +1777,9 @@ impl WalletStorage for PostgresStorage {
                         }
                     }
                     &Tag::PlainText(ref tag_name, ref tag_data) => {
-                        let res = match query_qualifier {
-                            Some(_) => stmt_p.execute(&[&item_id, tag_name, tag_data, &self.wallet_id]),
-                            None => stmt_p.execute(&[&item_id, tag_name, tag_data])
+                        let res = match &strategy {
+                             WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => stmt_p.execute(&[&item_id, tag_name, tag_data, &self.wallet_id]),
+                             WalletScheme::MultiWalletMultiTable | WalletScheme::DatabasePerWallet | WalletScheme::MultiWalletSplitDatabaseMultiTable => stmt_p.execute(&[&item_id, tag_name, tag_data])
                         };
                         match res {
                             Ok(_) => (),
@@ -1316,14 +1805,19 @@ impl WalletStorage for PostgresStorage {
     fn update(&self, type_: &[u8], id: &[u8], value: &EncryptedValue) -> Result<(), WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        let query_qualifier = get_wallet_strategy_qualifier();
-        let res = match query_qualifier {
-            Some(_) => conn.prepare_cached("UPDATE items SET value = $1, key = $2 WHERE type = $3 AND name = $4 AND wallet_id = $5")?
-                .execute(&[&value.data, &value.key, &type_.to_vec(), &id.to_vec(), &self.wallet_id]),
-            None => conn.prepare_cached("UPDATE items SET value = $1, key = $2 WHERE type = $3 AND name = $4")?
+		let strategy = get_wallet_strategy();
+        let res = match strategy {
+            WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable =>{
+                let sql_replaced = str::replace("UPDATE \"items_$5\" SET value = $1, key = $2 WHERE type = $3 AND name = $4", "$5", &self.wallet_id);
+                conn.prepare_cached(&sql_replaced)?
+                .execute(&[&value.data, &value.key, &type_.to_vec(), &id.to_vec()])
+            },
+            WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => conn.prepare_cached("UPDATE items SET value = $1, key = $2 WHERE type = $3 AND name = $4 AND wallet_id = $5")?
+                    .execute(&[&value.data, &value.key, &type_.to_vec(), &id.to_vec(), &self.wallet_id]),
+            WalletScheme::DatabasePerWallet => conn.prepare_cached("UPDATE items SET value = $1, key = $2 WHERE type = $3 AND name = $4")?
                 .execute(&[&value.data, &value.key, &type_.to_vec(), &id.to_vec()])
         };
-
+        
         match res {
             Ok(1) => Ok(()),
             Ok(0) => Err(WalletStorageError::ItemNotFound),
@@ -1335,19 +1829,28 @@ impl WalletStorage for PostgresStorage {
     fn add_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        let query_qualifier = get_wallet_strategy_qualifier();
+		let strategy = get_wallet_strategy();
         let tx: transaction::Transaction = transaction::Transaction::new(&conn)?;
 
-        let res = match query_qualifier {
-            Some(_) => {
+        let res = match &strategy {
+            WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                let sql_replaced = str::replace("SELECT id FROM \"items_$3\" WHERE type = $1 AND name = $2", "$3", &self.wallet_id);
+                let mut rows3 = tx.prepare_cached(&sql_replaced)?
+                    .query(&[&type_.to_vec(), &id.to_vec()]);
+                match rows3.as_mut().unwrap().iter().next() {
+                    Some(row) => Ok(row.get(0)),
+                    None => Err(WalletStorageError::ItemNotFound)
+                }
+            },
+            WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => {
                 let mut rows = tx.prepare_cached("SELECT id FROM items WHERE type = $1 AND name = $2")?
                     .query(&[&type_.to_vec(), &id.to_vec()]);
                 match rows.as_mut().unwrap().iter().next() {
                     Some(row) => Ok(row.get(0)),
                     None => Err(WalletStorageError::ItemNotFound)
                 }
-            }
-            None => {
+            },
+            WalletScheme::DatabasePerWallet => {
                 let mut rows = tx.prepare_cached("SELECT id FROM items WHERE type = $1 AND name = $2")?
                     .query(&[&type_.to_vec(), &id.to_vec()]);
                 match rows.as_mut().unwrap().iter().next() {
@@ -1364,25 +1867,35 @@ impl WalletStorage for PostgresStorage {
         };
 
         if !tags.is_empty() {
-            let enc_tag_insert_stmt = match query_qualifier {
-                Some(_) => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)
-                                        ON CONFLICT (name, item_id, wallet_id) DO UPDATE SET value = excluded.value")?,
-                None => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES ($1, $2, $3)
+            let enc_tag_insert_stmt = match &strategy {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                let sql_replaced = str::replace("INSERT INTO \"tags_encrypted_$4\" (item_id, name, value) VALUES ($1, $2, $3)
+                    ON CONFLICT (name, item_id) DO UPDATE SET value = excluded.value", "$4", &self.wallet_id);
+                    tx.prepare_cached(&sql_replaced)?
+                },
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)
+                        ON CONFLICT (name, item_id, wallet_id) DO UPDATE SET value = excluded.value")?,
+                WalletScheme::DatabasePerWallet => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES ($1, $2, $3)
                                         ON CONFLICT (name, item_id) DO UPDATE SET value = excluded.value")?
             };
-            let plain_tag_insert_stmt = match query_qualifier {
-                Some(_) => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)
-                                            ON CONFLICT (name, item_id, wallet_id) DO UPDATE SET value = excluded.value")?,
-                None => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES ($1, $2, $3)
+            let plain_tag_insert_stmt = match &strategy {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                let sql_replaced = str::replace("INSERT INTO \"tags_plaintext_$4\" (item_id, name, value) VALUES ($1, $2, $3)
+                    ON CONFLICT (name, item_id) DO UPDATE SET value = excluded.value", "$4", &self.wallet_id);
+                    tx.prepare_cached(&sql_replaced)?
+                },
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)
+                        ON CONFLICT (name, item_id, wallet_id) DO UPDATE SET value = excluded.value")?,
+                WalletScheme::DatabasePerWallet => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES ($1, $2, $3)
                                             ON CONFLICT (name, item_id) DO UPDATE SET value = excluded.value")?
             };
 
             for tag in tags {
                 match tag {
                     &Tag::Encrypted(ref tag_name, ref tag_data) => {
-                        let res = match query_qualifier {
-                            Some(_) => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data, &self.wallet_id]),
-                            None => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])
+                        let res = match &strategy {
+                            WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data, &self.wallet_id]),
+                            WalletScheme::MultiWalletMultiTable | WalletScheme::DatabasePerWallet | WalletScheme::MultiWalletSplitDatabaseMultiTable => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])
                         };
                         match res {
                             Ok(_) => (),
@@ -1397,9 +1910,9 @@ impl WalletStorage for PostgresStorage {
                         }
                     }
                     &Tag::PlainText(ref tag_name, ref tag_data) => {
-                        let res = match query_qualifier {
-                            Some(_) => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data, &self.wallet_id]),
-                            None => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])
+                        let res = match &strategy {
+                            WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data, &self.wallet_id]),
+                            WalletScheme::MultiWalletMultiTable | WalletScheme::DatabasePerWallet | WalletScheme::MultiWalletSplitDatabaseMultiTable => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])
                         };
                         match res {
                             Ok(_) => (),
@@ -1424,19 +1937,28 @@ impl WalletStorage for PostgresStorage {
     fn update_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        let query_qualifier = get_wallet_strategy_qualifier();
+		let strategy = get_wallet_strategy();
         let tx: transaction::Transaction = transaction::Transaction::new(&conn)?;
 
-        let res = match query_qualifier {
-            Some(_) => {
+        let res = match &strategy {
+            WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                let sql_replaced = str::replace("SELECT id FROM \"items_$3\" WHERE type = $1 AND name = $2", "$3", &self.wallet_id);
+                let mut rows = tx.prepare_cached(&sql_replaced)?
+                        .query(&[&type_.to_vec(), &id.to_vec()]);
+                match rows.as_mut().unwrap().iter().next() {
+                    Some(row) => Ok(row.get(0)),
+                    None => Err(WalletStorageError::ItemNotFound)
+                }
+            },
+            WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => {
                 let mut rows = tx.prepare_cached("SELECT id FROM items WHERE type = $1 AND name = $2 AND wallet_id = $3")?
                     .query(&[&type_.to_vec(), &id.to_vec(), &self.wallet_id]);
                 match rows.as_mut().unwrap().iter().next() {
                     Some(row) => Ok(row.get(0)),
                     None => Err(WalletStorageError::ItemNotFound)
                 }
-            }
-            None => {
+            },
+            WalletScheme::DatabasePerWallet => {
                 let mut rows = tx.prepare_cached("SELECT id FROM items WHERE type = $1 AND name = $2")?
                     .query(&[&type_.to_vec(), &id.to_vec()]);
                 match rows.as_mut().unwrap().iter().next() {
@@ -1452,36 +1974,50 @@ impl WalletStorage for PostgresStorage {
             Ok(id) => id
         };
 
-        match query_qualifier {
-            Some(_) => {
+        match &strategy {
+            WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                let sql_replaced1 = str::replace("DELETE FROM \"tags_encrypted_$2\" WHERE item_id = $1", "$2", &self.wallet_id);
+                let sql_replaced2 = str::replace("DELETE FROM \"tags_plaintext_$2\" WHERE item_id = $1", "$2", &self.wallet_id);
+                tx.execute(&sql_replaced1, &[&item_id])?;
+                tx.execute(&sql_replaced2, &[&item_id])?;
+            },
+            WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => {
                 tx.execute("DELETE FROM tags_encrypted WHERE item_id = $1 AND wallet_id = $2", &[&item_id, &self.wallet_id])?;
                 tx.execute("DELETE FROM tags_plaintext WHERE item_id = $1 AND wallet_id = $2", &[&item_id, &self.wallet_id])?;
-            }
-            None => {
+            },
+            WalletScheme::DatabasePerWallet => {
                 tx.execute("DELETE FROM tags_encrypted WHERE item_id = $1", &[&item_id])?;
                 tx.execute("DELETE FROM tags_plaintext WHERE item_id = $1", &[&item_id])?;
             }
         };
 
         if !tags.is_empty() {
-            let enc_tag_insert_stmt = match query_qualifier {
-                Some(_) => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)")?,
-                None => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES ($1, $2, $3)")?
+            let enc_tag_insert_stmt = match &strategy {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                    let sql_replaced = str::replace("INSERT INTO \"tags_encrypted_$4\" (item_id, name, value) VALUES ($1, $2, $3)", "$4", &self.wallet_id);
+                tx.prepare_cached(&sql_replaced)?
+                },
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)")?,
+                WalletScheme::DatabasePerWallet => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES ($1, $2, $3)")?
             };
-            let plain_tag_insert_stmt = match query_qualifier {
-                Some(_) => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)")?,
-                None => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES ($1, $2, $3)")?
+            let plain_tag_insert_stmt = match &strategy {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable =>{
+                    let sql_replaced = str::replace("INSERT INTO \"tags_plaintext_$4\" (item_id, name, value) VALUES ($1, $2, $3)", "$4", &self.wallet_id);
+                    tx.prepare_cached(&sql_replaced)?
+                },
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)")?,
+                WalletScheme::DatabasePerWallet => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES ($1, $2, $3)")?
             };
 
             for tag in tags {
-                match query_qualifier {
-                    Some(_) => {
+                match strategy {
+                   WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => {
                         match tag {
                             &Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data, &self.wallet_id])?,
                             &Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data, &self.wallet_id])?
                         }
-                    }
-                    None => {
+                    },
+                    WalletScheme::MultiWalletMultiTable | WalletScheme::DatabasePerWallet | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
                         match tag {
                             &Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?,
                             &Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?
@@ -1498,17 +2034,26 @@ impl WalletStorage for PostgresStorage {
     fn delete_tags(&self, type_: &[u8], id: &[u8], tag_names: &[TagName]) -> Result<(), WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        let query_qualifier = get_wallet_strategy_qualifier();
-        let res = match query_qualifier {
-            Some(_) => {
+		let strategy = get_wallet_strategy();
+        let res = match &strategy {
+            WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                let sql_replaced = str::replace("SELECT id FROM \"items_$3\" WHERE type =$1 AND name = $2", "$3", &self.wallet_id);
+                let mut rows3 = conn.prepare_cached(&sql_replaced)?
+                    .query(&[&type_.to_vec(), &id.to_vec()]);
+                match rows3.as_mut().unwrap().iter().next() {
+                    Some(row) => Ok(row.get(0)),
+                    None => Err(WalletStorageError::ItemNotFound)
+                }
+            },
+            WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => {
                 let mut rows = conn.prepare_cached("SELECT id FROM items WHERE type =$1 AND name = $2 AND wallet_id = $3")?
                     .query(&[&type_.to_vec(), &id.to_vec(), &self.wallet_id]);
                 match rows.as_mut().unwrap().iter().next() {
                     Some(row) => Ok(row.get(0)),
                     None => Err(WalletStorageError::ItemNotFound)
                 }
-            }
-            None => {
+            },
+            WalletScheme::DatabasePerWallet => {
                 let mut rows = conn.prepare_cached("SELECT id FROM items WHERE type =$1 AND name = $2")?
                     .query(&[&type_.to_vec(), &id.to_vec()]);
                 match rows.as_mut().unwrap().iter().next() {
@@ -1526,27 +2071,35 @@ impl WalletStorage for PostgresStorage {
 
         let tx: transaction::Transaction = transaction::Transaction::new(&conn)?;
         {
-            let enc_tag_delete_stmt = match query_qualifier {
-                Some(_) => tx.prepare_cached("DELETE FROM tags_encrypted WHERE item_id = $1 AND name = $2 AND wallet_id = $3")?,
-                None => tx.prepare_cached("DELETE FROM tags_encrypted WHERE item_id = $1 AND name = $2")?
+            let enc_tag_delete_stmt = match &strategy {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                    let sql_replaced = str::replace("DELETE FROM \"tags_encrypted_$3\" WHERE item_id = $1 AND name = $2", "$3", &self.wallet_id);
+                tx.prepare_cached(&sql_replaced)?
+                },
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => tx.prepare_cached("DELETE FROM tags_encrypted WHERE item_id = $1 AND name = $2 AND wallet_id = $3")?,
+                WalletScheme::DatabasePerWallet => tx.prepare_cached("DELETE FROM tags_encrypted WHERE item_id = $1 AND name = $2")?
             };
-            let plain_tag_delete_stmt = match query_qualifier {
-                Some(_) => tx.prepare_cached("DELETE FROM tags_plaintext WHERE item_id = $1 AND name = $2 AND wallet_id = $3")?,
-                None => tx.prepare_cached("DELETE FROM tags_plaintext WHERE item_id = $1 AND name = $2")?
+            let plain_tag_delete_stmt = match &strategy {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                    let sql_replaced = str::replace("DELETE FROM \"tags_plaintext_$3\" WHERE item_id = $1 AND name = $2", "$3", &self.wallet_id);
+                tx.prepare_cached(&sql_replaced)?
+                },
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => tx.prepare_cached("DELETE FROM tags_plaintext WHERE item_id = $1 AND name = $2 AND wallet_id = $3")?,
+                WalletScheme::DatabasePerWallet => tx.prepare_cached("DELETE FROM tags_plaintext WHERE item_id = $1 AND name = $2")?
             };
 
             for tag_name in tag_names {
-                match query_qualifier {
-                    Some(_) =>
+                match strategy {
+                    WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => 
                         match tag_name {
                             &TagName::OfEncrypted(ref tag_name) => enc_tag_delete_stmt.execute(&[&item_id, tag_name, &self.wallet_id])?,
                             &TagName::OfPlain(ref tag_name) => plain_tag_delete_stmt.execute(&[&item_id, tag_name, &self.wallet_id])?,
                         },
-                    None =>
+                        WalletScheme::MultiWalletMultiTable | WalletScheme::DatabasePerWallet | WalletScheme::MultiWalletSplitDatabaseMultiTable => 
                         match tag_name {
                             &TagName::OfEncrypted(ref tag_name) => enc_tag_delete_stmt.execute(&[&item_id, tag_name])?,
                             &TagName::OfPlain(ref tag_name) => plain_tag_delete_stmt.execute(&[&item_id, tag_name])?,
-                        }
+                        }      
                 };
             }
         }
@@ -1584,16 +2137,14 @@ impl WalletStorage for PostgresStorage {
     fn delete(&self, type_: &[u8], id: &[u8]) -> Result<(), WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        let query_qualifier = get_wallet_strategy_qualifier();
-        let row_count = match query_qualifier {
-            Some(_) => conn.execute(
-                "DELETE FROM items where type = $1 AND name = $2 AND wallet_id = $3",
-                &[&type_.to_vec(), &id.to_vec(), &self.wallet_id],
-            )?,
-            None => conn.execute(
-                "DELETE FROM items where type = $1 AND name = $2",
-                &[&type_.to_vec(), &id.to_vec()],
-            )?
+		let strategy = get_wallet_strategy();
+        let row_count = match strategy {
+            WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                let sql_replaced = str::replace("DELETE FROM \"items_$3\" where type = $1 AND name = $2", "$3", &self.wallet_id);
+                conn.execute(&sql_replaced, &[&type_.to_vec(), &id.to_vec()])?
+            },
+            WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => conn.execute("DELETE FROM items where type = $1 AND name = $2 AND wallet_id = $3", &[&type_.to_vec(), &id.to_vec(), &self.wallet_id])?,
+            WalletScheme::DatabasePerWallet => conn.execute("DELETE FROM items where type = $1 AND name = $2", &[&type_.to_vec(), &id.to_vec()])?
         };
         if row_count == 1 {
             Ok(())
@@ -1605,15 +2156,15 @@ impl WalletStorage for PostgresStorage {
     fn get_storage_metadata(&self) -> Result<Vec<u8>, WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        let query_qualifier = get_wallet_strategy_qualifier();
+		let strategy = get_wallet_strategy();
         let res: Result<Vec<u8>, WalletStorageError> = {
-            let mut rows = match query_qualifier {
-                Some(_) => conn.query(
-                    "SELECT value FROM metadata WHERE wallet_id = $1",
-                    &[&self.wallet_id]),
-                None => conn.query(
-                    "SELECT value FROM metadata",
-                    &[])
+            let mut rows = match strategy {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                    let sql_replaced = str::replace("SELECT value FROM \"metadata_$1\"", "$1", &self.wallet_id);
+                    conn.query(&sql_replaced,&[])
+                },
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => conn.query("SELECT value FROM metadata WHERE wallet_id = $1",&[&self.wallet_id]),
+                WalletScheme::DatabasePerWallet => conn.query("SELECT value FROM metadata", &[])
             };
             match rows.as_mut().unwrap().iter().next() {
                 Some(row) => Ok(row.get(0)),
@@ -1631,10 +2182,14 @@ impl WalletStorage for PostgresStorage {
     fn set_storage_metadata(&self, metadata: &[u8]) -> Result<(), WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        let query_qualifier = get_wallet_strategy_qualifier();
-        let res = match query_qualifier {
-            Some(_) => conn.execute("UPDATE metadata SET value = $1 WHERE wallet_id = $2", &[&metadata.to_vec(), &self.wallet_id]),
-            None => conn.execute("UPDATE metadata SET value = $1", &[&metadata.to_vec()])
+		let strategy = get_wallet_strategy();
+        let res = match strategy {
+            WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                let sql_replaced = str::replace("UPDATE \"metadata_$2\" SET value = $1", "$2", &self.wallet_id);
+                conn.execute(&sql_replaced,&[&metadata.to_vec()])
+            },
+            WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => conn.execute("UPDATE metadata SET value = $1 WHERE wallet_id = $2", &[&metadata.to_vec(), &self.wallet_id]),
+            WalletScheme::DatabasePerWallet => conn.execute("UPDATE metadata SET value = $1", &[&metadata.to_vec()])
         };
         match res {
             Ok(_) => Ok(()),
@@ -1645,10 +2200,14 @@ impl WalletStorage for PostgresStorage {
     }
 
     fn get_all(&self) -> Result<Box<dyn StorageIterator>, WalletStorageError> {
-        let query_qualifier = get_wallet_strategy_qualifier();
-        let statement = match query_qualifier {
-            Some(_) => self._prepare_statement("SELECT id, name, value, key, type FROM items WHERE wallet_id = $1")?,
-            None => self._prepare_statement("SELECT id, name, value, key, type FROM items")?
+		let strategy = get_wallet_strategy();
+        let statement = match &strategy {
+            WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                let sql_replaced = str::replace("SELECT id, name, value, key, type FROM \"items_$1\"", "$1", &self.wallet_id);
+                self._prepare_statement(&sql_replaced)?
+            },
+            WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => self._prepare_statement("SELECT id, name, value, key, type FROM items WHERE wallet_id = $1")?,
+            WalletScheme::DatabasePerWallet => self._prepare_statement("SELECT id, name, value, key, type FROM items")?
         };
         let fetch_options = RecordOptions {
             retrieve_type: true,
@@ -1656,14 +2215,17 @@ impl WalletStorage for PostgresStorage {
             retrieve_tags: true,
         };
         let pool = self.pool.clone();
-        let tag_retriever = match query_qualifier {
-            Some(_) => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), Some(self.wallet_id.clone()))?),
-            None => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), None)?)
+        let tag_retriever = match &strategy {
+            WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => 
+                Some(TagRetrieverMultiTableMultiWallet::new_owned(Rc::new(pool.get().unwrap()).clone(), Some(self.wallet_id.clone()))?),
+            WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => 
+                Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), Some(self.wallet_id.clone()))?),
+            WalletScheme::DatabasePerWallet => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), None)?)
         };
 
-        let storage_iterator = match query_qualifier {
-            Some(_) => PostgresStorageIterator::new(Some(statement), &[&self.wallet_id], fetch_options, tag_retriever, None)?,
-            None => PostgresStorageIterator::new(Some(statement), &[], fetch_options, tag_retriever, None)?
+        let storage_iterator = match &strategy {
+            WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => PostgresStorageIterator::new(Some(statement), &[&self.wallet_id], fetch_options, tag_retriever, None)?,
+            WalletScheme::MultiWalletMultiTable | WalletScheme::DatabasePerWallet | WalletScheme::MultiWalletSplitDatabaseMultiTable => PostgresStorageIterator::new(Some(statement), &[], fetch_options, tag_retriever, None)?
         };
         Ok(Box::new(storage_iterator))
     }
@@ -1678,12 +2240,15 @@ impl WalletStorage for PostgresStorage {
 
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        let query_qualifier = get_wallet_strategy_qualifier();
         let wallet_id_arg = self.wallet_id.to_owned();
         let total_count: Option<usize> = if search_options.retrieve_total_count {
-            let (query_string, query_arguments) = match query_qualifier {
-                Some(_) => {
-                    let (mut query_string, mut query_arguments) = query::wql_to_sql_count(&type_, query)?;
+            let strategy = get_wallet_strategy();
+            let (query_string, query_arguments) = match &strategy {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                    query::wql_to_sql_count(&type_, query, strategy, &wallet_id_arg)?
+                }
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => { 
+                    let (mut query_string, mut query_arguments) = query::wql_to_sql_count(&type_, query, strategy, &wallet_id_arg)?;
                     query_arguments.push(&wallet_id_arg);
                     let arg_str = format!(" AND i.wallet_id = ${}", query_arguments.len());
                     query_string.push_str(&arg_str);
@@ -1706,7 +2271,9 @@ impl WalletStorage for PostgresStorage {
                     }
                     (query_string, query_arguments)
                 }
-                None => query::wql_to_sql_count(&type_, query)?
+                WalletScheme::DatabasePerWallet => {
+                    query::wql_to_sql_count(&type_, query, strategy, &wallet_id_arg)?
+                }
             };
 
             let mut rows = conn.query(
@@ -1728,9 +2295,13 @@ impl WalletStorage for PostgresStorage {
                 retrieve_type: search_options.retrieve_type,
             };
 
-            let (query_string, query_arguments) = match query_qualifier {
-                Some(_) => {
-                    let (mut query_string, mut query_arguments) = query::wql_to_sql(&type_, query, options)?;
+            let strategy = get_wallet_strategy();
+            let (query_string, query_arguments) = match &strategy {
+                WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                    query::wql_to_sql(&type_, query, options, get_wallet_strategy(), &wallet_id_arg)?
+                }
+                WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => { 
+                    let (mut query_string, mut query_arguments) = query::wql_to_sql(&type_, query, options, get_wallet_strategy(), &wallet_id_arg)?;
                     query_arguments.push(&wallet_id_arg);
                     let arg_str = format!(" AND i.wallet_id = ${}", query_arguments.len());
                     query_string.push_str(&arg_str);
@@ -1753,19 +2324,25 @@ impl WalletStorage for PostgresStorage {
                     }
                     (query_string, query_arguments)
                 }
-                None => query::wql_to_sql(&type_, query, options)?
+                WalletScheme::DatabasePerWallet => {
+                    query::wql_to_sql(&type_, query, options, get_wallet_strategy(), &wallet_id_arg)?
+                }
             };
 
             let statement = self._prepare_statement(&query_string)?;
             let tag_retriever = if fetch_options.retrieve_tags {
                 let pool = self.pool.clone();
-                match query_qualifier {
-                    Some(_) => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), Some(self.wallet_id.clone()))?),
-                    None => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), None)?)
+                match &strategy {
+                    WalletScheme::MultiWalletMultiTable | WalletScheme::MultiWalletSplitDatabaseMultiTable => 
+                        Some(TagRetrieverMultiTableMultiWallet::new_owned(Rc::new(pool.get().unwrap()).clone(), Some(self.wallet_id.clone()))?),
+                    WalletScheme::MultiWalletSingleTable | WalletScheme::MultiWalletSingleTableSharedPool => 
+                        Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), Some(self.wallet_id.clone()))?),
+                    WalletScheme::DatabasePerWallet => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), None)?)
                 }
             } else {
                 None
             };
+
             let storage_iterator = PostgresStorageIterator::new(Some(statement), &query_arguments[..], fetch_options, tag_retriever, total_count)?;
             Ok(Box::new(storage_iterator))
         } else {
@@ -1816,11 +2393,10 @@ fn set_wallet_strategy(strategy: Box<dyn WalletStrategy + Send + Sync>) {
     *write_strategy = strategy;
 }
 
-fn get_wallet_strategy_qualifier() -> Option<String> {
+fn get_wallet_strategy() -> WalletScheme {
     let read_strategy = SELECTED_STRATEGY.read().unwrap();
-    read_strategy.as_ref().query_qualifier()
+    read_strategy.as_ref().strategy()
 }
-
 
 impl WalletStorageType for PostgresStorageType {
     ///
@@ -1878,6 +2454,10 @@ impl WalletStorageType for PostgresStorageType {
                 WalletScheme::MultiWalletMultiTable => {
                     debug!("Initialising postgresql using MultiWalletMultiTable strategy.");
                     set_wallet_strategy(Box::new(MultiWalletMultiTableStrategy {}));
+                }
+                WalletScheme::MultiWalletSplitDatabaseMultiTable => {
+                    debug!("Initialising postgresql using MultiWalletSplitDatabaseMultiTable strategy.");
+                    set_wallet_strategy(Box::new(MultiWalletSplitDatabaseMultiTableStrategy {}));
                 }
                 WalletScheme::MultiWalletSingleTableSharedPool => {
                     if (&config as &PostgresConfig).min_idle_count() > 0 {
@@ -2109,7 +2689,7 @@ mod tests {
 
         let storage_type = PostgresStorageType::new();
         storage_type.create_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]), &_metadata()).unwrap();
-
+        
         let res = storage_type.delete_storage("unknown", Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]));
         assert_match!(Err(WalletStorageError::NotFound), res);
 
@@ -2121,6 +2701,78 @@ mod tests {
         _cleanup();
         _storage();
     }
+
+    // use std::time::Instant;
+    // use rand::{Rng}; // 0.8
+
+    // #[test]
+    // fn postgres_storage_multiple() {
+    //     _cleanup();
+       
+    //     let mut i = 0;
+
+    //     let mut sum_create = 0;
+    //     let mut sum_open = 0;
+    //     let mut sum_add = 0;
+    //     let mut sum_get = 0;
+
+    //     while i < 100 {
+    //         let storage_type = PostgresStorageType::new();
+            
+    //         let s: String = rand::thread_rng()
+    //             .gen_ascii_chars()
+    //             .take(7)
+    //             .map(char::from)
+    //             .collect();
+
+    //         let id = format!("{}{}", &"Edge", &s[..]);
+
+    //         // create
+    //         let start_create = Instant::now();
+    //         storage_type.create_storage(&id, Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]), &_metadata()).unwrap();
+    //         let elapsed_create = start_create.elapsed();
+
+    //         // open
+    //         let start_open = Instant::now();
+    //         let res = storage_type.open_storage(&id, Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
+    //         let elapsed_open = start_open.elapsed();
+            
+    //         // add
+    //         let start_add = Instant::now();
+    //         res.add(&_type1(), &_id2(), &_value2(), &_tags()).unwrap();
+    //         let elapsed_add = start_add.elapsed();
+
+    //         // get
+    //         let start_get = Instant::now();
+    //         res.get(&_type1(), &_id2(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+    //         let elapsed_get = start_get.elapsed();     
+
+    //         sum_create = sum_create + elapsed_create.as_millis();
+    //         sum_add = sum_add + elapsed_add.as_millis();
+    //         sum_open = sum_open + elapsed_open.as_millis();
+    //         sum_get = sum_get + elapsed_get.as_millis();
+
+    //         i = i + 1;
+    //         if i % 100 == 0 {
+    //             let mut print_avg_create = sum_create / 100;
+    //             let mut print_avg_open = sum_open / 100;
+    //             let mut print_avg_add = sum_add / 100;
+    //             let mut print_avg_get = sum_get / 100;
+
+    //             let outline = format!("Wallets: {} - AVG: Create {:?} - Open {:?} - Add {:?} -  Get {:?}", &i, print_avg_create, print_avg_open, print_avg_add, print_avg_get);
+                
+    //             sum_create = 0;
+    //             sum_add = 0;
+    //             sum_open = 0;
+    //             sum_get = 0;
+
+    //             println!("{}", outline);
+    //         }
+            
+    //     }
+    
+    //     assert_eq!(1,1);
+    // }
 
     #[test]
     fn postgres_storage_type_open_works_for_not_created() {
@@ -2252,7 +2904,7 @@ mod tests {
     }
 
     #[test]
-    fn postgres_storage_get_all_workss() {
+    fn postgres_storage_get_all_works() {
         _cleanup();
 
         let storage = _storage();
@@ -2536,7 +3188,7 @@ mod tests {
     }
 
     fn _wallet_id() -> &'static str {
-        "walle1"
+        "walle1-test"
     }
 
     fn _storage() -> Box<dyn WalletStorage> {
@@ -2563,6 +3215,12 @@ mod tests {
                 if scheme == "MultiWalletSingleTableSharedPool" {
                     return _wallet_config_multi_with_shared_pool();
                 }
+                if scheme == "MultiWalletMultiTable" {
+                    return _wallet_config_multi_wallet_multi_table();
+                }
+                if scheme == "MultiWalletSplitDatabaseMultiTable" {
+                    return _wallet_config_multi_wallet_splitted_multi_table();
+                }
             }
             Err(_) => ()
         };
@@ -2584,6 +3242,22 @@ mod tests {
         let config = json!({
             "url": "localhost:5432".to_owned(),
             "wallet_scheme": "MultiWalletSingleTableSharedPool".to_owned()
+        }).to_string();
+        config
+    }
+
+    fn _wallet_config_multi_wallet_multi_table() -> String {
+        let config = json!({
+            "url": "localhost:5432".to_owned(),
+            "wallet_scheme": "MultiWalletMultiTable".to_owned()
+        }).to_string();
+        config
+    }
+
+    fn _wallet_config_multi_wallet_splitted_multi_table() -> String {
+        let config = json!({
+            "url": "localhost:5432".to_owned(),
+            "wallet_scheme": "MultiWalletSplitDatabaseMultiTable".to_owned()
         }).to_string();
         config
     }

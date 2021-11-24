@@ -81,19 +81,42 @@
   
   <h1 id="Hyperledger_Indy_CryptoApi_Crypto" data-uid="Hyperledger.Indy.CryptoApi.Crypto" class="text-break">Class Crypto
   </h1>
-  <div class="markdown level0 summary"><p>Provides methods for performing .</p>
-</div>
+  <div class="markdown level0 summary"></div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><span class="xref">System.Object</span></div>
     <div class="level1"><span class="xref">Crypto</span></div>
   </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <span class="xref">System.Object.ToString()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetHashCode()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetType()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.MemberwiseClone()</span>
+    </div>
+  </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.CryptoApi.html">Hyperledger.Indy.CryptoApi</a></h6>
   <h6><strong>Assembly</strong>: Hyperledger.Indy.Sdk.dll</h6>
   <h5 id="Hyperledger_Indy_CryptoApi_Crypto_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static class Crypto : Object</code></pre>
+    <pre><code class="lang-csharp hljs">public static class Crypto</code></pre>
   </div>
   <h3 id="methods">Methods
   </h3>
@@ -299,8 +322,7 @@
   </table>
   <a id="Hyperledger_Indy_CryptoApi_Crypto_CreateKeyAsync_" data-uid="Hyperledger.Indy.CryptoApi.Crypto.CreateKeyAsync*"></a>
   <h4 id="Hyperledger_Indy_CryptoApi_Crypto_CreateKeyAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.CryptoApi.Crypto.CreateKeyAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">CreateKeyAsync(Wallet, String)</h4>
-  <div class="markdown level1 summary"><p>Creates a key in the provided wallet.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -319,14 +341,12 @@
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>The wallet to create the key in.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">keyJson</span></td>
-        <td><p>The JSON string describing the key.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -341,42 +361,13 @@
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a string containing the verification key of the generated key-pair.</p>
-</td>
-      </tr>
-    </tbody>
-  </table>
-  <h5 id="Hyperledger_Indy_CryptoApi_Crypto_CreateKeyAsync_Hyperledger_Indy_WalletApi_Wallet_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>The <code data-dev-comment-type="paramref" class="paramref">keyJson</code> parameter must contain a JSON object although all properties of the object are optional.  The schema
-the object must conform to are as follows:</p>
-<pre><code>{
-    &quot;seed&quot;: string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
-    &quot;crypto_type&quot;: string, // Optional (if not set then ed25519 curve is used); Currently only &apos;ed25519&apos; value is supported for this field.
-}</code></pre>
-<p>The <code>seed</code> member is optional and is used to specify the seed to use for key creation - if this parameter is not set then a random seed will be used.
-The <code>crypto_type</code> member is also optional and will default to ed25519 curve if not set.
-<div class="NOTE"><h5>note</h5><p>At present the crypto_type member only supports the value &apos;ed22519&apos;.</p></div></p>
-</div>
-  <h5 class="exceptions">Exceptions</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Condition</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="Hyperledger.Indy.InvalidStructureException.html">InvalidStructureException</a></td>
-        <td><p>Thrown if the value passed to the <code data-dev-comment-type="paramref" class="paramref">keyJson</code> parameter is malformed or contains invalid data.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_CryptoApi_Crypto_GetKeyMetadataAsync_" data-uid="Hyperledger.Indy.CryptoApi.Crypto.GetKeyMetadataAsync*"></a>
   <h4 id="Hyperledger_Indy_CryptoApi_Crypto_GetKeyMetadataAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.CryptoApi.Crypto.GetKeyMetadataAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">GetKeyMetadataAsync(Wallet, String)</h4>
-  <div class="markdown level1 summary"><p>Gets the user defined metadata stored against a key-pair in the specified wallet.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -395,14 +386,12 @@ The <code>crypto_type</code> member is also optional and will default to ed25519
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>The wallet containing the key-pair.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">verKey</span></td>
-        <td><p>The verification key of the key-pair.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -417,34 +406,68 @@ The <code>crypto_type</code> member is also optional and will default to ed25519
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a string containing the metadata associated with the key-pair.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_CryptoApi_Crypto_GetKeyMetadataAsync_Hyperledger_Indy_WalletApi_Wallet_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>If no metadata is stored against the specified key-pair null will be returned.</p>
-</div>
-  <h5 class="exceptions">Exceptions</h5>
+  <a id="Hyperledger_Indy_CryptoApi_Crypto_PackMessageAsync_" data-uid="Hyperledger.Indy.CryptoApi.Crypto.PackMessageAsync*"></a>
+  <h4 id="Hyperledger_Indy_CryptoApi_Crypto_PackMessageAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_Byte___" data-uid="Hyperledger.Indy.CryptoApi.Crypto.PackMessageAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.Byte[])">PackMessageAsync(Wallet, String, String, Byte[])</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;byte[]&gt; PackMessageAsync(Wallet wallet, string recipientVk, string senderVk, byte[] message)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
     <thead>
       <tr>
         <th>Type</th>
-        <th>Condition</th>
+        <th>Name</th>
+        <th>Description</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="Hyperledger.Indy.WalletApi.WalletValueNotFoundException.html">WalletValueNotFoundException</a></td>
-        <td><p>Thrown if the wallet does not contain a key-pair matching the provided <code data-dev-comment-type="paramref" class="paramref">verKey</code> or they key-pair has no metadata.</p>
-</td>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">recipientVk</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">senderVk</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Byte</span>[]</td>
+        <td><span class="parametername">message</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.Byte</span>[]&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_CryptoApi_Crypto_SetKeyMetadataAsync_" data-uid="Hyperledger.Indy.CryptoApi.Crypto.SetKeyMetadataAsync*"></a>
   <h4 id="Hyperledger_Indy_CryptoApi_Crypto_SetKeyMetadataAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.CryptoApi.Crypto.SetKeyMetadataAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">SetKeyMetadataAsync(Wallet, String, String)</h4>
-  <div class="markdown level1 summary"><p>Sets user defined metadata for a key-pair in the specified wallet.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -463,20 +486,17 @@ The <code>crypto_type</code> member is also optional and will default to ed25519
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>The wallet containing the key.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">verKey</span></td>
-        <td><p>The verification key of the key pair.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">metadata</span></td>
-        <td><p>The metadata to set.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -491,34 +511,13 @@ The <code>crypto_type</code> member is also optional and will default to ed25519
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span></td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task</span> that completes when the operation completes.</p>
-</td>
-      </tr>
-    </tbody>
-  </table>
-  <h5 id="Hyperledger_Indy_CryptoApi_Crypto_SetKeyMetadataAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>Any existing metadata stored for the key-pair will be replaced.</p>
-</div>
-  <h5 class="exceptions">Exceptions</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Condition</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="Hyperledger.Indy.WalletApi.WalletValueNotFoundException.html">WalletValueNotFoundException</a></td>
-        <td><p>Thrown if the wallet does not contain a key-pair matching the provided <code data-dev-comment-type="paramref" class="paramref">verKey</code>.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_CryptoApi_Crypto_SignAsync_" data-uid="Hyperledger.Indy.CryptoApi.Crypto.SignAsync*"></a>
   <h4 id="Hyperledger_Indy_CryptoApi_Crypto_SignAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_Byte___" data-uid="Hyperledger.Indy.CryptoApi.Crypto.SignAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.Byte[])">SignAsync(Wallet, String, Byte[])</h4>
-  <div class="markdown level1 summary"><p>Signs the provided message with the provided key.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -537,20 +536,17 @@ The <code>crypto_type</code> member is also optional and will default to ed25519
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>The wallet containing the key-pair to sign with.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">myVk</span></td>
-        <td><p>The verification key of the key-pair to sign with.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.Byte</span>[]</td>
         <td><span class="parametername">message</span></td>
-        <td><p>The message to sign</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -565,39 +561,58 @@ The <code>crypto_type</code> member is also optional and will default to ed25519
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.Byte</span>[]&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a byte array containing the signature.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_CryptoApi_Crypto_SignAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_Byte____remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>The key provided as the <code data-dev-comment-type="paramref" class="paramref">myVk</code> parameter must have previously been stored in the <code data-dev-comment-type="paramref" class="paramref">wallet</code> using
-the <a class="xref" href="Hyperledger.Indy.CryptoApi.Crypto.html#Hyperledger_Indy_CryptoApi_Crypto_CreateKeyAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">CreateKeyAsync(Wallet, String)</a> method or the <span class="xref">Hyperledger.Indy.SignusApi.Signus.CreateAndStoreMyDidAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)</span> method.
-<div class="NOTE"><h5>note</h5><p>
-To use DID keys with this method call the <span class="xref">Hyperledger.Indy.SignusApi.Signus.KeyForDidAsync(Hyperledger.Indy.PoolApi.Pool,Hyperledger.Indy.WalletApi.Wallet,System.String)</span> with the desired DID to get 
-its verification key which can be used as the <code data-dev-comment-type="paramref" class="paramref">myVk</code> parameter when calling this method.
-</p></div></p>
-</div>
-  <h5 class="exceptions">Exceptions</h5>
+  <a id="Hyperledger_Indy_CryptoApi_Crypto_UnpackMessageAsync_" data-uid="Hyperledger.Indy.CryptoApi.Crypto.UnpackMessageAsync*"></a>
+  <h4 id="Hyperledger_Indy_CryptoApi_Crypto_UnpackMessageAsync_Hyperledger_Indy_WalletApi_Wallet_System_Byte___" data-uid="Hyperledger.Indy.CryptoApi.Crypto.UnpackMessageAsync(Hyperledger.Indy.WalletApi.Wallet,System.Byte[])">UnpackMessageAsync(Wallet, Byte[])</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;byte[]&gt; UnpackMessageAsync(Wallet wallet, byte[] message)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
     <thead>
       <tr>
         <th>Type</th>
-        <th>Condition</th>
+        <th>Name</th>
+        <th>Description</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="Hyperledger.Indy.WalletApi.WalletValueNotFoundException.html">WalletValueNotFoundException</a></td>
-        <td><p>Thrown if <code data-dev-comment-type="paramref" class="paramref">myVk</code> is not present in the <code data-dev-comment-type="paramref" class="paramref">wallet</code>.</p>
-</td>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Byte</span>[]</td>
+        <td><span class="parametername">message</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.Byte</span>[]&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_CryptoApi_Crypto_VerifyAsync_" data-uid="Hyperledger.Indy.CryptoApi.Crypto.VerifyAsync*"></a>
   <h4 id="Hyperledger_Indy_CryptoApi_Crypto_VerifyAsync_System_String_System_Byte___System_Byte___" data-uid="Hyperledger.Indy.CryptoApi.Crypto.VerifyAsync(System.String,System.Byte[],System.Byte[])">VerifyAsync(String, Byte[], Byte[])</h4>
-  <div class="markdown level1 summary"><p>Verifies a message signature with a verification key.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -616,20 +631,17 @@ its verification key which can be used as the <code data-dev-comment-type="param
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">theirVk</span></td>
-        <td><p>The verification key belonging to the party that signed the message.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.Byte</span>[]</td>
         <td><span class="parametername">message</span></td>
-        <td><p>The message that was signed.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.Byte</span>[]</td>
         <td><span class="parametername">signature</span></td>
-        <td><p>The signature for the message.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -644,8 +656,7 @@ its verification key which can be used as the <code data-dev-comment-type="param
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.Boolean</span>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that, when the operation completes, resolves to true if the signature was valid, otherwise false.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>

@@ -81,9 +81,7 @@
   
   <h1 id="Hyperledger_Indy_PoolApi_Pool" data-uid="Hyperledger.Indy.PoolApi.Pool" class="text-break">Class Pool
   </h1>
-  <div class="markdown level0 summary"><p>Represents a connection to a pool of ledger nodes and provides static methods for managing
-connections to pools.</p>
-</div>
+  <div class="markdown level0 summary"></div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
@@ -94,18 +92,41 @@ connections to pools.</p>
     <h5>Implements</h5>
     <div><span class="xref">System.IDisposable</span></div>
   </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <span class="xref">System.Object.ToString()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetHashCode()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetType()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.MemberwiseClone()</span>
+    </div>
+  </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.PoolApi.html">Hyperledger.Indy.PoolApi</a></h6>
   <h6><strong>Assembly</strong>: Hyperledger.Indy.Sdk.dll</h6>
   <h5 id="Hyperledger_Indy_PoolApi_Pool_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public sealed class Pool : Object, IDisposable</code></pre>
+    <pre><code class="lang-csharp hljs">public sealed class Pool : IDisposable</code></pre>
   </div>
   <h3 id="methods">Methods
   </h3>
   <a id="Hyperledger_Indy_PoolApi_Pool_CloseAsync_" data-uid="Hyperledger.Indy.PoolApi.Pool.CloseAsync*"></a>
   <h4 id="Hyperledger_Indy_PoolApi_Pool_CloseAsync" data-uid="Hyperledger.Indy.PoolApi.Pool.CloseAsync">CloseAsync()</h4>
-  <div class="markdown level1 summary"><p>Closes the pool.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -122,20 +143,13 @@ connections to pools.</p>
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span></td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task</span> that completes when the operation completes.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_PoolApi_Pool_CloseAsync_remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><div class="NOTE"><h5>note</h5><p>Once a Pool instance is closed it cannot be opened again.  Instead call the 
-<a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html#Hyperledger_Indy_PoolApi_Pool_OpenPoolLedgerAsync_System_String_System_String_">OpenPoolLedgerAsync(String, String)</a> method to open a new Pool instance.</p></div>
-</div>
   <a id="Hyperledger_Indy_PoolApi_Pool_CreatePoolLedgerConfigAsync_" data-uid="Hyperledger.Indy.PoolApi.Pool.CreatePoolLedgerConfigAsync*"></a>
   <h4 id="Hyperledger_Indy_PoolApi_Pool_CreatePoolLedgerConfigAsync_System_String_System_String_" data-uid="Hyperledger.Indy.PoolApi.Pool.CreatePoolLedgerConfigAsync(System.String,System.String)">CreatePoolLedgerConfigAsync(String, String)</h4>
-  <div class="markdown level1 summary"><p>Creates a new local pool configuration with the specified name that can be used later to open a connection to 
-pool nodes.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -154,14 +168,12 @@ pool nodes.</p>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">configName</span></td>
-        <td><p>The name for the configuration.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">config</span></td>
-        <td><p>The configuration JSON.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -176,33 +188,13 @@ pool nodes.</p>
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span></td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> with no return value that completes when
-the configuration is created.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_PoolApi_Pool_CreatePoolLedgerConfigAsync_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>
-If the configuration specified in the <code data-dev-comment-type="paramref" class="paramref">config</code> parameter is null then the 
-default configuration will be used, however if specified the value should adhere to the following
-JSON format:
-<pre><code>{
-    &quot;genesis_txn&quot;: &quot;path/to/genesis/transaction/file&quot;
-}</code></pre>
-If the value of the <code>genesis_txn</code> key in the JSON is null then a default file will be
-used.  If the file specified does not exist it will be created.
-</p>
-</div>
-  <h5 id="Hyperledger_Indy_PoolApi_Pool_CreatePoolLedgerConfigAsync_System_String_System_String__seealso">See Also</h5>
-  <div class="seealso">
-      <div><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html#Hyperledger_Indy_PoolApi_Pool_OpenPoolLedgerAsync_System_String_System_String_">OpenPoolLedgerAsync(String, String)</a></div>
-      <div><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html#Hyperledger_Indy_PoolApi_Pool_DeletePoolLedgerConfigAsync_System_String_">DeletePoolLedgerConfigAsync(String)</a></div>
-  </div>
   <a id="Hyperledger_Indy_PoolApi_Pool_DeletePoolLedgerConfigAsync_" data-uid="Hyperledger.Indy.PoolApi.Pool.DeletePoolLedgerConfigAsync*"></a>
   <h4 id="Hyperledger_Indy_PoolApi_Pool_DeletePoolLedgerConfigAsync_System_String_" data-uid="Hyperledger.Indy.PoolApi.Pool.DeletePoolLedgerConfigAsync(System.String)">DeletePoolLedgerConfigAsync(String)</h4>
-  <div class="markdown level1 summary"><p>Deletes an existing pool configuration.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -221,8 +213,7 @@ used.  If the file specified does not exist it will be created.
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">configName</span></td>
-        <td><p>The name of the configuration to delete.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -237,20 +228,13 @@ used.  If the file specified does not exist it will be created.
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span></td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> with no return value that completes when
-the configuration is deleted.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_PoolApi_Pool_DeletePoolLedgerConfigAsync_System_String__seealso">See Also</h5>
-  <div class="seealso">
-      <div><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html#Hyperledger_Indy_PoolApi_Pool_CreatePoolLedgerConfigAsync_System_String_System_String_">CreatePoolLedgerConfigAsync(String, String)</a></div>
-  </div>
   <a id="Hyperledger_Indy_PoolApi_Pool_Dispose_" data-uid="Hyperledger.Indy.PoolApi.Pool.Dispose*"></a>
   <h4 id="Hyperledger_Indy_PoolApi_Pool_Dispose" data-uid="Hyperledger.Indy.PoolApi.Pool.Dispose">Dispose()</h4>
-  <div class="markdown level1 summary"><p>Disposes of resources.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -258,12 +242,11 @@ the configuration is deleted.</p>
   </div>
   <a id="Hyperledger_Indy_PoolApi_Pool_Finalize_" data-uid="Hyperledger.Indy.PoolApi.Pool.Finalize*"></a>
   <h4 id="Hyperledger_Indy_PoolApi_Pool_Finalize" data-uid="Hyperledger.Indy.PoolApi.Pool.Finalize">Finalize()</h4>
-  <div class="markdown level1 summary"><p>Finalizes the resource during GC if it hasn&apos;t been already.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">protected override void Finalize()</code></pre>
+    <pre><code class="lang-csharp hljs">protected void Finalize()</code></pre>
   </div>
   <a id="Hyperledger_Indy_PoolApi_Pool_ListPoolsAsync_" data-uid="Hyperledger.Indy.PoolApi.Pool.ListPoolsAsync*"></a>
   <h4 id="Hyperledger_Indy_PoolApi_Pool_ListPoolsAsync" data-uid="Hyperledger.Indy.PoolApi.Pool.ListPoolsAsync">ListPoolsAsync()</h4>
@@ -290,8 +273,7 @@ the configuration is deleted.</p>
   </table>
   <a id="Hyperledger_Indy_PoolApi_Pool_OpenPoolLedgerAsync_" data-uid="Hyperledger.Indy.PoolApi.Pool.OpenPoolLedgerAsync*"></a>
   <h4 id="Hyperledger_Indy_PoolApi_Pool_OpenPoolLedgerAsync_System_String_System_String_" data-uid="Hyperledger.Indy.PoolApi.Pool.OpenPoolLedgerAsync(System.String,System.String)">OpenPoolLedgerAsync(String, String)</h4>
-  <div class="markdown level1 summary"><p>Opens a pool and connects to the ledger nodes.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -310,14 +292,12 @@ the configuration is deleted.</p>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">configName</span></td>
-        <td><p>The name of the pool configuration to use.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><span class="xref">System.String</span></td>
         <td><span class="parametername">config</span></td>
-        <td><p>The runtime configuration to use.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -332,32 +312,13 @@ the configuration is deleted.</p>
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html">Pool</a>&gt;</td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a Pool instance once the pool is opened.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_PoolApi_Pool_OpenPoolLedgerAsync_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>A Pool cannot be opened unless the a pool configuration with the specified name was previously
-configured using the <a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html#Hyperledger_Indy_PoolApi_Pool_CreatePoolLedgerConfigAsync_System_String_System_String_">CreatePoolLedgerConfigAsync(String, String)</a> method.</p>
-<p>When opening a pool the runtime configuration can be specified using the <code data-dev-comment-type="paramref" class="paramref">config</code>
-parameter, which expects a JSON string with the following format:</p>
-<pre><code>{
-    &quot;refresh_on_open&quot;: bool (optional), Forces pool ledger to be refreshed immediately after opening.
-                     Defaults to true.
-    &quot;auto_refresh_time&quot;: int (optional), After this time in minutes pool ledger will be automatically refreshed.
-                       Use 0 to disable automatic refresh. Defaults to 24*60.
-    &quot;network_timeout&quot;: int (optional), Network timeout for communication with nodes in milliseconds.
-                      Defaults to 20000.
-}</code></pre>
-
-<p>If the <code data-dev-comment-type="paramref" class="paramref">config</code> parameter is null then the default configuration will be used.</p>
-<div class="NOTE"><h5>note</h5><p>Attempting to open a pool with the same name more than once will result in an error.</p></div>
-</div>
   <a id="Hyperledger_Indy_PoolApi_Pool_RefreshAsync_" data-uid="Hyperledger.Indy.PoolApi.Pool.RefreshAsync*"></a>
   <h4 id="Hyperledger_Indy_PoolApi_Pool_RefreshAsync" data-uid="Hyperledger.Indy.PoolApi.Pool.RefreshAsync">RefreshAsync()</h4>
-  <div class="markdown level1 summary"><p>Refreshes a local copy of the pool and updates the pool&apos;s node connections.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -374,8 +335,7 @@ parameter, which expects a JSON string with the following format:</p>
     <tbody>
       <tr>
         <td><span class="xref">System.Threading.Tasks.Task</span></td>
-        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task</span> that completes when the operation completes.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
