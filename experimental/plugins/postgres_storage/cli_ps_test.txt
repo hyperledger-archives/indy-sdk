@@ -4,7 +4,7 @@
 # register the postgres plug-in
 load-plugin library=../experimental/plugins/postgres_storage/target/debug/libindystrgpostgres.dylib initializer=postgresstorage_init
 # create a postgres wallet
-wallet create wallet_psx key storage_type=postgres_storage storage_config={"url":"localhost:5432"} storage_credentials={"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}
+wallet create wallet_psx key storage_type=postgres_storage storage_config={"url":"localhost:5432", "wallet_scheme": "MultiWalletMultiTable"} storage_credentials={"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}
 # open the postgres wallet
 wallet open wallet_psx key storage_credentials={"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}
 # create and use a new DID in the wallet

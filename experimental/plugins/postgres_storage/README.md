@@ -76,7 +76,7 @@ RUST_BACKTRACE=1 cargo test -- --nocapture --test-threads=1
 ```
 
 ## Wallet management modes 
-The plug-in supports three modes 
+The plug-in supports five modes 
 - `DatabasePerWallet` - each wallet has its own database
 - `MultiWalletSingleTable` - all wallets are stored in single table in single database. Each wallet has its own 
 connection pool.
@@ -84,6 +84,8 @@ connection pool.
 will create only 1 connection pool reused by all wallets. This can be useful if intend to open many different 
 wallets. Postgres has by default limitation of ~100 simultaneous connections and using this strategy you can
 limit number of DB connections significantly.
+- `MultiWalletMultiTable` - each wallet is stored in its own table. All table are located in one database
+- `MultiWalletSplitDatabaseMultiTable` - same like MultiWalletMultiTable with the difference that the wallet tables are stored in multible databases. The chosen database for storing the wallet depends on a substring (default character 4-6) of the wallet id.
 
 By default is used `DatabasePerWallet` mode, however you can override this by specifying 
 value of `wallet_scheme` with value `MultiWalletSingleTable` or `MultiWalletSingleTableSharedPool`. 
