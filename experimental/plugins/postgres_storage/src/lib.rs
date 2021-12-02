@@ -456,7 +456,7 @@ impl PostgresWallet {
 
         let record = handles.get(&record_handle).unwrap();
 
-        unsafe { *tags_json_ptr = record.tags.as_ptr() as *const i8; }
+        unsafe { *tags_json_ptr = record.tags.as_ptr() as *const libc::c_char; }
 
         ErrorCode::Success
     }
