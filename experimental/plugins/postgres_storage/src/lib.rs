@@ -385,7 +385,7 @@ impl PostgresWallet {
 
         let record = handles.get(&record_handle).unwrap();
 
-        unsafe { *id_ptr = record.id.as_ptr() as *const i8; }
+        unsafe { *id_ptr = record.id.as_ptr() as *const libc::c_char; }
 
         ErrorCode::Success
     }
@@ -408,7 +408,7 @@ impl PostgresWallet {
 
         let record = handles.get(&record_handle).unwrap();
 
-        unsafe { *type_ptr = record.type_.as_ptr() as *const i8; }
+        unsafe { *type_ptr = record.type_.as_ptr() as *const libc::c_char; }
 
         ErrorCode::Success
     }
@@ -432,7 +432,7 @@ impl PostgresWallet {
 
         let record = handles.get(&record_handle).unwrap();
 
-        unsafe { *value_ptr = record.value.as_ptr() as *const u8; }
+        unsafe { *value_ptr = record.value.as_ptr() as *const libc::c_char; }
         unsafe { *value_len = record.value.len() as usize; }
 
         ErrorCode::Success
@@ -456,7 +456,7 @@ impl PostgresWallet {
 
         let record = handles.get(&record_handle).unwrap();
 
-        unsafe { *tags_json_ptr = record.tags.as_ptr() as *const i8; }
+        unsafe { *tags_json_ptr = record.tags.as_ptr() as *const u8; }
 
         ErrorCode::Success
     }

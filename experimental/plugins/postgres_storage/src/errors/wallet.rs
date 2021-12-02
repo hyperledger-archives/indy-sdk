@@ -56,6 +56,9 @@ impl fmt::Display for WalletError {
 }
 
 impl error::Error for WalletError {
+    /*
+     * https://blog.rust-lang.org/2020/03/12/Rust-1.42.html#errordescription-is-deprecated
+     *
     fn description(&self) -> &str {
         match *self {
             WalletError::InvalidHandle(ref description) => description,
@@ -75,7 +78,7 @@ impl error::Error for WalletError {
             WalletError::QueryError(ref description) => description,
         }
     }
-
+*/
     fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
             WalletError::InvalidHandle(_) => None,
@@ -140,32 +143,32 @@ impl From<WalletStorageError> for WalletError {
             WalletStorageError::ItemNotFound => WalletError::ItemNotFound,
             WalletStorageError::ItemAlreadyExists => WalletError::ItemAlreadyExists,
             WalletStorageError::PluggedStorageError(code) => WalletError::PluggedWalletError(code),
-            _ => WalletError::StorageError(err.description().to_string())
+            _ => WalletError::StorageError(err.to_string())
         }
     }
 }
 
 impl From<WalletQueryError> for WalletError {
     fn from(err: WalletQueryError) -> Self {
-        WalletError::QueryError(format!("Invalid wallet query: {}", err.description()))
+        WalletError::QueryError(format!("Invalid wallet query: {}", err.to_string()))
     }
 }
 
 impl From<FromUtf8Error> for WalletError {
     fn from(err: FromUtf8Error) -> Self {
-        WalletError::EncodingError(format!("Failed to decode input into utf8: {}", err.description()))
+        WalletError::EncodingError(format!("Failed to decode input into utf8: {}", err.to_string()))
     }
 }
 
 impl From<Utf8Error> for WalletError {
     fn from(err: Utf8Error) -> Self {
-        WalletError::EncodingError(format!("Failed to decode input into utf8: {}", err.description()))
+        WalletError::EncodingError(format!("Failed to decode input into utf8: {}", err.to_string()))
     }
 }
 
 impl From<serde_json::Error> for WalletError {
     fn from(err: serde_json::Error) -> Self {
-        WalletError::EncodingError(format!("Failed to decode input into json: {}", err.description()))
+        WalletError::EncodingError(format!("Failed to decode input into json: {}", err.to_string()))
     }
 }
 
@@ -189,14 +192,14 @@ impl From<postgres::error::Error> for WalletStorageError {
            err.code() == Some(&postgres::error::INTEGRITY_CONSTRAINT_VIOLATION) {
             WalletStorageError::ItemAlreadyExists
         } else {
-            WalletStorageError::IOError(format!("IO error during storage operation: {}", err.description()))
+            WalletStorageError::IOError(format!("IO error during storage operation: {}", err.to_string()))
         }
     }
 }
 
 impl From<io::Error> for WalletStorageError {
     fn from(err: io::Error) -> WalletStorageError {
-        WalletStorageError::IOError(err.description().to_string())
+        WalletStorageError::IOError(err.to_string())
     }
 }
 
@@ -223,7 +226,7 @@ impl From<WalletQueryError> for WalletStorageError {
         WalletStorageError::QueryError(err)
     }
 }
-
+/*
 impl error::Error for WalletStorageError {
     fn description(&self) -> &str {
         match *self {
@@ -241,7 +244,7 @@ impl error::Error for WalletStorageError {
         }
     }
 }
-
+*/
 impl fmt::Display for WalletStorageError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -252,8 +255,8 @@ impl fmt::Display for WalletStorageError {
             WalletStorageError::ItemAlreadyExists => write!(f, "Item already exists"),
             WalletStorageError::IOError(ref s) => write!(f, "IO error occurred during storage operation: {}", s),
             WalletStorageError::PluggedStorageError(err_code) => write!(f, "Plugged storage error: {}", err_code as i32),
-            WalletStorageError::CommonError(ref e) => write!(f, "Common error: {}", e.description()),
-            WalletStorageError::QueryError(ref e) => write!(f, "Query error: {}", e.description()),
+            WalletStorageError::CommonError(ref e) => write!(f, "Common error: {}", e.to_string()),
+            WalletStorageError::QueryError(ref e) => write!(f, "Query error: {}", e.to_string()),
             WalletStorageError::GenericError(ref s) =>  write!(f, "Generic postgresql error: {}", s)
         }
     }

@@ -38,7 +38,7 @@ impl Clone for CommonError {
             &CommonError::InvalidParam9(ref err) => CommonError::InvalidParam9(err.to_string()),
             &CommonError::InvalidState(ref err) => CommonError::InvalidState(err.to_string()),
             &CommonError::InvalidStructure(ref err) => CommonError::InvalidStructure(err.to_string()),
-            &CommonError::IOError(ref err) => CommonError::IOError(io::Error::new(err.kind(), err.description()))
+            &CommonError::IOError(ref err) => CommonError::IOError(io::Error::new(err.kind(), err.to_string()))
         }
     }
 }
@@ -63,6 +63,10 @@ impl fmt::Display for CommonError {
 }
 
 impl Error for CommonError {
+/*
+ *
+ * https://blog.rust-lang.org/2020/03/12/Rust-1.42.html#errordescription-is-deprecated
+ *
     fn description(&self) -> &str {
         match *self {
             CommonError::InvalidParam1(ref description) |
@@ -79,7 +83,7 @@ impl Error for CommonError {
             CommonError::IOError(ref err) => err.description()
         }
     }
-
+*/
     fn cause(&self) -> Option<&dyn Error> {
         match *self {
             CommonError::InvalidParam1(_) |
@@ -131,19 +135,19 @@ impl From<zmq::Error> for CommonError {
 
 impl From<BorrowError> for CommonError {
     fn from(err: BorrowError) -> Self {
-        CommonError::InvalidState(err.description().to_string())
+        CommonError::InvalidState(err.to_string())
     }
 }
 
 impl From<BorrowMutError> for CommonError {
     fn from(err: BorrowMutError) -> Self {
-        CommonError::InvalidState(err.description().to_string())
+        CommonError::InvalidState(err.to_string())
     }
 }
 
 impl From<log::SetLoggerError> for CommonError {
     fn from(err: log::SetLoggerError) -> CommonError{
-        CommonError::InvalidState(err.description().to_owned())
+        CommonError::InvalidState(err.to_string().to_owned())
     }
 }
 
