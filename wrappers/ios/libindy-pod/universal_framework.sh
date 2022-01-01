@@ -16,8 +16,8 @@ validate() {
 # correctly archive the project in the way we need to (yes, lazy programmer).
 if [ "${PROJECT_NAME}" == "" ]
 then
-exec > /tmp/${SCHEME_NAME}_archive.log 2>&1;
 echo "[ERROR]: PROJECT_NAME was not defined, did you select the 'Provide build settings from' in the 'Post-actions' for Archival?";
+exec > /tmp/${SCHEME_NAME}_archive.log 2>&1;
 envExit 1;
 
 else
