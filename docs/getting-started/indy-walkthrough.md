@@ -10,7 +10,7 @@
     - [What We’ll Cover](#what-well-cover)
     - [About Alice](#about-alice)
     - [Infrastructure Preparation](#infrastructure-preparation)
-        - [Step 1: Getting Trust Anchor Credentials for Faber, Acme, Thrift and Government](#step-1-getting-trust-anchor-credentials-for-faber-acme-thrift-and-government)
+        - [Step 1: Getting Endorser Credentials for Faber, Acme, Thrift and Government](#step-1-getting-trust-anchor-credentials-for-faber-acme-thrift-and-government)
         - [Step 2: Connecting to the Indy Nodes Pool](#step-2-connecting-to-the-indy-nodes-pool)
         - [Step 3: Getting the ownership for Steward's Verinym](#step-3-getting-the-ownership-for-stewards-verinym)
         - [Step 4: Onboarding Faber, Acme, Thrift and Government by Steward](#step-4-onboarding-faber-acme-thrift-and-government-by-steward)
@@ -65,7 +65,7 @@ For this guide, however, we’ll be using an **Indy SDK API** (as provided by li
 
 ## Infrastructure Preparation
 
-### Step 1: Getting Trust Anchor Credentials for Faber, Acme, Thrift and Government
+### Step 1: Getting Endorser Credentials for Faber, Acme, Thrift and Government
 
 Faber College and other actors have done some preparation to offer this service to Alice. To understand these steps let's start with some definitions.
 
@@ -77,11 +77,11 @@ The creation of a DID known to the Ledger is an **Identity Record** itself (NYM 
 
 Publishing with a DID verification key allows a person, organization or thing, to verify that someone owns this DID as that person, organization or thing is the only one who knows the corresponding signing key and any DID-related operations requiring signing with this key.
 
-Our ledger is public permissioned and anyone who wants to publish DIDs needs to get the role of **Trust Anchor** on the ledger. A **Trust Anchor** is a person or organization that the ledger already knows about, that is able to help bootstrap others. (It is *not* the same as what cybersecurity experts call a "trusted third party"; think of it more like a facilitator). See [Roles](https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md) to get more information about roles.
+Our ledger is public permissioned and anyone who wants to publish DIDs needs to get the role of **Endorser** on the ledger. A **Endorser** is a person or organization that the ledger already knows about, that is able to help bootstrap others. (It is *not* the same as what cybersecurity experts call a "trusted third party"; think of it more like a facilitator). See [Roles](https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md) to get more information about roles.
 
-**The first step towards being able to place transactions on the ledger involves getting the role of Trust Anchor on the ledger. Faber College, Acme Corp and Thrift Bank will need to get the role of Trust Anchor on the ledger so they can create Verinyms and Pairwise-Unique Identifiers to provide the service to Alice.**
+**The first step towards being able to place transactions on the ledger involves getting the role of Endorser on the ledger. Faber College, Acme Corp and Thrift Bank will need to get the role of Endorser on the ledger so they can create Verinyms and Pairwise-Unique Identifiers to provide the service to Alice.**
 
-Becoming a **Trust Anchor** requires contacting a person or organization who already has the **Trust Anchor** role on the ledger. For the sake of the demo, in our empty test ledger we have only NYMs with the **Steward** role, but all **Stewards** are automatically **Trust Anchors**.
+Becoming a **Endorser** requires contacting a person or organization who already has the **Endorser** role on the ledger. For the sake of the demo, in our empty test ledger we have only NYMs with the **Steward** role, but all **Stewards** are automatically **Endorsers**.
 
 ### Step 2: Connecting to the Indy Nodes Pool
 
@@ -192,11 +192,11 @@ At this point **Faber** has a DID related to his identity in the Ledger.
 
 **Note:** It's not possible to update an existing Schema. So, if the Schema needs to be evolved, a new Schema with a new version or name needs to be created.
 
-A **Credential Schema** can be created and saved in the Ledger by any **Trust Anchor**.
+A **Credential Schema** can be created and saved in the Ledger by any **Endorser**.
 
 Here is where the **Government** creates and publishes the **Transcript** Credential Schema to the Ledger:
 
-1. The **Trust Anchor** creates the **Credential Schema** by calling the ``anoncreds.issuer_create_schema`` that returns the generated **Credential Schema**.
+1. The **Endorser** creates the **Credential Schema** by calling the ``anoncreds.issuer_create_schema`` that returns the generated **Credential Schema**.
     ```python
     # Government Agent
     transcript = {
@@ -210,7 +210,7 @@ Here is where the **Government** creates and publishes the **Transcript** Creden
     transcript_schema_id = government['transcript_schema_id']
     ```
 
-2. The **Trust Anchor** sends the corresponding Schema transaction to the Ledger by consistently calling the ``ledger.build_schema_request`` to build the Schema request and ``ledger.sign_and_submit_request`` to send the created request.
+2. The **Endorser** sends the corresponding Schema transaction to the Ledger by consistently calling the ``ledger.build_schema_request`` to build the Schema request and ``ledger.sign_and_submit_request`` to send the created request.
     ```python
     # Government Agent
     schema_request = await ledger.build_schema_request(government['did'], government['transcript_schema'])
@@ -242,9 +242,9 @@ At this point we have the **Transcript** and the **Job-Certificate** Credential 
 
 **Note** It's not possible to update data in an existing Credential Definition. So, if a `CredDef` needs to be evolved (for example, a key needs to be rotated), then a new Credential Definition needs to be created by a new Issuer DID.
 
-A Credential Definition can be created and saved in the Ledger by any **Trust Anchor**. Here **Faber** creates and publishes a Credential Definition for the known **Transcript** Credential Schema to the Ledger.
+A Credential Definition can be created and saved in the Ledger by any **Endorser**. Here **Faber** creates and publishes a Credential Definition for the known **Transcript** Credential Schema to the Ledger.
 
-1. The **Trust Anchor** gets the specific **Credential Schema** from the Ledger by consistently calling the ``ledger.build_get_schema_request`` to build the `GetSchema` request, ``ledger.sign_and_submit_request`` to send the created request and the ``ledger.parse_get_schema_response`` to get the `Schema` in the format required by Anoncreds API from the `GetSchema` response.
+1. The **Endorser** gets the specific **Credential Schema** from the Ledger by consistently calling the ``ledger.build_get_schema_request`` to build the `GetSchema` request, ``ledger.sign_and_submit_request`` to send the created request and the ``ledger.parse_get_schema_response`` to get the `Schema` in the format required by Anoncreds API from the `GetSchema` response.
     ```python
     # Faber Agent
     get_schema_request = await ledger.build_get_schema_request(faber['did'], transcript_schema_id)
@@ -252,7 +252,7 @@ A Credential Definition can be created and saved in the Ledger by any **Trust An
     faber['transcript_schema_id'], faber['transcript_schema'] = await ledger.parse_get_schema_response(get_schema_response)
     ```
 
-2. The **Trust Anchor** creates the **Credential Definition** related to the received **Credential Schema** by calling ``anoncreds.issuer_create_and_store_credential_def`` that returns the generated public **Credential Definition**.
+2. The **Endorser** creates the **Credential Definition** related to the received **Credential Schema** by calling ``anoncreds.issuer_create_and_store_credential_def`` that returns the generated public **Credential Definition**.
    The private Credential Definition part for this **Credential Schema** will be stored in the wallet too, but it is impossible to read it directly.
     ```python
     # Faber Agent
@@ -268,7 +268,7 @@ A Credential Definition can be created and saved in the Ledger by any **Trust An
                                                                json.dumps(transcript_cred_def['config']))
     ```
 
-3. The **Trust Anchor** sends the corresponding `CredDef` transaction to the Ledger by consistently calling the ``ledger.build_cred_def_request`` to build the `CredDef` request and the ``ledger.sign_and_submit_request`` to send the created request.
+3. The **Endorser** sends the corresponding `CredDef` transaction to the Ledger by consistently calling the ``ledger.build_cred_def_request`` to build the `CredDef` request and the ``ledger.sign_and_submit_request`` to send the created request.
     ```python
     # Faber Agent     
     cred_def_request = await ledger.build_cred_def_request(faber['did'], faber['transcript_cred_def'])
