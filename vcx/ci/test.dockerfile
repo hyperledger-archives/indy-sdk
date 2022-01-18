@@ -47,7 +47,7 @@ RUN curl -fsOSL $LIBINDY_DOWNLOAD_URL \
     && apt-get -f install
 
 # Install Rust
-ENV RUST_ARCHIVE=rust-1.20.0-x86_64-unknown-linux-gnu.tar.gz
+ENV RUST_ARCHIVE=rust-1.58.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
 
 RUN mkdir -p /rust

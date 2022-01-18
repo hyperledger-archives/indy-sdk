@@ -60,8 +60,8 @@ pub struct TxnMetadata {
     pub creation_time: u64,
 }
 
-#[serde(tag = "op")]
 #[derive(Deserialize, Debug)]
+#[serde(tag = "op")]
 pub enum Message<T> {
     #[serde(rename = "REQNACK")]
     ReqNACK(Response),

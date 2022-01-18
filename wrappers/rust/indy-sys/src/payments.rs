@@ -3,7 +3,6 @@ use super::*;
 use {CString, Error, CommandHandle, WalletHandle};
 
 extern {
-    #[no_mangle]
     pub fn indy_register_payment_method(command_handle: CommandHandle,
                                         payment_method: CString,
                                         create_payment_address: Option<CreatePaymentAddressCB>,
@@ -23,19 +22,16 @@ extern {
                                         verify_with_address: Option<VerifyWithAddressCB>,
                                         cb: Option<ResponseEmptyCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_create_payment_address(command_handle: CommandHandle,
                                        wallet_handle: WalletHandle,
                                        payment_method: CString,
                                        config: CString,
                                        cb: Option<ResponseStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_list_payment_addresses(command_handle: CommandHandle,
                                        wallet_handle: WalletHandle,
                                        cb: Option<ResponseStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_add_request_fees(command_handle: CommandHandle,
                                  wallet_handle: WalletHandle,
                                  submitter_did: CString,
@@ -45,13 +41,11 @@ extern {
                                  extra: CString,
                                  cb: Option<ResponseStringStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_parse_response_with_fees(command_handle: CommandHandle,
                                          payment_method: CString,
                                          resp_json: CString,
                                          cb: Option<ResponseStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_build_get_payment_sources_with_from_request(command_handle: CommandHandle,
                                                             wallet_handle: WalletHandle,
                                                             submitter_did: CString,
@@ -59,26 +53,22 @@ extern {
                                                             from: i64,
                                                             cb: Option<ResponseStringStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_parse_get_payment_sources_with_from_response(command_handle: CommandHandle,
                                                    payment_method: CString,
                                                    resp_json: CString,
                                                    cb: Option<ResponseStringI64CB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_build_get_payment_sources_request(command_handle: CommandHandle,
                                                   wallet_handle: WalletHandle,
                                                   submitter_did: CString,
                                                   payment_address: CString,
                                                   cb: Option<ResponseStringStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_parse_get_payment_sources_response(command_handle: CommandHandle,
                                                    payment_method: CString,
                                                    resp_json: CString,
                                                    cb: Option<ResponseStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_build_payment_req(command_handle: CommandHandle,
                                   wallet_handle: WalletHandle,
                                   submitter_did: CString,
@@ -87,13 +77,11 @@ extern {
                                   extra: CString,
                                   cb: Option<ResponseStringStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_parse_payment_response(command_handle: CommandHandle,
                                        payment_method: CString,
                                        resp_json: CString,
                                        cb: Option<ResponseStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_prepare_payment_extra_with_acceptance_data(command_handle: CommandHandle,
                                                            extra_json: CString,
                                                            text: CString,
@@ -103,7 +91,6 @@ extern {
                                                            time_of_acceptance: u64,
                                                            cb: Option<ResponseStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_build_mint_req(command_handle: CommandHandle,
                                wallet_handle: WalletHandle,
                                submitter_did: CString,
@@ -111,7 +98,6 @@ extern {
                                extra: CString,
                                cb: Option<ResponseStringStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_build_set_txn_fees_req(command_handle: CommandHandle,
                                        wallet_handle: WalletHandle,
                                        submitter_did: CString,
@@ -119,33 +105,28 @@ extern {
                                        fees_json: CString,
                                        cb: Option<ResponseStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_build_get_txn_fees_req(command_handle: CommandHandle,
                                        wallet_handle: WalletHandle,
                                        submitter_did: CString,
                                        payment_method: CString,
                                        cb: Option<ResponseStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_parse_get_txn_fees_response(command_handle: CommandHandle,
                                             payment_method: CString,
                                             resp_json: CString,
                                             cb: Option<ResponseStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_build_verify_payment_req(command_handle: CommandHandle,
                                          wallet_handle: WalletHandle,
                                          submitter_did: CString,
                                          receipt: CString,
                                          cb: Option<ResponseStringStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_parse_verify_payment_response(command_handle: CommandHandle,
                                               payment_method: CString,
                                               resp_json: CString,
                                               cb: Option<ResponseStringCB>) -> Error;
 
-    #[no_mangle]
     pub fn indy_get_request_info(command_handle: CommandHandle,
                                  get_auth_rule_resp_json: CString,
                                  requester_info_json: CString,
@@ -157,7 +138,6 @@ extern {
                                   message_raw: BString,
                                   message_len: u32,
                                   cb: Option<ResponseSliceCB>) -> Error;
-    #[no_mangle]
     pub fn indy_verify_with_address(command_handle: CommandHandle,
                                     address: CString,
                                     message_raw: BString,

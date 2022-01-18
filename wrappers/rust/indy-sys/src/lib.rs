@@ -64,9 +64,7 @@ pub type ResponseStringStringU64CB = extern fn(xcommand_handle: CommandHandle, e
 pub type ResponseStringI64CB = extern fn(xcommand_handle: CommandHandle, err: Error, arg1: CString, arg3: i64);
 
 extern {
-    #[no_mangle]
     pub fn indy_set_runtime_config(config: CString) -> Error;
 
-    #[no_mangle]
     pub fn indy_get_current_error(error_json_p: *mut CString);
 }

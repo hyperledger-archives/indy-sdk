@@ -161,7 +161,6 @@ pub fn list_payment_addresses(wallet_handle: i32,
 }
 
 extern {
-    #[no_mangle]
     pub fn indy_register_payment_method(
         command_handle: i32,
         payment_method: *const c_char,
@@ -182,7 +181,6 @@ extern {
         verify_with_address: Option<VerifyWithAddressCB>,
         cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode;
 
-    #[no_mangle]
     fn indy_list_payment_addresses(command_handle: i32,
                                    wallet_handle: i32,
                                    cb: Option<extern fn(command_handle_: i32,
