@@ -28,7 +28,6 @@ pub fn build_get_txn_request(
 
 
 extern {
-    #[no_mangle]
     pub fn indy_build_get_txn_request(command_handle: i32,
                                       submitter_did: *const c_char,
                                       ledger_type: *const c_char,

@@ -551,8 +551,8 @@ pub struct MessageSent {
     pub uids: Vec<String>,
 }
 
-#[serde(untagged)]
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
 pub enum MessageDetail {
     ConnectionRequestAnswer(AcceptInviteMessageDetails),
     ConnectionRequestRedirect(RedirectConnectionMessageDetails),
