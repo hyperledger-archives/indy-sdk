@@ -44,7 +44,7 @@ fi
 
 if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
     rustup update
-    rustup default 1.46.0
+    rustup default 1.58.0
     rustup component add rls-preview rust-analysis rust-src
     echo "Using rustc version $(rustc --version)"
     rustup target add aarch64-apple-ios x86_64-apple-ios

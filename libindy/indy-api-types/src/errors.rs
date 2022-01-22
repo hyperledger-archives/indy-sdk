@@ -137,7 +137,7 @@ impl fmt::Display for IndyError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut first = true;
 
-        for cause in Fail::iter_chain(self.inner.as_ref()) {
+        for cause in <dyn Fail>::iter_chain(self.inner.as_ref()) {
             if first {
                 first = false;
                 writeln!(f, "Error: {}", cause)?;
@@ -225,7 +225,7 @@ impl From<log::SetLoggerError> for IndyError {
 #[cfg(feature = "casting_errors")]
 impl From<UrsaCryptoError> for IndyError {
     fn from(err: UrsaCryptoError) -> Self {
-        let message = format!("UrsaCryptoError: {}", Fail::iter_causes(&err).map(|e| e.to_string()).collect::<String>());
+        let message = format!("UrsaCryptoError: {}", <dyn Fail>::iter_causes(&err).map(|e| e.to_string()).collect::<String>());
 
         match err.kind() {
             UrsaCryptoErrorKind::InvalidState => IndyError::from_msg(IndyErrorKind::InvalidState, message),

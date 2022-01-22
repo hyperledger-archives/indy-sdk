@@ -51,6 +51,8 @@ impl ParamMetadata {
     }
 }
 
+// Turn off "error: field is never read: `dynamic_completion_type`" warning
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct CommandMetadata {
     name: &'static str,

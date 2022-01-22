@@ -17,7 +17,7 @@ if [ -z "${LIBINDY_POD_VERSION}" ]; then
 fi
 
 if [ -z "${RUST_VER}" ]; then
-    export RUST_VER=1.45.2
+    export RUST_VER=1.58.0
     echo "ERROR: RUST_VER environment variable not specified, using $RUST_VER"
 fi
 
