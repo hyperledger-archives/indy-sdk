@@ -264,7 +264,7 @@ def iosTesting() {
                 //FIXME We downgrade rust for iOS build as 1.46.0 forces building cdylib crate that causes linking errors.
                 //FIXME See https://github.com/rust-lang/rust/issues/79373 for details.
                 //FIXME It is fixed in nightly already and we will switch to 1.49 after it is released.
-                sh "rustup default 1.45.0"
+                sh "rustup default 1.58.0"
                 
                 setupRustIOS()
                 setupBrewPackages()
@@ -666,7 +666,7 @@ def shell(command) {
 }
 
 def setupRust() {
-    shell("rustup default 1.46.0")
+    shell("rustup default 1.58.0")
 }
 
 def setupBrewPackages() {

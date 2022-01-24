@@ -61,7 +61,7 @@ macro_rules! unwrap_opt_or_return {
         match $opt {
             Some(val) => val,
             None => return $err
-        };
+        }
     }
 }
 
@@ -70,6 +70,6 @@ macro_rules! unwrap_or_return {
         match $result {
             Ok(res) => res,
             Err(_) => return $err
-        };
+        }
     }
 }
