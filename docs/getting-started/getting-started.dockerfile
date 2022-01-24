@@ -6,22 +6,23 @@ RUN useradd -ms /bin/bash indy
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Moscow
 RUN apt-get update -y && apt-get install -y \
-	wget \
-	python3.5 \
-	python3-pip \
-	python-setuptools \
-	apt-transport-https \
-	ca-certificates \
-	software-properties-common
+    wget \
+    python3.7 \
+    python3-pip \
+    python-setuptools \
+    apt-transport-https \
+    ca-certificates \
+    software-properties-common
 
 WORKDIR /home/indy
 
 RUN pip3 install -U \
-	pip \
+    pip \
+    notebook \
     ipython==7.9 \
-	setuptools \
-	jupyter \
-	python3-indy==1.11.0
+    setuptools \
+    jupyter \
+    python3-indy==1.11.0
 
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 \
     && add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable" \
