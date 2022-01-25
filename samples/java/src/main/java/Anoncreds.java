@@ -10,9 +10,12 @@ import static org.hyperledger.indy.sdk.anoncreds.Anoncreds.*;
 import static org.junit.Assert.*;
 import static utils.PoolUtils.PROTOCOL_VERSION;
 
+public class Anoncreds {
 
-class Anoncreds {
-
+	public static void main(String[] args) throws Exception {
+		Anoncreds.demo();
+	}
+	
 	static void demo() throws Exception {
 		System.out.println("Anoncreds sample -> started");
 

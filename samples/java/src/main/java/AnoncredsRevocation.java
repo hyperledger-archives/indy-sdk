@@ -13,9 +13,12 @@ import static org.junit.Assert.*;
 import static utils.EnvironmentUtils.getIndyHomePath;
 import static utils.PoolUtils.PROTOCOL_VERSION;
 
+public class AnoncredsRevocation {
 
-class AnoncredsRevocation {
-
+	public static void main(String[] args) throws Exception {
+		AnoncredsRevocation.demo();
+	}
+	
 	static void demo() throws Exception {
 		System.out.println("Anoncreds Revocation sample -> started");
 
