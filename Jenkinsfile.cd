@@ -866,7 +866,11 @@ def rustWrapperPublishing(testEnv, isRelease) {
 
     echo 'Publish Indy to Cargo'
 
-    def indy_sys_approved = input("Approve if indy-sys is available on crates.io") //TODO replace with auto-check and repeat logic
+    // Refs:
+    //  - https://github.com/hyperledger/indy-sdk/issues/2309
+    //  - https://github.com/hyperledger/indy-sdk/issues/2395
+    //  - Removing without adding retry logic to see if this is still an issue and if so how much of an issue.
+    // def indy_sys_approved = input("Approve if indy-sys is available on crates.io") //TODO replace with auto-check and repeat logic
 
     dir('wrappers/rust') {
         if (testReleaseVersion) {
