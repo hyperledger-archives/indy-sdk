@@ -127,6 +127,19 @@ It is recommended to install the SDK packages with APT:
 * {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 Please See the section "Release channels" above for more details.
 
+Full example using Docker:
+```
+FROM ubuntu:18.04
+RUN apt-get update -y && apt-get install -y \
+    gnupg \ 
+    ca-certificates
+
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
+RUN echo "deb https://repo.sovrin.org/sdk/deb bionic stable" >> /etc/apt/sources.list
+RUN apt-get update -y && apt-get install -y \
+    libindy
+```
+
 ### Windows
 
 1. Go to `https://repo.sovrin.org/windows/{library}/{release-channel}.`
