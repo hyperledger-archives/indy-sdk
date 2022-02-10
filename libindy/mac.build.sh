@@ -41,7 +41,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     export CARGO_INCREMENTAL=1
     export RUST_LOG=indy=trace
     export RUST_TEST_THREADS=1
-    export OPENSSL_DIR=/usr/local/opt/`ls /usr/local/opt/ | grep openssl | sort | tail -1`
+    export OPENSSL_DIR=/usr/local/opt/openssl@1.1
     cargo build
     export LIBRARY_PATH=$(pwd)/target/debug
     cd ../cli
