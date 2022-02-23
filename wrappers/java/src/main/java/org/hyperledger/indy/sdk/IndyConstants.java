@@ -15,6 +15,11 @@ public class IndyConstants {
 	 */
 	public static final String ROLE_STEWARD = "STEWARD";
 
+	/**
+	 * The Endorser role.
+	 */
+	public static final String ROLE_ENDORSER = "ENDORSER";
+
 	public static final String OP_NODE = "0";
 	public static final String OP_NYM = "1";
 	public static final String OP_ATTRIB = "100";
