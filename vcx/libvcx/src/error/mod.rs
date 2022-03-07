@@ -426,7 +426,7 @@ pub fn set_current_error(err: &VcxError) {
         let error_json = json!({
             "error": err.kind().to_string(),
             "message": err.to_string(),
-            "cause": <dyn Fail>::find_root_cause(err).to_string(),
+            "cause": <dyn Fail>::find_root_cause(err).to_string(), 
             "backtrace": err.backtrace().map(|bt| bt.to_string())
         }).to_string();
         error.replace(Some(CStringUtils::string_to_cstring(error_json)));
