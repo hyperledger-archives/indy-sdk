@@ -1138,8 +1138,8 @@ def pythonWrapperPublishing(testEnv, isRelease, directory, base_library) {
         testEnv.inside {
             withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
                 sh 'cp $credentialsFile ./'
-
-                sh "PACKAGE_VERSION=$version$suffix python3 setup.py sdist"
+                sh "echo $version$suffix > version.txt"
+                sh "python3 setup.py sdist"
                 sh "python3 -m twine upload dist/* --config-file .pypirc"
 
             }
