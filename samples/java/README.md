@@ -21,6 +21,14 @@ mvn exec:java -Dexec.mainClass=Main \
   -Djna.debug_load=true
 ```
 
+### Run the GettingStarted Workflow
+
+```
+mvn exec:java -Dexec.mainClass=GettingStarted \
+  -Djna.library.path=$LD_LIBRARY_PATH
+```
+
+
 ### IntelliJ
 
 * Open the project in IntelliJ
@@ -28,9 +36,9 @@ mvn exec:java -Dexec.mainClass=Main \
 
 ```
 <dependency>
-		<groupId>org.hyperledger</groupId>
-		<artifactId>indy</artifactId>
-		<version>1.16.0</version>
+    <groupId>org.hyperledger</groupId>
+    <artifactId>indy</artifactId>
+    <version>1.16.0</version>
 </dependency>
 ```
 
