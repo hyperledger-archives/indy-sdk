@@ -48,6 +48,7 @@ Indy SDK provides libindy wrappers for the following programming languages and p
 * [NodeJS](wrappers/nodejs/README.md)
 * [.Net](wrappers/dotnet/README.md)
 * [Rust](wrappers/rust/README.md)
+* [Go](https://github.com/joyride9999/IndySdkGoBindings/blob/main/README.md)
 
 
 ### Indy CLI
