@@ -34,7 +34,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     brew_install libsodium
     brew_install automake
     brew_install autoconf
-    brew_install openssl
+    brew_install openssl@1.1
     brew_install zeromq
     brew_install zmq
     export PKG_CONFIG_ALLOW_CROSS=1
@@ -46,11 +46,11 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     export LIBRARY_PATH=$(pwd)/target/debug
     cd ../cli
     cargo build
-    echo 'export DYLD_LIBRARY_PATH='$LIBRARY_PATH'
-export LD_LIBRARY_PATH='$LIBRARY_PATH >> ~/.bash_profile
+    echo -e "" >> ~/.bash_profile
+    echo -e "# Hyperledger Indy" >> ~/.bash_profile
+    echo -e "export DYLD_LIBRARY_PATH=$LIBRARY_PATH" >> ~/.bash_profile
+    echo -e "export LD_LIBRARY_PATH=$LIBRARY_PATH" >> ~/.bash_profile
     echo -e "${ongreen}Libindy installed.$endcolor"
 else
     echo -e "${onred}You are not running MacOS. This is a MacOS installer.$endcolor"
 fi
-
-

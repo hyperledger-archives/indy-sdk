@@ -11,9 +11,12 @@ import static org.hyperledger.indy.sdk.ledger.Ledger.signAndSubmitRequest;
 import static org.junit.Assert.assertEquals;
 import static utils.PoolUtils.PROTOCOL_VERSION;
 
+public class Ledger {
 
-class Ledger {
-
+	public static void main(String[] args) throws Exception {
+		Ledger.demo();
+	}
+	
 	static void demo() throws Exception {
 		System.out.println("Ledger sample -> started");
 
