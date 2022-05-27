@@ -266,6 +266,7 @@ fn anoncreds_demo_works() {
                                                      CString::new(credential_req_json.as_str()).unwrap().as_ptr(),
                                                      CString::new(credential_json).unwrap().as_ptr(),
                                                      CString::new(rev_reg_id.as_str()).unwrap().as_ptr(),
+                                                     -1,
                                                      blob_storage_reader_handle,
                                                      issuer_create_credential_callback)
         };

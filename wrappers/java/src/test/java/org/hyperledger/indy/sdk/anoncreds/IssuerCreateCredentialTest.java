@@ -23,6 +23,6 @@ public class IssuerCreateCredentialTest extends AnoncredsIntegrationTest {
 				"        \"age\":\"28\"" +
 				"       }";
 
-		Anoncreds.issuerCreateCredential(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, credValues, null, - 1).get();
+		Anoncreds.issuerCreateCredential(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, credValues, null,-1, - 1).get();
 	}
 }

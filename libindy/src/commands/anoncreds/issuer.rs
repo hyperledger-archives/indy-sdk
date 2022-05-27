@@ -123,6 +123,7 @@ pub enum IssuerCommand {
         CredentialRequest, // credential request
         CredentialValues, // credential values
         Option<RevocationRegistryId>, // revocation registry id
+        Option<u32>, // revocation index
         Option<i32>, // blob storage reader config handle
         Box<dyn Fn(IndyResult<(String, Option<String>, Option<String>)>) + Send>),
     RevokeCredential(
@@ -212,9 +213,9 @@ impl IssuerCommandExecutor {
                 debug!(target: "issuer_command_executor", "CreateCredentialOffer command received");
                 cb(self.create_credential_offer(wallet_handle, &cred_def_id));
             }
-            IssuerCommand::CreateCredential(wallet_handle, cred_offer, cred_req, cred_values, rev_reg_id, blob_storage_reader_handle, cb) => {
+            IssuerCommand::CreateCredential(wallet_handle, cred_offer, cred_req, cred_values, rev_reg_id,rev_idx, blob_storage_reader_handle, cb) => {
                 debug!(target: "issuer_command_executor", "CreateCredential command received");
-                cb(self.new_credential(wallet_handle, &cred_offer, &cred_req, &cred_values, rev_reg_id.as_ref(), blob_storage_reader_handle));
+                cb(self.new_credential(wallet_handle, &cred_offer, &cred_req, &cred_values, rev_reg_id.as_ref(),rev_idx, blob_storage_reader_handle));
             }
             IssuerCommand::RevokeCredential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id, cb) => {
                 debug!(target: "issuer_command_executor", "RevokeCredential command received");
@@ -673,9 +674,10 @@ impl IssuerCommandExecutor {
                       cred_request: &CredentialRequest,
                       cred_values: &CredentialValues,
                       rev_reg_id: Option<&RevocationRegistryId>,
+                      rev_idx: Option<u32>,
                       blob_storage_reader_handle: Option<i32>) -> IndyResult<(String, Option<String>, Option<String>)> {
-        debug!("new_credential >>> wallet_handle: {:?}, cred_offer: {:?}, cred_req: {:?}, cred_values_json: {:?}, rev_reg_id: {:?}, blob_storage_reader_handle: {:?}",
-               wallet_handle, secret!(&cred_offer), secret!(&cred_request), secret!(&cred_values), rev_reg_id, blob_storage_reader_handle);
+        debug!("new_credential >>> wallet_handle: {:?}, cred_offer: {:?}, cred_req: {:?}, cred_values_json: {:?}, rev_reg_id: {:?}, rev_idx: {:?}, blob_storage_reader_handle: {:?}",
+               wallet_handle, secret!(&cred_offer), secret!(&cred_request), secret!(&cred_values), rev_reg_id, rev_idx, blob_storage_reader_handle);
 
         let cred_def_id = match cred_offer.method_name {
             Some(ref method_name) => cred_offer.cred_def_id.qualify(method_name),
@@ -690,7 +692,7 @@ impl IssuerCommandExecutor {
             self.wallet_service.get_indy_object(wallet_handle, &cred_def_id.0, &RecordOptions::id_value())?;
 
         let (rev_reg_def, mut rev_reg,
-            rev_reg_def_priv, sdk_tails_accessor, rev_reg_info) = match rev_reg_id {
+            rev_reg_def_priv, sdk_tails_accessor, rev_reg_info,rev_idx) = match rev_reg_id {
             Some(ref r_reg_id) => {
                 let rev_reg_def: RevocationRegistryDefinitionV1 =
                     RevocationRegistryDefinitionV1::from(
@@ -705,14 +707,27 @@ impl IssuerCommandExecutor {
 
                 let mut rev_reg_info = self._wallet_get_rev_reg_info(wallet_handle, &r_reg_id)?;
 
-                rev_reg_info.curr_id += 1;
+                let rev_index = if rev_reg_def.value.issuance_type == IssuanceType::ISSUANCE_BY_DEFAULT {
+                    match rev_idx {
+                        Some(idx) =>{
+                            idx
+                        },
+                        None => {
+                            rev_reg_info.curr_id += 1;
+                            rev_reg_info.curr_id
+                        }
+                    }
+                }else{
+                    rev_reg_info.curr_id += 1;
+                    rev_reg_info.curr_id
+                };
 
-                if rev_reg_info.curr_id > rev_reg_def.value.max_cred_num {
+                if rev_index > rev_reg_def.value.max_cred_num {
                     return Err(err_msg(IndyErrorKind::RevocationRegistryFull, "RevocationRegistryAccumulator is full"));
                 }
 
                 if rev_reg_def.value.issuance_type == IssuanceType::ISSUANCE_ON_DEMAND {
-                    rev_reg_info.used_ids.insert(rev_reg_info.curr_id);
+                    rev_reg_info.used_ids.insert(rev_index);
                 }
 
                 // TODO: FIXME: Review error kind!
@@ -723,9 +738,9 @@ impl IssuerCommandExecutor {
                                                                blob_storage_reader_handle,
                                                                &rev_reg_def)?;
 
-                (Some(rev_reg_def), Some(rev_reg), Some(rev_key_priv), Some(sdk_tails_accessor), Some(rev_reg_info))
+                (Some(rev_reg_def), Some(rev_reg), Some(rev_key_priv), Some(sdk_tails_accessor), Some(rev_reg_info),Some(rev_index))
             }
-            None => (None, None, None, None, None)
+            None => (None, None, None, None, None,None)
         };
 
         let (credential_signature, signature_correctness_proof, rev_reg_delta) =
@@ -734,15 +749,15 @@ impl IssuerCommandExecutor {
                                                          &cred_offer.nonce,
                                                          &cred_request,
                                                          &cred_values,
-                                                         rev_reg_info.as_ref().map(|r_reg_info| r_reg_info.curr_id),
+                                                         rev_idx,
                                                          rev_reg_def.as_ref(),
                                                          rev_reg.as_mut().map(|r_reg| &mut r_reg.value),
                                                          rev_reg_def_priv.as_ref().map(|r_reg_def_priv| &r_reg_def_priv.value),
                                                          sdk_tails_accessor.as_ref())?;
 
         let witness =
-            if let (&Some(ref r_reg_def), &Some(ref r_reg), &Some(ref rev_tails_accessor), &Some(ref rev_reg_info)) =
-            (&rev_reg_def, &rev_reg, &sdk_tails_accessor, &rev_reg_info) {
+            if let (&Some(ref r_reg_def), &Some(ref r_reg), &Some(ref rev_tails_accessor), &Some(ref rev_reg_info),&Some(rev_index)) =
+            (&rev_reg_def, &rev_reg, &sdk_tails_accessor, &rev_reg_info,&rev_idx) {
                 let (issued, revoked) = match r_reg_def.value.issuance_type {
                     IssuanceType::ISSUANCE_ON_DEMAND => (rev_reg_info.used_ids.clone(), HashSet::new()),
                     IssuanceType::ISSUANCE_BY_DEFAULT => (HashSet::new(), rev_reg_info.used_ids.clone())
@@ -750,7 +765,7 @@ impl IssuerCommandExecutor {
 
                 let rev_reg_delta = CryptoRevocationRegistryDelta::from_parts(None, &r_reg.value, &issued, &revoked);
 
-                Some(Witness::new(rev_reg_info.curr_id, r_reg_def.value.max_cred_num,
+                Some(Witness::new(rev_index, r_reg_def.value.max_cred_num,
                                   r_reg_def.value.issuance_type.to_bool(), &rev_reg_delta, rev_tails_accessor)?)
             } else {
                 None
@@ -789,7 +804,7 @@ impl IssuerCommandExecutor {
             self.wallet_service.update_indy_object(wallet_handle, &r_reg_id.0, &r_reg_info)?;
         };
 
-        let cred_rev_id = rev_reg_info.map(|r_reg_info| r_reg_info.curr_id.to_string());
+        let cred_rev_id = rev_idx.map(|index| index.to_string());
 
         debug!("new_credential <<< cred_json: {:?}, cred_rev_id: {:?}, rev_reg_delta_json: {:?}", secret!(&cred_json), secret!(&cred_rev_id), rev_reg_delta_json);
 

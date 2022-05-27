@@ -4166,6 +4166,7 @@ mod medium_cases {
                                                           &credential_req,
                                                           &anoncreds::xyz_credential_values_json(),
                                                           None,
+                                                          None,
                                                           None);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
@@ -4183,6 +4184,7 @@ mod medium_cases {
                                                           &credential_offer,
                                                           &credential_req,
                                                           &anoncreds::gvt_credential_values_json(),
+                                                          None,
                                                           None,
                                                           None);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
@@ -4205,6 +4207,7 @@ mod medium_cases {
                                                           &credential_offer,
                                                           &credential_req,
                                                           &anoncreds::gvt_credential_values_json(),
+                                                          None,
                                                           None,
                                                           None);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
@@ -4229,6 +4232,7 @@ mod medium_cases {
                                                           &credential_offer,
                                                           &credential_request,
                                                           &credential_values_json,
+                                                          None,
                                                           None,
                                                           None);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
@@ -4259,6 +4263,7 @@ mod medium_cases {
                                                                               &credential_offer,
                                                                               &credential_req,
                                                                               &anoncreds::gvt_credential_values_json(),
+                                                                              None,
                                                                               None,
                                                                               None).unwrap();
 

@@ -245,6 +245,7 @@ impl Issuer {
                                                                                                  &cred_req_json,
                                                                                                  cred_values_json,
                                                                                                  Some(&self.rev_reg_id),
+                                                                                                 None,
                                                                                                  Some(blob_storage_reader_handle)).unwrap();
 
 

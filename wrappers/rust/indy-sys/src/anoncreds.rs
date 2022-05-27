@@ -53,6 +53,7 @@ extern {
                                          cred_req_json: CString,
                                          cred_values_json: CString,
                                          rev_reg_id: CString,
+                                         rev_idx: i32,
                                          blob_storage_reader_handle: BlobStorageReaderHandle,
                                          cb: Option<ResponseStringStringStringCB>) -> Error;
 

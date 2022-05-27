@@ -60,7 +60,7 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 
 		//9. Issuer create Credential
 		AnoncredsResults.IssuerCreateCredentialResult createCredentialResult =
-				Anoncreds.issuerCreateCredential(wallet, credOfferJson, credentialReqJson, gvtCredentialValuesJson, revRegId, blobStorageReaderHandleCfg).get();
+				Anoncreds.issuerCreateCredential(wallet, credOfferJson, credentialReqJson, gvtCredentialValuesJson, revRegId,-1, blobStorageReaderHandleCfg).get();
 		String credJson = createCredentialResult.getCredentialJson();
 		String credRevocId = createCredentialResult.getRevocId();
 		String revRegDelta = createCredentialResult.getRevocRegDeltaJson();
