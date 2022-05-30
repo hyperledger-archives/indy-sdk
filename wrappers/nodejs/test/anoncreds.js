@@ -55,7 +55,7 @@ test('anoncreds', async function (t) {
     name: { raw: 'Alex', encoded: '1139481716457488690172217916278103335' },
     height: { raw: '175', encoded: '175' },
     age: { raw: '28', encoded: '28' }
-  }, revocRegId, blobReaderHandle)
+  }, revocRegId, -1, blobReaderHandle)
   t.not(typeof cred, 'string')
 
   // Prover process and store credential
