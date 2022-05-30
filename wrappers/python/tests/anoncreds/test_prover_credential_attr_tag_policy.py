@@ -11,7 +11,7 @@ async def _check_catpol(wallet_handle, cred_def_json, cred_def_id, cred_id, cred
 
     # Write credential
     (cred, _, _) = await anoncreds.issuer_create_credential(wallet_handle, offer_json, cred_req,
-                                                    json.dumps(cred_value), None, None)
+                                                    json.dumps(cred_value), None, None, None)
     await anoncreds.prover_store_credential(wallet_handle, cred_id, cred_req_metadata, cred, cred_def_json, None)
 
     # Search on all tags
