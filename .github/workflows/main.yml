@@ -9,7 +9,7 @@ on:
       - "**"
 
 env:
-  RUST_VER: 1.45.2
+  RUST_VER: 1.58.0
   POOL_IP: "127.0.0.1"
   DEVICE_ABIS: "arm arm64"
   EMULATOR_ABIS: "x86 x86_64"
@@ -933,7 +933,8 @@ jobs:
         run: |
           docker run --rm -i -v $PWD:/root/indy-sdk --name libindy $DOCKER_IMG_NAME_PYTHON \
                               bash -c '(cd $HOME/indy-sdk/wrappers/python && \
-                              PACKAGE_VERSION=${{ env.PUBLISH_VERSION }} python3.6 setup.py sdist && \
+                              echo "${{ env.PUBLISH_VERSION }}" > version.txt &&\
+                              python3.6 setup.py sdist && \
                               python3.6 -m twine upload dist/* -u __token__ -p ${{ secrets.PYPI_PYTHON3_INDY }})'
 
   ####################################################

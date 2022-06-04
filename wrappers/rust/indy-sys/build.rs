@@ -48,7 +48,7 @@ fn find_dir(dir_name: Option<String>, use_static: bool) {
 fn find_pkg(use_static: bool) {
     match pkg_config::Config::new().statik(use_static).probe("libindy") {
         Ok(_) => println!("cargo:warning=Libindy found in pkgcfg tree."),
-        Err(e) => panic!(format!("Error: {:?}", e)),
+        Err(e) => panic!("Error: {:?}", e),
     }
 }
 
@@ -56,6 +56,6 @@ fn find_pkg(use_static: bool) {
 fn find_pkg(_use_static: bool) {
     match vcpkg::Config::new().emit_includes(true).lib_name("libindy").probe("indy") {
         Ok(_) => println!("cargo:warning=Libindy found in vcpkg tree."),
-        Err(e) => panic!(format!("Error: {:?}", e)),
+        Err(e) => panic!("Error: {:?}", e),
     }
 }

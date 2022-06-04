@@ -99,7 +99,7 @@
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
-			<version>2.5</version>
+			<version>2.7</version>
 		</dependency>
 		<dependency>
 			<groupId>org.json</groupId>
@@ -109,12 +109,13 @@
 		<dependency>
 			<groupId>org.hyperledger</groupId>
 			<artifactId>indy</artifactId>
-			<version>1.14.1-rc-120</version>
+			<version>1.16.0</version>
 		</dependency>
-		<!--<dependency>-->
-			<!--<groupId>org.slf4j</groupId>-->
-			<!--<artifactId>slf4j-simple</artifactId>-->
-			<!--<version>1.7.5</version>-->
-		<!--</dependency>-->  <!---Dorg.slf4j.simpleLogger.defaultLogLevel=debug-->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>1.7.33</version>
+		</dependency>
+		<!---Dorg.slf4j.simpleLogger.defaultLogLevel=debug-->
 	</dependencies>
 </project>

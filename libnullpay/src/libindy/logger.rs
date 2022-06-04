@@ -35,6 +35,5 @@ pub fn get_logger() -> Result<(*const c_void, Option<EnabledCB>, Option<LogCB>, 
 }
 
 extern {
-    #[no_mangle]
     pub fn indy_get_logger(context: *mut *const c_void, enabled_cb_p: *mut Option<EnabledCB>, log_cb_p: *mut Option<LogCB>, flush_cb_p: *mut Option<FlushCB>) -> ErrorCode;
 }

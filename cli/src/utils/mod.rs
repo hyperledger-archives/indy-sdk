@@ -59,6 +59,6 @@ macro_rules! unwrap_or_return {
         match $result {
             Some(res) => res,
             None => return $err
-        };
+        }
     }
 }

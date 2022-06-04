@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 
-ARG RUST_VER=1.46.0
+ARG RUST_VER=1.58.0
 
 RUN apt-get update && \
     apt-get install -y \
