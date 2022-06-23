@@ -12,8 +12,11 @@ import static org.hyperledger.indy.sdk.did.Did.*;
 import static org.hyperledger.indy.sdk.crypto.Crypto.*;
 import static utils.PoolUtils.PROTOCOL_VERSION;
 
+public class Crypto {
 
-class Crypto {
+	public static void main(String[] args) throws Exception {
+		Crypto.demo();
+	}
 
 	static void demo() throws Exception {
 		System.out.println("Crypto sample -> started");

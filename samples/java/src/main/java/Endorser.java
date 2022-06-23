@@ -8,8 +8,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import utils.PoolUtils;
 
-import java.util.Arrays;
-
 import static org.hyperledger.indy.sdk.ledger.Ledger.buildNymRequest;
 import static org.hyperledger.indy.sdk.ledger.Ledger.buildSchemaRequest;
 import static org.hyperledger.indy.sdk.ledger.Ledger.signAndSubmitRequest;
@@ -19,8 +17,13 @@ import static org.hyperledger.indy.sdk.ledger.Ledger.appendRequestEndorser;
 import static org.hyperledger.indy.sdk.anoncreds.Anoncreds.issuerCreateSchema;
 import static org.junit.Assert.assertEquals;
 
-class Endorser {
-    static void demo() throws Exception {
+public class Endorser {
+
+	public static void main(String[] args) throws Exception {
+		Endorser.demo();
+	}
+	
+	static void demo() throws Exception {
 
         System.out.println("Endorser sample -> started");
         String trusteeSeed = "000000000000000000000000Trustee1";
@@ -85,7 +88,6 @@ class Endorser {
         String schemaAttributes = new JSONArray().put("name").put("age").put("sex").put("height").toString();
         AnoncredsResults.IssuerCreateSchemaResult createSchemaResult =
                 issuerCreateSchema(authorDid, schemaName, schemaVersion, schemaAttributes).get();
-        String schemaId = createSchemaResult.getSchemaId();
         String schemaJson = createSchemaResult.getSchemaJson();
 
         //  Transaction Author builds Schema Request

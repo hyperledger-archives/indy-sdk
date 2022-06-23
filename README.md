@@ -117,6 +117,7 @@ Please refer to our [release workflow](docs/contributors/release-workflow.md) fo
 ### Ubuntu based distributions (Ubuntu 16.04 and 18.04)
 It is recommended to install the SDK packages with APT:
 
+    sudo apt-get install ca-certificates -y
     sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
     sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb (xenial|bionic) {release channel}"
     sudo apt-get update

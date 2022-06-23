@@ -31,8 +31,8 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
 RUN apt-get install -y nodejs
 
 RUN pip3 install -U \
-	pip \
-	setuptools \
+	'pip<21.0' \
+	'setuptools<=50.3.2' \
 	virtualenv \
 	twine==1.15.0 \
 	plumbum==1.6.7 six==1.12.0 \
@@ -62,7 +62,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.46.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.58.0
 ENV PATH /home/indy/.cargo/bin:$PATH
 
 RUN cargo install cargo-deb

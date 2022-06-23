@@ -2,7 +2,7 @@ FROM alpine:3.12
 
 ARG UID=1000
 ARG GID=1000
-ARG RUST_VER="1.45.2"
+ARG RUST_VER="1.58.0"
 ARG INDYSDK_PATH=/home/indy/indy-sdk
 
 ENV RUST_LOG=warning

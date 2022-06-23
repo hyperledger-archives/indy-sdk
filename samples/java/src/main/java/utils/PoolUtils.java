@@ -8,6 +8,7 @@ import org.hyperledger.indy.sdk.pool.PoolJSONParameters;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 public class PoolUtils {
 
@@ -41,7 +42,11 @@ public class PoolUtils {
 		return file;
 	}
 
-	public static String createPoolLedgerConfig() throws IOException, InterruptedException, java.util.concurrent.ExecutionException, IndyException {
+	public static String createPoolLedgerConfig() throws IOException, InterruptedException, ExecutionException, IndyException {
+		return createPoolLedgerConfig(DEFAULT_POOL_NAME);	
+	}
+	
+	public static String createPoolLedgerConfig(String poolName) throws IOException, InterruptedException, ExecutionException, IndyException {
 		File genesisTxnFile = createGenesisTxnFile("temp.txn");
 		PoolJSONParameters.CreatePoolLedgerConfigJSONParameter createPoolLedgerConfigJSONParameter
 				= new PoolJSONParameters.CreatePoolLedgerConfigJSONParameter(genesisTxnFile.getAbsolutePath());

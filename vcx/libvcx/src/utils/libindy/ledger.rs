@@ -485,8 +485,8 @@ pub struct Request {
     pub endorser: Option<String>
 }
 
-#[serde(tag = "op")]
 #[derive(Deserialize, Debug)]
+#[serde(tag = "op")]
 pub enum Response {
     #[serde(rename = "REQNACK")]
     ReqNACK(Reject),
