@@ -1,7 +1,8 @@
 from distutils.core import setup
 import os
 
-PKG_VERSION = os.environ.get('PACKAGE_VERSION') or '1.16.0'
+with open(os.path.join(os.path.dirname(__file__), 'version.txt'), 'r') as file:
+    PKG_VERSION = file.read().rstrip()
 
 TEST_DEPS = [
     'pytest<3.7', 'pytest-asyncio==0.10.0', 'base58'
@@ -20,5 +21,6 @@ setup(
     tests_require=TEST_DEPS,
     extras_require={
         'test': TEST_DEPS
-    }
+    },
+    include_package_data=True
 )
