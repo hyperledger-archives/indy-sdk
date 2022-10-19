@@ -133,7 +133,7 @@ public class AnoncredsIntegrationTest {
 		issuer1GvtCredReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
 		AnoncredsResults.IssuerCreateCredentialResult createCredResult =
-				Anoncreds.issuerCreateCredential(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, gvtCredentialValuesJson, null, - 1).get();
+				Anoncreds.issuerCreateCredential(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, gvtCredentialValuesJson, null,-1, - 1).get();
 		String issuer1GvtCredential = createCredResult.getCredentialJson();
 
 		Anoncreds.proverStoreCredential(wallet, credentialId1, issuer1GvtCredReqMetadata, issuer1GvtCredential, issuer1gvtCredDef, null).get();
@@ -142,7 +142,7 @@ public class AnoncredsIntegrationTest {
 		String issuer1XyzCredReq = createCredReqResult.getCredentialRequestJson();
 		String issuer1XyzCredReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
-		createCredResult = Anoncreds.issuerCreateCredential(wallet, issuer1XyzCredOffer, issuer1XyzCredReq, xyzCredentialValuesJson, null, - 1).get();
+		createCredResult = Anoncreds.issuerCreateCredential(wallet, issuer1XyzCredOffer, issuer1XyzCredReq, xyzCredentialValuesJson, null,-1, - 1).get();
 		String issuer1XyzCredential = createCredResult.getCredentialJson();
 
 		Anoncreds.proverStoreCredential(wallet, credentialId2, issuer1XyzCredReqMetadata, issuer1XyzCredential, issuer1xyzCredDef, null).get();
@@ -158,7 +158,7 @@ public class AnoncredsIntegrationTest {
 				"           \"age\":{\"raw\":\"28\",\"encoded\":\"28\"}\n" +
 				"   }";
 
-		createCredResult = Anoncreds.issuerCreateCredential(wallet, issuer2GvtCredOffer, issuer2GvtCredReq, gvt2CredValues, null, - 1).get();
+		createCredResult = Anoncreds.issuerCreateCredential(wallet, issuer2GvtCredOffer, issuer2GvtCredReq, gvt2CredValues, null,-1, - 1).get();
 		String issuer2GvtCredential = createCredResult.getCredentialJson();
 
 		String credentialId3 = "id3";

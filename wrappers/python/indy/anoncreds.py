@@ -409,6 +409,7 @@ async def issuer_create_credential(wallet_handle: int,
                                    cred_req_json: str,
                                    cred_values_json: str,
                                    rev_reg_id: Optional[str],
+                                   rev_idx: Optional[int],
                                    blob_storage_reader_handle: Optional[int]) -> (str, Optional[str], Optional[str]):
     """
     Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.
@@ -457,6 +458,7 @@ async def issuer_create_credential(wallet_handle: int,
                       It should not be parsed and are likely to change in future versions).
      }
      cred_revoc_id: local id for revocation info (Can be used for revocation of this cred)
+     rev_idx: revocation tail index, allow issuance of multiple credentials to same revocation index.
      revoc_reg_delta_json: Revocation registry delta json with a newly issued credential
     """
 
@@ -480,6 +482,7 @@ async def issuer_create_credential(wallet_handle: int,
     c_cred_values_json = c_char_p(cred_values_json.encode('utf-8'))
     c_rev_reg_id = c_char_p(rev_reg_id.encode('utf-8')) if rev_reg_id is not None else None
     c_blob_storage_reader_handle = c_int32(blob_storage_reader_handle) if blob_storage_reader_handle else -1
+    c_rev_idx = c_int32(rev_idx) if rev_idx else -1
 
     (cred_json, cred_revoc_id, revoc_reg_delta_json) = await do_call('indy_issuer_create_credential',
                                                                      c_wallet_handle,
@@ -487,6 +490,7 @@ async def issuer_create_credential(wallet_handle: int,
                                                                      c_cred_req_json,
                                                                      c_cred_values_json,
                                                                      c_rev_reg_id,
+                                                                     c_rev_idx,
                                                                      c_blob_storage_reader_handle,
                                                                      issuer_create_credential.cb)
     cred_json = cred_json.decode()

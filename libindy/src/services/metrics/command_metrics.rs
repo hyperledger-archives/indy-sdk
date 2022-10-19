@@ -61,7 +61,7 @@ impl From<&IssuerCommand> for CommandMetric {
             IssuerCommand::CreateCredentialOffer(_, _, _) => {
                 CommandMetric::IssuerCommandCreateCredentialOffer
             }
-            IssuerCommand::CreateCredential(_, _, _, _, _, _, _) => {
+            IssuerCommand::CreateCredential(_, _, _, _, _, _, _,_) => {
                 CommandMetric::IssuerCommandCreateCredential
             }
             IssuerCommand::RevokeCredential(_, _, _, _, _) => {

@@ -160,7 +160,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		// Issuer creates Credential
 		AnoncredsResults.IssuerCreateCredentialResult credRegInfo =
 				Anoncreds.issuerCreateCredential(wallet, credOfferJson, credReqJson,
-						GVT_CRED_VALUES, revRegId,
+						GVT_CRED_VALUES, revRegId, -1,
 						blobStorageReaderHandle.getBlobStorageReaderHandle()).get();
 
 		String credJson = credRegInfo.getCredentialJson();
@@ -533,7 +533,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		AnoncredsResults.IssuerCreateCredentialResult credRegInfo =
 				Anoncreds.issuerCreateCredential(wallet, credOfferJson, credReqJson,
-						GVT_CRED_VALUES, revRegId,
+						GVT_CRED_VALUES, revRegId, -1,
 						blobStorageReaderHandle.getBlobStorageReaderHandle()).get();
 
 		String credJson = credRegInfo.getCredentialJson();

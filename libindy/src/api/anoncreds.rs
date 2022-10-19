@@ -582,6 +582,7 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: CommandHandle,
 ///                       It should not be parsed and are likely to change in future versions).
 ///     }
 /// cred_revoc_id: local id for revocation info (Can be used for revocation of this credential)
+/// rev_idx: revocation tail index, allow issuance of multiple credentials to same revocation index.
 /// revoc_reg_delta_json: Revocation registry delta json with a newly issued credential
 ///
 /// #Errors
@@ -595,13 +596,14 @@ pub extern fn indy_issuer_create_credential(command_handle: CommandHandle,
                                             cred_req_json: *const c_char,
                                             cred_values_json: *const c_char,
                                             rev_reg_id: *const c_char,
+                                            rev_idx: i32,
                                             blob_storage_reader_handle: IndyHandle,
                                             cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                  cred_json: *const c_char,
                                                                  cred_revoc_id: *const c_char,
                                                                  revoc_reg_delta_json: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_create_credential: >>> wallet_handle: {:?}, cred_offer_json: {:?}, cred_req_json: {:?}, cred_values_json: {:?}, rev_reg_id: {:?}, \
-    blob_storage_reader_handle: {:?}", wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle);
+    rev_idx: {:?} ,blob_storage_reader_handle: {:?}", wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, rev_idx,blob_storage_reader_handle);
 
     check_useful_validatable_json!(cred_offer_json, ErrorCode::CommonInvalidParam3, CredentialOffer);
     check_useful_validatable_json!(cred_req_json, ErrorCode::CommonInvalidParam4, CredentialRequest);
@@ -610,9 +612,10 @@ pub extern fn indy_issuer_create_credential(command_handle: CommandHandle,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let blob_storage_reader_handle = if blob_storage_reader_handle != -1 { Some(blob_storage_reader_handle) } else { None };
+    let rev_idx = if rev_idx != -1 {Some(rev_idx as u32)} else {None};
 
     trace!("indy_issuer_create_credential: entities >>> wallet_handle: {:?}, cred_offer_json: {:?}, cred_req_json: {:?}, cred_values_json: {:?}, rev_reg_id: {:?}, \
-    blob_storage_reader_handle: {:?}", wallet_handle, cred_offer_json, secret!(&cred_req_json), secret!(&cred_values_json), secret!(&rev_reg_id), blob_storage_reader_handle);
+    rev_idx: {:?}, blob_storage_reader_handle: {:?}", wallet_handle, cred_offer_json, secret!(&cred_req_json), secret!(&cred_values_json), secret!(&rev_reg_id), secret!(&rev_idx), blob_storage_reader_handle);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
@@ -623,11 +626,12 @@ pub extern fn indy_issuer_create_credential(command_handle: CommandHandle,
                     cred_req_json,
                     cred_values_json,
                     rev_reg_id,
+                    rev_idx,
                     blob_storage_reader_handle,
                     Box::new(move |result| {
                         let (err, cred_json, revoc_id, revoc_reg_delta_json) = prepare_result_3!(result, String::new(), None, None);
-                        trace!("indy_issuer_create_credential: cred_json: {:?}, revoc_id: {:?}, revoc_reg_delta_json: {:?}",
-                               secret!(cred_json.as_str()), secret!(&revoc_id), revoc_reg_delta_json);
+                        trace!("indy_issuer_create_credential: cred_json: {:?}, revoc_id: {:?}, rev_idx: {:?}, revoc_reg_delta_json: {:?}",
+                               secret!(cred_json.as_str()), secret!(&revoc_id), secret!(&rev_idx), revoc_reg_delta_json);
                         let cred_json = ctypes::string_to_cstring(cred_json);
                         let revoc_id = revoc_id.map(ctypes::string_to_cstring);
                         let revoc_reg_delta_json = revoc_reg_delta_json.map(ctypes::string_to_cstring);

@@ -372,16 +372,21 @@ fn _issuer_create_credential_offer(command_handle: CommandHandle, wallet_handle:
 ///                       It should not be parsed and are likely to change in future versions).
 ///     }
 /// * `cred_revoc_id`: local id for revocation info (Can be used for revocation of this credential)
+/// * rev_idx: revocation tail index, allow issuance of multiple credentials to same revocation index.
 /// * `revoc_reg_delta_json`: Revocation registry delta json with a newly issued credential
 pub fn issuer_create_credential(wallet_handle: WalletHandle,
                                 cred_offer_json: &str,
                                 cred_req_json: &str,
                                 cred_values_json: &str,
                                 rev_reg_id: Option<&str>,
+                                rev_idx: Option<u32>,
                                 blob_storage_reader_handle: BlobStorageReaderHandle) -> Box<dyn Future<Item=(String, Option<String>, Option<String>), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string_opt_string();
 
-    let err = _issuer_create_credential(command_handle, wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle, cb);
+    let err = _issuer_create_credential(command_handle, wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, match rev_idx {
+        Some(index) => index as i32,
+        _ => -1
+    } ,blob_storage_reader_handle, cb);
 
     ResultHandler::str_optstr_optstr(command_handle, err, receiver)
 }
@@ -393,6 +398,7 @@ fn _issuer_create_credential(
     cred_req_json: &str,
     cred_values_json: &str,
     rev_reg_id: Option<&str>,
+    rev_idx: i32,
     blob_storage_reader_handle: BlobStorageReaderHandle,
     cb: Option<ResponseStringStringStringCB>
 ) -> ErrorCode {
@@ -402,7 +408,7 @@ fn _issuer_create_credential(
     let rev_reg_id_str = opt_c_str!(rev_reg_id);
 
     ErrorCode::from(unsafe {
-        anoncreds::indy_issuer_create_credential(command_handle, wallet_handle, cred_offer_json.as_ptr(), cred_req_json.as_ptr(), cred_values_json.as_ptr(), opt_c_ptr!(rev_reg_id, rev_reg_id_str), blob_storage_reader_handle, cb)
+        anoncreds::indy_issuer_create_credential(command_handle, wallet_handle, cred_offer_json.as_ptr(), cred_req_json.as_ptr(), cred_values_json.as_ptr(), opt_c_ptr!(rev_reg_id, rev_reg_id_str),rev_idx, blob_storage_reader_handle, cb)
     })
 }
 

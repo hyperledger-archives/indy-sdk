@@ -101,7 +101,7 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
 
     (cred_json, cred_rev_id, rev_reg_delta_json) = \
         await anoncreds.issuer_create_credential(issuer_wallet_handle, cred_offer_json, cred_req_json,
-                                                 cred_values_json, rev_reg_def_id, blob_storage_reader_cfg_handle)
+                                                 cred_values_json, rev_reg_def_id,None, blob_storage_reader_cfg_handle)
 
     # Issuer Posts Revocation Registry Delta to Ledger
     revoc_reg_entry_request = \

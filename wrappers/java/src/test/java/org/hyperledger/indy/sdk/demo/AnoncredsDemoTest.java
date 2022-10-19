@@ -107,7 +107,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		// Issuer create Credential
 		IssuerCreateCredentialResult createCredentialResult =
-				Anoncreds.issuerCreateCredential(issuerWallet, credOffer, credReq, gvtCredentialValues, null, - 1).get();
+				Anoncreds.issuerCreateCredential(issuerWallet, credOffer, credReq, gvtCredentialValues, null,-1 , - 1).get();
 		String credential = createCredentialResult.getCredentialJson();
 
 		// Prover store Credential
@@ -224,7 +224,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		// Issuer create Credential
 		IssuerCreateCredentialResult gvtCreateCredentialResult =
-				Anoncreds.issuerCreateCredential(issuerGvtWallet, gvtCredOffer, gvtCredReq, gvtCredentialValues, null, - 1).get();
+				Anoncreds.issuerCreateCredential(issuerGvtWallet, gvtCredOffer, gvtCredReq, gvtCredentialValues, null, -1, - 1).get();
 		String gvtCredential = gvtCreateCredentialResult.getCredentialJson();
 
 		// Prover store Credential
@@ -236,7 +236,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String xyzCredReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
 		// Issuer create Credential
-		IssuerCreateCredentialResult xyzCreateCredentialResult = Anoncreds.issuerCreateCredential(issuerXyzWallet, xyzCredOffer, xyzCredReq, xyzCredentialValues, null, - 1).get();
+		IssuerCreateCredentialResult xyzCreateCredentialResult = Anoncreds.issuerCreateCredential(issuerXyzWallet, xyzCredOffer, xyzCredReq, xyzCredentialValues, null, -1, - 1).get();
 		String xyzCredential = xyzCreateCredentialResult.getCredentialJson();
 
 		// Prover store Credential
@@ -350,7 +350,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		// Issuer create GVT Credential
 		IssuerCreateCredentialResult gvtCreateCredentialResult =
-				Anoncreds.issuerCreateCredential(issuerWallet, gvtCredOffer, gvtCredReq, gvtCredentialValues, null, - 1).get();
+				Anoncreds.issuerCreateCredential(issuerWallet, gvtCredOffer, gvtCredReq, gvtCredentialValues, null, -1, - 1).get();
 		String gvtCredential = gvtCreateCredentialResult.getCredentialJson();
 
 		// Prover store GVT Credential
@@ -363,7 +363,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		// Issuer create XYZ Credential
 		IssuerCreateCredentialResult xyzCreateCredentialResult =
-				Anoncreds.issuerCreateCredential(issuerWallet, xyzCredOffer, xyzCredReq, xyzCredentialValues, null, - 1).get();
+				Anoncreds.issuerCreateCredential(issuerWallet, xyzCredOffer, xyzCredReq, xyzCredentialValues, null, -1, - 1).get();
 		String xyzCredential = xyzCreateCredentialResult.getCredentialJson();
 
 		// Prover store XYZ Credential
@@ -475,7 +475,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		// Issuer create Credential
 		IssuerCreateCredentialResult createCredentialResult =
-				Anoncreds.issuerCreateCredential(issuerWallet, credOffer, credReq, gvtCredentialValues, revRegId, blobStorageReaderHandleCfg).get();
+				Anoncreds.issuerCreateCredential(issuerWallet, credOffer, credReq, gvtCredentialValues, revRegId, -1, blobStorageReaderHandleCfg).get();
 		String credential = createCredentialResult.getCredentialJson();
 		String revRegDelta = createCredentialResult.getRevocRegDeltaJson();
 		String credRevId = createCredentialResult.getRevocId();
@@ -563,7 +563,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		// Issuer create Credential
 		IssuerCreateCredentialResult createCredentialResult =
-				Anoncreds.issuerCreateCredential(issuerWallet, credOffer, credReq, gvtCredentialValues, null, - 1).get();
+				Anoncreds.issuerCreateCredential(issuerWallet, credOffer, credReq, gvtCredentialValues, null,-1 , - 1).get();
 		String credential = createCredentialResult.getCredentialJson();
 
 		// Prover store Credential

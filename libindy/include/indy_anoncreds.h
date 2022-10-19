@@ -80,6 +80,7 @@ extern "C" {
                                                       const char *  cred_req_json,
                                                       const char *  cred_values_json,
                                                       const char *  rev_reg_id,
+                                                      indy_handle_t rev_idx,
                                                       indy_handle_t blob_storage_reader_handle,
 
                                                       void           (*cb)(indy_handle_t command_handle_,

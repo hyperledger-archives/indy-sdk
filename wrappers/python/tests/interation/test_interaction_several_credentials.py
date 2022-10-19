@@ -196,6 +196,7 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand_4_creds(
             cred_req_json,
             cred_values_json[i],
             rev_reg_def_id,
+            None,
             blob_storage_reader_cfg_handle
         )
 

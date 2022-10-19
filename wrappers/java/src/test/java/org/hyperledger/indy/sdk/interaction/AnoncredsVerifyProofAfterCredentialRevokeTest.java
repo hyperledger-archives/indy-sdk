@@ -166,7 +166,7 @@ public class AnoncredsVerifyProofAfterCredentialRevokeTest extends IndyIntegrati
 
 
 		AnoncredsResults.IssuerCreateCredentialResult createCredResult = Anoncreds.issuerCreateCredential(wallet, credentialOffer,
-				proverCredReqResult.getCredentialRequestJson(), credentialDataForIndy.toString(), revRegDefId, blobReaderHandle).get();
+				proverCredReqResult.getCredentialRequestJson(), credentialDataForIndy.toString(), revRegDefId, -1, blobReaderHandle).get();
 
 		String issuedCredential = createCredResult.getCredentialJson();
 		String issuedCredentialDelta = createCredResult.getRevocRegDeltaJson();

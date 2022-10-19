@@ -576,6 +576,7 @@ public class Anoncreds extends IndyJava.API {
 	 *                       It should not be parsed and are likely to change in future versions).
 	 *     }
 	 * credRevocId: local id for revocation info (Can be used for revocation of this cred)
+	 * revIdx: revocation tail index, allow issuance of multiple credentials to same revocation index.
 	 * revocRegDeltaJson: Revocation registry delta json with a newly issued credential
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -585,6 +586,7 @@ public class Anoncreds extends IndyJava.API {
 			String credReqJson,
 			String credValuesJson,
 			String revRegId,
+			int revIdx,
 			int blobStorageReaderHandle) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
@@ -604,6 +606,7 @@ public class Anoncreds extends IndyJava.API {
 				credReqJson,
 				credValuesJson,
 				revRegId,
+				revIdx,
 				blobStorageReaderHandle,
 				issuerCreateCredentialCb);
 

@@ -76,8 +76,8 @@ pub fn issuer_create_credential_offer(wallet_handle: WalletHandle, cred_def_id: 
 }
 
 pub fn issuer_create_credential(wallet_handle: WalletHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str,
-                                rev_reg_id: Option<&str>, blob_storage_reader_handle: Option<i32>) -> Result<(String, Option<String>, Option<String>), IndyError> {
-    anoncreds::issuer_create_credential(wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle.unwrap_or(-1)).wait() // TODO OPTIONAL blob_storage_reader_handle
+                                rev_reg_id: Option<&str>,rev_idx: Option<u32>, blob_storage_reader_handle: Option<i32>) -> Result<(String, Option<String>, Option<String>), IndyError> {
+    anoncreds::issuer_create_credential(wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id,rev_idx ,blob_storage_reader_handle.unwrap_or(-1)).wait() // TODO OPTIONAL blob_storage_reader_handle
 }
 
 pub fn issuer_revoke_credential(wallet_handle: WalletHandle, blob_storage_reader_handle: i32, rev_reg_id: &str, cred_revoc_id: &str) -> Result<String, IndyError> {
@@ -1036,6 +1036,7 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
                                                                     &issuer1_gvt_credential_req,
                                                                     &gvt_credential_values_json(),
                                                                     None,
+                                                                    None,
                                                                     None).unwrap();
 
             //11. Prover stores Credential
@@ -1058,6 +1059,7 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
                                                                         &issuer1_gvt_sub_credential_offer,
                                                                         &issuer1_gvt_sub_credential_req,
                                                                         &gvt_sub_credential_values_json(),
+                                                                        None,
                                                                         None,
                                                                         None).unwrap();
 
@@ -1082,6 +1084,7 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
                                                                     &issuer1_xyz_credential_req,
                                                                     &xyz_credential_values_json(),
                                                                     None,
+                                                                    None,
                                                                     None).unwrap();
 
             //14. Prover stores Credential
@@ -1105,6 +1108,7 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
                                                                     &issuer2_gvt_credential_offer,
                                                                     &issuer2_gvt_credential_req,
                                                                     &gvt2_credential_values_json(),
+                                                                    None,
                                                                     None,
                                                                     None).unwrap();
 
@@ -1218,6 +1222,7 @@ pub fn multi_steps_create_credential(prover_master_secret_id: &str,
                                                      &cred_req,
                                                      &cred_values,
                                                      None,
+                                                     None,
                                                      None).unwrap();
 
     // Prover stores received Credential
@@ -1237,6 +1242,7 @@ pub fn multi_steps_create_revocation_credential(prover_master_secret_id: &str,
                                                 cred_def_id: &str,
                                                 cred_def_json: &str,
                                                 rev_reg_id: &str,
+                                                rev_idx: Option<u32>,
                                                 revoc_reg_def_json: &str,
                                                 blob_storage_reader_handle: i32)
                                                 -> (String, Option<String>) {
@@ -1256,6 +1262,7 @@ pub fn multi_steps_create_revocation_credential(prover_master_secret_id: &str,
                                                                                                    &prover1_cred_req_json,
                                                                                                    &cred_values,
                                                                                                    Some(rev_reg_id),
+                                                                                                   rev_idx,
                                                                                                    Some(blob_storage_reader_handle)).unwrap();
     let revoc_reg_delta1_json = revoc_reg_delta1_json;
     let prover1_cred_rev_id = prover1_cred_rev_id.unwrap();

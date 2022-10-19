@@ -528,22 +528,24 @@ void issuerCreateCredential_cb(indy_handle_t handle, indy_error_t xerr, const ch
   }
 }
 NAN_METHOD(issuerCreateCredential) {
-  INDY_ASSERT_NARGS(issuerCreateCredential, 7)
+  INDY_ASSERT_NARGS(issuerCreateCredential, 8)
   INDY_ASSERT_NUMBER(issuerCreateCredential, 0, wh)
   INDY_ASSERT_STRING(issuerCreateCredential, 1, credOffer)
   INDY_ASSERT_STRING(issuerCreateCredential, 2, credReq)
   INDY_ASSERT_STRING(issuerCreateCredential, 3, credValues)
   INDY_ASSERT_STRING(issuerCreateCredential, 4, revRegId)
-  INDY_ASSERT_NUMBER(issuerCreateCredential, 5, blobStorageReaderHandle)
-  INDY_ASSERT_FUNCTION(issuerCreateCredential, 6)
+  INDY_ASSERT_NUMBER(issuerCreateCredential, 5, revIdx)
+  INDY_ASSERT_NUMBER(issuerCreateCredential, 6, blobStorageReaderHandle)
+  INDY_ASSERT_FUNCTION(issuerCreateCredential, 7)
   indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
   const char* arg4 = argToCString(info[4]);
   indy_handle_t arg5 = argToInt32(info[5]);
-  IndyCallback* icb = argToIndyCb(info[6]);
-  indyCalled(icb, indy_issuer_create_credential(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, issuerCreateCredential_cb));
+  indy_handle_t arg6 = argToInt32(info[6]);
+  IndyCallback* icb = argToIndyCb(info[7]);
+  indyCalled(icb, indy_issuer_create_credential(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, arg6, issuerCreateCredential_cb));
   delete arg1;
   delete arg2;
   delete arg3;

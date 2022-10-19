@@ -358,7 +358,7 @@ async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, g
 
     (issuer_1_gvt_cred, _, _) = \
         await anoncreds.issuer_create_credential(wallet_handle, issuer_1_gvt_credential_offer_json,
-                                                 issuer_1_gvt_cred_req, gvt_cred_values_json, None, None)
+                                                 issuer_1_gvt_cred_req, gvt_cred_values_json, None,None, None)
 
     await anoncreds.prover_store_credential(wallet_handle, id_credential_1, issuer_1_gvt_cred_req_metadata,
                                             issuer_1_gvt_cred, issuer1_gvt_credential_def_json, None)
@@ -369,7 +369,7 @@ async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, g
 
     (issuer_1_xyz_cred, _, _) = \
         await anoncreds.issuer_create_credential(wallet_handle, issuer_1_xyz_credential_offer_json,
-                                                 issuer_1_xyz_cred_req, xyz_cred_values_json, None, None)
+                                                 issuer_1_xyz_cred_req, xyz_cred_values_json, None, None, None)
 
     await anoncreds.prover_store_credential(wallet_handle, id_credential_2, issuer_1_xyz_cred_req_metadata,
                                             issuer_1_xyz_cred, issuer1_xyz_credential_def_json, None)
@@ -380,7 +380,7 @@ async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, g
 
     (issuer_2_gvt_cred, _, _) = \
         await anoncreds.issuer_create_credential(wallet_handle, issuer_2_gvt_credential_offer_json,
-                                                 issuer_2_gvt_cred_req, gvt_2_cred_values_json, None, None)
+                                                 issuer_2_gvt_cred_req, gvt_2_cred_values_json, None, None, None)
 
     await anoncreds.prover_store_credential(wallet_handle, id_credential_3, issuer_2_gvt_cred_req_metadata,
                                             issuer_2_gvt_cred, issuer2_gvt_credential_def_json, None)

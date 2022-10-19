@@ -17,4 +17,4 @@ async def test_issuer_create_credential_works_for_credential_values_not_correspo
     _, cred_offer, cred_req, _, _ = prepopulated_wallet
 
     with pytest.raises(error.CommonInvalidStructure):
-        await issuer_create_credential(wallet_handle, cred_offer, cred_req, xyz_cred_values_json, None, None)
+        await issuer_create_credential(wallet_handle, cred_offer, cred_req, xyz_cred_values_json, None, None, None)
