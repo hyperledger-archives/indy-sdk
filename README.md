@@ -6,8 +6,8 @@ The major artifact of the SDK is a C-callable
 library; there are also convenience wrappers for various programming languages and Indy CLI tool.
 
 All bugs, stories, and backlog for this project are managed through [Hyperledger's Jira](https://jira.hyperledger.org/secure/RapidBoard.jspa)
-in project IS (note that regular Indy tickets are in the INDY project instead...). Also, make sure to join
-us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to discuss. You will need a Linux Foundation login to get access to these channels
+in project IS (note that regular Indy tickets are in the INDY project instead). Also, make sure to join
+us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to discuss. You will need a Linux Foundation login to get access to these channels.
 
 ## Understanding Hyperledger Indy
 
@@ -17,9 +17,9 @@ If you have just started learning about self-sovereign identity, here are some r
 functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-Started Guide](docs/getting-started/indy-walkthrough.md)
 
     * **Please take note** that this tutorial doesn't cover how sides set up a connection and exchange messages.
-    How this communication channel can be built you can find at [Aries](https://github.com/hyperledger/aries) project which describes it in great details.
+    You can learn how this communication channel can be built at the [Aries](https://github.com/hyperledger/aries) project.
 
-* Hyperledger Indy Working Group calls happen every Thursday at 8amPT, 9amMT, 11amET, 4pmBST. Add to your calendar and join from any device: https://zoom.us/j/232861185
+* Hyperledger Indy Working Group calls take place every Thursday at 8am PT, 9am MT, 11am ET, 4pm BST via [zoom](https://zoom.us/j/232861185).
 
 * A recent webinar explaining self-sovereign identity using Hyperledger Indy and Sovrin: [SSI Meetup Webinar](https://youtu.be/RllH91rcFdE?t=4m30s)
 
