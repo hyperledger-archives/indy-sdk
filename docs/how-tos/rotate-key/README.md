@@ -14,7 +14,7 @@ Setup your workstation with an indy development virtual machine (VM). See [prere
 ### Step 1
 
 In your normal workstation operating system (not the VM), open a text editor of your
-choice and paste the *template* code of one of the available in the list bellow into 
+choice and paste the *template* code of one of the available in the list below into 
 a new file and saved it as `rotate_key.EXT`, replacing *EXT* with the proper file 
 extension (e.g for python: `rotate_key.py`, for nodejs: `rotate_key.js`, and so on). 
 We will be modifying this code in later steps.
