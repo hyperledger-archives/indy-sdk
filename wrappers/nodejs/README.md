@@ -47,7 +47,7 @@ Use environment variable `RUST_LOG={info|debug|trace}` to output logs of Libindy
 
 i.e. `ld: library not found for -llibindy`
 
-First, make sure you have the latest libindy for your platform. Also make sure you have any other libraries it depends on. See [indy-sdk/doc](https://github.com/hyperledger/indy-sdk/tree/master/doc)
+First, make sure you have the latest libindy for your platform. Also make sure you have any other libraries it depends on. See [indy-sdk/docs](https://github.com/hyperledger/indy-sdk/tree/master/docs)
 
 Second, make sure it's in the linker search path. The easiest way is to use the system library path.
 * ubuntu `/usr/lib/libindy.so`
