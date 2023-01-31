@@ -3832,4 +3832,5 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "setDefaultLogger", setDefaultLogger);
   Nan::Export(target, "setLogger", setLogger);
 }
-NODE_MODULE(indynodejs, InitAll)
+
+NAN_MODULE_WORKER_ENABLED(indynodejs, InitAll)
