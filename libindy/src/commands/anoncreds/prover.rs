@@ -856,7 +856,7 @@ impl ProverCommandExecutor {
                 let values = self.anoncreds_service.prover.get_credential_values_for_attribute(&credential.values.0, &predicate.name)
                     .ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "Credential values not found"))?;
 
-                let satisfy = self.anoncreds_service.prover.attribute_satisfy_predicate(predicate, &values.encoded)?;
+                let satisfy = self.anoncreds_service.prover.attribute_satisfy_predicate(predicate, &values.encoded).unwrap_or(false);
                 if !satisfy { continue; }
             }
 
