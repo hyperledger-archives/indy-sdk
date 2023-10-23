@@ -1,5 +1,26 @@
-# Indy SDK
+# Indy SDK - Deprecated
 ![logo](https://raw.githubusercontent.com/hyperledger/indy-node/master/collateral/logos/indy-logo.png)
+
+## :warning: Deprecation Notice :warning:
+The Indy SDK has been deprecated in favor of the Indy and Aries shared libraries.  Please use the following libraries and projects to replace your use of the Indy SDK.
+
+### [indy-vdr](https://github.com/hyperledger/indy-vdr)
+A module for interacting with the [Indy Node](https://github.com/hyperledger/indy-node) ledger.
+
+### [aries-askar](https://github.com/hyperledger/aries-askar)
+A secure (encrypted at rest) storage and a key management service suitable for use with [Hyperledger Aries] agents and possibly other digital trust agents.  Askar is a replacement implementation (with lessons learned!) of the [indy-wallet] part of the [Hyperledger Indy SDK]. Askar has been demonstrated to be more performant and stable than the Indy SDK when under comparable load.
+
+### [anoncreds-rs](https://github.com/hyperledger/anoncreds-rs)
+Rust library and reference implementation of the [Anoncreds V1.0 specification](https://hyperledger.github.io/anoncreds-spec/).  Supporting ledger agnostic anoncreds.
+
+### [indy-cli-rs](https://github.com/hyperledger/indy-cli-rs)
+The a feature parity replacement for the `indy-cli` from the `indy-sdk`.
+
+[Hyperledger Aries]: https://www.hyperledger.org/projects/aries
+[indy-wallet]: https://github.com/hyperledger/indy-sdk/tree/main/libindy/indy-wallet
+[Hyperledger Indy SDK]: https://github.com/hyperledger/indy-sdk
+
+## About the Indy SDK
 This is the official SDK for [Hyperledger Indy](https://www.hyperledger.org/projects),
 which provides a distributed-ledger-based foundation for [self-sovereign identity](https://sovrin.org). Indy provides a software ecosystem for private, secure, and powerful identity, and the Indy SDK enables clients for it.
 The major artifact of the SDK is a C-callable
@@ -83,12 +104,12 @@ These wrappers are currently in **experimental** state and it is not part of off
 ##### Example use
 - For the main workflow example check [VCX Python demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
 - Another libvcx example is available as [VCX NodeJS demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/node#run-demo).
-- For mobile see [iOS Demo project](https://github.com/sktston/vcx-demo-ios) 
+- For mobile see [iOS Demo project](https://github.com/sktston/vcx-demo-ios)
 
 ### LibVCX Agency
-LibVCX can be used with 
+LibVCX can be used with
 [mediator agency](https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0046-mediators-and-relays/README.md)
-which enables asynchronous communication between 2 parties. 
+which enables asynchronous communication between 2 parties.
 - [Dummy Cloud Agent](/vcx/dummy-cloud-agent/README.md) is simple implementation of VCX compatible Cloud Agent.
 The main purpose of this implementation is VCX testing, demos and documentation of VCX protocol.
 - [NodeVCXAgency](https://github.com/AbsaOSS/vcxagencynode) is alternative implementation in NodeJS.
@@ -192,7 +213,7 @@ that may be need for your applications.
 
 {library} must be replaced with libindy, libnullpay or libvcx.
 
- [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/docs/build-guides/android-build.md#usage)  
+ [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/docs/build-guides/android-build.md#usage)
 
 {release channel} must be replaced with rc or stable to define corresponded release channel.
 See section "Release channels" for more details.
@@ -226,15 +247,15 @@ See section "Release channels" for more details.
     * `lib` - contains library binaries (static and dynamic).
         * `library.a`
         * `library.dylib`
-    
+
 5. Install dependent libraries: libsodium, zeromq, openssl. The dependent libraries should match the version with what you can find from ``otool -L libindy.dylib``.
 
-You need add the path to lib folder to LIBRARY_PATH environment variable. 
-    
+You need add the path to lib folder to LIBRARY_PATH environment variable.
+
 {library} must be replaced with libindy, libnullpay, libvcx or indy-cli to define corresponded library.
 
 {release channel} must be replaced with master, rc or stable to define corresponded release channel.
-    
+
 ## How to build Indy SDK from source
 
 * [Ubuntu based distributions (Ubuntu 16.04)](docs/build-guides/ubuntu-build.md)
@@ -322,7 +343,7 @@ Docker machine needs to be rebooted after these changes.
 
 ## Wrappers documentation
 
-The following [wrappers](docs/architecture/language-bindings.md) are tested and complete. 
+The following [wrappers](docs/architecture/language-bindings.md) are tested and complete.
 
 There is also active work on a wrapper for Go; visit
 [#indy-sdk on Rocket.Chat](https://chat.hyperledger.org/channel/indy-sdk) for
@@ -333,7 +354,7 @@ details.
 
 ## How to migrate
 The documents that provide necessary information for Libindy migrations.
- 
+
 * [v1.3.0 → v1.4.0](docs/migration-guides/migration-guide-1.3.0-1.4.0.md)
 * [v1.4.0 → v1.5.0](docs/migration-guides/migration-guide-1.4.0-1.5.0.md)
 * [v1.5.0 → v1.6.x](docs/migration-guides/migration-guide-1.5.0-1.6.0.md)
