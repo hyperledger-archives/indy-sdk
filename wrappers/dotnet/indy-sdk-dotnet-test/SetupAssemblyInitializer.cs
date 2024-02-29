@@ -28,8 +28,7 @@ namespace Hyperledger.Indy.Test
 
             // Step 4. Activate the configuration
             LogManager.Configuration = config;
-
-            Hyperledger.Indy.Utils.Logger.Init();
+            
             StorageUtils.CleanupStorage();
         }
 

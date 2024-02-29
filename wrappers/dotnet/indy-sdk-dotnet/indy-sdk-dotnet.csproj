@@ -1,26 +1,12 @@
-﻿<Project Sdk="MSBuild.Sdk.Extras/2.0.54">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net452;xamarinios10</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net8.0-ios</TargetFrameworks>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>
     <AssemblyName>Hyperledger.Indy</AssemblyName>
     <RootNamespace>Hyperledger.Indy</RootNamespace>
+    <PackageId>WalletFramework.Indy.Sdk</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.11.1</Version>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <Authors>Symon Rottem, Tomislav Markovski</Authors>
-    <Company>Hyperledger Indy</Company>
-    <Product>Hyperledger Indy SDK</Product>
-    <Description>.NET wrapper for the Hyperledger Indy SDK.
-
-Please note that to function the C-Callable Hyperledger Indy SDK and its dependencies must be installed in the library/DLL search path - please see the project page for more information.</Description>
-    <PackageProjectUrl>https://github.com/hyperledger/indy-sdk</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/hyperledger/indy-sdk</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageTags>hyperledger indy sdk</PackageTags>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageIconUrl></PackageIconUrl>
-    <AssemblyVersion>1.11.1</AssemblyVersion>
-    <FileVersion>1.11.1</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -28,10 +14,6 @@ Please note that to function the C-Callable Hyperledger Indy SDK and its depende
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LibLog" Version="5.0.2">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
   </ItemGroup>
 
